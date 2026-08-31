@@ -1,0 +1,109 @@
+{
+  "artifact_type": "experiment3_fixed_capability_input_set",
+  "schema_version": "1.0",
+  "capability_protocol_version": "capability-v2",
+  "input_set_id": "experiment3-eleven-robot-fixed-inputs-v1",
+  "calibration_report": "calibration_report.json",
+  "smoke_report": "smoke_report.json",
+  "robots": {
+    "robotstudio_so101": {
+      "package_version": "1.0.4",
+      "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
+      "capability_design": "robotstudio_so101/capability_design.json",
+      "capability_validation_suite": "robotstudio_so101/capability_validation_suite.json",
+      "capability_count": 6,
+      "case_count": 12,
+      "source_kind": "tracked_complete_worked_reference"
+    },
+    "unitree-go2-stock-12dof": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+      "capability_design": "unitree-go2-stock-12dof/capability_design.json",
+      "capability_validation_suite": "unitree-go2-stock-12dof/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "tracked_complete_worked_reference"
+    },
+    "franka_panda": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "franka-panda-metaworld-source-protocols-2026-08-19-v1",
+      "capability_design": "franka_panda/capability_design.json",
+      "capability_validation_suite": "franka_panda/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "kinova_gen3_robotiq_2f85": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "kinova-gen3-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1",
+      "capability_design": "kinova_gen3_robotiq_2f85/capability_design.json",
+      "capability_validation_suite": "kinova_gen3_robotiq_2f85/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "ufactory_xarm7": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "ufactory-xarm7-metaworld-source-protocols-2026-08-20-v1",
+      "capability_design": "ufactory_xarm7/capability_design.json",
+      "capability_validation_suite": "ufactory_xarm7/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "universal_robots_ur5e_robotiq_2f85": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "universal-robots-ur5e-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1",
+      "capability_design": "universal_robots_ur5e_robotiq_2f85/capability_design.json",
+      "capability_validation_suite": "universal_robots_ur5e_robotiq_2f85/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "piper": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "piper-metaworld-source-protocols-2026-08-20-v1",
+      "capability_design": "piper/capability_design.json",
+      "capability_validation_suite": "piper/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "kuka_iiwa_14": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
+      "capability_design": "kuka_iiwa_14/capability_design.json",
+      "capability_validation_suite": "kuka_iiwa_14/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "leap_hand": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+      "capability_design": "leap_hand/capability_design.json",
+      "capability_validation_suite": "leap_hand/capability_validation_suite.json",
+      "capability_count": 5,
+      "case_count": 10,
+      "source_kind": "public_task_criteria_and_real_scene_calibration"
+    },
+    "hello_robot_stretch_2": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v2",
+      "capability_design": "hello_robot_stretch_2/capability_design.json",
+      "capability_validation_suite": "hello_robot_stretch_2/capability_validation_suite.json",
+      "capability_count": 6,
+      "case_count": 12,
+      "source_kind": "package_reset_and_scene_calibration"
+    },
+    "aloha_2": {
+      "package_version": "1.0.0",
+      "task_snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
+      "capability_design": "aloha_2/capability_design.json",
+      "capability_validation_suite": "aloha_2/capability_validation_suite.json",
+      "capability_count": 6,
+      "case_count": 12,
+      "source_kind": "tracked_symmetric_reference_and_real_scene_calibration"
+    }
+  }
+}

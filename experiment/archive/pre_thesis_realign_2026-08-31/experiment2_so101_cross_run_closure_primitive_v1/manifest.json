@@ -1,12 +1,23 @@
 {
   "schema_version": 1,
-  "manifest_revision": "0.1.1",
-  "protocol_revision": "0.1.1",
+  "manifest_revision": "0.2.0",
+  "protocol_revision": "0.2.0",
   "authority": "EXPERIMENT_2_AUTHORITY.md",
-  "authority_revision": "0.1.2",
-  "experiment_id": "experiment2-so101-cross-run-closure",
-  "track": "cross-run-experience-closure",
+  "authority_revision": "0.2.0",
+  "experiment_id": "experiment2-so101-cross-run-closure-primitive-v1",
+  "track": "primitive-v1-cross-run-mechanism-closure",
   "protocol": "PROTOCOL.md",
+  "capability_protocol": "primitive-v1",
+  "revision_pins": {
+    "authority": "0.2.0",
+    "manifest": "0.2.0",
+    "protocol": "0.2.0",
+    "capability_protocol": "primitive-v1",
+    "package_revision": "PIN_EXACT_SO101_PACKAGE_AT_DISPATCH",
+    "primitive_family_grammar_revision": "PIN_PACKAGE_BOUND_GRAMMAR_AT_DISPATCH",
+    "geometry_calibration_revision": "PENDING_GEOMETRY_CALIBRATION_REVISION",
+    "primitive_calibration_revision": "PENDING_PRIMITIVE_CALIBRATION_REVISION"
+  },
   "robot_configuration": "robotstudio_so101",
   "generation_condition": "skeleton-assisted",
   "model_execution_policy": "remote-hosted-api-only",
@@ -20,11 +31,11 @@
       "max_output_tokens": 16384,
       "roles": [
         "TGCD",
-        "IVC-or-criteria-design-input",
+        "IVC-primitive-conformance-input",
         "STUDY",
         "GENERATE",
         "Repair",
-        "Task-Demo-controller"
+        "ReCAP-Task-Demo-controller"
       ]
     },
     "terminal_evolution": {
@@ -37,7 +48,7 @@
       "callable_identity_required": true,
       "identity_canary": "diagnostics/company_api_model_identity_canaries_2026-08-23.json",
       "roles": [
-        "source-run-terminal-Evolution-only"
+        "source-terminal-Evolution-only"
       ],
       "maximum_calls": 1
     }
@@ -112,14 +123,38 @@
       }
     }
   },
+  "primitive_protocol": {
+    "primitive_family_grammar": "package-bound",
+    "primitive_count_per_run": {
+      "minimum": 3,
+      "maximum": 10
+    },
+    "task_support_relation": "many-to-many",
+    "task_id_dispatch_allowed": false,
+    "complete_task_embedding_allowed": false,
+    "task_macro": "ReCAP-composed-skill-only",
+    "ivc_scope": "primitive-conformance-only",
+    "ivc_hidden_cases_per_selected_family": [
+      "nominal",
+      "boundary"
+    ],
+    "original_task_standard_consumer": "Task-Demo-Harness-only"
+  },
+  "recap": {
+    "controller": "ReCAP",
+    "planning_turn_budget_per_task": 16,
+    "primitive_call_budget_per_task": 12
+  },
   "readiness_evidence": {
     "package": {
       "path": "../experiment/experiment3/diagnostics/all_11_package_check_2026-08-23.json",
-      "passed": true
+      "passed": true,
+      "evidence_role": "package-closure-diagnostic"
     },
-    "reference_positive_control": {
+    "legacy_reference_positive_control": {
       "path": "../experiment/experiment3/diagnostics/reference_positive_control_so101_pass_2026-08-23.json",
-      "passed": true
+      "evidence_role": "legacy-macro-diagnostic-only",
+      "primitive_v1_formal_evidence": false
     },
     "candidate_isolation": {
       "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
@@ -145,54 +180,88 @@
       "path": "../experiment/experiment2/diagnostics/company_api_model_identity_canaries_2026-08-23.json",
       "passed": true
     },
-    "evolution_contract": {
+    "legacy_evolution_contract_canary": {
       "path": "../experiment/experiment2/diagnostics/opus_evolution_contract_canary_2026-08-23.json",
-      "passed": true
+      "evidence_role": "legacy-macro-diagnostic-only",
+      "primitive_v1_formal_evidence": false
     },
-    "experience_boundary": {
+    "legacy_experience_boundary_canary": {
       "path": "../experiment/experiment2/diagnostics/runtime_experience_boundary_checks_2026-08-23.json",
-      "passed": true
+      "evidence_role": "legacy-macro-diagnostic-only",
+      "primitive_v1_formal_evidence": false
+    },
+    "geometry_calibration": {
+      "evidence_ref": "PENDING://robotstudio_so101/geometry-calibration/primitive-v1",
+      "status": "placeholder-not-established",
+      "required_before_formal_dispatch": true
+    },
+    "primitive_calibration": {
+      "evidence_ref": "PENDING://robotstudio_so101/primitive-calibration/primitive-v1",
+      "status": "placeholder-not-established",
+      "required_before_formal_dispatch": true
+    },
+    "exact_hidden_reference_adjudication": {
+      "evidence_ref": "PENDING://robotstudio_so101/exact-hidden-reference-adjudication/primitive-v1",
+      "status": "placeholder-not-established",
+      "required_before_formal_dispatch": true
     }
   },
   "run_roles": {
     "source": {
-      "run_id": "exp2-so101-source-v2",
+      "run_id": "exp2-so101-source-v3",
       "manual_launch": true,
       "experience_input": "empty",
       "stages": [
         "TGCD",
-        "IVC",
+        "IVC-primitive-conformance",
         "STUDY",
         "GENERATE",
-        "private-capability-validation",
+        "private-primitive-validation",
         "bounded-Repair",
-        "Task-Demo",
+        "ReCAP-Task-Demo",
         "terminal-Evolution"
       ],
       "task_demo_required": true,
+      "task_demo_controller": "ReCAP",
       "task_demo_outcome_when_no_admitted_driver": "not-run-with-nonempty-reason",
       "evolution": {
         "enabled": true,
         "model_role": "terminal_evolution",
         "terminal_only": true,
+        "after_terminal_task_demo": true,
+        "skip_on_infrastructure_failure": true,
         "same_run_input": false
       },
       "maximum_submitted_driver_attempts": 3
     },
     "later": {
-      "run_id": "exp2-so101-later",
+      "run_id": "exp2-so101-later-v2",
       "manual_launch": true,
-      "experience_input": "accepted-frozen-reviewed-source-snapshot",
-      "stages": [
+      "requires_source_disposition": "accept",
+      "experience_input": "accepted-frozen-reviewed-primitive-v1-source-snapshot",
+      "experience_available_to": [
         "TGCD",
-        "IVC",
         "STUDY",
         "GENERATE",
-        "private-capability-validation",
+        "Repair"
+      ],
+      "experience_forbidden_at": [
+        "IVC",
+        "candidate-Harness",
+        "exact-hidden-reference-adjudication",
+        "ReCAP-Task-Demo"
+      ],
+      "stages": [
+        "TGCD",
+        "IVC-primitive-conformance",
+        "STUDY",
+        "GENERATE",
+        "private-primitive-validation",
         "bounded-Repair",
-        "Task-Demo"
+        "ReCAP-Task-Demo"
       ],
       "task_demo_required": true,
+      "task_demo_controller": "ReCAP",
       "evolution": {
         "enabled": false,
         "reason": "one terminal Evolution proposal is fixed to the source run"
@@ -200,6 +269,21 @@
       "maximum_submitted_driver_attempts": 3,
       "fresh_independent_run": true
     }
+  },
+  "evolution_json_contract": {
+    "model_root_fields_exact": [
+      "observation",
+      "lesson",
+      "recommendation",
+      "scope",
+      "public_evidence"
+    ],
+    "framework_added_root_fields": [
+      "provenance",
+      "outcome"
+    ],
+    "model_may_not_write_framework_fields": true,
+    "public_evidence_only": true
   },
   "human_disposition": {
     "allowed_values": [
@@ -218,6 +302,8 @@
     "reviewed_snapshot_freeze_required": true
   },
   "experience_policy": {
+    "protocol": "primitive-v1",
+    "legacy_snapshots_loadable": false,
     "allowed_valence": [
       "positive",
       "negative"
@@ -229,24 +315,49 @@
       "lesson",
       "recommendation",
       "scope",
-      "evidence"
+      "public_evidence"
     ],
-    "framework_assigned_fields": [
-      "source_robot",
-      "generation_condition",
-      "terminal_outcome_label"
+    "framework_added_fields": [
+      "provenance",
+      "outcome"
     ],
-    "terminal_outcome_label_values": [
-      "positive",
-      "negative"
+    "later_stage_projection": [
+      "TGCD",
+      "STUDY",
+      "GENERATE",
+      "Repair"
     ],
-    "valence_authority": "framework_from_retained_terminal_verdict_facts",
+    "forbidden_stage_projection": [
+      "IVC",
+      "candidate-Harness",
+      "exact-hidden-reference-adjudication",
+      "ReCAP-Task-Demo"
+    ],
     "reference_material_allowed": false,
     "private_validation_material_allowed": false,
     "same_round_input": false,
     "rejected_record": "retained_evidence_not_eligible",
-    "global_eligibility": "accept_plus_frozen_reviewed_snapshot",
+    "global_eligibility": "accept_plus_frozen_unedited_primitive_v1_snapshot",
     "effective_when": "explicitly_loaded_unchanged_by_next_independent_run"
+  },
+  "reference_failure_policy": {
+    "trigger": "Task-Demo-task-failure",
+    "adjudication": "exact-hidden-reference-on-same-package-seed-geometry-and-Harness-route",
+    "reference_pass_result": "candidate-failure",
+    "reference_fail_result": "infrastructure-failure",
+    "rerun_allowed": false,
+    "substitute_allowed": false,
+    "denominator_repair_allowed": false,
+    "evolution_on_infrastructure_failure": false
+  },
+  "legacy_policy": {
+    "retained_run_ids": [
+      "exp2-so101-source-v2",
+      "exp2-so101-later"
+    ],
+    "formal_primitive_v1_evidence": false,
+    "mechanism_role": "legacy-macro-diagnostic-only",
+    "old_experience_snapshot_loadable": false
   },
   "attempt_policy": {
     "initial_attempt_index": 0,
@@ -257,14 +368,17 @@
     "source_runs": 1,
     "later_runs": 1,
     "declared_closure_runs": 2,
+    "later_requires_accepted_snapshot": true,
     "improvement_claim": false,
     "matched_no_experience_control": false
   },
   "analysis_boundary": [
-    "cross-run mechanism closure",
+    "primitive-v1 cross-run mechanism closure",
+    "primitive conformance and ReCAP Task Demo traceability",
     "proposal and disposition traceability",
-    "unchanged Experience load in the next independent run",
+    "unchanged Experience load at TGCD/STUDY/GENERATE/Repair only",
     "source and later run terminal outcomes reported separately",
+    "legacy-macro records excluded from primitive-v1 evidence",
     "no improvement or causal Experience claim"
   ]
 }

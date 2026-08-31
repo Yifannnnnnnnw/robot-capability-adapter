@@ -1,0 +1,1014 @@
+{
+  "artifact_type": "capability_design",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "ufactory_xarm7",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "ufactory-xarm7-metaworld-source-protocols-2026-08-20-v1",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)",
+    "request_required": [
+      "request"
+    ]
+  },
+  "capabilities": [
+    {
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "description": "Move the observable arm tool to a bounded world position.",
+      "effect": "Closed-loop world-position regulation of link_tcp.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_position": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": 0.4788623253741006,
+                "maximum": 0.55,
+                "evidence_refs": [
+                  {
+                    "source_id": "ufactory_xarm7_public_reach_and_real_reset",
+                    "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance xarm7-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site link_tcp at [0.478862325374, 4.00442333096e-18, 0.799080867558] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+                  }
+                ]
+              },
+              "y": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": 4.004423330964655e-18,
+                "maximum": 0.1,
+                "evidence_refs": [
+                  {
+                    "source_id": "ufactory_xarm7_public_reach_and_real_reset",
+                    "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance xarm7-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site link_tcp at [0.478862325374, 4.00442333096e-18, 0.799080867558] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+                  }
+                ]
+              },
+              "z": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": 0.43,
+                "maximum": 0.7990808675583131,
+                "evidence_refs": [
+                  {
+                    "source_id": "ufactory_xarm7_public_reach_and_real_reset",
+                    "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance xarm7-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site link_tcp at [0.478862325374, 4.00442333096e-18, 0.799080867558] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+                  }
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "z"
+            ],
+            "additionalProperties": false
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.002,
+            "maximum": 20.0,
+            "evidence_refs": [
+              {
+                "source_id": "ufactory_xarm7_public_reach_and_real_reset",
+                "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance xarm7-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site link_tcp at [0.478862325374, 4.00442333096e-18, 0.799080867558] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The selected observable robot state is finite at call start.",
+        "Every request value satisfies the closed calibrated schema."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_closed_loop",
+        "completion": "Stop on observed convergence or the request duration bound."
+      },
+      "invariants": [
+        "Commands remain within public joint and actuator limits.",
+        "The implementation advances only the supplied canonical MuJoCo session."
+      ],
+      "failure_behavior": "Stop active commands and return a bounded error if convergence is not observed within the request duration or public limits.",
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "ufactory_xarm7_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance xarm7-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site link_tcp at [0.478862325374, 4.00442333096e-18, 0.799080867558] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "ufactory_xarm7_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance xarm7-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site link_tcp at [0.478862325374, 4.00442333096e-18, 0.799080867558] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ]
+    },
+    {
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "description": "Move arm tool a requested distance along a world direction.",
+      "effect": "Requested displacement of body xarm_gripper_base_link within the public reach tolerance.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "unit": "dimensionless",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [
+                  {
+                    "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+                    "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+                  }
+                ]
+              },
+              "y": {
+                "type": "number",
+                "unit": "dimensionless",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [
+                  {
+                    "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+                    "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+                  }
+                ]
+              },
+              "z": {
+                "type": "number",
+                "unit": "dimensionless",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [
+                  {
+                    "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+                    "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+                  }
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "z"
+            ],
+            "additionalProperties": false
+          },
+          "distance_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "world",
+            "minimum": 0.19447445561614088,
+            "maximum": 0.38894891123228176,
+            "evidence_refs": [
+              {
+                "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+                "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.002,
+            "maximum": 20.0,
+            "evidence_refs": [
+              {
+                "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+                "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+              }
+            ]
+          }
+        },
+        "required": [
+          "direction",
+          "distance_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The selected observable robot state is finite at call start.",
+        "Every request value satisfies the closed calibrated schema.",
+        "The requested world-frame unit direction vector has Euclidean norm 1 within absolute tolerance 1e-6."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_closed_loop",
+        "completion": "Stop on observed convergence or the request duration bound."
+      },
+      "invariants": [
+        "Commands remain within public joint and actuator limits.",
+        "The implementation advances only the supplied canonical MuJoCo session.",
+        "The trusted measurement normalizes no malformed direction; the unit-vector precondition remains true for the sealed request."
+      ],
+      "failure_behavior": "Stop active commands and return a bounded error if convergence is not observed within the request duration or public limits.",
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "ufactory_xarm7_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0711376746259, 0.1, -0.369080867558] has length 0.388948911232 m and normalized world direction [0.182897220102, 0.257103175024, -0.948918628899]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ]
+    },
+    {
+      "capability_id": "C3",
+      "method_name": "set_gripper_position",
+      "description": "Set the observable gripper joint position.",
+      "effect": "Closed-loop scalar regulation of left_driver_joint.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_position": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "joint",
+            "minimum": 0.425,
+            "maximum": 0.85,
+            "evidence_refs": [
+              {
+                "source_id": "exp3-calibration-ufactory_xarm7-c3",
+                "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.85], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.425, 0.85]. Real trusted actuator gripper was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00286348073494, error 0.00286348073494, actual displacement 0.00286348073494, executable=False; target 0.85: terminal 0.849890127232, error 0.000109872768484, actual displacement 0.849890127232, executable=True. The farther executable limit 0.85 is boundary; nominal is its reset midpoint 0.425. Three real reset/controller/physics repeats per case produced errors [0.029607911942823473, 0.029607911942823473, 0.029607911942823473] and [0.00010987276848350991, 0.00010987276848350991, 0.00010987276848350991]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0296079119428 rad; this remains below nominal reset displacement 0.425. Selected constant controls were nominal 135.966796875 and boundary 255."
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.002,
+            "maximum": 20.0,
+            "evidence_refs": [
+              {
+                "source_id": "exp3-calibration-ufactory_xarm7-c3",
+                "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.85], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.425, 0.85]. Real trusted actuator gripper was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00286348073494, error 0.00286348073494, actual displacement 0.00286348073494, executable=False; target 0.85: terminal 0.849890127232, error 0.000109872768484, actual displacement 0.849890127232, executable=True. The farther executable limit 0.85 is boundary; nominal is its reset midpoint 0.425. Three real reset/controller/physics repeats per case produced errors [0.029607911942823473, 0.029607911942823473, 0.029607911942823473] and [0.00010987276848350991, 0.00010987276848350991, 0.00010987276848350991]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0296079119428 rad; this remains below nominal reset displacement 0.425. Selected constant controls were nominal 135.966796875 and boundary 255."
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The selected observable robot state is finite at call start.",
+        "Every request value satisfies the closed calibrated schema."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_closed_loop",
+        "completion": "Stop on observed convergence or the request duration bound."
+      },
+      "invariants": [
+        "Commands remain within public joint and actuator limits.",
+        "The implementation advances only the supplied canonical MuJoCo session."
+      ],
+      "failure_behavior": "Stop active commands and return a bounded error if convergence is not observed within the request duration or public limits.",
+      "criteria": [
+        {
+          "metric": "terminal gripper position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.029607911942837684,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-ufactory_xarm7-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.85], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.425, 0.85]. Real trusted actuator gripper was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00286348073494, error 0.00286348073494, actual displacement 0.00286348073494, executable=False; target 0.85: terminal 0.849890127232, error 0.000109872768484, actual displacement 0.849890127232, executable=True. The farther executable limit 0.85 is boundary; nominal is its reset midpoint 0.425. Three real reset/controller/physics repeats per case produced errors [0.029607911942823473, 0.029607911942823473, 0.029607911942823473] and [0.00010987276848350991, 0.00010987276848350991, 0.00010987276848350991]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0296079119428 rad; this remains below nominal reset displacement 0.425. Selected constant controls were nominal 135.966796875 and boundary 255."
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "exp3-calibration-ufactory_xarm7-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.85], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.425, 0.85]. Real trusted actuator gripper was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00286348073494, error 0.00286348073494, actual displacement 0.00286348073494, executable=False; target 0.85: terminal 0.849890127232, error 0.000109872768484, actual displacement 0.849890127232, executable=True. The farther executable limit 0.85 is boundary; nominal is its reset midpoint 0.425. Three real reset/controller/physics repeats per case produced errors [0.029607911942823473, 0.029607911942823473, 0.029607911942823473] and [0.00010987276848350991, 0.00010987276848350991, 0.00010987276848350991]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0296079119428 rad; this remains below nominal reset displacement 0.425. Selected constant controls were nominal 135.966796875 and boundary 255."
+        }
+      ]
+    },
+    {
+      "capability_id": "C4",
+      "method_name": "set_wrist_position",
+      "description": "Set the observable wrist joint position.",
+      "effect": "Closed-loop scalar regulation of joint7.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_position": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "joint",
+            "minimum": -6.28319,
+            "maximum": -3.141595,
+            "evidence_refs": [
+              {
+                "source_id": "exp3-calibration-ufactory_xarm7-c4",
+                "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator act7 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.2831904205, error 4.20503515564e-07, actual displacement 6.2831904205, executable=True; target 6.28319: terminal 6.28318838821, error 1.61178890234e-06, actual displacement 6.28318838821, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [1.6117978867136173e-06, 1.6117978867136173e-06, 1.6117978867136173e-06] and [4.205035155635528e-07, 4.205035155635528e-07, 4.205035155635528e-07]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.61179806529e-06 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.28319."
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.002,
+            "maximum": 20.0,
+            "evidence_refs": [
+              {
+                "source_id": "exp3-calibration-ufactory_xarm7-c4",
+                "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator act7 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.2831904205, error 4.20503515564e-07, actual displacement 6.2831904205, executable=True; target 6.28319: terminal 6.28318838821, error 1.61178890234e-06, actual displacement 6.28318838821, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [1.6117978867136173e-06, 1.6117978867136173e-06, 1.6117978867136173e-06] and [4.205035155635528e-07, 4.205035155635528e-07, 4.205035155635528e-07]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.61179806529e-06 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.28319."
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The selected observable robot state is finite at call start.",
+        "Every request value satisfies the closed calibrated schema."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_closed_loop",
+        "completion": "Stop on observed convergence or the request duration bound."
+      },
+      "invariants": [
+        "Commands remain within public joint and actuator limits.",
+        "The implementation advances only the supplied canonical MuJoCo session."
+      ],
+      "failure_behavior": "Stop active commands and return a bounded error if convergence is not observed within the request duration or public limits.",
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 1.6117980652926177e-06,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-ufactory_xarm7-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator act7 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.2831904205, error 4.20503515564e-07, actual displacement 6.2831904205, executable=True; target 6.28319: terminal 6.28318838821, error 1.61178890234e-06, actual displacement 6.28318838821, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [1.6117978867136173e-06, 1.6117978867136173e-06, 1.6117978867136173e-06] and [4.205035155635528e-07, 4.205035155635528e-07, 4.205035155635528e-07]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.61179806529e-06 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.28319."
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "exp3-calibration-ufactory_xarm7-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator act7 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.2831904205, error 4.20503515564e-07, actual displacement 6.2831904205, executable=True; target 6.28319: terminal 6.28318838821, error 1.61178890234e-06, actual displacement 6.28318838821, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [1.6117978867136173e-06, 1.6117978867136173e-06, 1.6117978867136173e-06] and [4.205035155635528e-07, 4.205035155635528e-07, 4.205035155635528e-07]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.61179806529e-06 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.28319."
+        }
+      ]
+    },
+    {
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "description": "Set the observable elbow joint position.",
+      "effect": "Closed-loop scalar regulation of joint4.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_position": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "joint",
+            "minimum": 2.6635,
+            "maximum": 3.927,
+            "evidence_refs": [
+              {
+                "source_id": "exp3-calibration-ufactory_xarm7-c5",
+                "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-0.19198, 3.927], and the declared reset resolves to 1.4. Request bounds are narrowed to the measured nominal/boundary envelope [2.6635, 3.927]. Real trusted actuator act4 was evaluated from declared reset 1.4 toward both exact MJCF limits: target -0.19198: terminal -0.147144242761, error 0.0448357572391, actual displacement 1.54714424276, executable=True; target 3.927: terminal 3.92765829996, error 0.000658299957583, actual displacement 2.52765829996, executable=True. The farther executable limit 3.927 is boundary; nominal is its reset midpoint 2.6635. Three real reset/controller/physics repeats per case produced errors [0.004248776076377414, 0.004248776076377414, 0.004248776076377414] and [0.0006582999575832638, 0.0006582999575832638, 0.0006582999575832638]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00424877607644 rad; this remains below nominal reset displacement 1.2635. Selected constant controls were nominal 2.6635 and boundary 3.927."
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.002,
+            "maximum": 20.0,
+            "evidence_refs": [
+              {
+                "source_id": "exp3-calibration-ufactory_xarm7-c5",
+                "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-0.19198, 3.927], and the declared reset resolves to 1.4. Request bounds are narrowed to the measured nominal/boundary envelope [2.6635, 3.927]. Real trusted actuator act4 was evaluated from declared reset 1.4 toward both exact MJCF limits: target -0.19198: terminal -0.147144242761, error 0.0448357572391, actual displacement 1.54714424276, executable=True; target 3.927: terminal 3.92765829996, error 0.000658299957583, actual displacement 2.52765829996, executable=True. The farther executable limit 3.927 is boundary; nominal is its reset midpoint 2.6635. Three real reset/controller/physics repeats per case produced errors [0.004248776076377414, 0.004248776076377414, 0.004248776076377414] and [0.0006582999575832638, 0.0006582999575832638, 0.0006582999575832638]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00424877607644 rad; this remains below nominal reset displacement 1.2635. Selected constant controls were nominal 2.6635 and boundary 3.927."
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The selected observable robot state is finite at call start.",
+        "Every request value satisfies the closed calibrated schema."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_closed_loop",
+        "completion": "Stop on observed convergence or the request duration bound."
+      },
+      "invariants": [
+        "Commands remain within public joint and actuator limits.",
+        "The implementation advances only the supplied canonical MuJoCo session."
+      ],
+      "failure_behavior": "Stop active commands and return a bounded error if convergence is not observed within the request duration or public limits.",
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.004248776076435948,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-ufactory_xarm7-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-0.19198, 3.927], and the declared reset resolves to 1.4. Request bounds are narrowed to the measured nominal/boundary envelope [2.6635, 3.927]. Real trusted actuator act4 was evaluated from declared reset 1.4 toward both exact MJCF limits: target -0.19198: terminal -0.147144242761, error 0.0448357572391, actual displacement 1.54714424276, executable=True; target 3.927: terminal 3.92765829996, error 0.000658299957583, actual displacement 2.52765829996, executable=True. The farther executable limit 3.927 is boundary; nominal is its reset midpoint 2.6635. Three real reset/controller/physics repeats per case produced errors [0.004248776076377414, 0.004248776076377414, 0.004248776076377414] and [0.0006582999575832638, 0.0006582999575832638, 0.0006582999575832638]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00424877607644 rad; this remains below nominal reset displacement 1.2635. Selected constant controls were nominal 2.6635 and boundary 3.927."
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "exp3-calibration-ufactory_xarm7-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-0.19198, 3.927], and the declared reset resolves to 1.4. Request bounds are narrowed to the measured nominal/boundary envelope [2.6635, 3.927]. Real trusted actuator act4 was evaluated from declared reset 1.4 toward both exact MJCF limits: target -0.19198: terminal -0.147144242761, error 0.0448357572391, actual displacement 1.54714424276, executable=True; target 3.927: terminal 3.92765829996, error 0.000658299957583, actual displacement 2.52765829996, executable=True. The farther executable limit 3.927 is boundary; nominal is its reset midpoint 2.6635. Three real reset/controller/physics repeats per case produced errors [0.004248776076377414, 0.004248776076377414, 0.004248776076377414] and [0.0006582999575832638, 0.0006582999575832638, 0.0006582999575832638]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/ufactory_xarm7/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00424877607644 rad; this remains below nominal reset displacement 1.2635. Selected constant controls were nominal 2.6635 and boundary 3.927."
+        }
+      ]
+    }
+  ],
+  "task_support": [
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "C1",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "C2",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "C3",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "C4",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "C5",
+      "rationale": "This reusable low-level physical effect can contribute to the source task without prescribing call order, waypoints, or a task macro."
+    }
+  ]
+}

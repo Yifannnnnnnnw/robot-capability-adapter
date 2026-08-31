@@ -1,0 +1,573 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "piper",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "piper-metaworld-source-protocols-2026-08-20-v1",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "piper-c1-nominal",
+      "case_role": "nominal",
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.275905745698469,
+          "y": -0.1994743335284656,
+          "z": 0.3976252260705181
+        },
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "piper_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance piper-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site ee_site at [0.00181149139694, -0.498948667057, 0.365250452141] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool world-position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "ee_site",
+          "reference_body_name": "world",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "piper_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance piper-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site ee_site at [0.00181149139694, -0.498948667057, 0.365250452141] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c1-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.55,
+          "y": 0.1,
+          "z": 0.43
+        },
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "piper_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance piper-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site ee_site at [0.00181149139694, -0.498948667057, 0.365250452141] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool world-position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "ee_site",
+          "reference_body_name": "world",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "piper_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance piper-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site ee_site at [0.00181149139694, -0.498948667057, 0.365250452141] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c2-nominal",
+      "case_role": "nominal",
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "request": {
+        "direction": {
+          "x": 0.6730204081566696,
+          "y": 0.7353395228856084,
+          "z": 0.07949412737426391
+        },
+        "distance_m": 0.4072599448391851,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "piper_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.548188508603, 0.598948667057, 0.064749547859] has length 0.814519889678 m and normalized world direction [0.673020408157, 0.735339522886, 0.0794941273743]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool requested world-direction displacement error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+          "site_name": "ee_site",
+          "direction_x_argument": "request.direction.x",
+          "direction_y_argument": "request.direction.y",
+          "direction_z_argument": "request.direction.z",
+          "target_distance_argument": "request.distance_m"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "piper_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.548188508603, 0.598948667057, 0.064749547859] has length 0.814519889678 m and normalized world direction [0.673020408157, 0.735339522886, 0.0794941273743]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c2-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "request": {
+        "direction": {
+          "x": 0.6730204081566696,
+          "y": 0.7353395228856084,
+          "z": 0.07949412737426391
+        },
+        "distance_m": 0.8145198896783702,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "piper_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.548188508603, 0.598948667057, 0.064749547859] has length 0.814519889678 m and normalized world direction [0.673020408157, 0.735339522886, 0.0794941273743]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool requested world-direction displacement error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+          "site_name": "ee_site",
+          "direction_x_argument": "request.direction.x",
+          "direction_y_argument": "request.direction.y",
+          "direction_z_argument": "request.direction.z",
+          "target_distance_argument": "request.distance_m"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "piper_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.548188508603, 0.598948667057, 0.064749547859] has length 0.814519889678 m and normalized world direction [0.673020408157, 0.735339522886, 0.0794941273743]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c3-nominal",
+      "case_role": "nominal",
+      "capability_id": "C3",
+      "method_name": "set_gripper_slide_position",
+      "request": {
+        "target_position": 0.0175,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-piper-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact m range [0, 0.035], and the declared reset resolves to 0.035. Request bounds are narrowed to the measured nominal/boundary envelope [0, 0.0175]. Real trusted actuator gripper was evaluated from declared reset 0.035 toward both exact MJCF limits: target 0: terminal 5.44030212348e-21, error 5.44030212348e-21, actual displacement 0.035, executable=True; target 0.035: terminal 0.035, error 0, actual displacement 0, executable=False. The farther executable limit 0 is boundary; nominal is its reset midpoint 0.0175. Three real reset/controller/physics repeats per case produced errors [6.245004513516506e-17, 6.245004513516506e-17, 6.245004513516506e-17] and [5.440302123479827e-21, 5.440302123479827e-21, 5.440302123479827e-21]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.42733047603e-14 m; this remains below nominal reset displacement 0.0175. Selected constant controls were nominal 0.0175 and boundary 0."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal gripper slide position error",
+        "unit": "m",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint7",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal gripper slide position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 1.427330476033717e-14,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-piper-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact m range [0, 0.035], and the declared reset resolves to 0.035. Request bounds are narrowed to the measured nominal/boundary envelope [0, 0.0175]. Real trusted actuator gripper was evaluated from declared reset 0.035 toward both exact MJCF limits: target 0: terminal 5.44030212348e-21, error 5.44030212348e-21, actual displacement 0.035, executable=True; target 0.035: terminal 0.035, error 0, actual displacement 0, executable=False. The farther executable limit 0 is boundary; nominal is its reset midpoint 0.0175. Three real reset/controller/physics repeats per case produced errors [6.245004513516506e-17, 6.245004513516506e-17, 6.245004513516506e-17] and [5.440302123479827e-21, 5.440302123479827e-21, 5.440302123479827e-21]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.42733047603e-14 m; this remains below nominal reset displacement 0.0175. Selected constant controls were nominal 0.0175 and boundary 0."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c3-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C3",
+      "method_name": "set_gripper_slide_position",
+      "request": {
+        "target_position": 0.0,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-piper-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact m range [0, 0.035], and the declared reset resolves to 0.035. Request bounds are narrowed to the measured nominal/boundary envelope [0, 0.0175]. Real trusted actuator gripper was evaluated from declared reset 0.035 toward both exact MJCF limits: target 0: terminal 5.44030212348e-21, error 5.44030212348e-21, actual displacement 0.035, executable=True; target 0.035: terminal 0.035, error 0, actual displacement 0, executable=False. The farther executable limit 0 is boundary; nominal is its reset midpoint 0.0175. Three real reset/controller/physics repeats per case produced errors [6.245004513516506e-17, 6.245004513516506e-17, 6.245004513516506e-17] and [5.440302123479827e-21, 5.440302123479827e-21, 5.440302123479827e-21]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.42733047603e-14 m; this remains below nominal reset displacement 0.0175. Selected constant controls were nominal 0.0175 and boundary 0."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal gripper slide position error",
+        "unit": "m",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint7",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal gripper slide position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 1.427330476033717e-14,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-piper-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact m range [0, 0.035], and the declared reset resolves to 0.035. Request bounds are narrowed to the measured nominal/boundary envelope [0, 0.0175]. Real trusted actuator gripper was evaluated from declared reset 0.035 toward both exact MJCF limits: target 0: terminal 5.44030212348e-21, error 5.44030212348e-21, actual displacement 0.035, executable=True; target 0.035: terminal 0.035, error 0, actual displacement 0, executable=False. The farther executable limit 0 is boundary; nominal is its reset midpoint 0.0175. Three real reset/controller/physics repeats per case produced errors [6.245004513516506e-17, 6.245004513516506e-17, 6.245004513516506e-17] and [5.440302123479827e-21, 5.440302123479827e-21, 5.440302123479827e-21]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.42733047603e-14 m; this remains below nominal reset displacement 0.0175. Selected constant controls were nominal 0.0175 and boundary 0."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c4-nominal",
+      "case_role": "nominal",
+      "capability_id": "C4",
+      "method_name": "set_wrist_position",
+      "request": {
+        "target_position": -1.57,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-piper-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-3.14, 3.14], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.14, -1.57]. Real trusted actuator joint6 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.14: terminal -3.14, error 1.70752301187e-12, actual displacement 3.14, executable=True; target 3.14: terminal 3.14, error 1.70796710108e-12, actual displacement 3.14, executable=True. The farther executable limit -3.14 is boundary; nominal is its reset midpoint -1.57. Three real reset/controller/physics repeats per case produced errors [1.5065726444163374e-12, 1.5065726444163374e-12, 1.5065726444163374e-12] and [1.7075230118734908e-12, 1.7075230118734908e-12, 1.7075230118734908e-12]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.79676717948e-12 rad; this remains below nominal reset displacement 1.57. Selected constant controls were nominal -1.57 and boundary -3.14."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal wrist position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint6",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 1.7967671794849594e-12,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-piper-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-3.14, 3.14], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.14, -1.57]. Real trusted actuator joint6 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.14: terminal -3.14, error 1.70752301187e-12, actual displacement 3.14, executable=True; target 3.14: terminal 3.14, error 1.70796710108e-12, actual displacement 3.14, executable=True. The farther executable limit -3.14 is boundary; nominal is its reset midpoint -1.57. Three real reset/controller/physics repeats per case produced errors [1.5065726444163374e-12, 1.5065726444163374e-12, 1.5065726444163374e-12] and [1.7075230118734908e-12, 1.7075230118734908e-12, 1.7075230118734908e-12]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.79676717948e-12 rad; this remains below nominal reset displacement 1.57. Selected constant controls were nominal -1.57 and boundary -3.14."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c4-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C4",
+      "method_name": "set_wrist_position",
+      "request": {
+        "target_position": -3.14,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-piper-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-3.14, 3.14], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.14, -1.57]. Real trusted actuator joint6 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.14: terminal -3.14, error 1.70752301187e-12, actual displacement 3.14, executable=True; target 3.14: terminal 3.14, error 1.70796710108e-12, actual displacement 3.14, executable=True. The farther executable limit -3.14 is boundary; nominal is its reset midpoint -1.57. Three real reset/controller/physics repeats per case produced errors [1.5065726444163374e-12, 1.5065726444163374e-12, 1.5065726444163374e-12] and [1.7075230118734908e-12, 1.7075230118734908e-12, 1.7075230118734908e-12]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.79676717948e-12 rad; this remains below nominal reset displacement 1.57. Selected constant controls were nominal -1.57 and boundary -3.14."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal wrist position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint6",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 1.7967671794849594e-12,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-piper-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-3.14, 3.14], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.14, -1.57]. Real trusted actuator joint6 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.14: terminal -3.14, error 1.70752301187e-12, actual displacement 3.14, executable=True; target 3.14: terminal 3.14, error 1.70796710108e-12, actual displacement 3.14, executable=True. The farther executable limit -3.14 is boundary; nominal is its reset midpoint -1.57. Three real reset/controller/physics repeats per case produced errors [1.5065726444163374e-12, 1.5065726444163374e-12, 1.5065726444163374e-12] and [1.7075230118734908e-12, 1.7075230118734908e-12, 1.7075230118734908e-12]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.79676717948e-12 rad; this remains below nominal reset displacement 1.57. Selected constant controls were nominal -1.57 and boundary -3.14."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c5-nominal",
+      "case_role": "nominal",
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "request": {
+        "target_position": -2.0227500000000003,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-piper-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint3 with exact rad range [-2.697, 0], and the declared reset resolves to -1.3485. Request bounds are narrowed to the measured nominal/boundary envelope [-2.697, -2.02275]. Real trusted actuator joint3 was evaluated from declared reset -1.3485 toward both exact MJCF limits: target -2.697: terminal -2.697, error 9.28146448587e-14, actual displacement 1.3485, executable=True; target 0: terminal -0.094474132675, error 0.094474132675, actual displacement 1.25402586732, executable=True. The farther executable limit -2.697 is boundary; nominal is its reset midpoint -2.02275. Three real reset/controller/physics repeats per case produced errors [8.482103908136196e-14, 8.482103908136196e-14, 8.482103908136196e-14] and [9.281464485866309e-14, 9.281464485866309e-14, 9.281464485866309e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.31141320026e-13 rad; this remains below nominal reset displacement 0.67425. Selected constant controls were nominal -2.02275 and boundary -2.697."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal elbow position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint3",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 1.3114132002556288e-13,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-piper-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint3 with exact rad range [-2.697, 0], and the declared reset resolves to -1.3485. Request bounds are narrowed to the measured nominal/boundary envelope [-2.697, -2.02275]. Real trusted actuator joint3 was evaluated from declared reset -1.3485 toward both exact MJCF limits: target -2.697: terminal -2.697, error 9.28146448587e-14, actual displacement 1.3485, executable=True; target 0: terminal -0.094474132675, error 0.094474132675, actual displacement 1.25402586732, executable=True. The farther executable limit -2.697 is boundary; nominal is its reset midpoint -2.02275. Three real reset/controller/physics repeats per case produced errors [8.482103908136196e-14, 8.482103908136196e-14, 8.482103908136196e-14] and [9.281464485866309e-14, 9.281464485866309e-14, 9.281464485866309e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.31141320026e-13 rad; this remains below nominal reset displacement 0.67425. Selected constant controls were nominal -2.02275 and boundary -2.697."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "piper-c5-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "request": {
+        "target_position": -2.697,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-piper-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint3 with exact rad range [-2.697, 0], and the declared reset resolves to -1.3485. Request bounds are narrowed to the measured nominal/boundary envelope [-2.697, -2.02275]. Real trusted actuator joint3 was evaluated from declared reset -1.3485 toward both exact MJCF limits: target -2.697: terminal -2.697, error 9.28146448587e-14, actual displacement 1.3485, executable=True; target 0: terminal -0.094474132675, error 0.094474132675, actual displacement 1.25402586732, executable=True. The farther executable limit -2.697 is boundary; nominal is its reset midpoint -2.02275. Three real reset/controller/physics repeats per case produced errors [8.482103908136196e-14, 8.482103908136196e-14, 8.482103908136196e-14] and [9.281464485866309e-14, 9.281464485866309e-14, 9.281464485866309e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.31141320026e-13 rad; this remains below nominal reset displacement 0.67425. Selected constant controls were nominal -2.02275 and boundary -2.697."
+        }
+      ],
+      "instance_id": "piper-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal elbow position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint3",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 1.3114132002556288e-13,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-piper-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint3 with exact rad range [-2.697, 0], and the declared reset resolves to -1.3485. Request bounds are narrowed to the measured nominal/boundary envelope [-2.697, -2.02275]. Real trusted actuator joint3 was evaluated from declared reset -1.3485 toward both exact MJCF limits: target -2.697: terminal -2.697, error 9.28146448587e-14, actual displacement 1.3485, executable=True; target 0: terminal -0.094474132675, error 0.094474132675, actual displacement 1.25402586732, executable=True. The farther executable limit -2.697 is boundary; nominal is its reset midpoint -2.02275. Three real reset/controller/physics repeats per case produced errors [8.482103908136196e-14, 8.482103908136196e-14, 8.482103908136196e-14] and [9.281464485866309e-14, 9.281464485866309e-14, 9.281464485866309e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/piper/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 1.31141320026e-13 rad; this remains below nominal reset displacement 0.67425. Selected constant controls were nominal -2.02275 and boundary -2.697."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

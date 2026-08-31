@@ -5,6 +5,9 @@ former active experiment roots:
 
 - `runs/experiment1/` — former `experiment/experiment1/runs/` (B1)
 - `runs/b2_recap/` — former `experiment/b2_recap/runs/` (B2)
+- `pre_thesis_realign_2026-08-31/` — the four complete experiment workspaces,
+  old runner-specific shared tests, and launch runbook retired before new
+  thesis-aligned experiments are designed.
 
 Raw evidence under `runs/` is not tracked in Git and is not rewritten during
 the directory migration.  The one concurrent B1 run that recreated an old

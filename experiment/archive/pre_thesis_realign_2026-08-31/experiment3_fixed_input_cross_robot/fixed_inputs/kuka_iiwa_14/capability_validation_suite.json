@@ -1,0 +1,573 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "kuka_iiwa_14",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "kuka_iiwa_14-c1-nominal",
+      "case_role": "nominal",
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.46675236253969343,
+          "y": -0.03097869805353831,
+          "z": 0.5270514632947562
+        },
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "kuka_iiwa_14_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance kuka-iiwa-14-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site attachment_site at [0.383504725079, -0.161957396107, 0.62410292659] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool world-position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "attachment_site",
+          "reference_body_name": "world",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "kuka_iiwa_14_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance kuka-iiwa-14-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site attachment_site at [0.383504725079, -0.161957396107, 0.62410292659] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c1-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.55,
+          "y": 0.1,
+          "z": 0.43
+        },
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "kuka_iiwa_14_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance kuka-iiwa-14-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site attachment_site at [0.383504725079, -0.161957396107, 0.62410292659] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool world-position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "attachment_site",
+          "reference_body_name": "world",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "kuka_iiwa_14_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance kuka-iiwa-14-mw_reach_target in assets/reach_scene.xml supplies target [0.55, 0.1, 0.43] and its declared reset places site attachment_site at [0.383504725079, -0.161957396107, 0.62410292659] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c2-nominal",
+      "case_role": "nominal",
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "request": {
+        "direction": {
+          "x": 0.45479937631974704,
+          "y": 0.7155642130303682,
+          "z": -0.5302125840918894
+        },
+        "distance_m": 0.1830425497368741,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "kuka_iiwa_14_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.166495274921, 0.261957396107, -0.19410292659] has length 0.366085099474 m and normalized world direction [0.45479937632, 0.71556421303, -0.530212584092]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool requested world-direction displacement error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+          "site_name": "attachment_site",
+          "direction_x_argument": "request.direction.x",
+          "direction_y_argument": "request.direction.y",
+          "direction_z_argument": "request.direction.z",
+          "target_distance_argument": "request.distance_m"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "kuka_iiwa_14_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.166495274921, 0.261957396107, -0.19410292659] has length 0.366085099474 m and normalized world direction [0.45479937632, 0.71556421303, -0.530212584092]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c2-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "request": {
+        "direction": {
+          "x": 0.45479937631974704,
+          "y": 0.7155642130303682,
+          "z": -0.5302125840918894
+        },
+        "distance_m": 0.3660850994737482,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "kuka_iiwa_14_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.166495274921, 0.261957396107, -0.19410292659] has length 0.366085099474 m and normalized world direction [0.45479937632, 0.71556421303, -0.530212584092]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool requested world-direction displacement error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+          "site_name": "attachment_site",
+          "direction_x_argument": "request.direction.x",
+          "direction_y_argument": "request.direction.y",
+          "direction_z_argument": "request.direction.z",
+          "target_distance_argument": "request.distance_m"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "kuka_iiwa_14_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.166495274921, 0.261957396107, -0.19410292659] has length 0.366085099474 m and normalized world direction [0.45479937632, 0.71556421303, -0.530212584092]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c3-nominal",
+      "case_role": "nominal",
+      "capability_id": "C3",
+      "method_name": "set_wrist_position",
+      "request": {
+        "target_position": -1.527165,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-kuka_iiwa_14-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-3.05433, 3.05433], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.05433, -1.527165]. Real trusted actuator actuator7 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.05433: terminal -3.05433, error 1.06581410364e-14, actual displacement 3.05433, executable=True; target 3.05433: terminal 3.05433, error 1.02140518266e-14, actual displacement 3.05433, executable=True. The farther executable limit -3.05433 is boundary; nominal is its reset midpoint -1.527165. Three real reset/controller/physics repeats per case produced errors [5.329070518200751e-15, 5.329070518200751e-15, 5.329070518200751e-15] and [1.0658141036401503e-14, 1.0658141036401503e-14, 1.0658141036401503e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.7467420801e-14 rad; this remains below nominal reset displacement 1.527165. Selected constant controls were nominal -1.527165 and boundary -3.05433."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal wrist position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint7",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 9.746742080096738e-14,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-kuka_iiwa_14-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-3.05433, 3.05433], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.05433, -1.527165]. Real trusted actuator actuator7 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.05433: terminal -3.05433, error 1.06581410364e-14, actual displacement 3.05433, executable=True; target 3.05433: terminal 3.05433, error 1.02140518266e-14, actual displacement 3.05433, executable=True. The farther executable limit -3.05433 is boundary; nominal is its reset midpoint -1.527165. Three real reset/controller/physics repeats per case produced errors [5.329070518200751e-15, 5.329070518200751e-15, 5.329070518200751e-15] and [1.0658141036401503e-14, 1.0658141036401503e-14, 1.0658141036401503e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.7467420801e-14 rad; this remains below nominal reset displacement 1.527165. Selected constant controls were nominal -1.527165 and boundary -3.05433."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c3-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C3",
+      "method_name": "set_wrist_position",
+      "request": {
+        "target_position": -3.05433,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-kuka_iiwa_14-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-3.05433, 3.05433], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.05433, -1.527165]. Real trusted actuator actuator7 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.05433: terminal -3.05433, error 1.06581410364e-14, actual displacement 3.05433, executable=True; target 3.05433: terminal 3.05433, error 1.02140518266e-14, actual displacement 3.05433, executable=True. The farther executable limit -3.05433 is boundary; nominal is its reset midpoint -1.527165. Three real reset/controller/physics repeats per case produced errors [5.329070518200751e-15, 5.329070518200751e-15, 5.329070518200751e-15] and [1.0658141036401503e-14, 1.0658141036401503e-14, 1.0658141036401503e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.7467420801e-14 rad; this remains below nominal reset displacement 1.527165. Selected constant controls were nominal -1.527165 and boundary -3.05433."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal wrist position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint7",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 9.746742080096738e-14,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-kuka_iiwa_14-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint7 with exact rad range [-3.05433, 3.05433], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-3.05433, -1.527165]. Real trusted actuator actuator7 was evaluated from declared reset 0 toward both exact MJCF limits: target -3.05433: terminal -3.05433, error 1.06581410364e-14, actual displacement 3.05433, executable=True; target 3.05433: terminal 3.05433, error 1.02140518266e-14, actual displacement 3.05433, executable=True. The farther executable limit -3.05433 is boundary; nominal is its reset midpoint -1.527165. Three real reset/controller/physics repeats per case produced errors [5.329070518200751e-15, 5.329070518200751e-15, 5.329070518200751e-15] and [1.0658141036401503e-14, 1.0658141036401503e-14, 1.0658141036401503e-14]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.7467420801e-14 rad; this remains below nominal reset displacement 1.527165. Selected constant controls were nominal -1.527165 and boundary -3.05433."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c4-nominal",
+      "case_role": "nominal",
+      "capability_id": "C4",
+      "method_name": "set_forearm_position",
+      "request": {
+        "target_position": -0.8254710099999998,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-kuka_iiwa_14-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to 0.44345798. Request bounds are narrowed to the measured nominal/boundary envelope [-2.0944, -0.82547101]. Real trusted actuator actuator6 was evaluated from declared reset 0.44345798 toward both exact MJCF limits: target -2.0944: terminal -2.09456651812, error 0.000166518123316, actual displacement 2.53802449812, executable=True; target 2.0944: terminal 2.09400245051, error 0.000397549485715, actual displacement 1.65054447051, executable=True. The farther executable limit -2.0944 is boundary; nominal is its reset midpoint -0.82547101. Three real reset/controller/physics repeats per case produced errors [0.0004874134785254336, 0.0004874134785254336, 0.0004874134785254336] and [0.00016651812331591742, 0.00016651812331591742, 0.00016651812331591742]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.000487413478585 rad; this remains below nominal reset displacement 1.26892899. Selected constant controls were nominal -0.82547101 and boundary -2.0944."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal forearm position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint6",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal forearm position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.00048741347858496004,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-kuka_iiwa_14-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to 0.44345798. Request bounds are narrowed to the measured nominal/boundary envelope [-2.0944, -0.82547101]. Real trusted actuator actuator6 was evaluated from declared reset 0.44345798 toward both exact MJCF limits: target -2.0944: terminal -2.09456651812, error 0.000166518123316, actual displacement 2.53802449812, executable=True; target 2.0944: terminal 2.09400245051, error 0.000397549485715, actual displacement 1.65054447051, executable=True. The farther executable limit -2.0944 is boundary; nominal is its reset midpoint -0.82547101. Three real reset/controller/physics repeats per case produced errors [0.0004874134785254336, 0.0004874134785254336, 0.0004874134785254336] and [0.00016651812331591742, 0.00016651812331591742, 0.00016651812331591742]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.000487413478585 rad; this remains below nominal reset displacement 1.26892899. Selected constant controls were nominal -0.82547101 and boundary -2.0944."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c4-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C4",
+      "method_name": "set_forearm_position",
+      "request": {
+        "target_position": -2.0944,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-kuka_iiwa_14-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to 0.44345798. Request bounds are narrowed to the measured nominal/boundary envelope [-2.0944, -0.82547101]. Real trusted actuator actuator6 was evaluated from declared reset 0.44345798 toward both exact MJCF limits: target -2.0944: terminal -2.09456651812, error 0.000166518123316, actual displacement 2.53802449812, executable=True; target 2.0944: terminal 2.09400245051, error 0.000397549485715, actual displacement 1.65054447051, executable=True. The farther executable limit -2.0944 is boundary; nominal is its reset midpoint -0.82547101. Three real reset/controller/physics repeats per case produced errors [0.0004874134785254336, 0.0004874134785254336, 0.0004874134785254336] and [0.00016651812331591742, 0.00016651812331591742, 0.00016651812331591742]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.000487413478585 rad; this remains below nominal reset displacement 1.26892899. Selected constant controls were nominal -0.82547101 and boundary -2.0944."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal forearm position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint6",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal forearm position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.00048741347858496004,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-kuka_iiwa_14-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint6 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to 0.44345798. Request bounds are narrowed to the measured nominal/boundary envelope [-2.0944, -0.82547101]. Real trusted actuator actuator6 was evaluated from declared reset 0.44345798 toward both exact MJCF limits: target -2.0944: terminal -2.09456651812, error 0.000166518123316, actual displacement 2.53802449812, executable=True; target 2.0944: terminal 2.09400245051, error 0.000397549485715, actual displacement 1.65054447051, executable=True. The farther executable limit -2.0944 is boundary; nominal is its reset midpoint -0.82547101. Three real reset/controller/physics repeats per case produced errors [0.0004874134785254336, 0.0004874134785254336, 0.0004874134785254336] and [0.00016651812331591742, 0.00016651812331591742, 0.00016651812331591742]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.000487413478585 rad; this remains below nominal reset displacement 1.26892899. Selected constant controls were nominal -0.82547101 and boundary -2.0944."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c5-nominal",
+      "case_role": "nominal",
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "request": {
+        "target_position": 0.07438875999999972,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-kuka_iiwa_14-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to -1.94562248. Request bounds are narrowed to the measured nominal/boundary envelope [0.07438876, 2.0944]. Real trusted actuator actuator4 was evaluated from declared reset -1.94562248 toward both exact MJCF limits: target -2.0944: terminal -2.09701123404, error 0.00261123403936, actual displacement 0.151388754039, executable=True; target 2.0944: terminal 2.0965215882, error 0.00212158819716, actual displacement 4.0421440682, executable=True. The farther executable limit 2.0944 is boundary; nominal is its reset midpoint 0.07438876. Three real reset/controller/physics repeats per case produced errors [0.0030266806631499693, 0.0030266806631499693, 0.0030266806631499693] and [0.002121588197158797, 0.002121588197158797, 0.002121588197158797]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00302668066321 rad; this remains below nominal reset displacement 2.02001124. Selected constant controls were nominal 0.07438876 and boundary 2.0944."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal elbow position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint4",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.003026680663209496,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-kuka_iiwa_14-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to -1.94562248. Request bounds are narrowed to the measured nominal/boundary envelope [0.07438876, 2.0944]. Real trusted actuator actuator4 was evaluated from declared reset -1.94562248 toward both exact MJCF limits: target -2.0944: terminal -2.09701123404, error 0.00261123403936, actual displacement 0.151388754039, executable=True; target 2.0944: terminal 2.0965215882, error 0.00212158819716, actual displacement 4.0421440682, executable=True. The farther executable limit 2.0944 is boundary; nominal is its reset midpoint 0.07438876. Three real reset/controller/physics repeats per case produced errors [0.0030266806631499693, 0.0030266806631499693, 0.0030266806631499693] and [0.002121588197158797, 0.002121588197158797, 0.002121588197158797]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00302668066321 rad; this remains below nominal reset displacement 2.02001124. Selected constant controls were nominal 0.07438876 and boundary 2.0944."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "kuka_iiwa_14-c5-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "request": {
+        "target_position": 2.0944,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-kuka_iiwa_14-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to -1.94562248. Request bounds are narrowed to the measured nominal/boundary envelope [0.07438876, 2.0944]. Real trusted actuator actuator4 was evaluated from declared reset -1.94562248 toward both exact MJCF limits: target -2.0944: terminal -2.09701123404, error 0.00261123403936, actual displacement 0.151388754039, executable=True; target 2.0944: terminal 2.0965215882, error 0.00212158819716, actual displacement 4.0421440682, executable=True. The farther executable limit 2.0944 is boundary; nominal is its reset midpoint 0.07438876. Three real reset/controller/physics repeats per case produced errors [0.0030266806631499693, 0.0030266806631499693, 0.0030266806631499693] and [0.002121588197158797, 0.002121588197158797, 0.002121588197158797]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00302668066321 rad; this remains below nominal reset displacement 2.02001124. Selected constant controls were nominal 0.07438876 and boundary 2.0944."
+        }
+      ],
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal elbow position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "joint4",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.003026680663209496,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-kuka_iiwa_14-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint joint4 with exact rad range [-2.0944, 2.0944], and the declared reset resolves to -1.94562248. Request bounds are narrowed to the measured nominal/boundary envelope [0.07438876, 2.0944]. Real trusted actuator actuator4 was evaluated from declared reset -1.94562248 toward both exact MJCF limits: target -2.0944: terminal -2.09701123404, error 0.00261123403936, actual displacement 0.151388754039, executable=True; target 2.0944: terminal 2.0965215882, error 0.00212158819716, actual displacement 4.0421440682, executable=True. The farther executable limit 2.0944 is boundary; nominal is its reset midpoint 0.07438876. Three real reset/controller/physics repeats per case produced errors [0.0030266806631499693, 0.0030266806631499693, 0.0030266806631499693] and [0.002121588197158797, 0.002121588197158797, 0.002121588197158797]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/kuka_iiwa_14/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.00302668066321 rad; this remains below nominal reset displacement 2.02001124. Selected constant controls were nominal 0.07438876 and boundary 2.0944."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

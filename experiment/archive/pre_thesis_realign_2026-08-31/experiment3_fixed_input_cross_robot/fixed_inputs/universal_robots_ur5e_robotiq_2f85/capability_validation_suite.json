@@ -1,0 +1,593 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "universal_robots_ur5e_robotiq_2f85",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "universal-robots-ur5e-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c1-nominal",
+      "case_role": "nominal",
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "request": {
+        "target_position": {
+          "x": -0.0969986265893013,
+          "y": 0.5459999353478675,
+          "z": 0.31610018366054726
+        },
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "universal_robots_ur5e_robotiq_2f85_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance ur5e-robotiq-2f85-mw_reach_target in assets/reach_scene.xml supplies target [-0.06, 0.6, 0.3] and its declared reset places site pinch_site at [-0.133997253179, 0.491999870696, 0.332200367321] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool world-position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "pinch_site",
+          "reference_body_name": "world",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "universal_robots_ur5e_robotiq_2f85_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance ur5e-robotiq-2f85-mw_reach_target in assets/reach_scene.xml supplies target [-0.06, 0.6, 0.3] and its declared reset places site pinch_site at [-0.133997253179, 0.491999870696, 0.332200367321] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c1-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C1",
+      "method_name": "move_observed_tool_to_position",
+      "request": {
+        "target_position": {
+          "x": -0.06,
+          "y": 0.6,
+          "z": 0.3
+        },
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "universal_robots_ur5e_robotiq_2f85_public_reach_and_real_reset",
+          "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance ur5e-robotiq-2f85-mw_reach_target in assets/reach_scene.xml supplies target [-0.06, 0.6, 0.3] and its declared reset places site pinch_site at [-0.133997253179, 0.491999870696, 0.332200367321] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool world-position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "pinch_site",
+          "reference_body_name": "world",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool world-position error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "universal_robots_ur5e_robotiq_2f85_public_reach_and_real_reset",
+              "specific_reference": "tasks/catalog.json mw_reach_target/terminal_endpoint supplies the exact public criterion <= 0.05 m. Real instance ur5e-robotiq-2f85-mw_reach_target in assets/reach_scene.xml supplies target [-0.06, 0.6, 0.3] and its declared reset places site pinch_site at [-0.133997253179, 0.491999870696, 0.332200367321] m. Request bounds are the exact coordinate-wise reset/target envelope; nominal is the deterministic midpoint and calibrated-boundary is the package target. Duration bounds are timestep 0.002 s through instance timeout 20 s; both cases receive that same timeout so difficulty differs only by target. The midpoint is a fixed protocol formula, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c2-nominal",
+      "case_role": "nominal",
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "request": {
+        "direction": {
+          "x": 0.5488588190267325,
+          "y": 0.8010678893931429,
+          "z": -0.23883934633932438
+        },
+        "distance_m": 0.06741009765482017,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "universal_robots_ur5e_robotiq_2f85_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0739972531786, 0.108000129304, -0.0322003673211] has length 0.13482019531 m and normalized world direction [0.548858819027, 0.801067889393, -0.238839346339]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool requested world-direction displacement error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+          "site_name": "pinch_site",
+          "direction_x_argument": "request.direction.x",
+          "direction_y_argument": "request.direction.y",
+          "direction_z_argument": "request.direction.z",
+          "target_distance_argument": "request.distance_m"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "universal_robots_ur5e_robotiq_2f85_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0739972531786, 0.108000129304, -0.0322003673211] has length 0.13482019531 m and normalized world direction [0.548858819027, 0.801067889393, -0.238839346339]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c2-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C2",
+      "method_name": "move_observed_tool_along_direction",
+      "request": {
+        "direction": {
+          "x": 0.5488588190267325,
+          "y": 0.8010678893931429,
+          "z": -0.23883934633932438
+        },
+        "distance_m": 0.13482019530964034,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "universal_robots_ur5e_robotiq_2f85_real_reset_to_target_displacement",
+          "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0739972531786, 0.108000129304, -0.0322003673211] has length 0.13482019531 m and normalized world direction [0.548858819027, 0.801067889393, -0.238839346339]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal arm tool requested world-direction displacement error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+          "site_name": "pinch_site",
+          "direction_x_argument": "request.direction.x",
+          "direction_y_argument": "request.direction.y",
+          "direction_z_argument": "request.direction.z",
+          "target_distance_argument": "request.distance_m"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal arm tool requested world-direction displacement error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "universal_robots_ur5e_robotiq_2f85_real_reset_to_target_displacement",
+              "specific_reference": "The same public mw_reach_target/terminal_endpoint tolerance is <= 0.05 m. Real reset-to-target vector [0.0739972531786, 0.108000129304, -0.0322003673211] has length 0.13482019531 m and normalized world direction [0.548858819027, 0.801067889393, -0.238839346339]. Cases request exactly 50% and 100% of that measured vector length; the trusted operator measures requested displacement error, not mere positive progress. The 50% point is a declared protocol choice, not empirical calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c3-nominal",
+      "case_role": "nominal",
+      "capability_id": "C3",
+      "method_name": "set_gripper_position",
+      "request": {
+        "target_position": 0.4,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.8], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.4, 0.8]. Real trusted actuator fingers_actuator was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00293350087978, error 0.00293350087978, actual displacement 0.00293350087978, executable=False; target 0.8: terminal 0.78234022835, error 0.0176597716501, actual displacement 0.78234022835, executable=True. The farther executable limit 0.8 is boundary; nominal is its reset midpoint 0.4. Three real reset/controller/physics repeats per case produced errors [0.0007120868108537182, 0.0007120868108537182, 0.0007120868108537182] and [0.017659771650102685, 0.017659771650102685, 0.017659771650102685]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0176597716501 rad; this remains below nominal reset displacement 0.4. Selected constant controls were nominal 126.50390625 and boundary 255."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal gripper position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "left_driver_joint",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal gripper position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.017659771650116896,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.8], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.4, 0.8]. Real trusted actuator fingers_actuator was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00293350087978, error 0.00293350087978, actual displacement 0.00293350087978, executable=False; target 0.8: terminal 0.78234022835, error 0.0176597716501, actual displacement 0.78234022835, executable=True. The farther executable limit 0.8 is boundary; nominal is its reset midpoint 0.4. Three real reset/controller/physics repeats per case produced errors [0.0007120868108537182, 0.0007120868108537182, 0.0007120868108537182] and [0.017659771650102685, 0.017659771650102685, 0.017659771650102685]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0176597716501 rad; this remains below nominal reset displacement 0.4. Selected constant controls were nominal 126.50390625 and boundary 255."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c3-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C3",
+      "method_name": "set_gripper_position",
+      "request": {
+        "target_position": 0.8,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c3",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.8], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.4, 0.8]. Real trusted actuator fingers_actuator was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00293350087978, error 0.00293350087978, actual displacement 0.00293350087978, executable=False; target 0.8: terminal 0.78234022835, error 0.0176597716501, actual displacement 0.78234022835, executable=True. The farther executable limit 0.8 is boundary; nominal is its reset midpoint 0.4. Three real reset/controller/physics repeats per case produced errors [0.0007120868108537182, 0.0007120868108537182, 0.0007120868108537182] and [0.017659771650102685, 0.017659771650102685, 0.017659771650102685]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0176597716501 rad; this remains below nominal reset displacement 0.4. Selected constant controls were nominal 126.50390625 and boundary 255."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal gripper position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "left_driver_joint",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal gripper position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.017659771650116896,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c3",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint left_driver_joint with exact rad range [0, 0.8], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [0.4, 0.8]. Real trusted actuator fingers_actuator was evaluated from declared reset 0 toward both exact MJCF limits: target 0: terminal 0.00293350087978, error 0.00293350087978, actual displacement 0.00293350087978, executable=False; target 0.8: terminal 0.78234022835, error 0.0176597716501, actual displacement 0.78234022835, executable=True. The farther executable limit 0.8 is boundary; nominal is its reset midpoint 0.4. Three real reset/controller/physics repeats per case produced errors [0.0007120868108537182, 0.0007120868108537182, 0.0007120868108537182] and [0.017659771650102685, 0.017659771650102685, 0.017659771650102685]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C3 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.0176597716501 rad; this remains below nominal reset displacement 0.4. Selected constant controls were nominal 126.50390625 and boundary 255."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c4-nominal",
+      "case_role": "nominal",
+      "capability_id": "C4",
+      "method_name": "set_wrist_position",
+      "request": {
+        "target_position": -3.141595,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint wrist_3_joint with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator wrist_3 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.28309996191, error 9.00380920337e-05, actual displacement 6.28309996191, executable=True; target 6.28319: terminal 6.28310003809, error 8.99619091603e-05, actual displacement 6.28310003809, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [3.8091769738457515e-08, 3.8091769738457515e-08, 3.8091769738457515e-08] and [9.003809203367297e-05, 9.003809203367297e-05, 9.003809203367297e-05]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.00380922123e-05 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.2831."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal wrist position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "wrist_3_joint",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 9.003809221225196e-05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint wrist_3_joint with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator wrist_3 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.28309996191, error 9.00380920337e-05, actual displacement 6.28309996191, executable=True; target 6.28319: terminal 6.28310003809, error 8.99619091603e-05, actual displacement 6.28310003809, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [3.8091769738457515e-08, 3.8091769738457515e-08, 3.8091769738457515e-08] and [9.003809203367297e-05, 9.003809203367297e-05, 9.003809203367297e-05]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.00380922123e-05 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.2831."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c4-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C4",
+      "method_name": "set_wrist_position",
+      "request": {
+        "target_position": -6.28319,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c4",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint wrist_3_joint with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator wrist_3 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.28309996191, error 9.00380920337e-05, actual displacement 6.28309996191, executable=True; target 6.28319: terminal 6.28310003809, error 8.99619091603e-05, actual displacement 6.28310003809, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [3.8091769738457515e-08, 3.8091769738457515e-08, 3.8091769738457515e-08] and [9.003809203367297e-05, 9.003809203367297e-05, 9.003809203367297e-05]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.00380922123e-05 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.2831."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal wrist position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "wrist_3_joint",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 9.003809221225196e-05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c4",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint wrist_3_joint with exact rad range [-6.28319, 6.28319], and the declared reset resolves to 0. Request bounds are narrowed to the measured nominal/boundary envelope [-6.28319, -3.141595]. Real trusted actuator wrist_3 was evaluated from declared reset 0 toward both exact MJCF limits: target -6.28319: terminal -6.28309996191, error 9.00380920337e-05, actual displacement 6.28309996191, executable=True; target 6.28319: terminal 6.28310003809, error 8.99619091603e-05, actual displacement 6.28310003809, executable=True. The farther executable limit -6.28319 is boundary; nominal is its reset midpoint -3.141595. Three real reset/controller/physics repeats per case produced errors [3.8091769738457515e-08, 3.8091769738457515e-08, 3.8091769738457515e-08] and [9.003809203367297e-05, 9.003809203367297e-05, 9.003809203367297e-05]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C4 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 9.00380922123e-05 rad; this remains below nominal reset displacement 3.141595. Selected constant controls were nominal -3.141595 and boundary -6.2831."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c5-nominal",
+      "case_role": "nominal",
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "request": {
+        "target_position": -0.78535,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint elbow_joint with exact rad range [-3.1415, 3.1415], and the declared reset resolves to 1.5708. Request bounds are narrowed to the measured nominal/boundary envelope [-3.1415, -0.78535]. Real trusted actuator elbow was evaluated from declared reset 1.5708 toward both exact MJCF limits: target -3.1415: terminal -2.89490476278, error 0.246595237221, actual displacement 4.46570476278, executable=True; target 3.1415: terminal 2.8909102185, error 0.250589781499, actual displacement 1.3201102185, executable=True. The farther executable limit -3.1415 is boundary; nominal is its reset midpoint -0.78535. Three real reset/controller/physics repeats per case produced errors [0.006929012982027083, 0.006929012982027083, 0.006929012982027083] and [0.2465952372209017, 0.2465952372209017, 0.2465952372209017]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.246595237221 rad; this remains below nominal reset displacement 2.35615. Selected constant controls were nominal -0.78535 and boundary -3.1415."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal elbow position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "elbow_joint",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.246595237220991,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint elbow_joint with exact rad range [-3.1415, 3.1415], and the declared reset resolves to 1.5708. Request bounds are narrowed to the measured nominal/boundary envelope [-3.1415, -0.78535]. Real trusted actuator elbow was evaluated from declared reset 1.5708 toward both exact MJCF limits: target -3.1415: terminal -2.89490476278, error 0.246595237221, actual displacement 4.46570476278, executable=True; target 3.1415: terminal 2.8909102185, error 0.250589781499, actual displacement 1.3201102185, executable=True. The farther executable limit -3.1415 is boundary; nominal is its reset midpoint -0.78535. Three real reset/controller/physics repeats per case produced errors [0.006929012982027083, 0.006929012982027083, 0.006929012982027083] and [0.2465952372209017, 0.2465952372209017, 0.2465952372209017]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.246595237221 rad; this remains below nominal reset displacement 2.35615. Selected constant controls were nominal -0.78535 and boundary -3.1415."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c5-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C5",
+      "method_name": "set_elbow_position",
+      "request": {
+        "target_position": -3.1415,
+        "max_duration_s": 20.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c5",
+          "specific_reference": "Real scene assets/reach_scene.xml declares joint elbow_joint with exact rad range [-3.1415, 3.1415], and the declared reset resolves to 1.5708. Request bounds are narrowed to the measured nominal/boundary envelope [-3.1415, -0.78535]. Real trusted actuator elbow was evaluated from declared reset 1.5708 toward both exact MJCF limits: target -3.1415: terminal -2.89490476278, error 0.246595237221, actual displacement 4.46570476278, executable=True; target 3.1415: terminal 2.8909102185, error 0.250589781499, actual displacement 1.3201102185, executable=True. The farther executable limit -3.1415 is boundary; nominal is its reset midpoint -0.78535. Three real reset/controller/physics repeats per case produced errors [0.006929012982027083, 0.006929012982027083, 0.006929012982027083] and [0.2465952372209017, 0.2465952372209017, 0.2465952372209017]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.246595237221 rad; this remains below nominal reset displacement 2.35615. Selected constant controls were nominal -0.78535 and boundary -3.1415."
+        }
+      ],
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "measurement_binding": {
+        "metric": "terminal elbow position error",
+        "unit": "rad",
+        "kind": "final_joint_position_error",
+        "parameters": {
+          "joint_name": "elbow_joint",
+          "target_argument": "request.target_position"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard_complete_video",
+        "guard_reach_gripper_neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "criteria": [
+        {
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.246595237220991,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c5",
+              "specific_reference": "Real scene assets/reach_scene.xml declares joint elbow_joint with exact rad range [-3.1415, 3.1415], and the declared reset resolves to 1.5708. Request bounds are narrowed to the measured nominal/boundary envelope [-3.1415, -0.78535]. Real trusted actuator elbow was evaluated from declared reset 1.5708 toward both exact MJCF limits: target -3.1415: terminal -2.89490476278, error 0.246595237221, actual displacement 4.46570476278, executable=True; target 3.1415: terminal 2.8909102185, error 0.250589781499, actual displacement 1.3201102185, executable=True. The farther executable limit -3.1415 is boundary; nominal is its reset midpoint -0.78535. Three real reset/controller/physics repeats per case produced errors [0.006929012982027083, 0.006929012982027083, 0.006929012982027083] and [0.2465952372209017, 0.2465952372209017, 0.2465952372209017]. experiment/experiment3/fixed_inputs/calibration_report.json#robots/universal_robots_ur5e_robotiq_2f85/capabilities/C5 seals max error plus 64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span) = 0.246595237221 rad; this remains below nominal reset displacement 2.35615. Selected constant controls were nominal -0.78535 and boundary -3.1415."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

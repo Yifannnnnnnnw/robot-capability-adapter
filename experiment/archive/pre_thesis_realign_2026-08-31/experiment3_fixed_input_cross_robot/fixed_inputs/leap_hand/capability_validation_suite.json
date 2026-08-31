@@ -1,0 +1,671 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "leap_hand-c1-nominal",
+      "case_role": "nominal",
+      "capability_id": "C1",
+      "method_name": "move_index_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.024896614126631543,
+          "y": 0.007600795553899245,
+          "z": -0.1222535149442546
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_if_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual index fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00850357174674, 0.0076003911078, -0.127206229889] m in palm frame; the private instance supplies target [0.0582968, 0.0076012, -0.1173008]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal index fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "if_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal index fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_if_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual index fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00850357174674, 0.0076003911078, -0.127206229889] m in palm frame; the private instance supplies target [0.0582968, 0.0076012, -0.1173008]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c1-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C1",
+      "method_name": "move_index_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.0582968,
+          "y": 0.0076012,
+          "z": -0.1173008
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_if_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual index fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00850357174674, 0.0076003911078, -0.127206229889] m in palm frame; the private instance supplies target [0.0582968, 0.0076012, -0.1173008]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal index fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "if_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal index fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_if_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual index fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00850357174674, 0.0076003911078, -0.127206229889] m in palm frame; the private instance supplies target [0.0582968, 0.0076012, -0.1173008]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c2-nominal",
+      "case_role": "nominal",
+      "capability_id": "C2",
+      "method_name": "move_middle_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.025042685844174933,
+          "y": -0.03779900895570084,
+          "z": -0.12210151945385472
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_mf_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual middle fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00860282831165, -0.0377996179114, -0.127206238908] m in palm frame; the private instance supplies target [0.0586882, -0.0377984, -0.1169968]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal middle fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "mf_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal middle fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_mf_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual middle fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00860282831165, -0.0377996179114, -0.127206238908] m in palm frame; the private instance supplies target [0.0586882, -0.0377984, -0.1169968]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c2-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C2",
+      "method_name": "move_middle_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.0586882,
+          "y": -0.0377984,
+          "z": -0.1169968
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_mf_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual middle fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00860282831165, -0.0377996179114, -0.127206238908] m in palm frame; the private instance supplies target [0.0586882, -0.0377984, -0.1169968]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal middle fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "mf_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal middle fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_mf_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual middle fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00860282831165, -0.0377996179114, -0.127206238908] m in palm frame; the private instance supplies target [0.0586882, -0.0377984, -0.1169968]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c3-nominal",
+      "case_role": "nominal",
+      "capability_id": "C3",
+      "method_name": "move_ring_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.024757331871773744,
+          "y": -0.08319900895544433,
+          "z": -0.12226542158671558
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_rf_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual ring fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00859253625645, -0.0831996179109, -0.127196243173] m in palm frame; the private instance supplies target [0.0581072, -0.0831984, -0.1173346]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal ring fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "rf_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal ring fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_rf_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual ring fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00859253625645, -0.0831996179109, -0.127196243173] m in palm frame; the private instance supplies target [0.0581072, -0.0831984, -0.1173346]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c3-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C3",
+      "method_name": "move_ring_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": 0.0581072,
+          "y": -0.0831984,
+          "z": -0.1173346
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_rf_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual ring fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00859253625645, -0.0831996179109, -0.127196243173] m in palm frame; the private instance supplies target [0.0581072, -0.0831984, -0.1173346]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal ring fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "rf_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal ring fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_rf_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual ring fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.00859253625645, -0.0831996179109, -0.127196243173] m in palm frame; the private instance supplies target [0.0581072, -0.0831984, -0.1173346]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c4-nominal",
+      "case_role": "nominal",
+      "capability_id": "C4",
+      "method_name": "move_thumb_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": -0.024641320047902565,
+          "y": 0.05172885197845158,
+          "z": -0.12314074220889223
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_th_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual thumb fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.0292372400958, 0.0328484039569, -0.135694884418] m in palm frame; the private instance supplies target [-0.0200454, 0.0706093, -0.1105866]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal thumb fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "th_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal thumb fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_th_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual thumb fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.0292372400958, 0.0328484039569, -0.135694884418] m in palm frame; the private instance supplies target [-0.0200454, 0.0706093, -0.1105866]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c4-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C4",
+      "method_name": "move_thumb_fingertip_to_position",
+      "request": {
+        "target_position": {
+          "x": -0.0200454,
+          "y": 0.0706093,
+          "z": -0.1105866
+        },
+        "max_duration_s": 1.1
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_th_tip_public_reach",
+          "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual thumb fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.0292372400958, 0.0328484039569, -0.135694884418] m in palm frame; the private instance supplies target [-0.0200454, 0.0706093, -0.1105866]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+        }
+      ],
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "measurement_binding": {
+        "metric": "terminal thumb fingertip palm-frame position error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+          "site_name": "th_tip",
+          "reference_body_name": "palm",
+          "target_x_argument": "request.target_position.x",
+          "target_y_argument": "request.target_position.y",
+          "target_z_argument": "request.target_position.z"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.1,
+      "criteria": [
+        {
+          "metric": "terminal thumb fingertip palm-frame position error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_th_tip_public_reach",
+              "specific_reference": "tasks/catalog.json gym_hand_reach_all_fingertips/all_fingertip_goal_error gives the exact concatenated four-tip criterion < 0.00894427191 m. Applying that same strict global bound to the individual thumb fingertip is a conservative primitive adaptation. The real home reset places the site at [-0.0292372400958, 0.0328484039569, -0.135694884418] m in palm frame; the private instance supplies target [-0.0200454, 0.0706093, -0.1105866]. Bounds are their exact coordinate envelope; nominal is the midpoint and boundary is the full target. No grasp state is assumed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c5-nominal",
+      "case_role": "nominal",
+      "capability_id": "C5",
+      "method_name": "set_all_hand_joint_positions",
+      "request": {
+        "target_joint_positions_rad": [
+          0.625,
+          0.0,
+          0.675,
+          0.625,
+          0.625,
+          0.0,
+          0.675,
+          0.625,
+          0.625,
+          0.0,
+          0.675,
+          0.625,
+          0.675,
+          0.625,
+          0.7250000000000001,
+          0.075
+        ],
+        "control_steps": 80
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_public_sixteen_joint_pose",
+          "specific_reference": "tasks/catalog.json robel_dclaw_pose_fixed/maximum_joint_pose_error supplies the exact maximum-over-16-joints criterion < 0.174532925199 rad. The private public request supplies target [0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.55, 0.45, 0.65, 0.15]; home reset is [0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0.8, 0.8, 0]. Exact MJCF ranges are if_mcp=[-0.314,2.23]; if_rot=[-1.047,1.047]; if_pip=[-0.506,1.885]; if_dip=[-0.366,2.042]; mf_mcp=[-0.314,2.23]; mf_rot=[-1.047,1.047]; mf_pip=[-0.506,1.885]; mf_dip=[-0.366,2.042]; rf_mcp=[-0.314,2.23]; rf_rot=[-1.047,1.047]; rf_pip=[-0.506,1.885]; rf_dip=[-0.366,2.042]; th_cmc=[-0.349,2.094]; th_axl=[-0.349,2.094]; th_mcp=[-0.47,2.443]; th_ipl=[-1.34,1.88]. The shared array schema uses their enclosing range [-1.34, 2.443] while the two cases use midpoint/full target vectors. Source timing is 80 control steps in 4 s, resolving to 25 physics steps/control step."
+        }
+      ],
+      "instance_id": "leap-robel_dclaw_pose_fixed",
+      "measurement_binding": {
+        "metric": "terminal maximum absolute error over all 16 hand joints",
+        "unit": "rad",
+        "kind": "final_maximum_joint_position_error",
+        "parameters": {
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ],
+          "target_argument": "request.target_joint_positions_rad",
+          "physics_steps_per_control_step": 25,
+          "control_steps_argument": "request.control_steps"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 4.1,
+      "criteria": [
+        {
+          "metric": "terminal maximum absolute error over all 16 hand joints",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.17453292519943295,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_public_sixteen_joint_pose",
+              "specific_reference": "tasks/catalog.json robel_dclaw_pose_fixed/maximum_joint_pose_error supplies the exact maximum-over-16-joints criterion < 0.174532925199 rad. The private public request supplies target [0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.55, 0.45, 0.65, 0.15]; home reset is [0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0.8, 0.8, 0]. Exact MJCF ranges are if_mcp=[-0.314,2.23]; if_rot=[-1.047,1.047]; if_pip=[-0.506,1.885]; if_dip=[-0.366,2.042]; mf_mcp=[-0.314,2.23]; mf_rot=[-1.047,1.047]; mf_pip=[-0.506,1.885]; mf_dip=[-0.366,2.042]; rf_mcp=[-0.314,2.23]; rf_rot=[-1.047,1.047]; rf_pip=[-0.506,1.885]; rf_dip=[-0.366,2.042]; th_cmc=[-0.349,2.094]; th_axl=[-0.349,2.094]; th_mcp=[-0.47,2.443]; th_ipl=[-1.34,1.88]. The shared array schema uses their enclosing range [-1.34, 2.443] while the two cases use midpoint/full target vectors. Source timing is 80 control steps in 4 s, resolving to 25 physics steps/control step."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "leap_hand-c5-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "C5",
+      "method_name": "set_all_hand_joint_positions",
+      "request": {
+        "target_joint_positions_rad": [
+          0.45,
+          0.0,
+          0.55,
+          0.45,
+          0.45,
+          0.0,
+          0.55,
+          0.45,
+          0.45,
+          0.0,
+          0.55,
+          0.45,
+          0.55,
+          0.45,
+          0.65,
+          0.15
+        ],
+        "control_steps": 80
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "leap_hand_public_sixteen_joint_pose",
+          "specific_reference": "tasks/catalog.json robel_dclaw_pose_fixed/maximum_joint_pose_error supplies the exact maximum-over-16-joints criterion < 0.174532925199 rad. The private public request supplies target [0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.55, 0.45, 0.65, 0.15]; home reset is [0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0.8, 0.8, 0]. Exact MJCF ranges are if_mcp=[-0.314,2.23]; if_rot=[-1.047,1.047]; if_pip=[-0.506,1.885]; if_dip=[-0.366,2.042]; mf_mcp=[-0.314,2.23]; mf_rot=[-1.047,1.047]; mf_pip=[-0.506,1.885]; mf_dip=[-0.366,2.042]; rf_mcp=[-0.314,2.23]; rf_rot=[-1.047,1.047]; rf_pip=[-0.506,1.885]; rf_dip=[-0.366,2.042]; th_cmc=[-0.349,2.094]; th_axl=[-0.349,2.094]; th_mcp=[-0.47,2.443]; th_ipl=[-1.34,1.88]. The shared array schema uses their enclosing range [-1.34, 2.443] while the two cases use midpoint/full target vectors. Source timing is 80 control steps in 4 s, resolving to 25 physics steps/control step."
+        }
+      ],
+      "instance_id": "leap-robel_dclaw_pose_fixed",
+      "measurement_binding": {
+        "metric": "terminal maximum absolute error over all 16 hand joints",
+        "unit": "rad",
+        "kind": "final_maximum_joint_position_error",
+        "parameters": {
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ],
+          "target_argument": "request.target_joint_positions_rad",
+          "physics_steps_per_control_step": 25,
+          "control_steps_argument": "request.control_steps"
+        }
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 4.1,
+      "criteria": [
+        {
+          "metric": "terminal maximum absolute error over all 16 hand joints",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.17453292519943295,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "leap_hand_public_sixteen_joint_pose",
+              "specific_reference": "tasks/catalog.json robel_dclaw_pose_fixed/maximum_joint_pose_error supplies the exact maximum-over-16-joints criterion < 0.174532925199 rad. The private public request supplies target [0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.45, 0, 0.55, 0.45, 0.55, 0.45, 0.65, 0.15]; home reset is [0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0, 0.8, 0.8, 0.8, 0.8, 0.8, 0]. Exact MJCF ranges are if_mcp=[-0.314,2.23]; if_rot=[-1.047,1.047]; if_pip=[-0.506,1.885]; if_dip=[-0.366,2.042]; mf_mcp=[-0.314,2.23]; mf_rot=[-1.047,1.047]; mf_pip=[-0.506,1.885]; mf_dip=[-0.366,2.042]; rf_mcp=[-0.314,2.23]; rf_rot=[-1.047,1.047]; rf_pip=[-0.506,1.885]; rf_dip=[-0.366,2.042]; th_cmc=[-0.349,2.094]; th_axl=[-0.349,2.094]; th_mcp=[-0.47,2.443]; th_ipl=[-1.34,1.88]. The shared array schema uses their enclosing range [-1.34, 2.443] while the two cases use midpoint/full target vectors. Source timing is 80 control steps in 4 s, resolving to 25 physics steps/control step."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

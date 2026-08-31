@@ -1,0 +1,1771 @@
+{
+  "artifact_type": "experiment3_fixed_threshold_calibration",
+  "schema_version": "1.0",
+  "input_set_id": "experiment3-eleven-robot-fixed-inputs-v1",
+  "passed": true,
+  "robots": {
+    "robotstudio_so101": {
+      "instance_id": "so101-a1-nominal",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {}
+    },
+    "unitree-go2-stock-12dof": {
+      "instance_id": "go2-g1-nominal",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "capabilities": {}
+    },
+    "franka_panda": {
+      "instance_id": "franka-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_gripper_position",
+          "criterion_source_id": "exp3-calibration-franka_panda-c3",
+          "metric": "terminal gripper position error",
+          "unit": "m",
+          "instance_id": "franka-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "finger_joint1",
+          "actuator_name": "actuator8",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.04,
+          "joint_lower": 0.0,
+          "joint_upper": 0.04,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.0,
+              "terminal": 4.783619422864791e-08,
+              "error": 4.783619422864791e-08,
+              "requested_displacement": 0.04,
+              "actual_displacement": 0.03999995216380577,
+              "executable": true
+            },
+            {
+              "target": 0.04,
+              "control": 255.0,
+              "terminal": 0.040000000909621206,
+              "error": 9.096212047476904e-10,
+              "requested_displacement": 0.0,
+              "actual_displacement": 9.096212047476904e-10,
+              "executable": false
+            }
+          ],
+          "selected_boundary": 0.0,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "franka_panda-c3-nominal",
+              "target": 0.02,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                2.4387001067854852e-08,
+                2.4387001067854852e-08,
+                2.4387001067854852e-08
+              ],
+              "max_terminal_error": 2.4387001067854852e-08,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "franka_panda-c3-calibrated_boundary",
+              "target": 0.0,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                4.783619422864791e-08,
+                4.783619422864791e-08,
+                4.783619422864791e-08
+              ],
+              "max_terminal_error": 4.783619422864791e-08,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 4.7836208439502625e-08
+        },
+        "C4": {
+          "method_name": "set_wrist_position",
+          "criterion_source_id": "exp3-calibration-franka_panda-c4",
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "instance_id": "franka-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint7",
+          "actuator_name": "actuator7",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": -0.7853,
+          "joint_lower": -2.8973,
+          "joint_upper": 2.8973,
+          "boundary_candidates": [
+            {
+              "target": -2.8973,
+              "control": -2.8973,
+              "terminal": -2.897299818515359,
+              "error": 1.8148464109302154e-07,
+              "requested_displacement": 2.112,
+              "actual_displacement": 2.111999818515359,
+              "executable": true
+            },
+            {
+              "target": 2.8973,
+              "control": 2.8973,
+              "terminal": 2.8973000445540777,
+              "error": 4.455407776049469e-08,
+              "requested_displacement": 3.6826,
+              "actual_displacement": 3.6826000445540776,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 2.8973,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "franka_panda-c4-nominal",
+              "target": 1.056,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                2.2179539871380882e-07,
+                2.2179539871380882e-07,
+                2.2179539871380882e-07
+              ],
+              "max_terminal_error": 2.2179539871380882e-07,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "franka_panda-c4-calibrated_boundary",
+              "target": 2.8973,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                4.455407776049469e-08,
+                4.455407776049469e-08,
+                4.455407776049469e-08
+              ],
+              "max_terminal_error": 4.455407776049469e-08,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.234621873270953e-14,
+          "sealed_threshold": 2.2179548106002756e-07
+        },
+        "C5": {
+          "method_name": "set_elbow_position",
+          "criterion_source_id": "exp3-calibration-franka_panda-c5",
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "instance_id": "franka-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint4",
+          "actuator_name": "actuator4",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": -1.57079,
+          "joint_lower": -3.0718,
+          "joint_upper": -0.0698,
+          "boundary_candidates": [
+            {
+              "target": -3.0718,
+              "control": -3.0718,
+              "terminal": -3.057843049898789,
+              "error": 0.013956950101210897,
+              "requested_displacement": 1.5010100000000002,
+              "actual_displacement": 1.4870530498987893,
+              "executable": true
+            },
+            {
+              "target": -0.0698,
+              "control": -0.0698,
+              "terminal": -0.06956294711169775,
+              "error": 0.00023705288830225268,
+              "requested_displacement": 1.5009899999999998,
+              "actual_displacement": 1.5012270528883023,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -3.0718,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "franka_panda-c5-nominal",
+              "target": -2.321295,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.005320399363339057,
+                0.005320399363339057,
+                0.005320399363339057
+              ],
+              "max_terminal_error": 0.005320399363339057,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "franka_panda-c5-calibrated_boundary",
+              "target": -3.0718,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.013956950101210897,
+                0.013956950101210897,
+                0.013956950101210897
+              ],
+              "max_terminal_error": 0.013956950101210897,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 4.3652903514157516e-14,
+          "sealed_threshold": 0.013956950101254549
+        }
+      }
+    },
+    "kinova_gen3_robotiq_2f85": {
+      "instance_id": "kinova-gen3-robotiq-2f85-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_gripper_position",
+          "criterion_source_id": "exp3-calibration-kinova_gen3_robotiq_2f85-c3",
+          "metric": "terminal gripper position error",
+          "unit": "rad",
+          "instance_id": "kinova-gen3-robotiq-2f85-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "left_driver_joint",
+          "actuator_name": "fingers_actuator",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": 0.0,
+          "joint_upper": 0.8,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.0,
+              "terminal": 0.0026088609188760605,
+              "error": 0.0026088609188760605,
+              "requested_displacement": 0.0,
+              "actual_displacement": 0.0026088609188760605,
+              "executable": false
+            },
+            {
+              "target": 0.8,
+              "control": 255.0,
+              "terminal": 0.7868897092331919,
+              "error": 0.013110290766808141,
+              "requested_displacement": 0.8,
+              "actual_displacement": 0.7868897092331919,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 0.8,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "kinova_gen3_robotiq_2f85-c3-nominal",
+              "target": 0.4,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.000661328120903415,
+                0.000661328120903415,
+                0.000661328120903415
+              ],
+              "max_terminal_error": 0.000661328120903415,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "kinova_gen3_robotiq_2f85-c3-calibrated_boundary",
+              "target": 0.8,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.013110290766808141,
+                0.013110290766808141,
+                0.013110290766808141
+              ],
+              "max_terminal_error": 0.013110290766808141,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 0.013110290766822352
+        },
+        "C4": {
+          "method_name": "set_wrist_position",
+          "criterion_source_id": "exp3-calibration-kinova_gen3_robotiq_2f85-c4",
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "instance_id": "kinova-gen3-robotiq-2f85-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint_6",
+          "actuator_name": "joint_6",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.95993109,
+          "joint_lower": -2.09,
+          "joint_upper": 2.09,
+          "boundary_candidates": [
+            {
+              "target": -2.09,
+              "control": -2.09,
+              "terminal": -1.5928455862449018,
+              "error": 0.49715441375509806,
+              "requested_displacement": 3.04993109,
+              "actual_displacement": 2.5527766762449016,
+              "executable": true
+            },
+            {
+              "target": 2.09,
+              "control": 2.09,
+              "terminal": 2.087428500103377,
+              "error": 0.002571499896622864,
+              "requested_displacement": 1.1300689099999999,
+              "actual_displacement": 1.127497410103377,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -2.09,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "kinova_gen3_robotiq_2f85-c4-nominal",
+              "target": -0.5650344549999999,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.00010284493392653804,
+                0.00010284493392653804,
+                0.00010284493392653804
+              ],
+              "max_terminal_error": 0.00010284493392653804,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "kinova_gen3_robotiq_2f85-c4-calibrated_boundary",
+              "target": -2.09,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.49715441375509806,
+                0.49715441375509806,
+                0.49715441375509806
+              ],
+              "max_terminal_error": 0.49715441375509806,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 5.940137270954437e-14,
+          "sealed_threshold": 0.49715441375515745
+        },
+        "C5": {
+          "method_name": "set_elbow_position",
+          "criterion_source_id": "exp3-calibration-kinova_gen3_robotiq_2f85-c5",
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "instance_id": "kinova-gen3-robotiq-2f85-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint_4",
+          "actuator_name": "joint_4",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": -2.26892803,
+          "joint_lower": -2.57,
+          "joint_upper": 2.57,
+          "boundary_candidates": [
+            {
+              "target": -2.57,
+              "control": -2.57,
+              "terminal": -2.571518935541943,
+              "error": 0.001518935541943378,
+              "requested_displacement": 0.30107196999999974,
+              "actual_displacement": 0.3025909055419431,
+              "executable": true
+            },
+            {
+              "target": 2.57,
+              "control": 2.57,
+              "terminal": 2.5571758126380133,
+              "error": 0.012824187361986539,
+              "requested_displacement": 4.83892803,
+              "actual_displacement": 4.826103842638013,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 2.57,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "kinova_gen3_robotiq_2f85-c5-nominal",
+              "target": 0.15053598499999987,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.0005427821234711694,
+                0.0005427821234711694,
+                0.0005427821234711694
+              ],
+              "max_terminal_error": 0.0005427821234711694,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "kinova_gen3_robotiq_2f85-c5-calibrated_boundary",
+              "target": 2.57,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.012824187361986539,
+                0.012824187361986539,
+                0.012824187361986539
+              ],
+              "max_terminal_error": 0.012824187361986539,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 7.30437932361383e-14,
+          "sealed_threshold": 0.012824187362059583
+        }
+      }
+    },
+    "ufactory_xarm7": {
+      "instance_id": "xarm7-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_gripper_position",
+          "criterion_source_id": "exp3-calibration-ufactory_xarm7-c3",
+          "metric": "terminal gripper position error",
+          "unit": "rad",
+          "instance_id": "xarm7-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "left_driver_joint",
+          "actuator_name": "gripper",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": 0.0,
+          "joint_upper": 0.85,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.0,
+              "terminal": 0.0028634807349388934,
+              "error": 0.0028634807349388934,
+              "requested_displacement": 0.0,
+              "actual_displacement": 0.0028634807349388934,
+              "executable": false
+            },
+            {
+              "target": 0.85,
+              "control": 255.0,
+              "terminal": 0.8498901272315165,
+              "error": 0.00010987276848350991,
+              "requested_displacement": 0.85,
+              "actual_displacement": 0.8498901272315165,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 0.85,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "ufactory_xarm7-c3-nominal",
+              "target": 0.425,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.029607911942823473,
+                0.029607911942823473,
+                0.029607911942823473
+              ],
+              "max_terminal_error": 0.029607911942823473,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "ufactory_xarm7-c3-calibrated_boundary",
+              "target": 0.85,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.00010987276848350991,
+                0.00010987276848350991,
+                0.00010987276848350991
+              ],
+              "max_terminal_error": 0.00010987276848350991,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 0.029607911942837684
+        },
+        "C4": {
+          "method_name": "set_wrist_position",
+          "criterion_source_id": "exp3-calibration-ufactory_xarm7-c4",
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "instance_id": "xarm7-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint7",
+          "actuator_name": "act7",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -6.28319,
+          "joint_upper": 6.28319,
+          "boundary_candidates": [
+            {
+              "target": -6.28319,
+              "control": -6.28319,
+              "terminal": -6.283190420503516,
+              "error": 4.205035155635528e-07,
+              "requested_displacement": 6.28319,
+              "actual_displacement": 6.283190420503516,
+              "executable": true
+            },
+            {
+              "target": 6.28319,
+              "control": 6.28319,
+              "terminal": 6.283188388211098,
+              "error": 1.6117889023448129e-06,
+              "requested_displacement": 6.28319,
+              "actual_displacement": 6.283188388211098,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -6.28319,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "ufactory_xarm7-c4-nominal",
+              "target": -3.141595,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                1.6117978867136173e-06,
+                1.6117978867136173e-06,
+                1.6117978867136173e-06
+              ],
+              "max_terminal_error": 1.6117978867136173e-06,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "ufactory_xarm7-c4-calibrated_boundary",
+              "target": -6.28319,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                4.205035155635528e-07,
+                4.205035155635528e-07,
+                4.205035155635528e-07
+              ],
+              "max_terminal_error": 4.205035155635528e-07,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.7857900047602016e-13,
+          "sealed_threshold": 1.6117980652926177e-06
+        },
+        "C5": {
+          "method_name": "set_elbow_position",
+          "criterion_source_id": "exp3-calibration-ufactory_xarm7-c5",
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "instance_id": "xarm7-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint4",
+          "actuator_name": "act4",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 1.4,
+          "joint_lower": -0.19198,
+          "joint_upper": 3.927,
+          "boundary_candidates": [
+            {
+              "target": -0.19198,
+              "control": -0.19198,
+              "terminal": -0.1471442427608531,
+              "error": 0.0448357572391469,
+              "requested_displacement": 1.59198,
+              "actual_displacement": 1.547144242760853,
+              "executable": true
+            },
+            {
+              "target": 3.927,
+              "control": 3.927,
+              "terminal": 3.9276582999575833,
+              "error": 0.0006582999575832638,
+              "requested_displacement": 2.527,
+              "actual_displacement": 2.5276582999575834,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 3.927,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "ufactory_xarm7-c5-nominal",
+              "target": 2.6635,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.004248776076377414,
+                0.004248776076377414,
+                0.004248776076377414
+              ],
+              "max_terminal_error": 0.004248776076377414,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "ufactory_xarm7-c5-calibrated_boundary",
+              "target": 3.927,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.0006582999575832638,
+                0.0006582999575832638,
+                0.0006582999575832638
+              ],
+              "max_terminal_error": 0.0006582999575832638,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 5.853422635482274e-14,
+          "sealed_threshold": 0.004248776076435948
+        }
+      }
+    },
+    "universal_robots_ur5e_robotiq_2f85": {
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_gripper_position",
+          "criterion_source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c3",
+          "metric": "terminal gripper position error",
+          "unit": "rad",
+          "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "left_driver_joint",
+          "actuator_name": "fingers_actuator",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": 0.0,
+          "joint_upper": 0.8,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.0,
+              "terminal": 0.002933500879784563,
+              "error": 0.002933500879784563,
+              "requested_displacement": 0.0,
+              "actual_displacement": 0.002933500879784563,
+              "executable": false
+            },
+            {
+              "target": 0.8,
+              "control": 255.0,
+              "terminal": 0.7823402283498974,
+              "error": 0.017659771650102685,
+              "requested_displacement": 0.8,
+              "actual_displacement": 0.7823402283498974,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 0.8,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-c3-nominal",
+              "target": 0.4,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.0007120868108537182,
+                0.0007120868108537182,
+                0.0007120868108537182
+              ],
+              "max_terminal_error": 0.0007120868108537182,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-c3-calibrated_boundary",
+              "target": 0.8,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.017659771650102685,
+                0.017659771650102685,
+                0.017659771650102685
+              ],
+              "max_terminal_error": 0.017659771650102685,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 0.017659771650116896
+        },
+        "C4": {
+          "method_name": "set_wrist_position",
+          "criterion_source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c4",
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "wrist_3_joint",
+          "actuator_name": "wrist_3",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -6.28319,
+          "joint_upper": 6.28319,
+          "boundary_candidates": [
+            {
+              "target": -6.28319,
+              "control": -6.2831,
+              "terminal": -6.283099961907967,
+              "error": 9.003809203367297e-05,
+              "requested_displacement": 6.28319,
+              "actual_displacement": 6.283099961907967,
+              "executable": true
+            },
+            {
+              "target": 6.28319,
+              "control": 6.2831,
+              "terminal": 6.28310003809084,
+              "error": 8.996190916032987e-05,
+              "requested_displacement": 6.28319,
+              "actual_displacement": 6.28310003809084,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -6.28319,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-c4-nominal",
+              "target": -3.141595,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                3.8091769738457515e-08,
+                3.8091769738457515e-08,
+                3.8091769738457515e-08
+              ],
+              "max_terminal_error": 3.8091769738457515e-08,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-c4-calibrated_boundary",
+              "target": -6.28319,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                9.003809203367297e-05,
+                9.003809203367297e-05,
+                9.003809203367297e-05
+              ],
+              "max_terminal_error": 9.003809203367297e-05,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.7857900047602016e-13,
+          "sealed_threshold": 9.003809221225196e-05
+        },
+        "C5": {
+          "method_name": "set_elbow_position",
+          "criterion_source_id": "exp3-calibration-universal_robots_ur5e_robotiq_2f85-c5",
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "elbow_joint",
+          "actuator_name": "elbow",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 1.5708,
+          "joint_lower": -3.1415,
+          "joint_upper": 3.1415,
+          "boundary_candidates": [
+            {
+              "target": -3.1415,
+              "control": -3.1415,
+              "terminal": -2.8949047627790985,
+              "error": 0.2465952372209017,
+              "requested_displacement": 4.7123,
+              "actual_displacement": 4.465704762779098,
+              "executable": true
+            },
+            {
+              "target": 3.1415,
+              "control": 3.1415,
+              "terminal": 2.890910218501387,
+              "error": 0.2505897814986131,
+              "requested_displacement": 1.5707000000000002,
+              "actual_displacement": 1.320110218501387,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -3.1415,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-c5-nominal",
+              "target": -0.78535,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.006929012982027083,
+                0.006929012982027083,
+                0.006929012982027083
+              ],
+              "max_terminal_error": 0.006929012982027083,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-c5-calibrated_boundary",
+              "target": -3.1415,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.2465952372209017,
+                0.2465952372209017,
+                0.2465952372209017
+              ],
+              "max_terminal_error": 0.2465952372209017,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.92868001756142e-14,
+          "sealed_threshold": 0.246595237220991
+        }
+      }
+    },
+    "piper": {
+      "instance_id": "piper-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_gripper_slide_position",
+          "criterion_source_id": "exp3-calibration-piper-c3",
+          "metric": "terminal gripper slide position error",
+          "unit": "m",
+          "instance_id": "piper-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint7",
+          "actuator_name": "gripper",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.035,
+          "joint_lower": 0.0,
+          "joint_upper": 0.035,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.0,
+              "terminal": 5.440302123479827e-21,
+              "error": 5.440302123479827e-21,
+              "requested_displacement": 0.035,
+              "actual_displacement": 0.035,
+              "executable": true
+            },
+            {
+              "target": 0.035,
+              "control": 0.035,
+              "terminal": 0.035,
+              "error": 0.0,
+              "requested_displacement": 0.0,
+              "actual_displacement": 0.0,
+              "executable": false
+            }
+          ],
+          "selected_boundary": 0.0,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "piper-c3-nominal",
+              "target": 0.0175,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                6.245004513516506e-17,
+                6.245004513516506e-17,
+                6.245004513516506e-17
+              ],
+              "max_terminal_error": 6.245004513516506e-17,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "piper-c3-calibrated_boundary",
+              "target": 0.0,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                5.440302123479827e-21,
+                5.440302123479827e-21,
+                5.440302123479827e-21
+              ],
+              "max_terminal_error": 5.440302123479827e-21,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 1.427330476033717e-14
+        },
+        "C4": {
+          "method_name": "set_wrist_position",
+          "criterion_source_id": "exp3-calibration-piper-c4",
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "instance_id": "piper-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint6",
+          "actuator_name": "joint6",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -3.14,
+          "joint_upper": 3.14,
+          "boundary_candidates": [
+            {
+              "target": -3.14,
+              "control": -3.14,
+              "terminal": -3.1399999999982926,
+              "error": 1.7075230118734908e-12,
+              "requested_displacement": 3.14,
+              "actual_displacement": 3.1399999999982926,
+              "executable": true
+            },
+            {
+              "target": 3.14,
+              "control": 3.14,
+              "terminal": 3.139999999998292,
+              "error": 1.7079671010833408e-12,
+              "requested_displacement": 3.14,
+              "actual_displacement": 3.139999999998292,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -3.14,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "piper-c4-nominal",
+              "target": -1.57,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                1.5065726444163374e-12,
+                1.5065726444163374e-12,
+                1.5065726444163374e-12
+              ],
+              "max_terminal_error": 1.5065726444163374e-12,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "piper-c4-calibrated_boundary",
+              "target": -3.14,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                1.7075230118734908e-12,
+                1.7075230118734908e-12,
+                1.7075230118734908e-12
+              ],
+              "max_terminal_error": 1.7075230118734908e-12,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.924416761146859e-14,
+          "sealed_threshold": 1.7967671794849594e-12
+        },
+        "C5": {
+          "method_name": "set_elbow_position",
+          "criterion_source_id": "exp3-calibration-piper-c5",
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "instance_id": "piper-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint3",
+          "actuator_name": "joint3",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": -1.3485,
+          "joint_lower": -2.697,
+          "joint_upper": 0.0,
+          "boundary_candidates": [
+            {
+              "target": -2.697,
+              "control": -2.697,
+              "terminal": -2.6969999999999072,
+              "error": 9.281464485866309e-14,
+              "requested_displacement": 1.3485,
+              "actual_displacement": 1.3484999999999072,
+              "executable": true
+            },
+            {
+              "target": 0.0,
+              "control": 0.0,
+              "terminal": -0.0944741326750301,
+              "error": 0.0944741326750301,
+              "requested_displacement": 1.3485,
+              "actual_displacement": 1.25402586732497,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -2.697,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "piper-c5-nominal",
+              "target": -2.0227500000000003,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                8.482103908136196e-14,
+                8.482103908136196e-14,
+                8.482103908136196e-14
+              ],
+              "max_terminal_error": 8.482103908136196e-14,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "piper-c5-calibrated_boundary",
+              "target": -2.697,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                9.281464485866309e-14,
+                9.281464485866309e-14,
+                9.281464485866309e-14
+              ],
+              "max_terminal_error": 9.281464485866309e-14,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 3.8326675166899805e-14,
+          "sealed_threshold": 1.3114132002556288e-13
+        }
+      }
+    },
+    "kuka_iiwa_14": {
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_wrist_position",
+          "criterion_source_id": "exp3-calibration-kuka_iiwa_14-c3",
+          "metric": "terminal wrist position error",
+          "unit": "rad",
+          "instance_id": "kuka-iiwa-14-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint7",
+          "actuator_name": "actuator7",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -3.05433,
+          "joint_upper": 3.05433,
+          "boundary_candidates": [
+            {
+              "target": -3.05433,
+              "control": -3.05433,
+              "terminal": -3.0543299999999896,
+              "error": 1.0658141036401503e-14,
+              "requested_displacement": 3.05433,
+              "actual_displacement": 3.0543299999999896,
+              "executable": true
+            },
+            {
+              "target": 3.05433,
+              "control": 3.05433,
+              "terminal": 3.05432999999999,
+              "error": 1.021405182655144e-14,
+              "requested_displacement": 3.05433,
+              "actual_displacement": 3.05432999999999,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -3.05433,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "kuka_iiwa_14-c3-nominal",
+              "target": -1.527165,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                5.329070518200751e-15,
+                5.329070518200751e-15,
+                5.329070518200751e-15
+              ],
+              "max_terminal_error": 5.329070518200751e-15,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "kuka_iiwa_14-c3-calibrated_boundary",
+              "target": -3.05433,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                1.0658141036401503e-14,
+                1.0658141036401503e-14,
+                1.0658141036401503e-14
+              ],
+              "max_terminal_error": 1.0658141036401503e-14,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.680927976456588e-14,
+          "sealed_threshold": 9.746742080096738e-14
+        },
+        "C4": {
+          "method_name": "set_forearm_position",
+          "criterion_source_id": "exp3-calibration-kuka_iiwa_14-c4",
+          "metric": "terminal forearm position error",
+          "unit": "rad",
+          "instance_id": "kuka-iiwa-14-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint6",
+          "actuator_name": "actuator6",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.44345798,
+          "joint_lower": -2.0944,
+          "joint_upper": 2.0944,
+          "boundary_candidates": [
+            {
+              "target": -2.0944,
+              "control": -2.0944,
+              "terminal": -2.0945665181233157,
+              "error": 0.00016651812331591742,
+              "requested_displacement": 2.5378579799999996,
+              "actual_displacement": 2.5380244981233155,
+              "executable": true
+            },
+            {
+              "target": 2.0944,
+              "control": 2.0944,
+              "terminal": 2.094002450514285,
+              "error": 0.00039754948571468773,
+              "requested_displacement": 1.6509420199999998,
+              "actual_displacement": 1.650544470514285,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -2.0944,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "kuka_iiwa_14-c4-nominal",
+              "target": -0.8254710099999998,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.0004874134785254336,
+                0.0004874134785254336,
+                0.0004874134785254336
+              ],
+              "max_terminal_error": 0.0004874134785254336,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "kuka_iiwa_14-c4-calibrated_boundary",
+              "target": -2.0944,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.00016651812331591742,
+                0.00016651812331591742,
+                0.00016651812331591742
+              ],
+              "max_terminal_error": 0.00016651812331591742,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 5.952642823103815e-14,
+          "sealed_threshold": 0.00048741347858496004
+        },
+        "C5": {
+          "method_name": "set_elbow_position",
+          "criterion_source_id": "exp3-calibration-kuka_iiwa_14-c5",
+          "metric": "terminal elbow position error",
+          "unit": "rad",
+          "instance_id": "kuka-iiwa-14-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint4",
+          "actuator_name": "actuator4",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": -1.94562248,
+          "joint_lower": -2.0944,
+          "joint_upper": 2.0944,
+          "boundary_candidates": [
+            {
+              "target": -2.0944,
+              "control": -2.0944,
+              "terminal": -2.0970112340393574,
+              "error": 0.0026112340393575906,
+              "requested_displacement": 0.14877751999999989,
+              "actual_displacement": 0.15138875403935748,
+              "executable": true
+            },
+            {
+              "target": 2.0944,
+              "control": 2.0944,
+              "terminal": 2.0965215881971586,
+              "error": 0.002121588197158797,
+              "requested_displacement": 4.040022479999999,
+              "actual_displacement": 4.0421440681971585,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 2.0944,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "kuka_iiwa_14-c5-nominal",
+              "target": 0.07438875999999972,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.0030266806631499693,
+                0.0030266806631499693,
+                0.0030266806631499693
+              ],
+              "max_terminal_error": 0.0030266806631499693,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "kuka_iiwa_14-c5-calibrated_boundary",
+              "target": 2.0944,
+              "max_duration_s": 20.0,
+              "terminal_errors": [
+                0.002121588197158797,
+                0.002121588197158797,
+                0.002121588197158797
+              ],
+              "max_terminal_error": 0.002121588197158797,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 5.952642823103815e-14,
+          "sealed_threshold": 0.003026680663209496
+        }
+      }
+    },
+    "leap_hand": {
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "capabilities": {}
+    },
+    "hello_robot_stretch_2": {
+      "instance_id": "stretch-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_gripper_slide_position",
+          "criterion_source_id": "exp3-calibration-hello_robot_stretch_2-c3",
+          "metric": "terminal gripper slide position error",
+          "unit": "m",
+          "instance_id": "stretch-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint_gripper_slide",
+          "actuator_name": "grip",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.04,
+          "joint_lower": -0.005,
+          "joint_upper": 0.04,
+          "boundary_candidates": [
+            {
+              "target": -0.005,
+              "control": -0.005,
+              "terminal": -0.004645993555160699,
+              "error": 0.00035400644483930127,
+              "requested_displacement": 0.045,
+              "actual_displacement": 0.0446459935551607,
+              "executable": true
+            },
+            {
+              "target": 0.04,
+              "control": 0.04,
+              "terminal": 0.04000326620795371,
+              "error": 3.266207953711575e-06,
+              "requested_displacement": 0.0,
+              "actual_displacement": 3.266207953711575e-06,
+              "executable": false
+            }
+          ],
+          "selected_boundary": -0.005,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "hello_robot_stretch_2-c3-nominal",
+              "target": 0.0175,
+              "max_duration_s": 60.0,
+              "terminal_errors": [
+                1.611165910765308e-05,
+                1.611165910765308e-05,
+                1.611165910765308e-05
+              ],
+              "max_terminal_error": 1.611165910765308e-05,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "hello_robot_stretch_2-c3-calibrated_boundary",
+              "target": -0.005,
+              "max_duration_s": 60.0,
+              "terminal_errors": [
+                0.00035400644483930127,
+                0.00035400644483930127,
+                0.00035400644483930127
+              ],
+              "max_terminal_error": 0.00035400644483930127,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 0.0003540064448535121
+        },
+        "C4": {
+          "method_name": "set_wrist_yaw_position",
+          "criterion_source_id": "exp3-calibration-hello_robot_stretch_2-c4",
+          "metric": "terminal wrist yaw position error",
+          "unit": "rad",
+          "instance_id": "stretch-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint_wrist_yaw",
+          "actuator_name": "wrist_yaw",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -1.75,
+          "joint_upper": 4.0,
+          "boundary_candidates": [
+            {
+              "target": -1.75,
+              "control": -1.75,
+              "terminal": -1.7500012547247414,
+              "error": 1.2547247414396168e-06,
+              "requested_displacement": 1.75,
+              "actual_displacement": 1.7500012547247414,
+              "executable": true
+            },
+            {
+              "target": 4.0,
+              "control": 4.0,
+              "terminal": 3.9999505797176713,
+              "error": 4.9420282328682674e-05,
+              "requested_displacement": 4.0,
+              "actual_displacement": 3.9999505797176713,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 4.0,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "hello_robot_stretch_2-c4-nominal",
+              "target": 2.0,
+              "max_duration_s": 60.0,
+              "terminal_errors": [
+                2.987547137434099e-05,
+                2.987547137434099e-05,
+                2.987547137434099e-05
+              ],
+              "max_terminal_error": 2.987547137434099e-05,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "hello_robot_stretch_2-c4-calibrated_boundary",
+              "target": 4.0,
+              "max_duration_s": 60.0,
+              "terminal_errors": [
+                4.9420282328682674e-05,
+                4.9420282328682674e-05,
+                4.9420282328682674e-05
+              ],
+              "max_terminal_error": 4.9420282328682674e-05,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.171241461241152e-14,
+          "sealed_threshold": 4.942028241039509e-05
+        },
+        "C5": {
+          "method_name": "set_vertical_lift_position",
+          "criterion_source_id": "exp3-calibration-hello_robot_stretch_2-c5",
+          "metric": "terminal vertical lift position error",
+          "unit": "m",
+          "instance_id": "stretch-mw_reach_target",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "joint_lift",
+          "actuator_name": "lift",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -0.5,
+          "joint_upper": 0.6,
+          "boundary_candidates": [
+            {
+              "target": -0.5,
+              "control": -0.5,
+              "terminal": -0.4371565244865121,
+              "error": 0.0628434755134879,
+              "requested_displacement": 0.5,
+              "actual_displacement": 0.4371565244865121,
+              "executable": true
+            },
+            {
+              "target": 0.6,
+              "control": 0.6,
+              "terminal": 0.599672648836944,
+              "error": 0.00032735116305593337,
+              "requested_displacement": 0.6,
+              "actual_displacement": 0.599672648836944,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 0.6,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "hello_robot_stretch_2-c5-nominal",
+              "target": 0.3,
+              "max_duration_s": 60.0,
+              "terminal_errors": [
+                0.00032735116305876444,
+                0.00032735116305876444,
+                0.00032735116305876444
+              ],
+              "max_terminal_error": 0.00032735116305876444,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "hello_robot_stretch_2-c5-calibrated_boundary",
+              "target": 0.6,
+              "max_duration_s": 60.0,
+              "terminal_errors": [
+                0.00032735116305593337,
+                0.00032735116305593337,
+                0.00032735116305593337
+              ],
+              "max_terminal_error": 0.00032735116305593337,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.5631940186722205e-14,
+          "sealed_threshold": 0.00032735116307439636
+        }
+      }
+    },
+    "aloha_2": {
+      "instance_id": "aloha-2-capability-left-side",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "capabilities": {
+        "C3": {
+          "method_name": "set_left_gripper_position",
+          "criterion_source_id": "exp3-calibration-aloha_2-c3",
+          "metric": "terminal left gripper position error",
+          "unit": "m",
+          "instance_id": "aloha-2-capability-left-side",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "left/left_finger",
+          "actuator_name": "left/gripper",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0084,
+          "joint_lower": 0.0,
+          "joint_upper": 0.041,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.002,
+              "terminal": 0.007848276784899733,
+              "error": 0.007848276784899733,
+              "requested_displacement": 0.0084,
+              "actual_displacement": 0.0005517232151002662,
+              "executable": false
+            },
+            {
+              "target": 0.041,
+              "control": 0.037,
+              "terminal": 0.03700000000137031,
+              "error": 0.00399999999862969,
+              "requested_displacement": 0.032600000000000004,
+              "actual_displacement": 0.028600000001370314,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 0.041,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "aloha_2-c3-nominal",
+              "target": 0.0247,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                1.37025807367408e-12,
+                1.37025807367408e-12,
+                1.37025807367408e-12
+              ],
+              "max_terminal_error": 1.37025807367408e-12,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "aloha_2-c3-calibrated_boundary",
+              "target": 0.041,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                0.00399999999862969,
+                0.00399999999862969,
+                0.00399999999862969
+              ],
+              "max_terminal_error": 0.00399999999862969,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 0.003999999998643901
+        },
+        "C4": {
+          "method_name": "set_right_gripper_position",
+          "criterion_source_id": "exp3-calibration-aloha_2-c4",
+          "metric": "terminal right gripper position error",
+          "unit": "m",
+          "instance_id": "aloha-2-capability-right-side",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "right/left_finger",
+          "actuator_name": "right/gripper",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0084,
+          "joint_lower": 0.0,
+          "joint_upper": 0.041,
+          "boundary_candidates": [
+            {
+              "target": 0.0,
+              "control": 0.002,
+              "terminal": 0.007848276784899737,
+              "error": 0.007848276784899737,
+              "requested_displacement": 0.0084,
+              "actual_displacement": 0.0005517232151002627,
+              "executable": false
+            },
+            {
+              "target": 0.041,
+              "control": 0.037,
+              "terminal": 0.03700000000137031,
+              "error": 0.00399999999862969,
+              "requested_displacement": 0.032600000000000004,
+              "actual_displacement": 0.028600000001370314,
+              "executable": true
+            }
+          ],
+          "selected_boundary": 0.041,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "aloha_2-c4-nominal",
+              "target": 0.0247,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                1.3702615431210319e-12,
+                1.3702615431210319e-12,
+                1.3702615431210319e-12
+              ],
+              "max_terminal_error": 1.3702615431210319e-12,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "aloha_2-c4-calibrated_boundary",
+              "target": 0.041,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                0.00399999999862969,
+                0.00399999999862969,
+                0.00399999999862969
+              ],
+              "max_terminal_error": 0.00399999999862969,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 1.4210854715202004e-14,
+          "sealed_threshold": 0.003999999998643901
+        },
+        "C5": {
+          "method_name": "set_left_wrist_position",
+          "criterion_source_id": "exp3-calibration-aloha_2-c5",
+          "metric": "terminal left wrist position error",
+          "unit": "rad",
+          "instance_id": "aloha-2-capability-left-side",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "left/wrist_rotate",
+          "actuator_name": "left/wrist_rotate",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -3.14158,
+          "joint_upper": 3.14158,
+          "boundary_candidates": [
+            {
+              "target": -3.14158,
+              "control": -3.14158,
+              "terminal": -3.1415921570515493,
+              "error": 1.215705154944402e-05,
+              "requested_displacement": 3.14158,
+              "actual_displacement": 3.1415921570515493,
+              "executable": true
+            },
+            {
+              "target": 3.14158,
+              "control": 3.14158,
+              "terminal": 3.141514976171811,
+              "error": 6.502382818895924e-05,
+              "requested_displacement": 3.14158,
+              "actual_displacement": 3.141514976171811,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -3.14158,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "aloha_2-c5-nominal",
+              "target": -1.57079,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                0.014486037289441311,
+                0.014486037289441311,
+                0.014486037289441311
+              ],
+              "max_terminal_error": 0.014486037289441311,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "aloha_2-c5-calibrated_boundary",
+              "target": -3.14158,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                1.215705154944402e-05,
+                1.215705154944402e-05,
+                1.215705154944402e-05
+              ],
+              "max_terminal_error": 1.215705154944402e-05,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.928907391236862e-14,
+          "sealed_threshold": 0.014486037289530601
+        },
+        "C6": {
+          "method_name": "set_right_wrist_position",
+          "criterion_source_id": "exp3-calibration-aloha_2-c6",
+          "metric": "terminal right wrist position error",
+          "unit": "rad",
+          "instance_id": "aloha-2-capability-right-side",
+          "scene_entrypoint": "assets/reach_scene.xml",
+          "joint_name": "right/wrist_rotate",
+          "actuator_name": "right/wrist_rotate",
+          "controller_kind": "trusted_constant_position_control",
+          "timestep_s": 0.002,
+          "repetitions": 3,
+          "reset_position": 0.0,
+          "joint_lower": -3.14158,
+          "joint_upper": 3.14158,
+          "boundary_candidates": [
+            {
+              "target": -3.14158,
+              "control": -3.14158,
+              "terminal": -3.1415921570515493,
+              "error": 1.215705154944402e-05,
+              "requested_displacement": 3.14158,
+              "actual_displacement": 3.1415921570515493,
+              "executable": true
+            },
+            {
+              "target": 3.14158,
+              "control": 3.14158,
+              "terminal": 3.141514976171811,
+              "error": 6.502382818895924e-05,
+              "requested_displacement": 3.14158,
+              "actual_displacement": 3.141514976171811,
+              "executable": true
+            }
+          ],
+          "selected_boundary": -3.14158,
+          "numeric_tolerance_rule": "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)",
+          "cases": {
+            "nominal": {
+              "case_id": "aloha_2-c6-nominal",
+              "target": -1.57079,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                0.014486037289441311,
+                0.014486037289441311,
+                0.014486037289441311
+              ],
+              "max_terminal_error": 0.014486037289441311,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            },
+            "calibrated_boundary": {
+              "case_id": "aloha_2-c6-calibrated_boundary",
+              "target": -3.14158,
+              "max_duration_s": 8.0,
+              "terminal_errors": [
+                1.215705154944402e-05,
+                1.215705154944402e-05,
+                1.215705154944402e-05
+              ],
+              "max_terminal_error": 1.215705154944402e-05,
+              "trusted_actuator_executed": true,
+              "physics_stepped": true
+            }
+          },
+          "numeric_tolerance": 8.928907391236862e-14,
+          "sealed_threshold": 0.014486037289530601
+        }
+      }
+    }
+  }
+}

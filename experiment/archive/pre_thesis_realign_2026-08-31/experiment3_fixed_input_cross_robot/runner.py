@@ -1,9 +1,9 @@
 """Thin formal runner for the fixed Experiment 3 cohort.
 
-Design validation is deliberately separate from executable preflight. The
-checked-in prospective manifest can therefore prove the fixed 33-cell design
-and current readiness pins while formal dispatch remains locked pending a
-later explicit project-owner approval.
+Design validation is deliberately separate from executable preflight. Formal
+dispatch is authorised only through the checked-in manifest and still cannot
+construct a model client until all eleven fixed design/suite pairs and the
+remaining executable readiness pins pass the zero-model preflight.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import os
 import re
 import subprocess
@@ -67,13 +68,56 @@ EXPECTED_RETRY_POLICY = {
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 DEFAULT_HOLISTICAI_ENV_FILE = Path(__file__).resolve().parents[2] / ".env.holisticai-api"
-AUTHORITY_REVISION = "0.2.1"
-MANIFEST_REVISION = "0.2.1"
-PROTOCOL_REVISION = "0.2.1"
+AUTHORITY_REVISION = "0.3.0"
+MANIFEST_REVISION = "0.3.0"
+PROTOCOL_REVISION = "0.3.0"
+FIXED_INPUT_INDEX = "experiment/experiment3/fixed_inputs/index.json"
+FIXED_INPUT_SMOKE_REPORT = "experiment/experiment3/fixed_inputs/smoke_report.json"
+FIXED_INPUT_CALIBRATION_REPORT = (
+    "experiment/experiment3/fixed_inputs/calibration_report.json"
+)
+NUMERIC_TOLERANCE_RULE = (
+    "64 * IEEE-754 binary64 epsilon * max(1, abs(lower), abs(upper), span)"
+)
+PUBLIC_OR_TRACKED_CRITERION_SOURCE_IDS = frozenset(
+    {
+        "b1_driver_validation_criteria",
+        "leap_hand_if_tip_public_reach",
+        "leap_hand_mf_tip_public_reach",
+        "leap_hand_rf_tip_public_reach",
+        "leap_hand_th_tip_public_reach",
+        "leap_hand_public_sixteen_joint_pose",
+        "hello_robot_stretch_2_tracked_st1_base_translation",
+        "aloha_2_tracked_al1_left_endpoint",
+        "aloha_2_tracked_al1_right_endpoint",
+        *{
+            f"{robot}_public_reach_and_real_reset"
+            for robot in (
+                "franka_panda",
+                "kinova_gen3_robotiq_2f85",
+                "ufactory_xarm7",
+                "universal_robots_ur5e_robotiq_2f85",
+                "piper",
+                "kuka_iiwa_14",
+                "hello_robot_stretch_2",
+            )
+        },
+        *{
+            f"{robot}_real_reset_to_target_displacement"
+            for robot in (
+                "franka_panda",
+                "kinova_gen3_robotiq_2f85",
+                "ufactory_xarm7",
+                "universal_robots_ur5e_robotiq_2f85",
+                "piper",
+                "kuka_iiwa_14",
+                "hello_robot_stretch_2",
+            )
+        },
+    }
+)
 PHASE_TURN_BUDGETS = {
     "study": 16,
-    "tgcd": 6,
-    "ivc": 6,
     "generate_skeleton": 22,
     "repair_skeleton": 22,
 }
@@ -81,23 +125,37 @@ RECAP_BUDGET = {
     "max_planning_turns_per_task": 16,
     "max_capability_calls_per_task": 12,
 }
-REFERENCE_SEEN_ROBOTS = {
-    "robotstudio_so101",
-    "unitree-go2-stock-12dof",
-}
 FORMAL_GIT_PATHS = (
     "AUTOADAPTER_2_AUTHORITY.md",
-    "experiment/experiment3",
+    "experiment/experiment3/EXPERIMENT_3_AUTHORITY.md",
+    "experiment/experiment3/PROTOCOL.md",
+    "experiment/experiment3/manifest.json",
+    "experiment/experiment3/runner.py",
+    "experiment/experiment3/fixed_inputs",
     "autoadapter/src/autoadapter2",
     ":(exclude)autoadapter/src/autoadapter2/b2",
-    "autoadapter/libraries/robots",
-    "autoadapter/research/robots",
+    "autoadapter/libraries/robots/index.json",
+    "autoadapter/libraries/robots/robotstudio_so101/1.0.4",
+    "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0",
+    "autoadapter/libraries/robots/franka_panda/1.0.0",
+    "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0",
+    "autoadapter/libraries/robots/ufactory_xarm7/1.0.0",
+    "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0",
+    "autoadapter/libraries/robots/piper/1.0.0",
+    "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0",
+    "autoadapter/libraries/robots/leap_hand/1.0.0",
+    "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0",
+    "autoadapter/libraries/robots/aloha_2/1.0.0",
     "autoadapter/pyproject.toml",
 )
 
 
 class Experiment3RunnerError(RuntimeError):
     """Raised when the fixed design or formal dispatch boundary is violated."""
+
+
+class Experiment3SystemicError(Experiment3RunnerError):
+    """Raised when continuing would make untouched rows incomparable or unsafe."""
 
 
 def load_manifest(path: str | Path | None = None) -> dict[str, Any]:
@@ -201,12 +259,10 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         f"protocol_revision must be {PROTOCOL_REVISION}",
     )
     _require(manifest.get("experiment_id") == EXPERIMENT_ID, "unexpected experiment_id")
-    status = manifest.get("status")
-    dispatch_authorised = manifest.get("formal_dispatch_authorised")
     _require(
-        (status == "preflight-only" and dispatch_authorised is False)
-        or (status == "formal-authorised" and dispatch_authorised is True),
-        "status and formal_dispatch_authorised must form a locked or explicitly authorised pair",
+        manifest.get("status") == "formal-authorised"
+        and manifest.get("formal_dispatch_authorised") is True,
+        "the current Authority requires the explicitly authorised formal route",
     )
     _require(
         tuple(manifest.get("robot_configurations", ())) == ROBOT_CONFIGURATIONS,
@@ -227,13 +283,13 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         manifest.get("fresh_end_to_end_per_cell")
         == {
             "study": True,
-            "tgcd": True,
-            "ivc": True,
+            "tgcd": False,
+            "ivc": False,
             "workspace": True,
             "model_conversation": True,
             "canonical_reset": True,
         },
-        "every cell must use fresh STUDY, TGCD, IVC, workspace, conversation, and reset",
+        "every cell must use fresh STUDY/workspace/conversation/reset and skip TGCD/IVC",
     )
     _require(manifest.get("morphology_role") == "descriptive-only", "morphology must be descriptive-only")
     _require(
@@ -257,14 +313,12 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         workflow.get("order")
         == [
             "STUDY",
-            "TGCD",
-            "IVC",
             "GENERATE",
             "Capability-Validation",
             "Repair",
             "ReCAP-Task-Demo",
         ],
-        "workflow must use the STUDY-first file-artifact route",
+        "workflow must use the fixed-input STUDY-to-Generate route",
     )
     _require(
         workflow.get("aggregate_tool_call_limit") is None,
@@ -275,38 +329,52 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         "workflow must freeze at most three drivers",
     )
 
-    ivc_contract = manifest.get("ivc_contract")
-    _require(isinstance(ivc_contract, Mapping), "ivc_contract must be pinned")
-    assert isinstance(ivc_contract, Mapping)
     _require(
-        dict(ivc_contract)
+        manifest.get("fixed_input_set") == FIXED_INPUT_INDEX,
+        f"fixed_input_set must point to {FIXED_INPUT_INDEX}",
+    )
+    _require(
+        manifest.get("fixed_input_smoke_report") == FIXED_INPUT_SMOKE_REPORT,
+        f"fixed_input_smoke_report must point to {FIXED_INPUT_SMOKE_REPORT}",
+    )
+    _require(
+        manifest.get("fixed_input_calibration_report")
+        == FIXED_INPUT_CALIBRATION_REPORT,
+        "fixed_input_calibration_report must point to "
+        f"{FIXED_INPUT_CALIBRATION_REPORT}",
+    )
+    fixed_contract = manifest.get("fixed_input_contract")
+    _require(isinstance(fixed_contract, Mapping), "fixed_input_contract must be pinned")
+    assert isinstance(fixed_contract, Mapping)
+    _require(
+        dict(fixed_contract)
         == {
-            "candidate_blind": True,
-            "experience_visible": False,
+            "one_design_and_suite_per_robot": True,
+            "same_pair_across_replicates": True,
+            "validated_before_model_calls": True,
+            "real_mujoco_smoke_required": True,
+            "real_threshold_calibration_required": True,
+            "minimum_capabilities_per_robot": 5,
+            "design_protocol": "capability-v2",
             "cases_per_capability": ["nominal", "calibrated_boundary"],
+            "suite_candidate_blind": True,
             "inline_measurement_binding_required": True,
             "binding_id_forbidden": True,
-            "trusted_operator_catalog_required": True,
-            "worked_reference_case_count": 22,
+            "candidate_task_id_dispatch_forbidden": True,
         },
-        "IVC must use candidate-blind inline trusted measurements and the complete worked references",
+        "fixed inputs must provide one validated candidate-blind capability-v2 pair per robot",
     )
-
-    groups = manifest.get("reporting_groups")
-    _require(isinstance(groups, Mapping), "reporting_groups must be pinned")
-    assert isinstance(groups, Mapping)
-    expected_controls = [
-        f"{robot}::{replicate}"
-        for robot in ("robotstudio_so101", "unitree-go2-stock-12dof")
-        for replicate in REPLICATE_IDS
-    ]
     _require(
-        groups.get("reference_seen_controls") == expected_controls
-        and groups.get("reference_seen_control_count") == 6
-        and groups.get("transfer_cell_count") == 27
-        and groups.get("effect_claim") is False
-        and groups.get("quadruped_transfer_claim") is False,
-        "reporting groups must be six reference-seen controls and 27 transfer cells without an effect claim",
+        manifest.get("authoring_stages")
+        == {
+            "tgcd": {"mode": "skipped-fixed-input", "model_call_budget": 0},
+            "ivc": {"mode": "skipped-fixed-input", "model_call_budget": 0},
+        },
+        "TGCD and IVC must both be fixed-input zero-call stages",
+    )
+    _require(
+        "reporting_groups" not in manifest,
+        "reference-seen and transfer reporting groups are not part of Experiment 3",
     )
 
     evolution = manifest.get("evolution")
@@ -345,11 +413,6 @@ def expand_cells(manifest: Mapping[str, Any]) -> list[dict[str, str]]:
             "replicate_id": replicate_id,
             "robot_configuration_id": robot,
             "morphology_label": MORPHOLOGY_LABELS[robot],
-            "reference_exposure_group": (
-                "reference-seen-control"
-                if robot in REFERENCE_SEEN_ROBOTS
-                else "transfer"
-            ),
             "generation_condition": CONDITION,
             "run_id": f"{experiment_id}-{replicate_id}-{robot}",
         }
@@ -591,17 +654,6 @@ def _evidence_item(value: Any, *, label: str, root: Path) -> dict[str, Any]:
     }
 
 
-def _repository_root(mainline_root: str | Path) -> Path:
-    """Resolve the repository root from the normal ``--root autoadapter`` input."""
-
-    root = Path(mainline_root).resolve()
-    if (root / "src" / "autoadapter2").is_dir():
-        return root.parent
-    if (root / "autoadapter" / "src" / "autoadapter2").is_dir():
-        return root
-    return root.parent if root.name == "autoadapter" else root
-
-
 def validate_executable_preflight(
     manifest: Mapping[str, Any], *, mainline_root: str | Path
 ) -> dict[str, Any]:
@@ -673,96 +725,979 @@ def validate_executable_preflight(
     }
 
 
-def _check_package_ivc_contexts(
+def _repository_root(mainline_root: str | Path) -> Path:
+    """Resolve the repository root from the normal ``--root autoadapter`` input."""
+
+    root = Path(mainline_root).resolve()
+    if (root / "src" / "autoadapter2").is_dir():
+        return root.parent
+    if (root / "autoadapter" / "src" / "autoadapter2").is_dir():
+        return root
+    # Tests may inject package loaders for a synthetic mainline root.  Relative
+    # manifest paths still have one deterministic interpretation.
+    return root.parent if root.name == "autoadapter" else root
+
+
+def _fixed_input_index_path(
+    manifest: Mapping[str, Any], *, mainline_root: str | Path
+) -> Path:
+    value = manifest.get("fixed_input_set")
+    _require(value == FIXED_INPUT_INDEX, f"fixed_input_set must equal {FIXED_INPUT_INDEX}")
+    return (_repository_root(mainline_root) / str(value)).resolve()
+
+
+def _fixed_input_smoke_path(
+    manifest: Mapping[str, Any], *, mainline_root: str | Path
+) -> Path:
+    value = manifest.get("fixed_input_smoke_report")
+    _require(
+        value == FIXED_INPUT_SMOKE_REPORT,
+        f"fixed_input_smoke_report must equal {FIXED_INPUT_SMOKE_REPORT}",
+    )
+    return (_repository_root(mainline_root) / str(value)).resolve()
+
+
+def _fixed_input_calibration_path(
+    manifest: Mapping[str, Any], *, mainline_root: str | Path
+) -> Path:
+    value = manifest.get("fixed_input_calibration_report")
+    _require(
+        value == FIXED_INPUT_CALIBRATION_REPORT,
+        "fixed_input_calibration_report must equal "
+        f"{FIXED_INPUT_CALIBRATION_REPORT}",
+    )
+    return (_repository_root(mainline_root) / str(value)).resolve()
+
+
+def _read_fixed_index(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise Experiment3RunnerError(f"cannot read fixed-input index {path}") from exc
+    _require(isinstance(value, Mapping), "fixed-input index must be one object")
+    return copy.deepcopy(dict(value))
+
+
+def _check_fixed_input_smoke_report(
+    path: str | Path, *, input_set_id: str
+) -> dict[str, Any]:
+    """Require the retained all-robot real MuJoCo wiring smoke."""
+
+    source = Path(path).resolve()
+    report = _read_fixed_index(source)
+    _require(
+        set(report)
+        == {"artifact_type", "schema_version", "input_set_id", "passed", "robots"},
+        "fixed-input smoke report has unexpected or missing top-level fields",
+    )
+    _require(
+        report.get("artifact_type") == "experiment3_fixed_input_mujoco_smoke"
+        and report.get("schema_version") == "1.0"
+        and report.get("input_set_id") == input_set_id
+        and report.get("passed") is True,
+        "fixed-input smoke identity, input_set_id, or overall verdict is invalid",
+    )
+    robots = report.get("robots")
+    _require(
+        isinstance(robots, Mapping)
+        and tuple(robots) == ROBOT_CONFIGURATIONS
+        and set(robots) == set(ROBOT_CONFIGURATIONS),
+        "fixed-input smoke must contain the exact eleven robots in Authority order",
+    )
+    expected_fields = {
+        "instance_id",
+        "scene_entrypoint",
+        "case_id",
+        "operator_kind",
+        "scene_loaded",
+        "reset_applied",
+        "trusted_operator_executed",
+        "measurement_finite",
+        "measurement_value",
+        "passed",
+    }
+    checked_robots: dict[str, Any] = {}
+    for robot in ROBOT_CONFIGURATIONS:
+        item = robots[robot]
+        _require(
+            isinstance(item, Mapping) and set(item) == expected_fields,
+            f"fixed-input smoke record for {robot!r} has the wrong fields",
+        )
+        for field in ("instance_id", "scene_entrypoint", "case_id", "operator_kind"):
+            _require(
+                isinstance(item.get(field), str) and bool(str(item[field]).strip()),
+                f"fixed-input smoke {field} for {robot!r} must be non-empty text",
+            )
+        for field in (
+            "scene_loaded",
+            "reset_applied",
+            "trusted_operator_executed",
+            "measurement_finite",
+            "passed",
+        ):
+            _require(
+                item.get(field) is True,
+                f"fixed-input smoke {field} did not pass for {robot!r}",
+            )
+        measurement = item.get("measurement_value")
+        _require(
+            isinstance(measurement, (int, float))
+            and not isinstance(measurement, bool)
+            and math.isfinite(float(measurement)),
+            f"fixed-input smoke measurement for {robot!r} must be finite numeric evidence",
+        )
+        checked_robots[robot] = copy.deepcopy(dict(item))
+    return {
+        "path": str(source),
+        "artifact_type": report["artifact_type"],
+        "input_set_id": input_set_id,
+        "passed": True,
+        "robots": checked_robots,
+    }
+
+
+def _finite_number(value: Any, *, label: str) -> float:
+    _require(
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value)),
+        f"{label} must be a finite number",
+    )
+    return float(value)
+
+
+def _private_instance_scene(package: Any, *, instance_id: str) -> str:
+    root = getattr(package, "root", None)
+    _require(isinstance(root, Path), "fixed-input package root is unavailable")
+    matches: list[str] = []
+    for directory in (
+        root / "capability_validation" / "private",
+        getattr(package, "private_dir", root / "tasks" / "private"),
+    ):
+        path = directory / "instances.json"
+        if not path.is_file():
+            continue
+        value = _read_fixed_index(path)
+        instances = value.get("instances")
+        _require(isinstance(instances, list), f"private instances are invalid in {path}")
+        for item in instances:
+            if isinstance(item, Mapping) and item.get("instance_id") == instance_id:
+                scene = item.get("scene_entrypoint")
+                _require(
+                    isinstance(scene, str) and bool(scene.strip()),
+                    f"private instance {instance_id!r} has no scene entrypoint",
+                )
+                matches.append(scene)
+    _require(matches, f"cannot resolve private instance {instance_id!r}")
+    _require(
+        len(set(matches)) == 1,
+        f"private instance {instance_id!r} resolves to conflicting scenes",
+    )
+    scene = matches[0]
+    _require(
+        (root / scene).resolve().is_file(),
+        f"private instance {instance_id!r} scene does not exist",
+    )
+    return scene
+
+
+def _forbidden_threshold_protocol(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return any(_forbidden_threshold_protocol(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_forbidden_threshold_protocol(item) for item in value)
+    return isinstance(value, str) and (
+        "_mjcf_range_protocol" in value or "0.01 * span" in value
+    )
+
+
+def _boundary_target(value: Any, *, label: str) -> float:
+    if isinstance(value, Mapping):
+        value = value.get("target")
+    return _finite_number(value, label=label)
+
+
+def _check_calibrated_capability(
+    *,
+    robot: str,
+    capability: Mapping[str, Any],
+    cases: list[Mapping[str, Any]],
+    record: Mapping[str, Any],
+    package: Any,
+    criterion_source_id: str,
+) -> dict[str, Any]:
+    capability_id = str(capability.get("capability_id", ""))
+    label = f"fixed threshold calibration {robot}/{capability_id}"
+    required_record_fields = {
+        "instance_id",
+        "scene_entrypoint",
+        "method_name",
+        "criterion_source_id",
+        "metric",
+        "unit",
+        "joint_name",
+        "actuator_name",
+        "controller_kind",
+        "timestep_s",
+        "repetitions",
+        "numeric_tolerance_rule",
+        "reset_position",
+        "joint_lower",
+        "joint_upper",
+        "boundary_candidates",
+        "selected_boundary",
+        "cases",
+        "numeric_tolerance",
+        "sealed_threshold",
+    }
+    _require(
+        set(record) == required_record_fields,
+        f"{label} has unexpected or missing fields",
+    )
+    for field in (
+        "instance_id",
+        "scene_entrypoint",
+        "method_name",
+        "criterion_source_id",
+        "metric",
+        "unit",
+        "joint_name",
+        "actuator_name",
+    ):
+        _require(
+            isinstance(record.get(field), str) and bool(str(record[field]).strip()),
+            f"{label}.{field} must be non-empty text",
+        )
+    _require(
+        record.get("method_name") == capability.get("method_name")
+        and record.get("criterion_source_id") == criterion_source_id,
+        f"{label} does not match the sealed capability/source identity",
+    )
+    criteria = capability.get("criteria")
+    _require(
+        isinstance(criteria, list) and len(criteria) == 1,
+        f"{label} must resolve exactly one calibrated criterion",
+    )
+    criterion = criteria[0]
+    _require(
+        isinstance(criterion, Mapping)
+        and record.get("metric") == criterion.get("metric")
+        and record.get("unit") == criterion.get("unit"),
+        f"{label} metric/unit differs from the sealed criterion",
+    )
+    _require(
+        record.get("controller_kind") == "trusted_constant_position_control"
+        and record.get("repetitions") == 3
+        and record.get("numeric_tolerance_rule") == NUMERIC_TOLERANCE_RULE,
+        f"{label} does not retain the required trusted three-repeat controller rule",
+    )
+    timestep = _finite_number(record.get("timestep_s"), label=f"{label}.timestep_s")
+    _require(timestep > 0.0, f"{label}.timestep_s must be positive")
+
+    reset = _finite_number(record.get("reset_position"), label=f"{label}.reset_position")
+    lower = _finite_number(record.get("joint_lower"), label=f"{label}.joint_lower")
+    upper = _finite_number(record.get("joint_upper"), label=f"{label}.joint_upper")
+    _require(lower < upper and lower <= reset <= upper, f"{label} has invalid joint/reset bounds")
+    candidates = record.get("boundary_candidates")
+    _require(
+        isinstance(candidates, list) and len(candidates) == 2,
+        f"{label}.boundary_candidates must contain the two closed joint bounds",
+    )
+    expected_candidate_fields = {
+        "target",
+        "control",
+        "terminal",
+        "error",
+        "requested_displacement",
+        "actual_displacement",
+        "executable",
+    }
+    for index, item in enumerate(candidates):
+        _require(
+            isinstance(item, Mapping) and set(item) == expected_candidate_fields,
+            f"{label}.boundary_candidates[{index}] has the wrong fields",
+        )
+        target = _finite_number(item.get("target"), label=f"{label}.boundary_candidates[{index}].target")
+        _finite_number(item.get("control"), label=f"{label}.boundary_candidates[{index}].control")
+        terminal = _finite_number(item.get("terminal"), label=f"{label}.boundary_candidates[{index}].terminal")
+        error = _finite_number(item.get("error"), label=f"{label}.boundary_candidates[{index}].error")
+        requested_displacement = _finite_number(
+            item.get("requested_displacement"),
+            label=f"{label}.boundary_candidates[{index}].requested_displacement",
+        )
+        actual_displacement = _finite_number(
+            item.get("actual_displacement"),
+            label=f"{label}.boundary_candidates[{index}].actual_displacement",
+        )
+        executable = (
+            requested_displacement > 0.0
+            and actual_displacement > 0.0
+            and error < 0.5 * requested_displacement
+        )
+        _require(
+            error == abs(terminal - target)
+            and requested_displacement == abs(target - reset)
+            and actual_displacement == abs(terminal - reset)
+            and item.get("executable") is executable,
+            f"{label}.boundary_candidates[{index}] is inconsistent with its real terminal state",
+        )
+    candidate_targets = [
+        _boundary_target(item, label=f"{label}.boundary_candidates[{index}]")
+        for index, item in enumerate(candidates)
+    ]
+    _require(
+        set(candidate_targets) == {lower, upper},
+        f"{label}.boundary_candidates must be the exact lower/upper joint bounds",
+    )
+    selected_raw = record.get("selected_boundary")
+    selected = _boundary_target(selected_raw, label=f"{label}.selected_boundary")
+    _require(
+        selected in {lower, upper},
+        f"{label}.selected_boundary must be one exact closed joint bound",
+    )
+    _require(
+        any(
+            item.get("target") == selected and item.get("executable") is True
+            for item in candidates
+        ),
+        f"{label}.selected_boundary must retain an executable real-control result",
+    )
+
+    by_role: dict[str, Mapping[str, Any]] = {}
+    for case in cases:
+        role = case.get("case_role")
+        _require(
+            role in {"nominal", "calibrated_boundary"} and role not in by_role,
+            f"{label} suite roles are invalid",
+        )
+        by_role[str(role)] = case
+    _require(
+        set(by_role) == {"nominal", "calibrated_boundary"},
+        f"{label} must have one nominal and one calibrated-boundary case",
+    )
+    report_cases = record.get("cases")
+    _require(
+        isinstance(report_cases, Mapping)
+        and set(report_cases) == {"nominal", "calibrated_boundary"},
+        f"{label}.cases must contain the two exact roles",
+    )
+    instance_id = str(record["instance_id"])
+    scene_entrypoint = str(record["scene_entrypoint"])
+    _require(
+        _private_instance_scene(package, instance_id=instance_id) == scene_entrypoint,
+        f"{label} scene does not match its private instance",
+    )
+    expected_case_fields = {
+        "case_id",
+        "target",
+        "max_duration_s",
+        "terminal_errors",
+        "max_terminal_error",
+        "trusted_actuator_executed",
+        "physics_stepped",
+    }
+    targets: dict[str, float] = {}
+    for role in ("nominal", "calibrated_boundary"):
+        suite_case = by_role[role]
+        report_case = report_cases[role]
+        _require(
+            isinstance(report_case, Mapping) and set(report_case) == expected_case_fields,
+            f"{label}.{role} calibration case has the wrong fields",
+        )
+        _require(
+            suite_case.get("instance_id") == instance_id
+            and report_case.get("case_id") == suite_case.get("case_id"),
+            f"{label}.{role} case/instance identity differs from the fixed suite",
+        )
+        binding = suite_case.get("measurement_binding")
+        parameters = binding.get("parameters") if isinstance(binding, Mapping) else None
+        _require(
+            isinstance(binding, Mapping)
+            and binding.get("metric") == record.get("metric")
+            and binding.get("unit") == record.get("unit")
+            and binding.get("kind") == "final_joint_position_error"
+            and isinstance(parameters, Mapping)
+            and parameters.get("joint_name") == record.get("joint_name")
+            and parameters.get("target_argument") == "request.target_position",
+            f"{label}.{role} does not use the matching trusted joint measurement",
+        )
+        request = suite_case.get("request")
+        _require(isinstance(request, Mapping), f"{label}.{role} request is invalid")
+        target = _finite_number(
+            request.get("target_position"), label=f"{label}.{role}.request.target_position"
+        )
+        duration = _finite_number(
+            request.get("max_duration_s"), label=f"{label}.{role}.request.max_duration_s"
+        )
+        _require(duration > 0.0, f"{label}.{role} duration must be positive")
+        report_target = _finite_number(report_case.get("target"), label=f"{label}.{role}.target")
+        report_duration = _finite_number(
+            report_case.get("max_duration_s"), label=f"{label}.{role}.max_duration_s"
+        )
+        _require(
+            target == report_target and duration == report_duration,
+            f"{label}.{role} real calibration target/duration differs from the fixed suite",
+        )
+        terminal_errors = report_case.get("terminal_errors")
+        _require(
+            isinstance(terminal_errors, list) and len(terminal_errors) == 3,
+            f"{label}.{role} must retain three terminal errors",
+        )
+        checked_errors = [
+            _finite_number(error, label=f"{label}.{role}.terminal_errors")
+            for error in terminal_errors
+        ]
+        _require(
+            all(error >= 0.0 for error in checked_errors)
+            and report_case.get("trusted_actuator_executed") is True
+            and report_case.get("physics_stepped") is True,
+            f"{label}.{role} lacks real trusted actuator/physics evidence",
+        )
+        max_error = _finite_number(
+            report_case.get("max_terminal_error"),
+            label=f"{label}.{role}.max_terminal_error",
+        )
+        _require(
+            max_error == max(checked_errors),
+            f"{label}.{role}.max_terminal_error does not match its repeats",
+        )
+        targets[role] = target
+
+    nominal = targets["nominal"]
+    boundary = targets["calibrated_boundary"]
+    _require(nominal != boundary, f"{label} nominal and boundary targets must differ")
+    _require(boundary == selected, f"{label} suite boundary is not the selected real joint bound")
+    _require(
+        nominal == reset + 0.5 * (boundary - reset),
+        f"{label} nominal target must be the exact reset-to-boundary midpoint",
+    )
+    target_schema = capability.get("request_schema", {}).get("properties", {}).get(
+        "target_position"
+    )
+    _require(isinstance(target_schema, Mapping), f"{label} lacks a closed target_position schema")
+    schema_lower = _finite_number(target_schema.get("minimum"), label=f"{label}.schema.minimum")
+    schema_upper = _finite_number(target_schema.get("maximum"), label=f"{label}.schema.maximum")
+    _require(
+        schema_lower <= nominal <= schema_upper
+        and boundary in {schema_lower, schema_upper},
+        f"{label} boundary must be one exact closed-schema edge",
+    )
+
+    span = upper - lower
+    numeric_tolerance = _finite_number(
+        record.get("numeric_tolerance"), label=f"{label}.numeric_tolerance"
+    )
+    expected_tolerance = (
+        64.0
+        * sys.float_info.epsilon
+        * max(1.0, abs(lower), abs(upper), span)
+    )
+    _require(
+        numeric_tolerance == expected_tolerance,
+        f"{label}.numeric_tolerance does not match the declared IEEE-754 rule",
+    )
+    sealed_threshold = _finite_number(
+        record.get("sealed_threshold"), label=f"{label}.sealed_threshold"
+    )
+    expected_threshold = max(
+        float(report_cases["nominal"]["max_terminal_error"]),
+        float(report_cases["calibrated_boundary"]["max_terminal_error"]),
+    ) + numeric_tolerance
+    _require(
+        sealed_threshold == expected_threshold
+        and criterion.get("threshold") == sealed_threshold,
+        f"{label} threshold does not equal real max error plus numeric tolerance",
+    )
+    _require(
+        sealed_threshold < abs(nominal - reset),
+        f"{label} threshold would permit a no-op to pass the nominal case",
+    )
+    return copy.deepcopy(dict(record))
+
+
+def _check_fixed_input_calibration_report(
+    path: str | Path,
+    *,
+    input_set_id: str,
+    robot_artifacts: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Audit every non-public threshold against retained real MuJoCo evidence."""
+
+    source = Path(path).resolve()
+    report = _read_fixed_index(source)
+    _require(
+        set(report)
+        == {"artifact_type", "schema_version", "input_set_id", "passed", "robots"},
+        "fixed-input calibration report has unexpected or missing top-level fields",
+    )
+    _require(
+        report.get("artifact_type") == "experiment3_fixed_threshold_calibration"
+        and report.get("schema_version") == "1.0"
+        and report.get("input_set_id") == input_set_id
+        and report.get("passed") is True,
+        "fixed-input calibration identity, input_set_id, or overall verdict is invalid",
+    )
+    robots = report.get("robots")
+    _require(
+        isinstance(robots, Mapping)
+        and tuple(robots) == ROBOT_CONFIGURATIONS
+        and set(robots) == set(ROBOT_CONFIGURATIONS),
+        "fixed-input calibration must contain the exact eleven robots in Authority order",
+    )
+    checked_robots: dict[str, Any] = {}
+    for robot in ROBOT_CONFIGURATIONS:
+        artifacts = robot_artifacts.get(robot)
+        _require(isinstance(artifacts, Mapping), f"fixed artifacts are missing for {robot!r}")
+        design = artifacts.get("design")
+        suite = artifacts.get("suite")
+        package = artifacts.get("package")
+        _require(
+            isinstance(design, Mapping) and isinstance(suite, Mapping),
+            f"fixed artifacts are invalid for {robot!r}",
+        )
+        _require(
+            not _forbidden_threshold_protocol(design),
+            f"fixed design for {robot!r} retains an artificial MJCF-span threshold protocol",
+        )
+        robot_report = robots[robot]
+        _require(
+            isinstance(robot_report, Mapping)
+            and set(robot_report) == {"instance_id", "scene_entrypoint", "capabilities"},
+            f"fixed-input calibration robot record for {robot!r} has the wrong fields",
+        )
+        for field in ("instance_id", "scene_entrypoint"):
+            _require(
+                isinstance(robot_report.get(field), str)
+                and bool(str(robot_report[field]).strip()),
+                f"fixed-input calibration {robot!r}.{field} must be non-empty text",
+            )
+        records = robot_report.get("capabilities")
+        _require(isinstance(records, Mapping), f"fixed-input calibration capabilities for {robot!r} must be an object")
+        capabilities = design.get("capabilities")
+        suite_cases = suite.get("cases")
+        _require(isinstance(capabilities, list) and isinstance(suite_cases, list), f"fixed pair is incomplete for {robot!r}")
+        required_records: dict[str, tuple[Mapping[str, Any], str]] = {}
+        for capability in capabilities:
+            _require(isinstance(capability, Mapping), f"fixed capability is invalid for {robot!r}")
+            capability_id = str(capability.get("capability_id", ""))
+            criteria = capability.get("criteria")
+            _require(isinstance(criteria, list) and criteria, f"fixed capability {robot!r}/{capability_id} lacks criteria")
+            source_ids: list[str] = []
+            for criterion in criteria:
+                refs = criterion.get("source_refs") if isinstance(criterion, Mapping) else None
+                _require(isinstance(refs, list) and refs, f"fixed criterion {robot!r}/{capability_id} lacks source refs")
+                for ref in refs:
+                    source_id = ref.get("source_id") if isinstance(ref, Mapping) else None
+                    _require(isinstance(source_id, str) and bool(source_id.strip()), f"fixed criterion {robot!r}/{capability_id} has an invalid source ID")
+                    source_ids.append(source_id)
+            non_public = [
+                source_id
+                for source_id in source_ids
+                if source_id not in PUBLIC_OR_TRACKED_CRITERION_SOURCE_IDS
+            ]
+            if non_public:
+                _require(
+                    len(source_ids) == 1 and len(non_public) == 1,
+                    f"fixed criterion {robot!r}/{capability_id} mixes unresolved threshold sources",
+                )
+                required_records[capability_id] = (capability, non_public[0])
+        _require(
+            set(records) == set(required_records),
+            f"fixed-input calibration records for {robot!r} do not exactly cover non-public thresholds",
+        )
+        checked_capabilities: dict[str, Any] = {}
+        for capability_id, (capability, source_id) in required_records.items():
+            cases = [
+                case
+                for case in suite_cases
+                if isinstance(case, Mapping)
+                and case.get("capability_id") == capability_id
+            ]
+            _require(len(cases) == 2, f"fixed suite lacks two cases for {robot!r}/{capability_id}")
+            checked_capabilities[capability_id] = _check_calibrated_capability(
+                robot=robot,
+                capability=capability,
+                cases=cases,
+                record=records[capability_id],
+                package=package,
+                criterion_source_id=source_id,
+            )
+        checked_robots[robot] = {
+            "instance_id": str(robot_report["instance_id"]),
+            "scene_entrypoint": str(robot_report["scene_entrypoint"]),
+            "capabilities": checked_capabilities,
+        }
+    return {
+        "path": str(source),
+        "artifact_type": report["artifact_type"],
+        "input_set_id": input_set_id,
+        "passed": True,
+        "robots": checked_robots,
+        "calibrated_capability_count": sum(
+            len(item["capabilities"]) for item in checked_robots.values()
+        ),
+    }
+
+
+def _check_directional_endpoint_contract(
+    *, robot: str, design: Mapping[str, Any], suite: Mapping[str, Any]
+) -> None:
+    """Keep a directional capability on the same observed endpoint as reach."""
+
+    capabilities = design.get("capabilities")
+    cases = suite.get("cases")
+    _require(isinstance(capabilities, list) and isinstance(cases, list), f"fixed pair is incomplete for {robot!r}")
+    directional = [
+        item
+        for item in capabilities
+        if isinstance(item, Mapping)
+        and item.get("method_name") == "move_observed_tool_along_direction"
+    ]
+    if not directional:
+        return
+    reach = [
+        item
+        for item in capabilities
+        if isinstance(item, Mapping)
+        and item.get("method_name") == "move_observed_tool_to_position"
+    ]
+    _require(
+        len(directional) == 1 and len(reach) == 1,
+        f"fixed directional endpoint contract is ambiguous for {robot!r}",
+    )
+    directional_capability = directional[0]
+    preconditions = directional_capability.get("preconditions")
+    invariants = directional_capability.get("invariants")
+    _require(
+        isinstance(preconditions, list)
+        and any(
+            isinstance(statement, str)
+            and (
+                "unit" in statement.casefold()
+                or "norm 1" in statement.casefold()
+            )
+            and "1e-6" in statement.casefold()
+            for statement in preconditions
+        ),
+        f"fixed directional capability for {robot!r} must state a 1e-6 unit-vector precondition",
+    )
+    _require(
+        isinstance(invariants, list)
+        and any(
+            isinstance(statement, str)
+            and "unit" in statement.casefold()
+            and (
+                "1e-6" in statement.casefold()
+                or "precondition" in statement.casefold()
+            )
+            for statement in invariants
+        ),
+        f"fixed directional capability for {robot!r} must preserve the 1e-6 unit-vector precondition",
+    )
+    reach_id = reach[0].get("capability_id")
+    directional_id = directional_capability.get("capability_id")
+    reach_cases = [
+        item
+        for item in cases
+        if isinstance(item, Mapping) and item.get("capability_id") == reach_id
+    ]
+    directional_cases = [
+        item
+        for item in cases
+        if isinstance(item, Mapping) and item.get("capability_id") == directional_id
+    ]
+    _require(
+        len(reach_cases) == 2 and len(directional_cases) == 2,
+        f"fixed directional endpoint cases are incomplete for {robot!r}",
+    )
+    reach_binding = reach_cases[0].get("measurement_binding")
+    _require(isinstance(reach_binding, Mapping), f"fixed reach binding is missing for {robot!r}")
+    reach_kind = str(reach_binding.get("kind", ""))
+    reach_parameters = reach_binding.get("parameters")
+    _require(isinstance(reach_parameters, Mapping), f"fixed reach parameters are missing for {robot!r}")
+    if reach_kind.startswith("final_site_"):
+        expected_kind = "final_site_directional_displacement_error"
+        entity_field = "site_name"
+    elif reach_kind == "final_body_xyz_position_error":
+        expected_kind = "final_body_directional_displacement_error"
+        entity_field = "body_name"
+    else:
+        raise Experiment3RunnerError(
+            f"fixed reach endpoint operator for {robot!r} is not a trusted body/site position operator"
+        )
+    endpoint = reach_parameters.get(entity_field)
+    _require(
+        isinstance(endpoint, str) and bool(endpoint.strip()),
+        f"fixed reach endpoint entity is missing for {robot!r}",
+    )
+    for case in directional_cases:
+        binding = case.get("measurement_binding")
+        parameters = binding.get("parameters") if isinstance(binding, Mapping) else None
+        _require(
+            isinstance(binding, Mapping)
+            and binding.get("kind") == expected_kind
+            and isinstance(parameters, Mapping)
+            and parameters.get(entity_field) == endpoint,
+            f"fixed directional capability for {robot!r} does not measure its observed {entity_field[:-5]} endpoint",
+        )
+        _require(
+            parameters.get("direction_x_argument") == "request.direction.x"
+            and parameters.get("direction_y_argument") == "request.direction.y"
+            and parameters.get("direction_z_argument") == "request.direction.z"
+            and parameters.get("target_distance_argument") == "request.distance_m",
+            f"fixed directional binding paths are invalid for {robot!r}",
+        )
+        request = case.get("request")
+        direction = request.get("direction") if isinstance(request, Mapping) else None
+        _require(isinstance(direction, Mapping), f"fixed directional request is invalid for {robot!r}")
+        components = [
+            _finite_number(direction.get(axis), label=f"fixed direction {robot!r}.{axis}")
+            for axis in ("x", "y", "z")
+        ]
+        norm = math.sqrt(sum(component * component for component in components))
+        _require(
+            abs(norm - 1.0) <= 1.0e-6,
+            f"fixed directional request for {robot!r} is not unit norm within 1e-6",
+        )
+
+
+def _fixed_artifact_path(
+    *, index_root: Path, robot: str, label: str, value: Any
+) -> Path:
+    _require(
+        isinstance(value, str) and bool(value.strip()),
+        f"fixed-input index {label} for {robot!r} must be non-empty text",
+    )
+    relative = Path(str(value))
+    _require(
+        not relative.is_absolute(),
+        f"fixed-input index {label} for {robot!r} must be relative",
+    )
+    path = (index_root / relative).resolve()
+    try:
+        path.relative_to(index_root)
+    except ValueError as exc:
+        raise Experiment3RunnerError(
+            f"fixed-input index {label} for {robot!r} escapes its root"
+        ) from exc
+    return path
+
+
+def _check_fixed_input_set(
     mainline_root: str | Path,
     *,
+    index_path: str | Path,
+    smoke_report_path: str | Path,
+    calibration_report_path: str | Path,
     package_loader: Callable[[str | Path, str], Any] | None = None,
-    private_inputs_loader: Callable[[Any], Mapping[str, Any]] | None = None,
+    design_validator: Callable[..., Mapping[str, Any]] | None = None,
+    suite_validator: Callable[..., Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Load every formal package's complete private IVC context.
-
-    The real IVC loader owns whether a package supplies dedicated capability
-    inputs or projects its package-private task inputs.  This zero-model gate
-    checks only facts knowable before TGCD/IVC authorship: all three collections
-    load, are non-empty, share one projected namespace and match the indexed
-    package identity.  ``combined`` means the IVC receives both dedicated
-    capability and task-backed scene/calibration contexts; it does not turn
-    either context into prewritten cases.
-    """
+    """Load and audit all eleven fixed design/suite pairs without a model."""
 
     if package_loader is None:
         from autoadapter2.libraries import load_indexed_robot_package
 
         package_loader = load_indexed_robot_package
-    if private_inputs_loader is None:
-        from autoadapter2.validation_compiler.ivc import (
-            _private_inputs_from_package,
+    if design_validator is None:
+        from autoadapter2.capability_design import validate_capability_design
+
+        design_validator = validate_capability_design
+    if suite_validator is None:
+        from autoadapter2.validation_compiler import (
+            validate_capability_validation_suite,
         )
 
-        private_inputs_loader = _private_inputs_from_package
+        suite_validator = validate_capability_validation_suite
 
-    root = Path(mainline_root).resolve()
+    path = Path(index_path).resolve()
+    index = _read_fixed_index(path)
+    _require(
+        set(index)
+        == {
+            "artifact_type",
+            "schema_version",
+            "capability_protocol_version",
+            "input_set_id",
+            "calibration_report",
+            "smoke_report",
+            "robots",
+        },
+        "fixed-input index has unexpected or missing top-level fields",
+    )
+    _require(
+        index.get("schema_version") == "1.0",
+        "fixed-input index schema_version must be '1.0'",
+    )
+    _require(
+        index.get("artifact_type") == "experiment3_fixed_capability_input_set"
+        and index.get("capability_protocol_version") == "capability-v2"
+        and isinstance(index.get("input_set_id"), str)
+        and bool(str(index["input_set_id"]).strip()),
+        "fixed-input index identity or capability protocol is invalid",
+    )
+    root = path.parent.resolve()
+    declared_smoke_path = _fixed_artifact_path(
+        index_root=root,
+        robot="input-set",
+        label="smoke_report",
+        value=index.get("smoke_report"),
+    )
+    declared_calibration_path = _fixed_artifact_path(
+        index_root=root,
+        robot="input-set",
+        label="calibration_report",
+        value=index.get("calibration_report"),
+    )
+    _require(
+        declared_smoke_path == root / "smoke_report.json"
+        and declared_smoke_path == Path(smoke_report_path).resolve(),
+        "fixed-input index smoke_report must match the canonical manifest path",
+    )
+    _require(
+        declared_calibration_path == root / "calibration_report.json"
+        and declared_calibration_path == Path(calibration_report_path).resolve(),
+        "fixed-input index calibration_report must match the canonical manifest path",
+    )
+    entries = index.get("robots")
+    _require(
+        isinstance(entries, Mapping)
+        and tuple(entries) == ROBOT_CONFIGURATIONS
+        and set(entries) == set(ROBOT_CONFIGURATIONS),
+        "fixed-input index must contain the exact eleven robots in Authority order",
+    )
     summaries: dict[str, Any] = {}
+    robot_artifacts: dict[str, Any] = {}
+    total_capabilities = 0
+    total_cases = 0
     for robot in ROBOT_CONFIGURATIONS:
         try:
-            package = package_loader(root, robot)
-            private = private_inputs_loader(package)
-            identity = {
-                "robot_configuration_id": getattr(
-                    package, "robot_configuration_id", None
-                ),
-                "package_version": getattr(package, "package_version", None),
-                "task_snapshot_id": getattr(package, "snapshot_id", None),
+            entry = entries[robot]
+            _require(
+                isinstance(entry, Mapping),
+                f"fixed-input index entry for {robot!r} must be an object",
+            )
+            expected_fields = {
+                "package_version",
+                "task_snapshot_id",
+                "capability_design",
+                "capability_validation_suite",
+                "capability_count",
+                "case_count",
+                "source_kind",
             }
-            counts: dict[str, int] = {}
-            namespaces: set[str] = set()
-            for name in ("instances", "bindings", "guards"):
-                document = private.get(name)
-                if not isinstance(document, Mapping):
-                    raise Experiment3RunnerError(
-                        f"package-private {name}.json did not load as an object"
-                    )
-                namespace = document.get("calibration_namespace")
-                if namespace not in {"capability", "task", "combined"}:
-                    raise Experiment3RunnerError(
-                        f"package-private {name}.json has no recognised IVC namespace"
-                    )
-                namespaces.add(namespace)
-                records = document.get(name)
-                if not isinstance(records, list) or not records:
-                    raise Experiment3RunnerError(
-                        f"package-private {name}.json must contain a non-empty {name}[]"
-                    )
-                for field, expected in identity.items():
-                    if not isinstance(expected, str) or not expected:
-                        raise Experiment3RunnerError(
-                            f"indexed package has no usable {field}"
-                        )
-                    if document.get(field) != expected:
-                        raise Experiment3RunnerError(
-                            f"package-private {name}.json {field} differs from "
-                            "the indexed package"
-                        )
-                counts[name] = len(records)
-            if len(namespaces) != 1:
-                raise Experiment3RunnerError(
-                    "package-private instances/bindings/guards use mixed IVC namespaces"
-                )
+            _require(
+                set(entry) == expected_fields,
+                f"fixed-input index entry for {robot!r} must contain exactly {sorted(expected_fields)}",
+            )
+            design_path = _fixed_artifact_path(
+                index_root=root,
+                robot=robot,
+                label="capability_design",
+                value=entry.get("capability_design"),
+            )
+            suite_path = _fixed_artifact_path(
+                index_root=root,
+                robot=robot,
+                label="capability_validation_suite",
+                value=entry.get("capability_validation_suite"),
+            )
+            # The shared pipeline receives the root and loads this canonical
+            # layout.  Require the index to name exactly the same files audited
+            # here so its path declarations cannot become decorative.
+            _require(
+                design_path == root / robot / "capability_design.json"
+                and suite_path
+                == root / robot / "capability_validation_suite.json",
+                f"fixed-input paths for {robot!r} must use the canonical per-robot layout",
+            )
+            package = package_loader(Path(mainline_root).resolve(), robot)
+            package_robot = getattr(package, "robot_configuration_id", None)
+            package_version = getattr(package, "package_version", None)
+            task_snapshot_id = getattr(package, "snapshot_id", None)
+            _require(package_robot == robot, f"indexed package identity differs for {robot!r}")
+            _require(
+                package_version == entry.get("package_version")
+                and task_snapshot_id == entry.get("task_snapshot_id"),
+                f"fixed-input package identity differs for {robot!r}",
+            )
+            _require(
+                isinstance(entry.get("source_kind"), str)
+                and bool(str(entry["source_kind"]).strip()),
+                f"fixed-input source_kind for {robot!r} must be non-empty",
+            )
+            design = design_validator(
+                _read_fixed_index(design_path),
+                package,
+            )
+            suite = suite_validator(
+                _read_fixed_index(suite_path),
+                package=package,
+                design=design,
+            )
+            _check_directional_endpoint_contract(
+                robot=robot,
+                design=design,
+                suite=suite,
+            )
+            capabilities = design.get("capabilities")
+            cases = suite.get("cases")
+            _require(
+                isinstance(capabilities, list) and len(capabilities) >= 5,
+                f"fixed design for {robot!r} must contain at least five capabilities",
+            )
+            _require(
+                isinstance(cases, list) and len(cases) == 2 * len(capabilities),
+                f"fixed suite for {robot!r} is not exactly two cases per capability",
+            )
+            _require(
+                entry.get("capability_count") == len(capabilities)
+                and entry.get("case_count") == len(cases),
+                f"fixed-input index counts differ from artifacts for {robot!r}",
+            )
         except Exception as exc:
-            if isinstance(exc, Experiment3RunnerError):
-                detail = str(exc)
-            else:
-                detail = f"{type(exc).__name__}: {exc}"
+            detail = str(exc) if isinstance(exc, Experiment3RunnerError) else f"{type(exc).__name__}: {exc}"
             raise Experiment3RunnerError(
-                f"package-private IVC context for {robot!r} failed before "
-                f"model calls: {detail}"
+                f"fixed input for {robot!r} failed before model calls: {detail}"
             ) from exc
         summaries[robot] = {
-            **identity,
-            "private_namespace": next(iter(namespaces)),
-            "record_counts": counts,
+            "robot_configuration_id": robot,
+            "package_version": package_version,
+            "directory": str(design_path.parent),
+            "capability_design_path": str(design_path),
+            "capability_validation_suite_path": str(suite_path),
+            "capability_count": len(capabilities),
+            "validation_case_count": len(cases),
+            "source_kind": str(entry["source_kind"]),
+            "validated_before_model_calls": True,
         }
-    return {"passed": True, "robots": summaries}
+        total_capabilities += len(capabilities)
+        total_cases += len(cases)
+        robot_artifacts[robot] = {
+            "package": package,
+            "design": design,
+            "suite": suite,
+        }
+    smoke = _check_fixed_input_smoke_report(
+        smoke_report_path,
+        input_set_id=str(index["input_set_id"]),
+    )
+    calibration = _check_fixed_input_calibration_report(
+        calibration_report_path,
+        input_set_id=str(index["input_set_id"]),
+        robot_artifacts=robot_artifacts,
+    )
+    return {
+        "passed": True,
+        "index_path": str(path),
+        "input_set_id": str(index["input_set_id"]),
+        "root_directory": str(root),
+        "robots": summaries,
+        "capability_count": total_capabilities,
+        "validation_case_count": total_cases,
+        "smoke_report": smoke,
+        "calibration_report": calibration,
+    }
 
 
 def _assert_client_pin(client: Any, *, model: Mapping[str, Any], transport: Mapping[str, Any]) -> None:
@@ -1102,12 +2037,37 @@ def _assert_formal_cell_evidence(
     outcomes = cell.get("outcomes")
     _require(isinstance(outcomes, Mapping), "singleton result lacks stage outcomes")
     assert isinstance(outcomes, Mapping)
-    for stage in ("STUDY", "TGCD", "IVC"):
+    study_evidence = outcomes.get("STUDY")
+    _require(
+        isinstance(study_evidence, Mapping)
+        and study_evidence.get("attempted") is True
+        and isinstance(study_evidence.get("model_call_count"), int),
+        "singleton result lacks truthful cell-local STUDY evidence",
+    )
+    if study_evidence.get("completed") is not True:
+        _require(
+            study_evidence.get("completed") is False
+            and isinstance(study_evidence.get("error"), Mapping)
+            and cell.get("frozen_driver_attempt_count") == 0
+            and cell.get("capability_validation_executed") is False,
+            "an incomplete STUDY must be a truthful terminal with no frozen Driver or validation",
+        )
+    for stage in ("TGCD", "IVC"):
         evidence = outcomes.get(stage)
         _require(
-            isinstance(evidence, Mapping) and evidence.get("completed") is True,
-            f"singleton result lacks completed cell-local {stage} evidence",
+            isinstance(evidence, Mapping)
+            and evidence.get("attempted") is False
+            and evidence.get("completed") is False
+            and evidence.get("skipped") is True
+            and evidence.get("model_call_count") == 0
+            and isinstance(evidence.get("fixed_input_provenance"), Mapping),
+            f"singleton result lacks zero-call fixed-input {stage} skip evidence",
         )
+    _require(
+        cell.get("upstream_artifact_mode") == "fixed-per-robot"
+        and isinstance(cell.get("fixed_input_provenance"), Mapping),
+        "singleton result lacks fixed per-robot input provenance",
+    )
     if cell.get("capability_validation_executed") is True:
         _require(
             cell.get("video_required") is True and cell.get("video_complete") is True,
@@ -1158,26 +2118,48 @@ def run_preflight(
     manifest: Mapping[str, Any] | None = None,
     manifest_path: str | Path | None = None,
     package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
-    ivc_context_check_fn: Callable[[str | Path], Mapping[str, Any]] | None = None,
+    fixed_input_check_fn: Callable[..., Mapping[str, Any]] | None = None,
     check_self_containment: bool = True,
 ) -> dict[str, Any]:
-    """Validate retained pins and execute current all-eleven zero-model checks."""
+    """Audit all eleven fixed pairs and retained pins without a model call."""
 
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
     if package_check_fn is None:
         from autoadapter2.pipeline import check_packages as package_check_fn
     preflight = validate_executable_preflight(source, mainline_root=mainline_root)
-    ivc_context_check = copy.deepcopy(
+    fixed_input_check = copy.deepcopy(
         dict(
-            (ivc_context_check_fn or _check_package_ivc_contexts)(mainline_root)
+            (fixed_input_check_fn or _check_fixed_input_set)(
+                mainline_root,
+                index_path=_fixed_input_index_path(
+                    source, mainline_root=mainline_root
+                ),
+                smoke_report_path=_fixed_input_smoke_path(
+                    source, mainline_root=mainline_root
+                ),
+                calibration_report_path=_fixed_input_calibration_path(
+                    source, mainline_root=mainline_root
+                ),
+            )
         )
     )
     _require(
-        ivc_context_check.get("passed") is True
-        and isinstance(ivc_context_check.get("robots"), Mapping)
-        and set(ivc_context_check["robots"]) == set(ROBOT_CONFIGURATIONS),
-        "package-private IVC-context check did not pass "
-        "for the exact eleven configurations",
+        fixed_input_check.get("passed") is True
+        and isinstance(fixed_input_check.get("robots"), Mapping)
+        and tuple(fixed_input_check["robots"]) == ROBOT_CONFIGURATIONS
+        and isinstance(fixed_input_check.get("smoke_report"), Mapping)
+        and fixed_input_check["smoke_report"].get("passed") is True
+        and fixed_input_check["smoke_report"].get("input_set_id")
+        == fixed_input_check.get("input_set_id")
+        and isinstance(fixed_input_check.get("calibration_report"), Mapping)
+        and fixed_input_check["calibration_report"].get("passed") is True
+        and fixed_input_check["calibration_report"].get("input_set_id")
+        == fixed_input_check.get("input_set_id")
+        and isinstance(fixed_input_check.get("capability_count"), int)
+        and fixed_input_check["capability_count"] >= 5 * len(ROBOT_CONFIGURATIONS)
+        and fixed_input_check.get("validation_case_count")
+        == 2 * fixed_input_check["capability_count"],
+        "fixed-input validation did not pass for the exact eleven configurations",
     )
     all_robot_config = _cell_config(preflight, ROBOT_CONFIGURATIONS[0])
     all_robot_config["robots"] = list(ROBOT_CONFIGURATIONS)
@@ -1202,7 +2184,7 @@ def run_preflight(
     )
     return {
         **preflight,
-        "package_ivc_context_check": ivc_context_check,
+        "fixed_input_check": fixed_input_check,
         "current_package_check": package_check,
     }
 
@@ -1215,6 +2197,71 @@ def _update_record_counts(record: dict[str, Any]) -> None:
         row["status"] == "predeclared" for row in rows
     )
     record["all_declared_cells_retained"] = len(rows) == 33
+
+
+def _systemic_failure_reason(
+    exc: BaseException,
+    *,
+    failure_stage: str,
+    client: Any | None,
+) -> str | None:
+    """Recognise only explicit authentication/provider/infrastructure failures."""
+
+    if isinstance(exc, Experiment3SystemicError):
+        return str(exc).strip() or type(exc).__name__
+    if failure_stage in {"cell-preflight", "client-construction", "client-preflight"}:
+        return str(exc).strip() or type(exc).__name__
+    calls = getattr(client, "calls", None)
+    if isinstance(calls, list) and calls:
+        latest = calls[-1]
+        if isinstance(latest, Mapping) and latest.get("status") in {
+            "http_error",
+            "timeout",
+            "transport_error",
+        }:
+            return (
+                f"provider call ended as {latest.get('status')}"
+                + (
+                    f" (HTTP {latest.get('http_status')})"
+                    if latest.get("http_status") is not None
+                    else ""
+                )
+            )
+    if isinstance(exc, (OSError, ImportError, subprocess.SubprocessError)):
+        return str(exc).strip() or type(exc).__name__
+    message = str(exc).casefold()
+    explicit_markers = (
+        "authentication",
+        "unauthorised",
+        "unauthorized",
+        "credential",
+        "provider transport",
+        "transport error",
+        "connection refused",
+        "connection reset",
+        "infrastructure failure",
+        "http 401",
+        "http 403",
+        "api retry budget exhausted",
+    )
+    if any(marker in message for marker in explicit_markers):
+        return str(exc).strip() or type(exc).__name__
+    return None
+
+
+def _raise_if_result_is_systemic(
+    result: Mapping[str, Any], cell: Mapping[str, Any]
+) -> None:
+    for label, value in (
+        ("result", result),
+        ("cell", cell),
+        ("capability validation", cell.get("capability_validation")),
+        ("Task Demo", cell.get("task_demo")),
+    ):
+        if isinstance(value, Mapping) and value.get("infrastructure_failure") is True:
+            raise Experiment3SystemicError(
+                f"{label} reported infrastructure_failure=true"
+            )
 
 
 def _dispatch_predeclared_rows(
@@ -1235,6 +2282,8 @@ def _dispatch_predeclared_rows(
 
     rows = record["cells"]
     seen_clients: list[Any] = []
+    record["dispatch_stopped"] = False
+    record.pop("systemic_stop", None)
     for row in rows:
         if row["status"] in {"completed", "failed"}:
             continue
@@ -1256,6 +2305,7 @@ def _dispatch_predeclared_rows(
         workspace = destination / "cells" / cell["replicate_id"] / robot
         failure_stage = "cell-preflight"
         client: Any | None = None
+        systemic_reason: str | None = None
         try:
             _require(not workspace.exists(), f"cell workspace already exists: {workspace}")
             failure_stage = "client-construction"
@@ -1282,6 +2332,9 @@ def _dispatch_predeclared_rows(
                 "producer_client": client,
                 "check_self_containment": check_self_containment,
                 "skip_reference_calibration": True,
+                "fixed_inputs_from": preflight["fixed_input_check"][
+                    "root_directory"
+                ],
             }
             if hooks_factory is not None:
                 kwargs["hooks"] = hooks_factory(copy.deepcopy(cell))
@@ -1290,6 +2343,7 @@ def _dispatch_predeclared_rows(
             row["result"] = result
             failure_stage = "result-postcheck"
             reported_cell = _assert_attempt_ceiling(result)
+            _raise_if_result_is_systemic(result, reported_cell)
             task_demo_status = _task_demo_terminal(reported_cell)
             row["task_demo"] = task_demo_status
             _assert_formal_cell_evidence(
@@ -1308,6 +2362,9 @@ def _dispatch_predeclared_rows(
             _require(not (workspace / "experience_review_queue.json").exists(), "Experiment 3 created an Experience review queue")
             row["status"] = "completed"
         except Exception as exc:  # retain this declared cell; never retry or replace it
+            systemic_reason = _systemic_failure_reason(
+                exc, failure_stage=failure_stage, client=client
+            )
             row["status"] = "failed"
             reason = str(exc).strip() or type(exc).__name__
             row["failure_stage"] = failure_stage
@@ -1315,6 +2372,7 @@ def _dispatch_predeclared_rows(
                 "stage": failure_stage,
                 "type": type(exc).__name__,
                 "message": reason,
+                "systemic": systemic_reason is not None,
             }
             if "task_demo" not in row:
                 row["task_demo"] = {
@@ -1331,6 +2389,15 @@ def _dispatch_predeclared_rows(
         }
         _update_record_counts(record)
         _write_json(destination / "experiment3_run_record.json", record)
+        if systemic_reason is not None:
+            record["dispatch_stopped"] = True
+            record["systemic_stop"] = {
+                "cell_id": cell["cell_id"],
+                "stage": failure_stage,
+                "reason": systemic_reason,
+            }
+            _write_json(destination / "experiment3_run_record.json", record)
+            break
 
     _update_record_counts(record)
     _write_json(destination / "experiment3_run_record.json", record)
@@ -1349,7 +2416,7 @@ def run_formal(
     | None = None,
     run_experiment_fn: Callable[..., Mapping[str, Any]] | None = None,
     package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
-    ivc_context_check_fn: Callable[[str | Path], Mapping[str, Any]] | None = None,
+    fixed_input_check_fn: Callable[..., Mapping[str, Any]] | None = None,
     hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
     check_self_containment: bool = True,
     git_commit_fn: Callable[[str | Path], str] | None = None,
@@ -1396,7 +2463,7 @@ def run_formal(
         mainline_root,
         manifest=source,
         package_check_fn=package_check_fn,
-        ivc_context_check_fn=ivc_context_check_fn,
+        fixed_input_check_fn=fixed_input_check_fn,
         check_self_containment=check_self_containment,
     )
     record["dispatch_started"] = True
@@ -1404,9 +2471,7 @@ def run_formal(
         preflight["holisticai_route_profile"]
     )
     record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
-    record["package_ivc_context_check"] = preflight[
-        "package_ivc_context_check"
-    ]
+    record["fixed_input_check"] = preflight["fixed_input_check"]
     record["current_package_check"] = preflight["current_package_check"]
     _write_json(destination / "experiment3_run_record.json", record)
     return _dispatch_predeclared_rows(
@@ -1492,7 +2557,7 @@ def run_resume(
     | None = None,
     run_experiment_fn: Callable[..., Mapping[str, Any]] | None = None,
     package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
-    ivc_context_check_fn: Callable[[str | Path], Mapping[str, Any]] | None = None,
+    fixed_input_check_fn: Callable[..., Mapping[str, Any]] | None = None,
     hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
     check_self_containment: bool = True,
     git_commit_fn: Callable[[str | Path], str] | None = None,
@@ -1562,7 +2627,7 @@ def run_resume(
         mainline_root,
         manifest=source,
         package_check_fn=package_check_fn,
-        ivc_context_check_fn=ivc_context_check_fn,
+        fixed_input_check_fn=fixed_input_check_fn,
         check_self_containment=check_self_containment,
     )
     record["dispatch_started"] = True
@@ -1570,9 +2635,7 @@ def run_resume(
         preflight["holisticai_route_profile"]
     )
     record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
-    record["package_ivc_context_check"] = preflight[
-        "package_ivc_context_check"
-    ]
+    record["fixed_input_check"] = preflight["fixed_input_check"]
     record["current_package_check"] = preflight["current_package_check"]
     _write_json(record_path, record)
     return _dispatch_predeclared_rows(
@@ -1621,15 +2684,6 @@ def summarise_results(record: Mapping[str, Any]) -> dict[str, Any]:
             "result row has the wrong descriptive morphology label",
         )
         _require(row.get("status") in {"completed", "failed"}, "result row is not terminal")
-        expected_group = (
-            "reference-seen-control"
-            if robot in REFERENCE_SEEN_ROBOTS
-            else "transfer"
-        )
-        _require(
-            row.get("reference_exposure_group") == expected_group,
-            "result row has the wrong reference-exposure group",
-        )
         pairs.append((str(robot), str(replicate)))
     pair_counts = Counter(pairs)
     expected_pairs = {
@@ -1652,7 +2706,6 @@ def summarise_results(record: Mapping[str, Any]) -> dict[str, Any]:
                 "status": row.get("status"),
                 "failure_stage": row.get("failure_stage"),
                 "failure": copy.deepcopy(row.get("failure")),
-                "reference_exposure_group": row.get("reference_exposure_group"),
                 "task_demo": copy.deepcopy(row.get("task_demo")),
             }
         )
@@ -1749,55 +2802,13 @@ def summarise_results(record: Mapping[str, Any]) -> dict[str, Any]:
                 "runner_wall_time_s": _distribution(wall_times),
             },
         }
-    reporting_groups: dict[str, Any] = {}
-    for group_name, expected_denominator in (
-        ("reference_seen_controls", 6),
-        ("transfer_cells", 27),
-    ):
-        exposure_label = (
-            "reference-seen-control"
-            if group_name == "reference_seen_controls"
-            else "transfer"
-        )
-        group_rows = [
-            row
-            for row in rows
-            if row.get("reference_exposure_group") == exposure_label
-        ]
-        _require(
-            len(group_rows) == expected_denominator,
-            f"{group_name} must retain exactly {expected_denominator} rows",
-        )
-        reporting_groups[group_name] = {
-            "denominator": expected_denominator,
-            "cell_ids": [str(row["cell_id"]) for row in group_rows],
-            "completed": sum(row.get("status") == "completed" for row in group_rows),
-            "failed": sum(row.get("status") == "failed" for row in group_rows),
-            "task_demo_executed": sum(
-                isinstance(row.get("task_demo"), Mapping)
-                and row["task_demo"].get("status") == "executed"
-                for row in group_rows
-            ),
-            "task_demo_passed": sum(
-                isinstance(row.get("task_demo"), Mapping)
-                and row["task_demo"].get("status") == "executed"
-                and row["task_demo"].get("passed") is True
-                for row in group_rows
-            ),
-        }
-
     return {
         "experiment_id": EXPERIMENT_ID,
         "denominator": 33,
         "analysis": (
-            "descriptive per exact robot configuration and reference exposure; "
+            "descriptive per exact robot configuration; "
             "no morphology-effect, quadruped-transfer, or causal statistic"
         ),
-        "reporting_groups": {
-            **reporting_groups,
-            "effect_claim": False,
-            "quadruped_transfer_claim": False,
-        },
         "configurations": configuration_summaries,
         "case_rows": case_rows,
     }
@@ -1882,12 +2893,27 @@ def main(argv: list[str] | None = None) -> int:
                 "retained_package_evidence_count": len(
                     checked["readiness_evidence"]["packages"]
                 ),
-                "package_ivc_context_count": len(
-                    checked["package_ivc_context_check"]["robots"]
+                "fixed_input_count": len(
+                    checked["fixed_input_check"]["robots"]
                 ),
-                "package_ivc_context_check_passed": checked[
-                    "package_ivc_context_check"
+                "fixed_capability_count": checked["fixed_input_check"][
+                    "capability_count"
+                ],
+                "fixed_validation_case_count": checked["fixed_input_check"][
+                    "validation_case_count"
+                ],
+                "fixed_input_check_passed": checked["fixed_input_check"][
+                    "passed"
+                ],
+                "fixed_input_smoke_passed": checked["fixed_input_check"][
+                    "smoke_report"
                 ]["passed"],
+                "fixed_input_calibration_passed": checked["fixed_input_check"][
+                    "calibration_report"
+                ]["passed"],
+                "fixed_calibrated_capability_count": checked[
+                    "fixed_input_check"
+                ]["calibration_report"]["calibrated_capability_count"],
                 "current_package_check_passed": checked[
                     "current_package_check"
                 ]["package_check_passed"],

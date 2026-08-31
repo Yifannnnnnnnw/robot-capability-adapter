@@ -1,0 +1,140 @@
+{
+  "artifact_type": "experiment3_fixed_input_mujoco_smoke",
+  "schema_version": "1.0",
+  "input_set_id": "experiment3-eleven-robot-fixed-inputs-v1",
+  "passed": true,
+  "robots": {
+    "robotstudio_so101": {
+      "instance_id": "so101-a1-nominal",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "robotstudio_so101-a1-nominal",
+      "operator_kind": "so101_end_effector_regulation",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.0,
+      "passed": true
+    },
+    "unitree-go2-stock-12dof": {
+      "instance_id": "go2-g1-nominal",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "case_id": "unitree-go2-stock-12dof-g1-nominal",
+      "operator_kind": "go2_planar_twist_tracking",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.0,
+      "passed": true
+    },
+    "franka_panda": {
+      "instance_id": "franka-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "franka_panda-c1-nominal",
+      "operator_kind": "final_body_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.07251602668728843,
+      "passed": true
+    },
+    "kinova_gen3_robotiq_2f85": {
+      "instance_id": "kinova-gen3-robotiq-2f85-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "kinova_gen3_robotiq_2f85-c1-nominal",
+      "operator_kind": "final_site_frame_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.32649162166161666,
+      "passed": true
+    },
+    "ufactory_xarm7": {
+      "instance_id": "xarm7-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "ufactory_xarm7-c1-nominal",
+      "operator_kind": "final_site_frame_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.1876655301889193,
+      "passed": true
+    },
+    "universal_robots_ur5e_robotiq_2f85": {
+      "instance_id": "ur5e-robotiq-2f85-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "universal_robots_ur5e_robotiq_2f85-c1-nominal",
+      "operator_kind": "final_site_frame_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.06723415883834662,
+      "passed": true
+    },
+    "piper": {
+      "instance_id": "piper-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "piper-c1-nominal",
+      "operator_kind": "final_site_frame_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.40725957775875116,
+      "passed": true
+    },
+    "kuka_iiwa_14": {
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "kuka_iiwa_14-c1-nominal",
+      "operator_kind": "final_site_frame_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.17972640456530878,
+      "passed": true
+    },
+    "leap_hand": {
+      "instance_id": "leap-gym_hand_reach_all_fingertips",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "case_id": "leap_hand-c1-nominal",
+      "operator_kind": "final_site_frame_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.03249563098503766,
+      "passed": true
+    },
+    "hello_robot_stretch_2": {
+      "instance_id": "stretch-mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "hello_robot_stretch_2-c1-nominal",
+      "operator_kind": "final_body_xyz_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.1780060657588684,
+      "passed": true
+    },
+    "aloha_2": {
+      "instance_id": "aloha-2-capability-left-side",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "case_id": "aloha_2-c1-nominal",
+      "operator_kind": "final_site_position_error",
+      "scene_loaded": true,
+      "reset_applied": true,
+      "trusted_operator_executed": true,
+      "measurement_finite": true,
+      "measurement_value": 0.07995850789409616,
+      "passed": true
+    }
+  }
+}

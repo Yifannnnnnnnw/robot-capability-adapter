@@ -53,10 +53,34 @@ def _install_route_profile(tmp_path: Path, reference: Mapping[str, Any]) -> None
     destination.write_bytes(source.read_bytes())
 
 
-def _passing_ivc_context_check() -> dict[str, Any]:
+def _passing_fixed_input_check() -> dict[str, Any]:
     return {
         "passed": True,
+        "input_set_id": "test-fixed-inputs",
+        "root_directory": "/fixed-inputs",
+        "capability_count": 55,
+        "validation_case_count": 110,
         "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
+        "smoke_report": {
+            "passed": True,
+            "input_set_id": "test-fixed-inputs",
+        },
+        "calibration_report": {
+            "passed": True,
+            "input_set_id": "test-fixed-inputs",
+            "calibrated_capability_count": 1,
+        },
+    }
+
+
+def _fixed_stage(stage: str) -> dict[str, Any]:
+    return {
+        "stage": stage.casefold(),
+        "attempted": False,
+        "completed": False,
+        "skipped": True,
+        "model_call_count": 0,
+        "fixed_input_provenance": {"mode": "fixed_inputs_from"},
     }
 
 
@@ -278,10 +302,16 @@ def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success(
         "robot_configuration_id": robot,
         "condition": runner.CONDITION,
         "outcomes": {
-            "STUDY": {"completed": True},
-            "TGCD": {"completed": True},
-            "IVC": {"completed": True},
+            "STUDY": {
+                "attempted": True,
+                "completed": True,
+                "model_call_count": 1,
+            },
+            "TGCD": _fixed_stage("TGCD"),
+            "IVC": _fixed_stage("IVC"),
         },
+        "upstream_artifact_mode": "fixed-per-robot",
+        "fixed_input_provenance": {"mode": "fixed_inputs_from"},
         "passed_capability_whitelist": [],
         "capability_validation_executed": True,
         "video_required": True,
@@ -296,7 +326,7 @@ def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success(
             run_id="declared-run",
         )
 
-def test_checked_in_preflight_accepts_the_current_inline_ivc_contract() -> None:
+def test_checked_in_preflight_accepts_the_fixed_input_contract() -> None:
     mainline_root = Path(__file__).resolve().parents[2] / "autoadapter"
 
     manifest = runner.load_manifest()
@@ -321,7 +351,7 @@ def test_checked_in_preflight_accepts_the_current_inline_ivc_contract() -> None:
     }
     assert manifest["runtime"]["producer_transport"]["request_timeout_s"] == 120
     drifted = copy.deepcopy(manifest)
-    drifted["runtime"]["resources"]["phase_turn_budgets"]["ivc"] = 5
+    drifted["runtime"]["resources"]["phase_turn_budgets"]["study"] = 15
     with pytest.raises(runner.Experiment3RunnerError, match="file-workflow budgets"):
         runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
 
@@ -348,9 +378,9 @@ def test_checked_in_preflight_accepts_the_current_inline_ivc_contract() -> None:
         runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
 
     assert len(checked["readiness_evidence"]["packages"]) == 11
-    assert manifest["ivc_contract"]["inline_measurement_binding_required"] is True
-    assert manifest["ivc_contract"]["binding_id_forbidden"] is True
-    assert manifest["ivc_contract"]["worked_reference_case_count"] == 22
+    assert manifest["fixed_input_contract"]["validated_before_model_calls"] is True
+    assert manifest["fixed_input_contract"]["inline_measurement_binding_required"] is True
+    assert manifest["fixed_input_contract"]["binding_id_forbidden"] is True
 
 
 def test_readiness_rejects_passed_evidence_with_the_wrong_semantic_scope(
@@ -432,68 +462,11 @@ def test_cli_rejects_the_route_before_reading_credentials(
     assert events == [f"preflight:{tmp_path}"]
 
 
-def test_preflight_loads_all_package_private_ivc_contexts_before_package_check(
+def test_preflight_validates_all_fixed_inputs_before_package_check(
     tmp_path: Path,
 ) -> None:
     manifest = _executable_manifest(tmp_path)
-    missing_robot = "unitree-go2-stock-12dof"
     package_check_calls: list[Path] = []
-
-    def package_for(robot: str) -> SimpleNamespace:
-        return SimpleNamespace(
-            root=tmp_path / "packages" / robot,
-            robot_configuration_id=robot,
-            package_version="1.0.0",
-            snapshot_id=f"{robot}-snapshot",
-        )
-
-    def write_context(
-        robot: str,
-        *,
-        omit: str | None = None,
-    ) -> None:
-        package = package_for(robot)
-        # Deliberately exercise the real loader's package-private task-context
-        # projection.  This remains context for IVC authorship, not a suite of
-        # prewritten capability cases.
-        destination = package.root / "tasks" / "private"
-        destination.mkdir(parents=True, exist_ok=True)
-        for name, id_field in {
-            "instances": "instance_id",
-            "bindings": "binding_id",
-            "guards": "guard_id",
-        }.items():
-            if name == omit:
-                continue
-            record: dict[str, Any] = {id_field: f"{robot}-{name}"}
-            if name == "instances":
-                record["public_arguments"] = {
-                    "request": {
-                        "task_id": f"{robot}-private-task",
-                        "task_parameters": {"distance_m": 0.25},
-                    }
-                }
-            (destination / f"{name}.json").write_text(
-                json.dumps(
-                    {
-                        "robot_configuration_id": robot,
-                        "package_version": package.package_version,
-                        "task_snapshot_id": package.snapshot_id,
-                        name: [record],
-                    }
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-    for robot in runner.ROBOT_CONFIGURATIONS:
-        write_context(robot, omit="bindings" if robot == missing_robot else None)
-
-    def ivc_context_check(root: str | Path) -> Mapping[str, Any]:
-        return runner._check_package_ivc_contexts(
-            root,
-            package_loader=lambda _root, robot: package_for(robot),
-        )
 
     def package_check(root: str | Path, **_kwargs: Any) -> Mapping[str, Any]:
         package_check_calls.append(Path(root))
@@ -502,36 +475,29 @@ def test_preflight_loads_all_package_private_ivc_contexts_before_package_check(
             "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
         }
 
-    with pytest.raises(
-        runner.Experiment3RunnerError,
-        match=r"unitree-go2-stock-12dof.*bindings\.json",
-    ):
+    def reject_fixed(*_args: Any, **_kwargs: Any) -> Mapping[str, Any]:
+        raise runner.Experiment3RunnerError("fixed input is invalid")
+
+    with pytest.raises(runner.Experiment3RunnerError, match="fixed input is invalid"):
         runner.run_preflight(
             tmp_path,
             manifest=manifest,
             package_check_fn=package_check,
-            ivc_context_check_fn=ivc_context_check,
+            fixed_input_check_fn=reject_fixed,
             check_self_containment=False,
         )
     assert package_check_calls == []
 
-    write_context(missing_robot)
     checked = runner.run_preflight(
         tmp_path,
         manifest=manifest,
         package_check_fn=package_check,
-        ivc_context_check_fn=ivc_context_check,
+        fixed_input_check_fn=lambda *_args, **_kwargs: _passing_fixed_input_check(),
         check_self_containment=False,
     )
 
-    assert checked["package_ivc_context_check"]["passed"] is True
-    assert set(checked["package_ivc_context_check"]["robots"]) == set(
-        runner.ROBOT_CONFIGURATIONS
-    )
-    assert {
-        item["private_namespace"]
-        for item in checked["package_ivc_context_check"]["robots"].values()
-    } == {"task"}
+    assert checked["fixed_input_check"]["passed"] is True
+    assert tuple(checked["fixed_input_check"]["robots"]) == runner.ROBOT_CONFIGURATIONS
     assert package_check_calls == [tmp_path]
 
 
@@ -564,6 +530,7 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
         assert config["experience"]["input"] == []
         assert config["evolution"] == {"enabled": False}
         assert kwargs["skip_reference_calibration"] is True
+        assert kwargs["fixed_inputs_from"] == "/fixed-inputs"
         assert kwargs["producer_client"].config.api_key == "manifest-pinned-secret"
         assert kwargs["hooks"].cell_id.endswith(f"::{replicate}::{robot}")
         if replicate == "r02" and robot == "piper":
@@ -622,10 +589,16 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
                         if truthful_not_run
                         else {"skipped": False}
                     ),
+                    "upstream_artifact_mode": "fixed-per-robot",
+                    "fixed_input_provenance": {"mode": "fixed_inputs_from"},
                     "outcomes": {
-                        "STUDY": {"completed": True},
-                        "TGCD": {"completed": True},
-                        "IVC": {"completed": True},
+                        "STUDY": {
+                            "attempted": True,
+                            "completed": True,
+                            "model_call_count": 1,
+                        },
+                        "TGCD": _fixed_stage("TGCD"),
+                        "IVC": _fixed_stage("IVC"),
                         "Evolution": None,
                     },
                 }
@@ -641,7 +614,7 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
             "package_check_passed": True,
             "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
         },
-        ivc_context_check_fn=lambda _root: _passing_ivc_context_check(),
+        fixed_input_check_fn=lambda *_args, **_kwargs: _passing_fixed_input_check(),
         hooks_factory=hooks_factory,
         check_self_containment=False,
         git_commit_fn=lambda _root: "a" * 40,
@@ -742,10 +715,8 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
     summary = runner.summarise_results(result)
     assert summary["denominator"] == 33
     assert len(summary["case_rows"]) == 33
-    assert summary["reporting_groups"]["reference_seen_controls"]["denominator"] == 6
-    assert summary["reporting_groups"]["transfer_cells"]["denominator"] == 27
-    assert summary["reporting_groups"]["effect_claim"] is False
-    assert summary["reporting_groups"]["quadruped_transfer_claim"] is False
+    assert "reporting_groups" not in summary
+    assert all("reference_exposure_group" not in case for case in summary["case_rows"])
     assert "morphology" not in summary["configurations"]
     so101 = summary["configurations"]["robotstudio_so101"]
     assert so101["morphology_label"] == "fixed serial arm"
@@ -783,6 +754,87 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
     malformed["cells"][0]["replicate_id"] = "r02"
     with pytest.raises(runner.Experiment3RunnerError, match="r01-r03 once"):
         runner.summarise_results(malformed)
+
+
+def test_systemic_provider_failure_retains_current_row_and_stops_untouched_rows(
+    tmp_path: Path,
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    revisions = {
+        "authority_revision": runner.AUTHORITY_REVISION,
+        "manifest_revision": runner.MANIFEST_REVISION,
+        "protocol_revision": runner.PROTOCOL_REVISION,
+        "git_commit": "e" * 40,
+    }
+    rows = [
+        {
+            **cell,
+            **revisions,
+            "status": "predeclared",
+            "result": None,
+            "failure": None,
+        }
+        for cell in runner.expand_cells(manifest)
+    ]
+    record: dict[str, Any] = {
+        "experiment_id": runner.EXPERIMENT_ID,
+        "denominator": 33,
+        **revisions,
+        "dispatch_started": True,
+        "cells": rows,
+    }
+    runner._update_record_counts(record)
+    calls: list[str] = []
+    preflight = runner.validate_executable_preflight(manifest, mainline_root=tmp_path)
+    preflight["fixed_input_check"] = _passing_fixed_input_check()
+
+    def client_factory(
+        _role: str,
+        model: Mapping[str, Any],
+        transport: Mapping[str, Any],
+        cell: Mapping[str, str],
+    ) -> Any:
+        return SimpleNamespace(
+            config=SimpleNamespace(
+                provider=model["vendor"],
+                model=model["model_id"],
+                base_url=model["base_url"],
+                endpoint_path=transport["endpoint_path"],
+                api_protocol=model["api_protocol"],
+                thinking=None,
+                timeout_s=float(transport["request_timeout_s"]),
+                max_tokens=model["max_output_tokens"],
+                tool_history_mode=model["tool_history_mode"],
+                history_char_budget=transport["history_char_budget"],
+                auth_header=transport["auth_header"],
+                auth_prefix=transport["auth_prefix"],
+            ),
+            calls=[],
+        )
+
+    def fail_provider(_root: Path, **kwargs: Any) -> Mapping[str, Any]:
+        calls.append(kwargs["run_id"])
+        raise RuntimeError("provider authentication failed: HTTP 401")
+
+    result = runner._dispatch_predeclared_rows(
+        tmp_path,
+        destination=tmp_path / "systemic-stop",
+        record=record,
+        preflight=preflight,
+        client_factory=client_factory,
+        run_experiment_fn=fail_provider,
+        hooks_factory=None,
+        check_self_containment=False,
+    )
+
+    assert len(calls) == 1
+    assert result["dispatch_stopped"] is True
+    assert result["systemic_stop"]["cell_id"] == rows[0]["cell_id"]
+    assert result["cells"][0]["status"] == "failed"
+    assert result["cells"][0]["failure"]["systemic"] is True
+    assert all(row["status"] == "predeclared" for row in result["cells"][1:])
+    assert result["failed_cells"] == 1
+    assert result["predeclared_cells"] == 32
 
 
 def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_untouched(
@@ -870,10 +922,16 @@ def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_unto
                     "task_demo_video_complete": True,
                     "task_demo_task_counts": {"passed": 5, "total": 5},
                     "task_demo": {"skipped": False},
+                    "upstream_artifact_mode": "fixed-per-robot",
+                    "fixed_input_provenance": {"mode": "fixed_inputs_from"},
                     "outcomes": {
-                        "STUDY": {"completed": True},
-                        "TGCD": {"completed": True},
-                        "IVC": {"completed": True},
+                        "STUDY": {
+                            "attempted": True,
+                            "completed": True,
+                            "model_call_count": 1,
+                        },
+                        "TGCD": _fixed_stage("TGCD"),
+                        "IVC": _fixed_stage("IVC"),
                         "Evolution": None,
                     },
                 }
@@ -890,7 +948,7 @@ def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_unto
             "package_check_passed": True,
             "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
         },
-        ivc_context_check_fn=lambda _root: _passing_ivc_context_check(),
+        fixed_input_check_fn=lambda *_args, **_kwargs: _passing_fixed_input_check(),
         check_self_containment=False,
         git_commit_fn=lambda _root: commit,
     )
@@ -1132,7 +1190,7 @@ def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
                 "packages": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
             },
             "current_package_check": {"package_check_passed": True},
-            "package_ivc_context_check": _passing_ivc_context_check(),
+            "fixed_input_check": _passing_fixed_input_check(),
         }
 
     def fake_formal(root: str, **kwargs: Any) -> dict[str, Any]:

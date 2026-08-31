@@ -1,13 +1,13 @@
 {
   "schema_version": 2,
-  "manifest_revision": "0.2.1",
-  "protocol_revision": "0.2.1",
+  "manifest_revision": "0.3.0",
+  "protocol_revision": "0.3.0",
   "authority": "EXPERIMENT_3_AUTHORITY.md",
-  "authority_revision": "0.2.1",
-  "parent_authority_revision": "0.20.1",
+  "authority_revision": "0.3.0",
+  "parent_authority_revision": "0.20.2",
   "experiment_id": "experiment3-direct-mujoco-cohort-r3",
-  "status": "preflight-only",
-  "formal_dispatch_authorised": false,
+  "status": "formal-authorised",
+  "formal_dispatch_authorised": true,
   "model_execution_policy": "remote-hosted-api-only",
   "model": {
     "family": "Sonnet 4.6",
@@ -18,8 +18,6 @@
     "max_output_tokens": 16384,
     "roles": [
       "STUDY",
-      "TGCD",
-      "IVC",
       "GENERATE",
       "Repair",
       "ReCAP-Task-Demo-controller"
@@ -59,8 +57,6 @@
     "resources": {
       "phase_turn_budgets": {
         "study": 16,
-        "tgcd": 6,
-        "ivc": 6,
         "generate_skeleton": 22,
         "repair_skeleton": 22
       },
@@ -83,8 +79,6 @@
   "workflow": {
     "order": [
       "STUDY",
-      "TGCD",
-      "IVC",
       "GENERATE",
       "Capability-Validation",
       "Repair",
@@ -92,8 +86,6 @@
     ],
     "canonical_artifacts": {
       "STUDY": "study.json",
-      "TGCD": "capability_design.json",
-      "IVC": "capability_validation_suite.json",
       "GENERATE": "driver.py",
       "Repair": "driver.py"
     },
@@ -101,26 +93,26 @@
     "aggregate_tool_call_limit": null,
     "maximum_frozen_driver_attempts": 3
   },
-  "capability_contract": {
-    "minimum_capabilities": 3,
-    "maximum_capabilities": 10,
-    "task_support": "many-to-many-support-only",
-    "candidate_task_id_dispatch_forbidden": true,
-    "numeric_values_require_public_or_calibration_source": true,
-    "model_visible_complete_references": {
-      "robotstudio_so101": 6,
-      "unitree-go2-stock-12dof": 5
-    },
-    "reference_excludes_task_mapping_and_call_plan": true
-  },
-  "ivc_contract": {
-    "candidate_blind": true,
-    "experience_visible": false,
+  "fixed_input_set": "experiment/experiment3/fixed_inputs/index.json",
+  "fixed_input_smoke_report": "experiment/experiment3/fixed_inputs/smoke_report.json",
+  "fixed_input_calibration_report": "experiment/experiment3/fixed_inputs/calibration_report.json",
+  "fixed_input_contract": {
+    "one_design_and_suite_per_robot": true,
+    "same_pair_across_replicates": true,
+    "validated_before_model_calls": true,
+    "real_mujoco_smoke_required": true,
+    "real_threshold_calibration_required": true,
+    "minimum_capabilities_per_robot": 5,
+    "design_protocol": "capability-v2",
     "cases_per_capability": ["nominal", "calibrated_boundary"],
+    "suite_candidate_blind": true,
     "inline_measurement_binding_required": true,
     "binding_id_forbidden": true,
-    "trusted_operator_catalog_required": true,
-    "worked_reference_case_count": 22
+    "candidate_task_id_dispatch_forbidden": true
+  },
+  "authoring_stages": {
+    "tgcd": {"mode": "skipped-fixed-input", "model_call_budget": 0},
+    "ivc": {"mode": "skipped-fixed-input", "model_call_budget": 0}
   },
   "robot_configurations": [
     "robotstudio_so101",
@@ -167,8 +159,8 @@
   "replicate_ids": ["r01", "r02", "r03"],
   "fresh_end_to_end_per_cell": {
     "study": true,
-    "tgcd": true,
-    "ivc": true,
+    "tgcd": false,
+    "ivc": false,
     "workspace": true,
     "model_conversation": true,
     "canonical_reset": true
@@ -183,20 +175,6 @@
     "terminal_call": false,
     "human_disposition": false,
     "experience_output": false
-  },
-  "reporting_groups": {
-    "reference_seen_controls": [
-      "robotstudio_so101::r01",
-      "robotstudio_so101::r02",
-      "robotstudio_so101::r03",
-      "unitree-go2-stock-12dof::r01",
-      "unitree-go2-stock-12dof::r02",
-      "unitree-go2-stock-12dof::r03"
-    ],
-    "reference_seen_control_count": 6,
-    "transfer_cell_count": 27,
-    "effect_claim": false,
-    "quadruped_transfer_claim": false
   },
   "denominator": {
     "formula": "11 robot configurations × 3 replicates",
@@ -228,7 +206,8 @@
   },
   "analysis_boundary": {
     "primary": [
-      "per-cell STUDY, TGCD and IVC completion",
+      "per-cell STUDY completion and fixed-input provenance",
+      "TGCD and IVC skipped with zero model calls",
       "initial and final capability-validation outcomes",
       "Repair and failure patterns",
       "ReCAP Task Demo outcomes",

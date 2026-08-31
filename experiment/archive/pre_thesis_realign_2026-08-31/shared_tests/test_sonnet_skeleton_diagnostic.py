@@ -32,7 +32,7 @@ def test_sonnet_diagnostic_is_single_robot_nonformal_and_uses_exp3_pin() -> None
     assert config.model_manifest["model_id"] == "eu.anthropic.claude-sonnet-4-6"
 
     manifest = json.loads(diagnostic.DEFAULT_MANIFEST.read_text(encoding="utf-8"))
-    assert manifest["runtime"]["producer_transport"]["request_timeout_s"] == 300
+    assert manifest["runtime"]["producer_transport"]["request_timeout_s"] == 120
 
     with pytest.raises(diagnostic.DiagnosticRunError, match="not one of the remaining"):
         diagnostic._single_robot_config(diagnostic.DEFAULT_CONFIG, "robotstudio_so101")
