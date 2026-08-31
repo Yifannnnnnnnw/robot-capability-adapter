@@ -16,9 +16,6 @@ MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
-REFERENCE_REVIEW_PATH = (
-    ROOT / "research" / "robots" / "google_barkour_vb_reference_review.md"
-)
 
 ACTUATED_JOINT_NAMES = [
     "abduction_front_left",
@@ -390,22 +387,6 @@ def test_google_barkour_vb_asset_foundation_is_local_and_live() -> None:
     assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/morphology.json" in observed_paths
     assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/sources.json" in observed_paths
     assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/catalog.json" in observed_paths
-    assert "autoadapter/research/robots/google_barkour_vb_reference_review.md" in observed_paths
-    reference_review = next(
-        item
-        for item in candidate["locally_observed_source_material"]
-        if item["kind"] == "reference_controller_source_review"
-    )
-    assert "no official pretrained vb checkpoint" in reference_review["observation"].lower()
-    assert (
-        "not package-wide task-success or runnable evidence"
-        in reference_review["observation"].lower()
-    )
-    review_text = REFERENCE_REVIEW_PATH.read_text(encoding="utf-8")
-    assert "81dfe512c9f2f03107fda1e31de585d04bb30bc4" in review_text
-    assert "465 values" in review_text
-    assert "20 canonical CPU `mj_step` calls" in review_text
-    assert "Do not silently alter the canonical asset" in review_text
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing

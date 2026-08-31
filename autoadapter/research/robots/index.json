@@ -42,11 +42,6 @@
           "observation": "The Barkour public snapshot v2 contains 31 source-backed scoring clauses; its 20-task public source contract is closed. This is catalog research state only, not task-success or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
-          "path": "autoadapter/research/robots/google_barkour_vb_reference_review.md",
-          "kind": "reference_controller_source_review",
-          "observation": "The official-source review found a compatible pinned BarkourJoystick training environment in MuJoCo Playground v0.0.5 but no official pretrained vB checkpoint in the inspected repositories or release assets. It records the retained 465-value observation-history actor, 12-value action mapping, observation normalizer, exact 20 ms to canonical 1 ms CPU bridge, completed flat calibration gate, material dynamics mismatch, and the continuing need for specialist obstacle policies plus a reference-only course planner. This is bounded research and calibration evidence, not package-wide task-success or runnable evidence."
-        },
-        {
           "path": "autoadapter/runs/barkour-flat-bridge-20260820T125848Z/summary.json",
           "kind": "ignored_flat_controller_calibration_run",
           "observation": "A locally trained 100,270,080-step BarkourJoystick actor, including its observation normalizer, matched exported NumPy inference within 3.10e-06 and completed the unmodified canonical CPU bridge using only data.ctrl and 20 one-millisecond MuJoCo steps per action. The five-second stand and all eight 0.4 m/s direction checks completed without falls; all nine videos decode and representative cases were visually checked. This closes only the flat-controller calibration gate, not private cases, trusted Harness verdicts, obstacle coverage, a package-wide positive control, or runnable status."
