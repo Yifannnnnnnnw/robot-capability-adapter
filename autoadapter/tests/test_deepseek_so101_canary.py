@@ -18,7 +18,7 @@ AUTOADAPTER_ROOT = ROOT / "autoadapter"
 CONFIG = (
     AUTOADAPTER_ROOT
     / "configs"
-    / "experiments"
+    / "diagnostics"
     / "deepseek-so101-1.0.4-canary.json"
 )
 

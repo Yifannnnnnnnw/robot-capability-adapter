@@ -45,7 +45,7 @@ EXPECTED_PROPOSAL_FIELDS = {
 SCRIPT_PATH = Path(__file__).resolve()
 DEFAULT_ROOT = SCRIPT_PATH.parents[1]
 DEFAULT_CONFIG = (
-    DEFAULT_ROOT / "configs" / "experiments" / "deepseek-so101-1.0.4-canary.json"
+    DEFAULT_ROOT / "configs" / "diagnostics" / "deepseek-so101-1.0.4-canary.json"
 )
 
 

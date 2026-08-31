@@ -949,14 +949,14 @@ Driver diagnostic。
 > revision `0.20.1` 未授权下面的真实 source/later run。只有零模型 config/evidence checker 可以
 > 执行；不得读取 credential、创建 provider client 或发送 DeepSeek 请求，直到用户再次明确批准。
 
-专用配置是 `configs/experiments/deepseek-so101-1.0.4-canary.json`，证据检查器是
+专用配置是 `configs/diagnostics/deepseek-so101-1.0.4-canary.json`，证据检查器是
 `scripts/check_deepseek_so101_canary.py`。以下命令都从仓库根目录运行。先做零模型 gate：
 
 ```bash
 PYTHONPATH=autoadapter/src:. pyenv exec python \
   autoadapter/scripts/check_deepseek_so101_canary.py preflight \
   --root autoadapter \
-  --config autoadapter/configs/experiments/deepseek-so101-1.0.4-canary.json
+  --config autoadapter/configs/diagnostics/deepseek-so101-1.0.4-canary.json
 ```
 
 该命令必须报告 `model_client_constructed=false`、`model_requests=0`、indexed package
@@ -979,7 +979,7 @@ export AUTOADAPTER_MODEL_TOOL_HISTORY_MODE=native
 
 PYTHONPATH=autoadapter/src:. pyenv exec python -m autoadapter2 full \
   --root autoadapter \
-  --config autoadapter/configs/experiments/deepseek-so101-1.0.4-canary.json \
+  --config autoadapter/configs/diagnostics/deepseek-so101-1.0.4-canary.json \
   --output autoadapter/runs/diagnostic/deepseek-so101-104-source \
   --run-id diagnostic-deepseek-so101-104-source
 ```
@@ -992,7 +992,7 @@ PYTHONPATH=autoadapter/src:. pyenv exec python -m autoadapter2 full \
 PYTHONPATH=autoadapter/src:. pyenv exec python \
   autoadapter/scripts/check_deepseek_so101_canary.py evidence \
   --run autoadapter/runs/diagnostic/deepseek-so101-104-source \
-  --config autoadapter/configs/experiments/deepseek-so101-1.0.4-canary.json
+  --config autoadapter/configs/diagnostics/deepseek-so101-1.0.4-canary.json
 ```
 
 只有下列证据全部存在时，这个 checker 才 exit 0；成功 JSON 会直接打印
@@ -1022,8 +1022,8 @@ source evidence gate 通过后先在对话里展示打印出的 proposal。此�
 
 `experiment/archive/pre_thesis_realign_2026-08-31/experiment3_fixed_input_cross_robot/diagnostics/`
 
-`configs/experiments/sonnet-exp3-remaining-skeleton-diagnostic.json` 仍保留为共享实现沿革，但没有
-对应的 active experiment runner。不要从 archive 启动该诊断，也不要把旧输出计入未来分母；若新实验
+活跃配置目录不再保留这些一次性 Sonnet 诊断配置，也没有对应的 active experiment
+runner。不要从 archive 启动该诊断，也不要把旧输出计入未来分母；若新实验
 需要相同机制，应在新 manifest/protocol 确定后建立新的入口。
 
 ## 17. 怎样读一份运行证据
