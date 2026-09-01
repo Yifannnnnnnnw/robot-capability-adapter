@@ -222,6 +222,7 @@ class ExperimentConfig:
     )
     recap_max_planning_turns_per_task: int = RECAP_PLANNING_TURNS
     recap_max_capability_calls_per_task: int = RECAP_CAPABILITY_CALLS
+    task_demo_enabled: bool = True
     formal: bool = False
     max_driver_attempts_per_condition: int = MAX_TOTAL_ATTEMPTS
     probe_budget: ProbeBudget = ProbeBudget()
@@ -235,6 +236,7 @@ class ExperimentConfig:
     experience_review_queue_output: str = "experience_review_queue.json"
     experience_snapshot_output: str = "experience_snapshot.json"
     task_demo_seed_template: str = "{run_id}:{robot_configuration_id}"
+    task_demo_declared: bool = False
     experience_declared: bool = False
     seeds_declared: bool = False
     evolution_declared: bool = False
@@ -320,6 +322,20 @@ class ExperimentConfig:
             raise PipelineError(
                 f"recap.max_capability_calls_per_task must equal {RECAP_CAPABILITY_CALLS}"
             )
+
+        task_demo_declared = "task_demo" in value
+        task_demo = value.get("task_demo", {})
+        if not isinstance(task_demo, Mapping):
+            raise PipelineError("task_demo must be an object")
+        unexpected_task_demo = sorted(set(task_demo) - {"enabled"})
+        if unexpected_task_demo:
+            raise PipelineError(
+                "task_demo has unexpected fields: "
+                + ", ".join(str(item) for item in unexpected_task_demo)
+            )
+        task_demo_enabled = task_demo.get("enabled", True)
+        if not isinstance(task_demo_enabled, bool):
+            raise PipelineError("task_demo.enabled must be boolean")
 
         formal = value.get("formal", False)
         if not isinstance(formal, bool):
@@ -593,6 +609,7 @@ class ExperimentConfig:
             phase_turn_budgets=fixed_phase_turns,
             recap_max_planning_turns_per_task=planning_turns,
             recap_max_capability_calls_per_task=capability_calls,
+            task_demo_enabled=task_demo_enabled,
             formal=formal,
             max_driver_attempts_per_condition=max_attempts,
             probe_budget=probe_budget,
@@ -608,6 +625,7 @@ class ExperimentConfig:
             experience_review_queue_output=review_queue_output.strip(),
             experience_snapshot_output=snapshot_output.strip(),
             task_demo_seed_template=seed_template,
+            task_demo_declared=task_demo_declared,
             experience_declared=experience_declared,
             seeds_declared=seeds_declared,
             evolution_declared=evolution_declared,
@@ -652,6 +670,8 @@ class ExperimentConfig:
         }
         if self.model_manifest is not None:
             result["model"] = _copy(dict(self.model_manifest))
+        if self.task_demo_declared:
+            result["task_demo"] = {"enabled": self.task_demo_enabled}
         if self.experience_declared:
             result["experience"] = {
                 "input": (
@@ -2548,6 +2568,11 @@ def _run_cell(
         suite=sealed_capability_suite,
         report=terminal_validation,
     )
+    task_demo_skip_reason = (
+        "disabled by diagnostic configuration"
+        if not config.task_demo_enabled
+        else "no capability passed both nominal and calibrated-boundary cases"
+    )
     task_demo = _normalise_validation_report(
         {
             "pipeline_completed": False,
@@ -2555,7 +2580,7 @@ def _run_cell(
             "validation_passed": False,
             "video_complete": not config.record_video,
             "skipped": True,
-            "skip_reason": "no capability passed both nominal and calibrated-boundary cases",
+            "skip_reason": task_demo_skip_reason,
             "trials": [],
             "video_manifest": [],
         },
@@ -2565,7 +2590,7 @@ def _run_cell(
         record_video=config.record_video,
         evaluation_role="task_demo",
     )
-    if passed_capability_ids and current_driver is not None:
+    if config.task_demo_enabled and passed_capability_ids and current_driver is not None:
         task_demo_attempt = int(terminal_validation.get("attempt", 0))
         controller_before = _call_count(client)
         try:
@@ -2656,7 +2681,9 @@ def _run_cell(
         _write(workspace / "task-demo" / "task_demo_report.json", task_demo)
 
     cell_pipeline_completed = bool(terminal_validation.get("pipeline_completed")) and (
-        not passed_capability_ids or bool(task_demo.get("pipeline_completed"))
+        not config.task_demo_enabled
+        or not passed_capability_ids
+        or bool(task_demo.get("pipeline_completed"))
     )
     capabilities = [
         capability

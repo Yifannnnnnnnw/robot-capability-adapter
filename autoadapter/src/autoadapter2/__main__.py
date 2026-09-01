@@ -29,7 +29,7 @@ def _parser() -> argparse.ArgumentParser:
         ("check-only", "validate self-containment and indexed packages"),
         (
             "full",
-            "run fresh configured cells with private reference positive controls",
+            "run fresh configured cells",
         ),
     ):
         command = subparsers.add_parser(name, help=help_text)
@@ -38,6 +38,11 @@ def _parser() -> argparse.ArgumentParser:
         if name == "full":
             command.add_argument("--output", type=Path, default=None)
             command.add_argument("--run-id", default=None)
+            command.add_argument(
+                "--run-reference-positive-controls",
+                action="store_true",
+                help="run each fresh IVC suite against its private reference driver",
+            )
     return parser
 
 
@@ -72,6 +77,7 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             output_dir=args.output,
             run_id=args.run_id,
+            skip_reference_calibration=not args.run_reference_positive_controls,
         )
         _print(
             {

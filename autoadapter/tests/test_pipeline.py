@@ -60,6 +60,30 @@ def test_config_accepts_a_single_robot_single_condition_canary() -> None:
     assert config.generation_conditions == ("skeleton-assisted",)
 
 
+def test_config_can_disable_task_demo_for_a_pre_recap_diagnostic() -> None:
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "pre-recap-diagnostic",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+            "task_demo": {"enabled": False},
+        }
+    )
+
+    assert config.task_demo_enabled is False
+    assert config.as_dict()["task_demo"] == {"enabled": False}
+
+    with pytest.raises(PipelineError, match="task_demo.enabled must be boolean"):
+        ExperimentConfig.from_mapping(
+            {
+                "experiment_id": "invalid-pre-recap-diagnostic",
+                "robots": ["r-arm"],
+                "generation_conditions": ["skeleton-assisted"],
+                "task_demo": {"enabled": "false"},
+            }
+        )
+
+
 def test_mainline_manifest_pins_model_empty_experience_and_seed_policy() -> None:
     root = Path(__file__).resolve().parents[1]
     config = ExperimentConfig.from_path(root / "configs" / "experiments" / "mainline.json")
@@ -1458,6 +1482,91 @@ def test_fixed_inputs_skip_authoring_stay_private_and_preserve_whitelist(
     assert all(item["suite"] == fixed_suite for item in state["harness_inputs"])
 
 
+@pytest.mark.parametrize(
+    ("validation_pass_at", "expected_success"),
+    ((1, True), (None, False)),
+)
+def test_disabled_task_demo_stops_after_capability_validation_without_weakening_success(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    validation_pass_at: int | None,
+    expected_success: bool,
+) -> None:
+    monkeypatch.setattr("autoadapter2.pipeline.check_environment", lambda: {})
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(
+        tmp_path,
+        events,
+        validation_pass_at=validation_pass_at,
+    )
+    task_demo_calls: list[dict[str, Any]] = []
+    evolution_calls: list[dict[str, Any]] = []
+
+    def forbidden_task_demo(**kwargs: Any) -> dict[str, Any]:
+        task_demo_calls.append(dict(kwargs))
+        raise AssertionError("Task Demo must be disabled")
+
+    def forbidden_evolution(model: Any, report: Any) -> dict[str, Any]:
+        del model
+        evolution_calls.append(dict(report))
+        raise AssertionError("Evolution must be disabled")
+
+    hooks = replace(
+        hooks,
+        task_demo_runner=forbidden_task_demo,
+        evolution_runner=forbidden_evolution,
+    )
+    fixed_root = tmp_path / "fixed"
+    _write_fixed_inputs(fixed_root)
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "pre-recap-runtime",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+            "task_demo": {"enabled": False},
+            "max_driver_attempts_per_condition": 1,
+            "evolution": {"enabled": False, "max_attempts": 1},
+        }
+    )
+    destination = tmp_path / "run"
+
+    result = run_experiment(
+        tmp_path,
+        config=config,
+        output_dir=destination,
+        run_id="pre-recap-runtime",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+        fixed_inputs_from=fixed_root,
+    )
+
+    cell = result["cells"][0]
+    assert result["pipeline_completed"] is True
+    assert cell["pipeline_completed"] is True
+    assert cell["final_capability_validation_passed"] is expected_success
+    assert result["success"] is expected_success
+    assert success_claim(result) is expected_success
+    assert cell["task_demo_executed"] is False
+    assert cell["task_demo_passed"] is False
+    assert cell["task_demo_pipeline_completed"] is False
+    assert cell["task_demo"]["skipped"] is True
+    assert (
+        cell["task_demo"]["skip_reason"]
+        == "disabled by diagnostic configuration"
+    )
+    assert cell["outcomes"]["TaskDemoController"] is None
+    assert task_demo_calls == []
+    assert evolution_calls == []
+    assert not (
+        destination
+        / "cells"
+        / "r-arm"
+        / "skeleton-assisted"
+        / "task-demo"
+    ).exists()
+
+
 def test_historical_sealed_input_reuse_remains_rejected(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1555,6 +1664,51 @@ def test_full_cli_returns_nonzero_for_completed_failed_result(
         },
     )
     assert cli.main(["full", "--root", str(tmp_path)]) == 1
+
+
+@pytest.mark.parametrize(
+    ("extra_arguments", "expected_skip"),
+    (([], True), (["--run-reference-positive-controls"], False)),
+)
+def test_full_cli_forwards_reference_positive_control_choice(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    extra_arguments: list[str],
+    expected_skip: bool,
+) -> None:
+    config_path = tmp_path / "configs" / "experiments" / "mainline.json"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        json.dumps(
+            {
+                "experiment_id": "cli-reference-choice",
+                "robots": ["r-arm"],
+                "generation_conditions": ["skeleton-assisted"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    received: list[dict[str, Any]] = []
+
+    def fake_run_experiment(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        del args
+        received.append(dict(kwargs))
+        return {
+            "experiment_id": "cli-reference-choice",
+            "run_id": "cli-reference-choice",
+            "pipeline_completed": True,
+            "final_capability_validation_passed": False,
+            "success": False,
+            "cells": [],
+        }
+
+    monkeypatch.setattr(cli, "run_experiment", fake_run_experiment)
+
+    assert (
+        cli.main(["full", "--root", str(tmp_path), *extra_arguments])
+        == 1
+    )
+    assert received[0]["skip_reference_calibration"] is expected_skip
 
 
 def test_experience_ingress_accepts_only_reviewed_public_records() -> None:
