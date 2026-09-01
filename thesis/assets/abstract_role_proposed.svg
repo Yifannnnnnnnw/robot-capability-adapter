@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="980" viewBox="0 0 1800 980" role="img" aria-labelledby="title desc">
+  <title id="title">Auto-Adapter software boundary</title>
+  <desc id="desc">Three lanes distinguish Auto-Adapter construction, independent capability assessment, and downstream use by a separate high-level controller.</desc>
+  <defs>
+    <marker id="arrow-dark" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#333333"/></marker>
+    <marker id="arrow-gold" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#7F6000"/></marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#5B3F70"/></marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#2E7D32"/></marker>
+    <style>
+      text { font-family: Helvetica, Arial, sans-serif; fill: #333333; }
+      .lane-title { font-size: 22px; font-weight: 700; letter-spacing: .2px; }
+      .node-title { font-size: 20px; font-weight: 700; }
+      .body { font-size: 15px; }
+      .small { font-size: 14px; fill: #666666; }
+      .edge-label { font-size: 14px; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="980" fill="#FFFFFF"/>
+  <rect x="30" y="40" width="1740" height="270" rx="22" fill="#FFF8E7" stroke="#D6B656" stroke-width="2"/>
+  <rect x="30" y="340" width="1740" height="260" rx="22" fill="#F7F2FA" stroke="#9673A6" stroke-width="2"/>
+  <rect x="30" y="630" width="1740" height="310" rx="22" fill="#F3F7FC" stroke="#6C8EBF" stroke-width="2"/>
+  <text class="lane-title" x="60" y="82" fill="#7F6000">A  CONSTRUCTION TIME — AUTO-ADAPTER</text>
+  <text class="lane-title" x="60" y="382" fill="#5B3F70">B  AUTO-ADAPTER ASSESSMENT — INDEPENDENT HARNESS OUTSIDE GENERATED CODE</text>
+  <text class="lane-title" x="60" y="672" fill="#2F5597">C  DOWNSTREAM USE — SEPARATE HIGH-LEVEL CONTROLLER</text>
+
+  <rect x="80" y="105" width="420" height="170" rx="17" fill="#FFFFFF" stroke="#B3A16E" stroke-width="2"/>
+  <text class="node-title" x="290" y="140" text-anchor="middle">Declared inputs</text>
+  <rect x="105" y="155" width="370" height="48" rx="9" fill="#F5F5F5" stroke="#B3B3B3"/>
+  <text class="body" x="290" y="175" text-anchor="middle" font-weight="700">Robot description and public documentation</text>
+  <text class="small" x="290" y="193" text-anchor="middle">fixed MJCF · joints · actuators · limits</text>
+  <rect x="105" y="213" width="370" height="48" rx="9" fill="#F5F5F5" stroke="#B3B3B3"/>
+  <text class="body" x="290" y="233" text-anchor="middle" font-weight="700">Source-backed target tasks</text>
+  <text class="small" x="290" y="251" text-anchor="middle">reviewed requirements and pass standards</text>
+
+  <rect x="640" y="105" width="430" height="170" rx="17" fill="#FFF2CC" stroke="#D6B656" stroke-width="3"/>
+  <text class="node-title" x="855" y="137" text-anchor="middle">Auto-Adapter</text>
+  <text class="small" x="855" y="158" text-anchor="middle" fill="#7F6000">construction-time framework</text>
+  <rect x="675" y="180" width="360" height="34" rx="7" fill="#FFFFFF" stroke="#D6B656"/>
+  <text class="body" x="855" y="202" text-anchor="middle" font-weight="700">Capability-interface design</text>
+  <rect x="675" y="225" width="360" height="34" rx="7" fill="#FFFFFF" stroke="#D6B656"/>
+  <text class="body" x="855" y="247" text-anchor="middle" font-weight="700">Robot-specific driver synthesis</text>
+
+  <rect x="1210" y="105" width="480" height="170" rx="17" fill="#DAE8FC" stroke="#6C8EBF" stroke-width="2"/>
+  <text class="node-title" x="1450" y="140" text-anchor="middle" fill="#1F4E78">Generated robot-facing layer</text>
+  <rect x="1240" y="156" width="420" height="45" rx="8" fill="#FFFFFF" stroke="#6C8EBF"/>
+  <text class="body" x="1450" y="176" text-anchor="middle" font-weight="700">Robot capability interface</text>
+  <text class="small" x="1450" y="193" text-anchor="middle">task-neutral caller-facing contract</text>
+  <rect x="1240" y="212" width="420" height="45" rx="8" fill="#FFFFFF" stroke="#6C8EBF"/>
+  <text class="body" x="1450" y="232" text-anchor="middle" font-weight="700">Robot-specific driver</text>
+  <text class="small" x="1450" y="249" text-anchor="middle">robot-specific implementation</text>
+
+  <path d="M500 190 H640" fill="none" stroke="#7F6000" stroke-width="2.5" marker-end="url(#arrow-gold)"/>
+  <rect x="522" y="172" width="96" height="22" fill="#FFF8E7"/>
+  <text class="edge-label" x="570" y="188" text-anchor="middle" fill="#7F6000">declared inputs</text>
+  <path d="M1070 190 H1210" fill="none" stroke="#7F6000" stroke-width="2.5" marker-end="url(#arrow-gold)"/>
+  <rect x="1102" y="172" width="76" height="22" fill="#FFF8E7"/>
+  <text class="edge-label" x="1140" y="188" text-anchor="middle" fill="#7F6000">produces</text>
+
+  <rect x="120" y="430" width="330" height="100" rx="14" fill="#FFFFFF" stroke="#9673A6" stroke-width="2"/>
+  <text class="node-title" x="285" y="469" text-anchor="middle" font-size="18">Fixed validation cases</text>
+  <text class="small" x="285" y="495" text-anchor="middle">criteria compiled before driver synthesis</text>
+  <rect x="690" y="405" width="500" height="150" rx="17" fill="#E1D5E7" stroke="#9673A6" stroke-width="3"/>
+  <text class="node-title" x="940" y="446" text-anchor="middle">Independent Harness</text>
+  <text class="body" x="940" y="476" text-anchor="middle" fill="#5B3F70">runs the candidate in fresh Direct-MuJoCo cases</text>
+  <text class="small" x="940" y="505" text-anchor="middle">observes qpos · qvel · ctrl · poses · contacts</text>
+  <rect x="1390" y="420" width="300" height="120" rx="15" fill="#D5E8D4" stroke="#82B366" stroke-width="2"/>
+  <text class="body" x="1540" y="453" text-anchor="middle" font-weight="700">Capability-validation verdict</text>
+  <text x="1540" y="487" text-anchor="middle" font-size="21" font-weight="700" fill="#2E7D32">PASS / FAIL</text>
+  <text class="small" x="1540" y="516" text-anchor="middle">Direct-MuJoCo only</text>
+  <path d="M450 480 H690" fill="none" stroke="#5B3F70" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+  <rect x="500" y="462" width="140" height="22" fill="#F7F2FA"/>
+  <text class="edge-label" x="570" y="478" text-anchor="middle" fill="#5B3F70">predefined criteria</text>
+  <path d="M1450 275 V325 H1065 V405" fill="none" stroke="#5B3F70" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrow-purple)"/>
+  <rect x="1196" y="313" width="108" height="22" fill="#F7F2FA"/>
+  <text class="edge-label" x="1250" y="329" text-anchor="middle" fill="#5B3F70">candidate layer</text>
+  <path d="M1190 480 H1390" fill="none" stroke="#5B3F70" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+  <rect x="1242" y="462" width="96" height="22" fill="#F7F2FA"/>
+  <text class="edge-label" x="1290" y="478" text-anchor="middle" fill="#5B3F70">owns verdict</text>
+
+  <rect x="80" y="740" width="220" height="100" rx="15" fill="#FFFFFF" stroke="#666666" stroke-width="2"/>
+  <text class="node-title" x="190" y="797" text-anchor="middle" font-size="18">Task instruction</text>
+  <rect x="400" y="715" width="330" height="150" rx="16" fill="#F5F5F5" stroke="#666666" stroke-width="2"/>
+  <text class="node-title" x="565" y="778" text-anchor="middle" font-size="18">Separate high-level controller</text>
+  <text class="small" x="565" y="809" text-anchor="middle">selects and sequences capabilities</text>
+  <rect x="850" y="695" width="480" height="190" rx="17" fill="#DAE8FC" stroke="#6C8EBF" stroke-width="3"/>
+  <text class="node-title" x="1090" y="729" text-anchor="middle" fill="#1F4E78">Accepted robot-facing layer</text>
+  <rect x="880" y="747" width="420" height="48" rx="8" fill="#FFFFFF" stroke="#6C8EBF"/>
+  <text class="body" x="1090" y="767" text-anchor="middle" font-weight="700">Robot capability interface</text>
+  <text class="small" x="1090" y="786" text-anchor="middle">task-neutral contract</text>
+  <rect x="880" y="810" width="420" height="55" rx="8" fill="#FFFFFF" stroke="#6C8EBF"/>
+  <text class="body" x="1090" y="833" text-anchor="middle" font-weight="700">Robot-specific driver</text>
+  <text class="small" x="1090" y="853" text-anchor="middle">robot-specific implementation and feedback control</text>
+  <rect x="1470" y="715" width="250" height="150" rx="16" fill="#D5E8D4" stroke="#82B366" stroke-width="2"/>
+  <text class="node-title" x="1595" y="770" text-anchor="middle" font-size="18">Direct-MuJoCo</text>
+  <text class="body" x="1595" y="798" text-anchor="middle">robot and environment</text>
+  <text class="small" x="1595" y="827" text-anchor="middle">simulation evidence only</text>
+
+  <path d="M1540 540 V615 H1258 V695" fill="none" stroke="#2E7D32" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrow-green)"/>
+  <rect x="1320" y="604" width="170" height="22" fill="#FFFFFF"/>
+  <text class="edge-label" x="1405" y="620" text-anchor="middle" fill="#2E7D32">accepted capabilities only</text>
+  <path d="M300 790 H400" fill="none" stroke="#333333" stroke-width="2.5" marker-end="url(#arrow-dark)"/>
+  <rect x="330" y="772" width="40" height="22" fill="#F3F7FC"/>
+  <text class="edge-label" x="350" y="788" text-anchor="middle">task</text>
+  <path d="M730 790 H880" fill="none" stroke="#333333" stroke-width="2.5" marker-end="url(#arrow-dark)"/>
+  <rect x="752" y="772" width="106" height="22" fill="#F3F7FC"/>
+  <text class="edge-label" x="805" y="788" text-anchor="middle">capability call</text>
+  <path d="M1300 828 H1470" fill="none" stroke="#333333" stroke-width="2.5" marker-end="url(#arrow-dark)"/>
+  <rect x="1320" y="798" width="130" height="42" fill="#F3F7FC"/>
+  <text class="edge-label" x="1385" y="815" text-anchor="middle">actuator commands</text>
+  <text class="edge-label" x="1385" y="833" text-anchor="middle">(data.ctrl)</text>
+  <path d="M1470 850 H1390 V850 H1300" fill="none" stroke="#333333" stroke-width="2.5" marker-end="url(#arrow-dark)"/>
+  <rect x="1340" y="842" width="100" height="22" fill="#F3F7FC"/>
+  <text class="edge-label" x="1390" y="858" text-anchor="middle">state feedback</text>
+  <text x="900" y="917" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-style="italic" fill="#2F5597">At runtime, the controller calls the generated interface; the driver—not Auto-Adapter—performs robot-specific control.</text>
+</svg>

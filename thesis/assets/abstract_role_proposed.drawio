@@ -1,0 +1,149 @@
+<mxfile host="app.diagrams.net" modified="2026-09-01T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="aa-software-boundary" name="Auto-Adapter software boundary">
+    <mxGraphModel dx="1800" dy="980" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="980" math="0" shadow="0" background="#FFFFFF">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="lane-construction" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E7;strokeColor=#D6B656;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="30" y="40" width="1740" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-assessment" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7F2FA;strokeColor=#9673A6;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="30" y="340" width="1740" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-runtime" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F7FC;strokeColor=#6C8EBF;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="30" y="630" width="1740" height="310" as="geometry" />
+        </mxCell>
+
+        <mxCell id="heading-construction" value="A&amp;nbsp;&amp;nbsp; CONSTRUCTION TIME — AUTO-ADAPTER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=22;fontStyle=1;fontColor=#7F6000;" vertex="1" parent="1">
+          <mxGeometry x="60" y="58" width="620" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="heading-assessment" value="B&amp;nbsp;&amp;nbsp; AUTO-ADAPTER ASSESSMENT — INDEPENDENT HARNESS OUTSIDE GENERATED CODE" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=22;fontStyle=1;fontColor=#5B3F70;" vertex="1" parent="1">
+          <mxGeometry x="60" y="358" width="1300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="heading-runtime" value="C&amp;nbsp;&amp;nbsp; DOWNSTREAM USE — SEPARATE HIGH-LEVEL CONTROLLER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=22;fontStyle=1;fontColor=#2F5597;" vertex="1" parent="1">
+          <mxGeometry x="60" y="648" width="800" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="inputs" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B3A16E;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="105" width="420" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-title" value="&lt;b&gt;Declared inputs&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=20;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="105" y="118" width="370" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="robot-input" value="&lt;b&gt;Robot description and public documentation&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;fixed MJCF · joints · actuators · limits&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#B3B3B3;arcSize=8;fontFamily=Helvetica;fontSize=15;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="105" y="155" width="370" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="task-input" value="&lt;b&gt;Source-backed target tasks&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;reviewed requirements and pass standards&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#B3B3B3;arcSize=8;fontFamily=Helvetica;fontSize=15;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="105" y="213" width="370" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="auto-adapter" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;strokeWidth=3;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="640" y="105" width="430" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="auto-adapter-title" value="&lt;b&gt;Auto-Adapter&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7F6000&quot; style=&quot;font-size:14px&quot;&gt;construction-time framework&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=22;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="670" y="116" width="370" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="capability-design" value="Capability-interface design" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;arcSize=8;fontFamily=Helvetica;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="675" y="180" width="360" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="driver-synthesis" value="Robot-specific driver synthesis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;arcSize=8;fontFamily=Helvetica;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="675" y="225" width="360" height="34" as="geometry" />
+        </mxCell>
+
+        <mxCell id="generated-layer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;strokeWidth=2;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="105" width="480" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="generated-layer-title" value="&lt;b&gt;Generated robot-facing layer&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=20;fontColor=#1F4E78;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="118" width="420" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="generated-interface" value="&lt;b&gt;Robot capability interface&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4D4D4D&quot;&gt;task-neutral caller-facing contract&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;arcSize=8;fontFamily=Helvetica;fontSize=15;align=center;verticalAlign=middle;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="156" width="420" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="generated-driver" value="&lt;b&gt;Robot-specific driver&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4D4D4D&quot;&gt;robot-specific implementation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;arcSize=8;fontFamily=Helvetica;fontSize=15;align=center;verticalAlign=middle;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="212" width="420" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fixed-cases" value="&lt;b&gt;Fixed validation cases&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;criteria compiled before driver synthesis&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;strokeWidth=2;arcSize=10;fontFamily=Helvetica;fontSize=16;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="120" y="430" width="330" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="harness" value="&lt;b&gt;Independent Harness&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#5B3F70&quot;&gt;runs the candidate in fresh Direct-MuJoCo cases&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;observes qpos · qvel · ctrl · poses · contacts&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;strokeWidth=3;arcSize=10;fontFamily=Helvetica;fontSize=17;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="690" y="405" width="500" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="capability-verdict" value="&lt;b&gt;Capability-validation verdict&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:21px&quot; color=&quot;#2E7D32&quot;&gt;PASS / FAIL&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;Direct-MuJoCo only&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;strokeWidth=2;arcSize=10;fontFamily=Helvetica;fontSize=16;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="420" width="300" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="task-instruction" value="&lt;b&gt;Task instruction&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;strokeWidth=2;arcSize=12;fontFamily=Helvetica;fontSize=18;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="740" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="high-level-controller" value="&lt;b&gt;Separate high-level controller&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;selects and sequences capabilities&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;strokeWidth=2;arcSize=10;fontFamily=Helvetica;fontSize=18;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="400" y="715" width="330" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-layer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;strokeWidth=3;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="695" width="480" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-layer-title" value="&lt;b&gt;Accepted robot-facing layer&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=20;fontColor=#1F4E78;" vertex="1" parent="1">
+          <mxGeometry x="880" y="708" width="420" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-interface" value="&lt;b&gt;Robot capability interface&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4D4D4D&quot;&gt;task-neutral contract&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;arcSize=8;fontFamily=Helvetica;fontSize=15;align=center;verticalAlign=middle;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="880" y="747" width="420" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-driver" value="&lt;b&gt;Robot-specific driver&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4D4D4D&quot;&gt;robot-specific implementation and feedback control&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;arcSize=8;fontFamily=Helvetica;fontSize=15;align=center;verticalAlign=middle;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="880" y="810" width="420" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="direct-mujoco" value="&lt;b&gt;Direct-MuJoCo&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4D4D4D&quot;&gt;robot and environment&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#666666&quot;&gt;simulation evidence only&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;strokeWidth=2;arcSize=10;fontFamily=Helvetica;fontSize=18;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1470" y="715" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-takeaway" value="&lt;i&gt;At runtime, the controller calls the generated interface; the driver—not Auto-Adapter—performs robot-specific control.&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=16;fontColor=#2F5597;" vertex="1" parent="1">
+          <mxGeometry x="310" y="895" width="1180" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-inputs-aa" value="declared inputs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#7F6000;fontFamily=Helvetica;fontSize=14;fontColor=#7F6000;labelBackgroundColor=#FFF8E7;" edge="1" parent="1" source="inputs" target="auto-adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-aa-output" value="produces" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#7F6000;fontFamily=Helvetica;fontSize=14;fontColor=#7F6000;labelBackgroundColor=#FFF8E7;" edge="1" parent="1" source="auto-adapter" target="generated-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-cases-harness" value="predefined criteria" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5B3F70;fontFamily=Helvetica;fontSize=14;fontColor=#5B3F70;labelBackgroundColor=#F7F2FA;" edge="1" parent="1" source="fixed-cases" target="harness">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-candidate-harness" value="candidate layer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 6;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5B3F70;fontFamily=Helvetica;fontSize=14;fontColor=#5B3F70;labelBackgroundColor=#F7F2FA;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="generated-layer" target="harness">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1450" y="325" />
+              <mxPoint x="1065" y="325" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-harness-verdict" value="owns verdict" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5B3F70;fontFamily=Helvetica;fontSize=14;fontColor=#5B3F70;labelBackgroundColor=#F7F2FA;" edge="1" parent="1" source="harness" target="capability-verdict">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-accepted-runtime" value="accepted capabilities only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 6;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#2E7D32;fontFamily=Helvetica;fontSize=14;fontColor=#2E7D32;labelBackgroundColor=#FFFFFF;entryX=0.85;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="capability-verdict" target="runtime-layer">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1540" y="615" />
+              <mxPoint x="1258" y="615" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-task-controller" value="task" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontFamily=Helvetica;fontSize=14;fontColor=#333333;labelBackgroundColor=#F3F7FC;" edge="1" parent="1" source="task-instruction" target="high-level-controller">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-controller-interface" value="capability call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontFamily=Helvetica;fontSize=14;fontColor=#333333;labelBackgroundColor=#F3F7FC;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="high-level-controller" target="runtime-interface">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-driver-command" value="actuator commands (data.ctrl)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontFamily=Helvetica;fontSize=14;fontColor=#333333;labelBackgroundColor=#F3F7FC;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" edge="1" parent="1" source="runtime-driver" target="direct-mujoco">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-state-feedback" value="state feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#333333;fontFamily=Helvetica;fontSize=14;fontColor=#333333;labelBackgroundColor=#F3F7FC;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.8;entryDx=0;entryDy=0;" edge="1" parent="1" source="direct-mujoco" target="runtime-driver">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1390" y="840" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
