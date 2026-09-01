@@ -125,26 +125,14 @@ compares alternative synthesis frameworks or controller architectures.
 
 \subsection{LLM and Robot Cohorts}
 
-The seven active model configurations form a purposive comparison cohort
-rather than a representative sample of available LLMs. Three Anthropic models
-provide a within-provider comparison across model tiers. Nova Pro, DeepSeek V4
-Pro, Ministral 3 8B, and GPT-5.6 Sol extend the comparison across four other
-providers. GPT-5.6 Sol is pinned to the returned model identity
-\texttt{openai.gpt-5.6-sol}, a 1,050,000-token public context window, and a
-128,000-token maximum output
-(\href{https://developers.openai.com/api/docs/models/gpt-5.6-sol}{OpenAI model
-specification}, accessed 23 August 2026).
-
-For GPT-5.6 Sol, resource accounting uses the public OpenAI Standard price snapshot
-dated 23 August 2026
-(\href{https://platform.openai.com/pricing}{OpenAI API pricing}, accessed
-23 August 2026). Requests
-with at most 272,000 input tokens use the public
-rates of US\$5 per million uncached input tokens, US\$0.50 per million cached
-input tokens, and US\$30 per million output tokens. A request with more than
-272,000 input tokens uses US\$10, US\$1, and US\$45 respectively for the whole
-request. These values are public reference estimates; they are not presented as
-the organisation gateway's actual bill.
+The seven evaluated model configurations form a purposive comparison cohort
+rather than a representative sample of available LLMs. Three Anthropic
+configurations provide a within-provider comparison across model tiers. Nova
+Pro, DeepSeek V4 Pro, Ministral 3 8B, and GPT-5.6 Sol extend the comparison
+across four other providers. Appendix
+Table~\ref{tab:appendix-model-pricing} records the exact runtime identities,
+configured limits, and public reference prices. These rates contextualise
+resource use but do not establish actual billed cost.
 
 The declared robot cohort comprises eleven configurations across five robot
 types, as summarised in Table~\ref{tab:chapter3-robot-cohort}. Seven are fixed
@@ -325,10 +313,10 @@ determined by the final frozen Driver and requires every case to pass.
       & 1.02 min \\
     DeepSeek V4 Pro
       & \shortstack{55.6\%\\(10/18)}
-      & \shortstack[r]{5,149,805\\US\$0.5331}
+      & \shortstack[r]{5,149,805\\US\$0.9760}
       & 31.11 min
       & \shortstack{86.7\%\\(13/15)}
-      & \shortstack[r]{5,369,899\\US\$0.5075}
+      & \shortstack[r]{5,369,899\\US\$0.9432}
       & 29.17 min \\
     Ministral 3 8B
       & \shortstack{Study\\error}
@@ -343,11 +331,13 @@ determined by the final frozen Driver and requires every case to pass.
 \end{table}
 
 The token totals combine input and output tokens. Reported cache-read tokens
-remain a subset of the input total and are not added again. Costs use the
-frozen price snapshots stored with each run and therefore represent estimates
-rather than provider invoices. A Study error indicates that the cell did not
-produce a valid study artefact and consequently did not enter Driver
-validation.
+remain a subset of the input total and are not added again. Cost figures are
+public-price reference estimates rather than provider invoices; Appendix
+Table~\ref{tab:appendix-model-pricing} records the corresponding rate basis.
+The DeepSeek values were recalculated from call-level cache-hit, cache-miss,
+output-token, and UTC timestamp records because the stored snapshot was stale.
+A Study error indicates that the cell did not produce a valid study artefact
+and consequently did not enter Driver validation.
 
 The SO-101 Sonnet result marked $\dagger$ is retained from an earlier dynamic
 12-case canary, whereas the other SO-101 case-level results use the fixed
@@ -376,13 +366,13 @@ Experiment~2a design.
     \textbf{Component / Robot} & \textbf{Configuration or Provided Capabilities} \\
     \midrule
     High-level planner & ReCAP \citep{zhang2025recap} \\
-    SO-101 & \texttt{move\_end\_effector\_to\_position};
-      \texttt{trace\_cartesian\_path}; \texttt{set\_gripper\_opening};
-      \texttt{approach\_until\_contact};
-      \texttt{move\_cartesian\_offset\_and\_return}; \texttt{set\_wrist\_roll} \\
-    Unitree Go2 & \texttt{track\_planar\_twist};
-      \texttt{move\_body\_relative\_pose}; \texttt{trace\_planar\_path};
-      \texttt{set\_body\_height}; \texttt{hold\_stable\_stance} \\
+    SO-101 & \path{move_end_effector_to_position};
+      \path{trace_cartesian_path}; \path{set_gripper_opening};
+      \path{approach_until_contact};
+      \path{move_cartesian_offset_and_return}; \path{set_wrist_roll} \\
+    Unitree Go2 & \path{track_planar_twist};
+      \path{move_body_relative_pose}; \path{trace_planar_path};
+      \path{set_body_height}; \path{hold_stable_stance} \\
     \bottomrule
   \end{tabularx}
   \endgroup
@@ -405,16 +395,21 @@ Experiment~2a design.
     \textbf{Estimated cost per task (US\$)} \\
     \midrule
     Claude Opus 5       & 100.0\% & 0.585 \\
-    GPT-5.6 Sol         & 87.5\%  & 0.466 \\
+    GPT-5.6 Sol         & 87.5\%  & 0.420 \\
     Claude Sonnet 4.6   & 83.3\%  & 0.336 \\
     Claude Haiku 4.5    & 57.9\%  & 0.112 \\
-    DeepSeek V4 Pro     & 44.4\%  & 0.013 \\
+    DeepSeek V4 Pro     & 44.4\%  & 0.022 \\
     Amazon Nova Pro     & 5.0\%   & 0.139 \\
     Ministral 3 8B      & 0.0\%   & 0.024 \\
     \bottomrule
   \end{tabularx}
   \endgroup
 \end{table}
+
+\noindent\emph{Cost note:} Values use the selected R1--R2 episodes. DeepSeek
+preserves the recorded cache classification; GPT input is conservatively
+treated as uncached because cache fields are unavailable. The estimates
+exclude superseded infrastructure attempts and are not provider invoices.
 
 \begin{table}[htbp]
   \centering

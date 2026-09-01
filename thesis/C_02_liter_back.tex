@@ -204,9 +204,9 @@ which would otherwise make a call ambiguous, but does not itself execute the
 operation.
 
 Execution instead depends on software that connects task-level requests to
-the control facilities of one robot, yet no universal artefact serves this
-purpose. \citet{tripathi2026testdriven} generate a standalone Python
-controller for a Webots navigation task. ROS~2 instead separates controllers
+the control facilities of one robot, and current systems place this connection
+in different artefact types. \citet{tripathi2026testdriven} generate a
+standalone Python controller for a Webots navigation task. ROS~2 instead separates controllers
 from dynamically loaded hardware components, while SkiROS2 composes executable
 skill implementations above ROS
 \citep{macenski2022ros2,ros2control2026hardware,mayr2023skiros2}.
@@ -350,10 +350,11 @@ thus define the generation procedure; the next subsection defines its output.
 
 This subsection reviews how LLMs synthesise tools for their own use and how
 tool synthesis has been applied to robot software. In Auto-Adapter, the
-resulting tool takes the form of a robot driver. Language to Rewards translates
-instructions into reward functions. Eureka improves reward code through
-simulation feedback. Reinforcement learning then uses the reward to obtain a
-control policy \citep{yu2023language2reward,ma2024eureka}. LLMCap2Skill moves
+resulting tool takes the form of a robot driver. Language to Rewards uses an
+LLM to specify reward parameters and optimises actions online with MuJoCo
+model-predictive control \citep{yu2023language2reward}. Eureka instead improves
+reward code through simulation feedback and uses reinforcement learning to
+train control policies \citep{ma2024eureka}. LLMCap2Skill moves
 closer to software implementation. It retrieves relevant ROS~2 interfaces from
 a capability description and generates an executable skill
 \citep{vieira2025cap2skill}. Its more complex cases still require manual

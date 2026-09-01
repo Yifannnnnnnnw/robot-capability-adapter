@@ -182,10 +182,14 @@
     \IfFontExistsTF{Cambria}{%
       \setmainfont{Cambria}
     }{%
-      \IfFontExistsTF{Caladea}{%
-        \setmainfont{Caladea}
+      \IfFontExistsTF{Times New Roman}{%
+        \setmainfont{Times New Roman}
       }{%
-        \setmainfont{TeX Gyre Termes}
+        \IfFontExistsTF{Caladea}{%
+          \setmainfont{Caladea}
+        }{%
+          \setmainfont{TeX Gyre Termes}
+        }%
       }%
     }%
   }%
