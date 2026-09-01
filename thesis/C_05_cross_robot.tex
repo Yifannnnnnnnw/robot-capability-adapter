@@ -11,26 +11,33 @@ comparison.
 \end{quote}
 
 \section[Introduction]{Introduction}
+\label{sec:cross-robot-introduction}
 
-Robot agents require robot-specific software that converts requested
-capabilities into valid commands and observations. Auto-Adapter generates this
-software as a reusable Python driver rather than a task-specific policy. This
-chapter examines the complete construction route across eleven predeclared
-Direct-MuJoCo robot configurations.
+A high-level controller can reuse a task-neutral capability only when a
+robot-specific driver translates it into commands and observations supported
+by the target configuration. This translation differs across serial arms,
+legged robots, aerial vehicles, and humanoids because their actuation,
+feedback, stability requirements, and feasible control structures are not
+interchangeable. Cross-robot evaluation therefore asks whether the
+Auto-Adapter interface-and-driver boundary remains usable across different
+robot configurations, rather than whether one implementation can be copied
+between them unchanged.
 
-Each configuration contributes three isolated runs, producing 33 experimental
-cells. All cells use Sonnet 4.6 and skeleton-assisted generation, and receive
-no Experience from an earlier run. Every run constructs a fresh capability
-design, implementation-blind validation suite, and driver. At most three
-driver attempts are evaluated before a ReCAP Task Demo using only capabilities
-that passed both nominal and calibrated-boundary validation.
+This chapter brings together Direct-MuJoCo studies covering serial-arm
+manipulation, quadruped locomotion, aerial flight, and humanoid balance. Unlike
+the controlled construction study in
+Chapter~\ref{chapter:autoadapter-component-analysis}, these studies use
+configuration-specific drivers, model settings, tasks, validation procedures,
+and attempt budgets. They are therefore analysed as separate evidence blocks
+rather than combined under one experimental denominator.
 
-The analysis reports construction, Capability Validation, Repair, and Task
-Demo outcomes by exact robot configuration. The comparison is descriptive
-because morphology, control interface, observations, tasks, and simulation
-scene change together. It therefore does not establish morphology effects,
-model or generation-condition differences, hardware behaviour, or sim-to-real
-transfer.
+The analysis distinguishes driver construction and validation from downstream
+task execution. It examines where the evaluated integrations succeed or fail
+and whether the observed limitations arise from the generated interface,
+control implementation, validation procedure, or downstream composition. The
+results remain specific to the named MuJoCo configurations and do not establish
+a general model ranking, a causal morphology effect, hardware behaviour, or
+sim-to-real transfer.
 
 
 \section[Background]{Background}
@@ -73,6 +80,42 @@ expresses the complete task as a single generated program. Auto-Adapter
 instead uses that interface through a multi-turn controller. The comparison
 therefore concerns downstream task control over a fixed interface, not the
 preceding synthesis of that interface.
+
+
+\section[Experiment Design]{Experiment Design}
+\label{sec:cross-robot-experiment-design}
+
+Experiment~3 comprises four configuration-specific evidence blocks: serial
+arms, quadrupeds, the Skydio X2 quadrotor, and the Unitree H1 humanoid. The
+blocks do not share one driver-generation model, task suite, validation
+procedure, repetition count, or attempt budget. Each outcome therefore belongs
+only to the protocol that produced it. Configurations without a downstream
+evaluation, including KUKA iiwa 14 and Unitree A1, are recorded as not
+evaluated at that level rather than counted as task failures.
+
+The language model also has two distinct roles. In paired downstream
+comparisons, Auto-Adapter supplies a fixed robot-specific driver and capability
+interface, while ReCAP and CaP use that same software boundary. In the
+quadruped comparison, the driver was generated with Sonnet 4.5, while the
+downstream language-model backbone was either Sonnet 4.5 or Sonnet 4.6. The
+retained Skydio X2 and H1 drivers were also generated with Sonnet 4.5, whereas
+their separate cross-model sweeps regenerated the driver with two attempts per
+model. The SO-101 cross-model study followed a different protocol and is
+reported separately.
+
+The chapter distinguishes structural and smoke-level onboarding, stricter
+driver validation, downstream task trials, and cross-model synthesis attempts.
+A downstream success does not change the preceding driver-validation verdict,
+and task performance reported only for validating drivers remains conditional
+on successful synthesis. Patched or selected drivers are identified in their
+respective sections and are not presented as untouched first-attempt
+generation.
+
+Results are analysed within each evidence block using their local units and
+denominators. Cross-block interpretation is qualitative and concerns the
+location of observed successes and failures. The analysis does not pool the
+results into a common robot-level rate or use them to infer a causal morphology
+ordering.
 
 
 \section[Serial-Arm Manipulation]{Serial-Arm Manipulation}
