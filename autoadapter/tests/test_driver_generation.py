@@ -39,6 +39,7 @@ from autoadapter2.driver_synthesis.repair import (
 )
 from autoadapter2.driver_synthesis.source_check import DriverSourceError, audit_driver_source
 from autoadapter2.libraries import RobotPackage
+from autoadapter2.react import ToolCall, ToolTurn
 
 
 FROM_SCRATCH_DRIVER = """
@@ -696,6 +697,84 @@ print("probe-time=" + str(data.time))
                 workspace=Path(self.temporary.name) / "repair-limit",
             )
         self.assertEqual(len(client.calls), 2)
+
+    def test_interactive_repair_rejects_unchanged_previous_driver_after_length_finish(
+        self,
+    ) -> None:
+        changed_driver = FROM_SCRATCH_DRIVER.replace(
+            'request.get("target", 0.0)',
+            'request["target"]',
+        )
+
+        class ScriptedClient:
+            def __init__(self) -> None:
+                self.messages: list[list[dict]] = []
+                self.turns = [
+                    ToolTurn(content="unfinished", finish_reason="length"),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            ToolCall(
+                                id="write-repair",
+                                name="write_file",
+                                arguments={
+                                    "path": "driver.py",
+                                    "content": changed_driver,
+                                },
+                                raw_arguments=json.dumps(
+                                    {
+                                        "path": "driver.py",
+                                        "content": changed_driver,
+                                    }
+                                ),
+                            ),
+                        ),
+                    ),
+                    ToolTurn(content="done", finish_reason="stop"),
+                ]
+
+            def generate_tool_turn(self, **kwargs):
+                self.messages.append(
+                    [dict(message) for message in kwargs["messages"]]
+                )
+                return self.turns.pop(0)
+
+        client = ScriptedClient()
+        public_inputs = build_public_generation_inputs(
+            self.package,
+            self.design,
+            condition="from-scratch",
+        )
+        with patch(
+            "autoadapter2.driver_synthesis.interactive."
+            "PublicDevelopmentSession.validate_driver_artifact",
+            return_value={"import": {"ok": True}},
+        ):
+            result = repair_with_probes(
+                client,
+                package=self.package,
+                previous_driver_source=FROM_SCRATCH_DRIVER,
+                candidate_report={"validation_passed": False},
+                media_manifest=[],
+                public_inputs=public_inputs,
+                condition="from-scratch",
+                previous_attempt=0,
+                workspace=Path(self.temporary.name) / "interactive-repair",
+            )
+
+        self.assertEqual(result.driver_source, changed_driver)
+        self.assertEqual(len(client.messages), 3)
+        feedback = "\n".join(
+            str(message.get("content", "")) for message in client.messages[1]
+        )
+        self.assertIn("unchanged from the previous frozen driver", feedback)
+        first_validation = next(
+            event
+            for event in result.call_evidence.react_trace
+            if event.get("event") == "end_turn"
+        )
+        self.assertFalse(first_validation["artifact_valid"])
 
     def test_repair_rejects_private_definitions_despite_public_study_criterion(self) -> None:
         unsafe_public_inputs = (

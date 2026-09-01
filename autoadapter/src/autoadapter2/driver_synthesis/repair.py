@@ -800,6 +800,11 @@ def _interactive_repair(
             raise RepairError(f"driver.py cannot be read: {exc}") from exc
         if not driver_source.strip():
             raise RepairError("driver.py is empty")
+        if session.revision <= 0 or driver_source == source:
+            raise RepairError(
+                "driver.py is unchanged from the previous frozen driver; "
+                "Repair must revise it with write_file"
+            )
         try:
             source_audit = audit_driver_source(
                 driver_source,
