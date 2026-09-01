@@ -1,0 +1,92 @@
+\chapter[Conclusion and Future Work]{Conclusion and Future Work}\label{chapter:runtime-improvement}\label{chapter:discussion}\label{chapter:conclusion}
+
+\begin{quote}\itshape
+The objective of this chapter is to consolidate the thesis and identify
+directions for further research. The chapter begins by summarising the evidence
+from the three experiments, relating it to the research questions, and
+restating the contributions and evidence boundaries of the study. It then
+develops future work from the limitations identified in the evaluation.
+Finally, it closes the thesis by linking the present findings to the next
+stages of validation, cross-robot comparison, and real-world extension.
+\end{quote}
+
+\section[Summary]{Summary}
+
+This thesis investigated how language models can construct reusable,
+executable, and independently validated software interfaces for different
+robots. Auto-Adapter frames this problem as the synthesis and validation of a
+robot-specific driver. By separating capability definition, driver
+implementation, and trusted Harness judgement, the framework allows interface
+correctness, behavioural correctness, and downstream task success to be
+evaluated independently.
+
+The experiments showed that a structurally correct or executable driver does
+not necessarily satisfy its complete behavioural requirements. No evaluated
+fixed-suite cell passed every behavioural test. In the fixed-driver study, 61
+of 123 evaluable task episodes succeeded, while every normally terminated
+episode that failed the Harness had nevertheless been declared complete by its
+controller. These findings show that tool synthesis, tool use, and task
+completion are related but non-substitutable abilities. A model's completion
+statement cannot replace independent judgement of the observed robot state.
+
+The cross-robot experiments further indicated that the capability-interface
+approach can be applied across different robot configurations, although the
+outcomes remain dependent on the task, control structure, and validation
+conditions. The principal contribution of this thesis is therefore not a claim
+that one model can control robots universally, but an auditable method that
+turns language-model-generated robot software into an experimental object that
+can be independently tested, compared, and reused. The conclusions remain
+bounded to the evaluated models, robot configurations, tasks, and MuJoCo
+environments, and do not directly establish visual-perception performance,
+hardware validity, or sim-to-real transfer.
+
+\section[Future Work]{Future Work}
+
+\textbf{First, behavioural validation should cover a broader range of
+conditions.} Future studies could introduce unseen tasks, varied initial
+states, scene changes, and repeated resets to test whether an accepted driver
+remains reliable beyond its validation suite. Validation thresholds and
+boundary cases should also be calibrated further, distinguishing stable
+drivers from implementations that fit only the evaluated cases.
+
+\textbf{Second, failures associated with perception, control structure, and
+driver synthesis should be separated.} The present experiments mainly use
+structured state observations supplied by the simulator. Future work could
+compare structured state, noisy state, and RGB or RGB-D observations, while
+varying control priors separately and holding the remaining conditions fixed.
+This would provide clearer evidence about the source of each failure.
+
+\textbf{Third, long-horizon planning and the role of Experience require
+further investigation.} With the driver, tasks, and Harness held fixed,
+experiments could test whether explicit subgoal records, feedback use, and
+recovery mechanisms reduce false completion and improve task success. The
+effect of Experience would require a matched no-Experience condition and
+multiple independent runs. Loading Experience across runs establishes an
+information-transfer mechanism, but does not by itself establish improved
+performance.
+
+\textbf{Fourth, cross-robot evaluation requires a more closely matched
+design.} Future experiments should hold the model, task structure, resource
+budget, and validation standard as constant as possible, making outcomes more
+comparable across robot configurations. Any investigation of morphology would
+also need to separate morphology from differences in control interfaces,
+observations, and tasks.
+
+\textbf{Finally, simulator evidence should be extended to real execution in
+stages.} Future work should first connect the framework to genuine vendor
+software development kits and robot-specific Translation Layers. Within that
+extension, the Model Hardware Standard described in
+Section~\ref{sec:interfaces-drivers} could be evaluated as a common interface
+between the generated robot-specific driver and device-specific execution,
+rather than as a replacement for the underlying vendor integration. A matched
+comparison should hold the robot configuration, capability interface, tasks,
+generation model and budget, and trusted Harness measurement definitions and
+verdict rules fixed while comparing direct-SDK and MHS-backed execution routes.
+It should measure integration effort, behavioural correctness, communication
+latency, and recovery from device errors. Physical experiments would
+additionally examine calibration, sensor noise, contact behaviour, and
+violations of declared interface limits. The present thesis does not integrate
+MHS or evaluate an MHS-backed execution route, so it provides no evidence that
+this route improves interoperability or physical safety. Simulator validation
+can serve as a filter before either route reaches real hardware, but it is not
+sufficient evidence for physical deployment.
