@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -62,9 +61,9 @@ def run_recap_worker_session(
 
     The returned worker evidence is intentionally unevaluated.  A B2 task
     Harness must compute the separate terminal physical verdict after this
-    function returns.  The deadline is checked before every worker command;
-    the supplied synchronous model client must enforce its own per-call
-    timeout so model inference cannot overrun the enclosing trial budget.
+    function returns.  ``wall_timeout_s`` limits each worker response; model
+    inference happens while the worker is idle and the supplied synchronous
+    model client must enforce its own per-call timeout.
     """
 
     driver_path = config.driver_path.resolve()
@@ -95,14 +94,13 @@ def run_recap_worker_session(
     worker_result: dict[str, Any] | None = None
     early_final: dict[str, Any] | None = None
     transport_aborted = False
-    deadline = time.monotonic() + float(config.wall_timeout_s)
+    worker_response_timeout_s = float(config.wall_timeout_s)
 
     def invoke(method_name: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
         nonlocal early_final, transport_aborted
         if transport_aborted:
             return abort_observation(error_code="WORKER_TRANSPORT_ABORTED")
         try:
-            _ensure_before_deadline(deadline)
             _write_protocol(
                 process,
                 {
@@ -111,9 +109,9 @@ def run_recap_worker_session(
                     "arguments": dict(arguments),
                 },
             )
-            response = _read_before_deadline(
+            response = _read_protocol(
                 process,
-                deadline=deadline,
+                wall_timeout_s=worker_response_timeout_s,
             )
             if response.get("type") == "final":
                 raw_final = response.get("result")
@@ -167,11 +165,10 @@ def run_recap_worker_session(
         )
 
         try:
-            _ensure_before_deadline(deadline)
             _write_protocol(process, worker_payload)
-            first = _read_before_deadline(
+            first = _read_protocol(
                 process,
-                deadline=deadline,
+                wall_timeout_s=worker_response_timeout_s,
             )
             if first.get("type") == "final":
                 raw_result = first.get("result")
@@ -197,11 +194,10 @@ def run_recap_worker_session(
                     "worker_error": {"type": "B2_WORKER_TRANSPORT_ABORT"},
                 }
             else:
-                _ensure_before_deadline(deadline)
                 _write_protocol(process, {"type": "finish"})
-                final = _read_before_deadline(
+                final = _read_protocol(
                     process,
-                    deadline=deadline,
+                    wall_timeout_s=worker_response_timeout_s,
                 )
                 raw_result = final.get("result")
                 if final.get("type") != "final" or not isinstance(
@@ -217,11 +213,8 @@ def run_recap_worker_session(
                     process.stdin.close()
                 except OSError:
                     pass
-            remaining_s = max(deadline - time.monotonic(), 0.0)
-            if process.poll() is None and (worker_result is None or remaining_s <= 0.0):
-                process.kill()
             try:
-                process.wait(timeout=min(max(remaining_s, 0.1), 5.0))
+                process.wait(timeout=min(worker_response_timeout_s, 5.0))
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
@@ -235,23 +228,6 @@ def run_recap_worker_session(
             "worker": worker_result,
         }
     )
-
-
-def _read_before_deadline(
-    process: subprocess.Popen[str],
-    *,
-    deadline: float,
-) -> dict[str, Any]:
-    remaining_s = deadline - time.monotonic()
-    if remaining_s <= 0.0:
-        raise HarnessError("B2 worker exhausted its wall-time budget")
-    return _read_protocol(process, wall_timeout_s=remaining_s)
-
-
-def _ensure_before_deadline(deadline: float) -> None:
-    if time.monotonic() >= deadline:
-        raise HarnessError("B2 worker exhausted its wall-time budget")
-
 
 def _json_object(value: Mapping[str, Any]) -> dict[str, Any]:
     try:

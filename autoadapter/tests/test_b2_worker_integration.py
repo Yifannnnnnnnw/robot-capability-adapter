@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import math
 import textwrap
-import time
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+
+import autoadapter2.b2.session_runner as session_runner
 
 from autoadapter2.b2.public_observation import (
     PUBLIC_STATE_PROFILE_REVISION,
@@ -18,7 +19,6 @@ from autoadapter2.b2.public_observation import (
 )
 from autoadapter2.b2.session_runner import (
     RecapWorkerSessionConfig,
-    _ensure_before_deadline,
     run_recap_worker_session,
 )
 from autoadapter2.b2.worker_protocol import (
@@ -210,11 +210,6 @@ def test_go2_foot_contact_count_uses_collision_geoms_not_marker_bodies() -> None
     assert _contacted_geom_ids(data, {10, 11, 12, 13}) == {10, 12}
 
 
-def test_expired_session_deadline_is_rejected_before_protocol_write() -> None:
-    with pytest.raises(RuntimeError, match="wall-time budget"):
-        _ensure_before_deadline(time.monotonic() - 1.0)
-
-
 class _ScriptedModel:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
@@ -255,7 +250,10 @@ class _ScriptedModel:
         }
 
 
-def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> None:
+def test_real_persistent_worker_ignores_model_think_time_but_reuses_one_session(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     pytest.importorskip("mujoco")
     driver_path = tmp_path / "driver.py"
     driver_path.write_text(
@@ -317,7 +315,29 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
             / "capability_design.json"
         ).read_text(encoding="utf-8")
     )
-    model = _ScriptedModel()
+    clock = [0.0]
+
+    class _ClockAdvancingModel(_ScriptedModel):
+        def generate_recap_json(self, **kwargs: Any) -> dict[str, Any]:
+            if len(self.calls) == 2:
+                clock[0] = 21.0
+            return super().generate_recap_json(**kwargs)
+
+    model = _ClockAdvancingModel()
+    monkeypatch.setattr(
+        session_runner,
+        "time",
+        SimpleNamespace(monotonic=lambda: clock[0]),
+        raising=False,
+    )
+    response_timeouts: list[float] = []
+    original_read_protocol = session_runner._read_protocol
+
+    def recording_read_protocol(process: Any, *, wall_timeout_s: float) -> dict[str, Any]:
+        response_timeouts.append(wall_timeout_s)
+        return original_read_protocol(process, wall_timeout_s=wall_timeout_s)
+
+    monkeypatch.setattr(session_runner, "_read_protocol", recording_read_protocol)
 
     result = run_recap_worker_session(
         config=RecapWorkerSessionConfig(
@@ -338,6 +358,7 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
     assert result["worker"]["controller_protocol_completed"] is True
     assert result["worker"]["successful_method_invocations"] == 2
     assert result["worker"]["physical_evidence"]["step_count"] == 2
+    assert response_timeouts == [20.0, 20.0, 20.0, 20.0]
     assert set(result["initial_public_state"]) == {
         "simulation_time_s",
         "end_effector_position_world_m",
@@ -347,6 +368,6 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
     }
 
     controller_start = json.loads(model.calls[0]["messages"][0]["content"])
-    assert controller_start["initial_public_state"] == result[
+    assert controller_start["initial_public_observations"] == result[
         "initial_public_state"
     ]
