@@ -183,11 +183,11 @@ provider invoices.
 SO-101; Franka Panda; Kinova Gen3 with Robotiq 2F-85; UFACTORY xArm7;
 Universal Robots UR5e with Robotiq 2F-85; Piper
 &
-\textbf{A1.} \texttt{move\_end\_effector\_to\_position}\newline
-\textbf{A2.} \texttt{trace\_cartesian\_path}\newline
-\textbf{A3.} \texttt{set\_gripper\_opening}\newline
-\textbf{A4.} \texttt{approach\_until\_contact}\newline
-\textbf{A5.} \texttt{move\_cartesian\_offset\_and\_return}
+\textbf{A1.} \path{move_end_effector_to_position}\newline
+\textbf{A2.} \path{trace_cartesian_path}\newline
+\textbf{A3.} \path{set_gripper_opening}\newline
+\textbf{A4.} \path{approach_until_contact}\newline
+\textbf{A5.} \path{move_cartesian_offset_and_return}
 &
 \textbf{A1.} End-effector position error $\leq 15$ mm for $0.5$ s.\newline
 \textbf{A2.} Waypoint and cross-track errors $\leq 20$ mm; final error
@@ -204,11 +204,11 @@ measurement bindings differ, but the thresholds are shared.
 
 KUKA iiwa 14
 &
-\textbf{K1.} \texttt{move\_end\_effector\_to\_position}\newline
-\textbf{K2.} \texttt{trace\_cartesian\_path}\newline
-\textbf{K3.} \texttt{approach\_until\_contact}\newline
-\textbf{K4.} \texttt{move\_cartesian\_offset\_and\_return}\newline
-\textbf{K5.} \texttt{rotate\_end\_effector\_and\_return}
+\textbf{K1.} \path{move_end_effector_to_position}\newline
+\textbf{K2.} \path{trace_cartesian_path}\newline
+\textbf{K3.} \path{approach_until_contact}\newline
+\textbf{K4.} \path{move_cartesian_offset_and_return}\newline
+\textbf{K5.} \path{rotate_end_effector_and_return}
 &
 K1--K4 use the corresponding fixed-arm criteria above.\newline
 \textbf{K5.} Rotation must follow the requested local axis; orientation
@@ -218,11 +218,11 @@ additional full rotation; outbound and return dwell times of $0.25$ s.
 
 Unitree Go2
 &
-\textbf{G1.} \texttt{track\_planar\_twist}\newline
-\textbf{G2.} \texttt{move\_body\_relative\_pose}\newline
-\textbf{G3.} \texttt{trace\_planar\_path}\newline
-\textbf{G4.} \texttt{set\_body\_height}\newline
-\textbf{G5.} \texttt{hold\_stable\_stance}
+\textbf{G1.} \path{track_planar_twist}\newline
+\textbf{G2.} \path{move_body_relative_pose}\newline
+\textbf{G3.} \path{trace_planar_path}\newline
+\textbf{G4.} \path{set_body_height}\newline
+\textbf{G5.} \path{hold_stable_stance}
 &
 \textbf{G1.} Mean planar-velocity error $\leq 0.10$ m/s, mean yaw-rate
 error $\leq 0.30$ rad/s, and mean direction error $\leq 10^{\circ}$.\newline
@@ -240,12 +240,12 @@ four-foot support.
 
 LEAP Hand
 &
-\textbf{L1.} \texttt{move\_hand\_to\_joint\_pose}\newline
-\textbf{L2.} \texttt{trace\_hand\_joint\_path}\newline
-\textbf{L3.} \texttt{reach\_fingertips\_to\_targets}\newline
-\textbf{L4.} \texttt{establish\_fingertip\_contact\_pattern}\newline
-\textbf{L5.} \texttt{hold\_fingertip\_contacts}\newline
-\textbf{L6.} \texttt{move\_fingertip\_offset\_and\_return}
+\textbf{L1.} \path{move_hand_to_joint_pose}\newline
+\textbf{L2.} \path{trace_hand_joint_path}\newline
+\textbf{L3.} \path{reach_fingertips_to_targets}\newline
+\textbf{L4.} \path{establish_fingertip_contact_pattern}\newline
+\textbf{L5.} \path{hold_fingertip_contacts}\newline
+\textbf{L6.} \path{move_fingertip_offset_and_return}
 &
 \textbf{L1.} Maximum joint error $<10^{\circ}$ for $0.5$ s.\newline
 \textbf{L2.} Maximum joint error $\leq 0.05$ rad at every waypoint;
@@ -264,14 +264,14 @@ for $0.25$ s.
 
 Hello Robot Stretch 2
 &
-\textbf{ST1.} \texttt{move\_base\_relative}\newline
-\textbf{ST2.} \texttt{turn\_base\_to\_heading}\newline
-\textbf{ST3.} \texttt{move\_tool\_to\_position}\newline
-\textbf{ST4.} \texttt{trace\_tool\_cartesian\_path}\newline
-\textbf{ST5.} \texttt{set\_gripper\_opening}\newline
-\textbf{ST6.} \texttt{set\_wrist\_yaw}\newline
-\textbf{ST7.} \texttt{approach\_until\_contact}\newline
-\textbf{ST8.} \texttt{move\_tool\_offset\_and\_return}
+\textbf{ST1.} \path{move_base_relative}\newline
+\textbf{ST2.} \path{turn_base_to_heading}\newline
+\textbf{ST3.} \path{move_tool_to_position}\newline
+\textbf{ST4.} \path{trace_tool_cartesian_path}\newline
+\textbf{ST5.} \path{set_gripper_opening}\newline
+\textbf{ST6.} \path{set_wrist_yaw}\newline
+\textbf{ST7.} \path{approach_until_contact}\newline
+\textbf{ST8.} \path{move_tool_offset_and_return}
 &
 \textbf{ST1.} Position error $\leq 20$ mm and yaw drift
 $\leq 0.02$ rad.\newline
@@ -290,12 +290,12 @@ $\leq 20$ mm and yaw drift $\leq 0.03$ rad throughout.
 
 ALOHA 2
 &
-\textbf{AL1.} \texttt{move\_arm\_to\_position}\newline
-\textbf{AL2.} \texttt{trace\_arm\_cartesian\_path}\newline
-\textbf{AL3.} \texttt{set\_gripper\_opening}\newline
-\textbf{AL4.} \texttt{move\_bimanual\_to\_positions}\newline
-\textbf{AL5.} \texttt{approach\_until\_contact}\newline
-\textbf{AL6.} \texttt{move\_bimanual\_offsets\_and\_return}
+\textbf{AL1.} \path{move_arm_to_position}\newline
+\textbf{AL2.} \path{trace_arm_cartesian_path}\newline
+\textbf{AL3.} \path{set_gripper_opening}\newline
+\textbf{AL4.} \path{move_bimanual_to_positions}\newline
+\textbf{AL5.} \path{approach_until_contact}\newline
+\textbf{AL6.} \path{move_bimanual_offsets_and_return}
 &
 \textbf{AL1.} Selected end-effector error $\leq 15$ mm for $0.5$ s;
 the unselected side remains within its call-time guard.\newline
@@ -343,19 +343,19 @@ motion, contact-integrity, maximum-penetration, and complete-video checks.
 \bottomrule
 \endlastfoot
 \textbf{MW-S20: parallel-gripper manipulation platforms}. Fixed serial manipulators: SO-101, Franka Panda, Kinova Gen3, xArm7, UR5e and Piper. Mobile manipulator: Stretch 2. Each robot uses the same 20-task catalogue. &
-1. \texttt{mw\_reach\_target}; 2. \texttt{mw\_push\_to\_goal}; 3. \texttt{mw\_pick\_place}; 4. \texttt{mw\_pick\_place\_wall}; 5. \texttt{mw\_push\_wall}; 6. \texttt{mw\_sweep\_into\_goal}; 7. \texttt{mw\_drawer\_open}; 8. \texttt{mw\_drawer\_close}; 9. \texttt{mw\_button\_press}; 10. \texttt{mw\_button\_press\_topdown}; 11. \texttt{mw\_handle\_press}; 12. \texttt{mw\_handle\_pull}; 13. \texttt{mw\_door\_open}; 14. \texttt{mw\_door\_close}; 15. \texttt{mw\_faucet\_open}; 16. \texttt{mw\_dial\_turn}; 17. \texttt{mw\_lever\_pull}; 18. \texttt{mw\_peg\_insertion\_side}; 19. \texttt{mw\_bin\_picking}; 20. \texttt{mw\_pick\_out\_of\_hole}. &
+1. \path{mw_reach_target}; 2. \path{mw_push_to_goal}; 3. \path{mw_pick_place}; 4. \path{mw_pick_place_wall}; 5. \path{mw_push_wall}; 6. \path{mw_sweep_into_goal}; 7. \path{mw_drawer_open}; 8. \path{mw_drawer_close}; 9. \path{mw_button_press}; 10. \path{mw_button_press_topdown}; 11. \path{mw_handle_press}; 12. \path{mw_handle_pull}; 13. \path{mw_door_open}; 14. \path{mw_door_close}; 15. \path{mw_faucet_open}; 16. \path{mw_dial_turn}; 17. \path{mw_lever_pull}; 18. \path{mw_peg_insertion_side}; 19. \path{mw_bin_picking}; 20. \path{mw_pick_out_of_hole}. &
 Terminal single-trial thresholds: 1. end-effector--target distance $\leq 0.05$ m; 2. object--goal distance $\leq 0.05$ m; 3--5. object--goal distance $\leq 0.07$ m; 6. object--goal distance $\leq 0.05$ m; 7. drawer-handle error $\leq 0.03$ m; 8. drawer error $\leq 0.065$ m; 9. button error $\leq 0.02$ m; 10. button error $\leq 0.024$ m; 11. handle error $\leq 0.02$ m; 12. handle error $\leq 0.05$ m; 13. door x-axis error $\leq 0.08$ m; 14. door error $\leq 0.08$ m; 15--16. fixture error $\leq 0.07$ m; 17. lever-angle error $\leq 0.1308996939$ rad; 18. peg--target distance $\leq 0.07$ m; 19. object--goal distance $\leq 0.05$ m; 20. object--goal distance $\leq 0.07$ m. \\
 \midrule
 \textbf{KUKA-S20: fixed serial manipulator variant}. KUKA iiwa 14. &
-1. \texttt{mw\_reach\_target}; 2. \texttt{mw\_push\_to\_goal}; 3. \texttt{mw\_push\_wall}; 4. \texttt{mw\_sweep\_into\_goal}; 5. \texttt{mw\_drawer\_open}; 6. \texttt{mw\_drawer\_close}; 7. \texttt{mw\_button\_press}; 8. \texttt{mw\_button\_press\_topdown}; 9. \texttt{mw\_handle\_press}; 10. \texttt{mw\_door\_open}; 11. \texttt{mw\_door\_close}; 12. \texttt{mw\_faucet\_open}; 13. \texttt{mw\_dial\_turn}; 14. \texttt{mw\_lever\_pull}; 15. \texttt{mw\_door\_lock}; 16. \texttt{mw\_door\_unlock}; 17. \texttt{mw\_faucet\_close}; 18. \texttt{mw\_soccer}; 19. \texttt{mw\_window\_open}; 20. \texttt{mw\_window\_close}. &
+1. \path{mw_reach_target}; 2. \path{mw_push_to_goal}; 3. \path{mw_push_wall}; 4. \path{mw_sweep_into_goal}; 5. \path{mw_drawer_open}; 6. \path{mw_drawer_close}; 7. \path{mw_button_press}; 8. \path{mw_button_press_topdown}; 9. \path{mw_handle_press}; 10. \path{mw_door_open}; 11. \path{mw_door_close}; 12. \path{mw_faucet_open}; 13. \path{mw_dial_turn}; 14. \path{mw_lever_pull}; 15. \path{mw_door_lock}; 16. \path{mw_door_unlock}; 17. \path{mw_faucet_close}; 18. \path{mw_soccer}; 19. \path{mw_window_open}; 20. \path{mw_window_close}. &
 Same-name Meta-World tasks use the MW-S20 thresholds. Additional thresholds: 15. door-lock z-axis error $\leq 0.02$ m; 16. door-unlock x-axis error $\leq 0.02$ m; 17. faucet error $\leq 0.07$ m; 18. ball--goal distance $\leq 0.07$ m; 19--20. window-handle x-axis error $\leq 0.05$ m. \\
 \midrule
 \textbf{ALOHA-S20: bimanual manipulation}. ALOHA 2. &
-Tasks 1--17 are MW-S20 tasks 1--17. Tasks 18--20 are \texttt{mw\_soccer}, \texttt{mw\_window\_open}, and \texttt{mw\_window\_close}. &
+Tasks 1--17 are MW-S20 tasks 1--17. Tasks 18--20 are \path{mw_soccer}, \path{mw_window_open}, and \path{mw_window_close}. &
 Tasks 1--17 use the corresponding MW-S20 thresholds. Task 18 passes when ball--goal distance $\leq 0.07$ m. Tasks 19--20 pass when window-handle x-axis error $\leq 0.05$ m. \\
 \midrule
 \textbf{LEAP-H20: dexterous-hand manipulation}. LEAP Hand. &
-1. \texttt{ec\_pinch}; 2. \texttt{ec\_dynamic\_tripod}; 3. \texttt{ec\_squeeze}; 4. \texttt{ec\_twiddle}; 5. \texttt{ec\_rock}; 6. \texttt{ec\_rock\_ii}; 7. \texttt{ec\_radial\_roll}; 8. \texttt{ec\_index\_roll}; 9. \texttt{ec\_full\_roll}; 10. \texttt{ec\_rotary\_step}; 11. \texttt{ec\_interdigital\_step}; 12. \texttt{ec\_linear\_step}; 13. \texttt{ec\_palmar\_slide}; 14. \texttt{gym\_hand\_reach\_all\_fingertips}; 15. \texttt{gym\_hand\_manipulate\_block\_full\_pose}; 16. \texttt{robel\_dclaw\_pose\_fixed}; 17. \texttt{robel\_dclaw\_turn\_fixed}; 18. \texttt{robel\_dclaw\_screw\_fixed}; 19. \texttt{myosuite\_object\_hold\_fixed}; 20. \texttt{myosuite\_baoding\_p1}. &
+1. \path{ec_pinch}; 2. \path{ec_dynamic_tripod}; 3. \path{ec_squeeze}; 4. \path{ec_twiddle}; 5. \path{ec_rock}; 6. \path{ec_rock_ii}; 7. \path{ec_radial_roll}; 8. \path{ec_index_roll}; 9. \path{ec_full_roll}; 10. \path{ec_rotary_step}; 11. \path{ec_interdigital_step}; 12. \path{ec_linear_step}; 13. \path{ec_palmar_slide}; 14. \path{gym_hand_reach_all_fingertips}; 15. \path{gym_hand_manipulate_block_full_pose}; 16. \path{robel_dclaw_pose_fixed}; 17. \path{robel_dclaw_turn_fixed}; 18. \path{robel_dclaw_screw_fixed}; 19. \path{myosuite_object_hold_fixed}; 20. \path{myosuite_baoding_p1}. &
 1--13. all three fixed trials succeed; 14. concatenated fingertip Cartesian error $< 0.00894427191$ m; 15. block-position error $< 0.01$ m and quaternion-angle error $< 0.1$ rad; 16. maximum joint-position error $< 0.1745329252$ rad; 17. wrapped target-angle error $< 0.1$ rad; 18. maximum continuous unbounded angle error $< 0.2$ rad; 19. solved control-step count $> 5$ and drop count $= 0$; 20. mean two-ball solved fraction $= 1$. \\
 \midrule
 \textbf{GO2-L20: quadruped locomotion}. Unitree Go2. &
@@ -363,7 +363,7 @@ T01 eight-direction velocity tracking; T02 step ascent; T03 step descent; T04 pa
 T01 speed $\geq 0.4$ m/s and heading error $\leq 10^\circ$; T02--T04 all-feet completion $= 1$; T05 yaw rate $\geq 3$ rad/s; T06--T11 ordered completion $= 1$; T12--T15 travel distance $\geq 4.983$, $4.951$, $4.954$ and $4.93$ m, respectively; T16 start distance $\geq 0.7$ m and final table error $\leq 0.4$ m; T17 waypoint completion $= 1$ and clearance $\geq 0.1$ m; T18 completion $= 1$; T19 all-feet completion $= 1$ and board-contact steps $= 0$; T20 completion $= 1$, time $\leq 10.64$ s, board-contact steps $= 0$ and final table error $\leq 0.4$ m. \\
 \midrule
 \textbf{BARKOUR-L20: composite quadruped locomotion}. Google Barkour vB. &
-1. eight-direction velocity tracking; 2. step ascent; 3. step descent; 4. D'Kitty stand; 5. high-rate turn; 6. mixed-obstacle path; 7. D'Kitty orientation; 8. D'Kitty walk; 9. Safety Gym Button0; 10. Safety Gym Push0; 11. AntMaze U-Maze; 12--14. Robust Robot Walker bar, pit and pole traps; 15. \texttt{dm\_control} Escape; 16. pause-table transition; 17. weave poles; 18. A-frame; 19. broad jump; 20. complete Barkour course. &
+1. eight-direction velocity tracking; 2. step ascent; 3. step descent; 4. D'Kitty stand; 5. high-rate turn; 6. mixed-obstacle path; 7. D'Kitty orientation; 8. D'Kitty walk; 9. Safety Gym Button0; 10. Safety Gym Push0; 11. AntMaze U-Maze; 12--14. Robust Robot Walker bar, pit and pole traps; 15. \path{dm_control} Escape; 16. pause-table transition; 17. weave poles; 18. A-frame; 19. broad jump; 20. complete Barkour course. &
 1. speed $\geq 0.4$ m/s and heading error $\leq 10^\circ$; 2--3. all-feet completion $= 1$; 4. mean joint error $< 0.2617993878$ rad and upright dot $> 0.9$; 5. yaw rate $\geq 3$ rad/s; 6. ordered completion $= 1$; 7. heading error $< 0.087$ rad and upright dot $> 0.96$; 8. target distance $< 0.5$ m and heading cosine $> 0.9$; 9. target-button contact $= 1$; 10. block--goal distance $\leq 0.3$ m; 11. torso--goal distance $\leq 0.45$ m; 12--14. goal distance with survival $< 0.2$ m; 15. workspace radius $\geq 30$ m and upright cosine $\geq 0.9396926208$; 16--20. corresponding Barkour criteria from GO2-L20. \\
 \midrule
 \textbf{G1-H20: humanoid locomotion and manipulation}. Unitree G1. &
@@ -400,25 +400,126 @@ No passing standard is claimed until the package, tasks and trusted Harness bind
 \endfoot
 \bottomrule
 \endlastfoot
-Meta-World, Farama Foundation, pinned repository & Open academic benchmark implementation & MW-S20, KUKA-S20 and ALOHA-S20 & Adapted: robot and scene identities change, while the source metric, unit, comparator and threshold are retained. \\
-Elliott and Connolly Benchmark (2021) & Peer-reviewed dexterous-hand benchmark & LEAP tasks 1--13 & Adapted into fixed three-trial protocols requiring success in all trials. \\
-Gymnasium-Robotics Shadow Dexterous Hand & Open benchmark implementation & LEAP tasks 14--15 & Adapted fingertip-position and block-pose success tolerances. \\
-ROBEL D'Claw, Google Research & Open research benchmark implementation & LEAP tasks 16--18 & Direct or adapted joint-pose and fixture-angle criteria. \\
-MyoSuite, MyoHub & Open research benchmark implementation & LEAP tasks 19--20 & Direct or adapted solved-step, drop-event and two-ball criteria. \\
-Lee et al., \emph{Learning Quadrupedal Locomotion over Challenging Terrain} (2020) & Peer-reviewed locomotion study & Go2 T01--T04; Barkour tasks 1--3 & Direct velocity criterion; step protocols adapted to the target morphology. \\
-Miki et al., \emph{Learning Robust Perceptive Locomotion for Quadrupedal Robots in the Wild} (2022) & Peer-reviewed locomotion study & Go2 T05--T06; Barkour tasks 5--6 & Direct turn-rate criterion and adapted mixed-obstacle protocol. \\
-Shi et al., \emph{Terrain-Aware Quadrupedal Locomotion via Reinforcement Learning} (2023) & Academic locomotion benchmark & Go2 T12--T15 & Direct six-direction terrain-travel criteria. \\
-ICRA 2023 Quadruped Robot Challenge, IEEE and NIST & Competition benchmark & Go2 T07--T11 & Direct ordered-completion criteria for the five challenge lanes. \\
-Barkour, Google DeepMind (2023) & Industry research benchmark & Go2 T16--T20; Barkour tasks 16--20 & Direct obstacle geometry, completion rules, clearance constraints and 10.64 s course limit. \\
-ROBEL D'Kitty, Google Research & Open research benchmark implementation & Barkour tasks 4, 7 and 8 & Direct stand, orientation and goal-walk criteria. \\
-Safety Gym, OpenAI & Industry research benchmark & Barkour tasks 9--10; G1 tasks 19--20 & Direct criteria for Barkour vB; adapted goal and contact criteria for G1. \\
-Gymnasium-Robotics AntMaze, Farama Foundation & Open benchmark implementation & Barkour task 11 & Direct U-Maze goal-distance criterion. \\
-Robust Robot Walker paper and reference implementation & Academic benchmark and open implementation & Barkour tasks 12--14 & Direct survival-conditioned goal-distance criterion. \\
-\texttt{dm\_control} Quadruped Escape, Google DeepMind & Industry research benchmark implementation & Barkour task 15 & Direct workspace-radius and upright-orientation criteria. \\
-HumanoidBench, UC Berkeley & Academic humanoid benchmark & G1 tasks 1--13 & Adapted episode-return and terminal geometric criteria. \\
-RoboCup Humanoid League Laws of the Game (2025) & International competition standard & G1 tasks 14--18 & Adapted parkour, kicking, obstacle-navigation and long-stride protocols. \\
+Meta-World, Farama Foundation, pinned repository
+\citep{yu2020metaworld,farama2026metaworld} &
+Open academic benchmark implementation &
+MW-S20, KUKA-S20 and ALOHA-S20 &
+Adapted: robot and scene identities change, while the source metric, unit,
+comparator and threshold are retained. \\
+
+Coulson et al., \emph{The Elliott and Connolly Benchmark: A Test for Evaluating
+the In-Hand Dexterity of Robot Hands} (2021)
+\citep{coulson2021elliott} &
+Peer-reviewed dexterous-hand benchmark &
+LEAP tasks 1--13 &
+Adapted into fixed three-trial protocols requiring success in all trials. \\
+
+Gymnasium-Robotics Shadow Dexterous Hand
+\citep{delazcano2026gymnasiumrobotics} &
+Open benchmark implementation &
+LEAP tasks 14--15 &
+The fingertip tolerance is morphology-scaled; the block-pose tolerances are
+retained, with the wrist and terminal protocol adapted. \\
+
+ROBEL D'Claw, Google Research
+\citep{ahn2020robel,robel2020software} &
+Open research benchmark implementation &
+LEAP tasks 16--18 &
+Direct or adapted joint-pose and fixture-angle criteria. \\
+
+MyoSuite, MyoHub
+\citep{caggiano2022myosuite,myohub2026myosuite} &
+Open research benchmark implementation &
+LEAP tasks 19--20 &
+Direct or adapted solved-step, drop-event and two-ball criteria. \\
+
+Lee et al., \emph{Learning Quadrupedal Locomotion over Challenging Terrain}
+(2020) \citep{lee2020quadrupedal} &
+Peer-reviewed locomotion study &
+Go2 T01--T04; Barkour tasks 1--3 &
+Velocity-tracking thresholds are taken from the source command and reported
+heading error; step protocols are adapted to the target morphology. \\
+
+Miki et al., \emph{Learning Robust Perceptive Locomotion for Quadrupedal
+Robots in the Wild} (2022) \citep{miki2022perceptive} &
+Peer-reviewed locomotion study &
+Go2 T05--T06; Barkour tasks 5--6 &
+The turn-rate threshold is taken from the reported 3 rad/s manoeuvre; the
+mixed-obstacle protocol is adapted. \\
+
+Shi et al., \emph{Terrain-Aware Quadrupedal Locomotion via Reinforcement
+Learning} (2023) \citep{shi2023terrain} &
+Academic preprint/study &
+Go2 T12--T15 &
+Passing thresholds are taken from the reported six-direction policy means. \\
+
+ICRA 2023 Quadruped Robot Challenge, IEEE and NIST
+\citep{jacoff2023quadruped} &
+Competition benchmark &
+Go2 T07--T11 &
+Direct ordered-completion criteria for the five challenge lanes. \\
+
+Barkour, Google DeepMind (2023)
+\citep{caluwaerts2023barkour,yu2024barkourdesign} &
+Industry research benchmark &
+Go2 T16--T20; Barkour tasks 16--20 &
+The obstacle geometry, completion rules and clearance constraints are
+retained; the source 10.64 s allotted score time is used as the local
+full-score passing threshold. \\
+
+ANYmal platform dimensions \citep{hutter2016anymal} &
+Peer-reviewed robot-platform description &
+Go2 and Barkour morphology scaling &
+The reported 0.50 m ANYmal height is used only to derive the recorded
+morphology-scale conversions; it does not supply a task passing threshold. \\
+
+ROBEL D'Kitty, Google Research
+\citep{ahn2020robel,robel2020software} &
+Open research benchmark implementation &
+Barkour tasks 4, 7 and 8 &
+Direct stand, orientation and goal-walk criteria. \\
+
+Safety Gym, OpenAI
+\citep{ray2019safetygym,openai2019safetygym} &
+Industry research benchmark &
+Barkour tasks 9--10; G1 tasks 19--20 &
+Direct criteria for Barkour vB; adapted goal and contact criteria for G1. \\
+
+Gymnasium-Robotics AntMaze, Farama Foundation
+\citep{delazcano2026gymnasiumrobotics} &
+Open benchmark implementation &
+Barkour task 11 &
+Direct U-Maze goal-distance criterion. \\
+
+Robust Robot Walker paper and reference implementation
+\citep{zhu2025robustwalker,zhu2025robustwalkercode} &
+Academic benchmark and open implementation &
+Barkour tasks 12--14 &
+Direct survival-conditioned goal-distance criterion. \\
+
+\path{dm_control} Quadruped Escape, Google DeepMind
+\citep{tunyasuvunakool2020dmcontrol,googledeepmind2025dmcontrol} &
+Industry research benchmark implementation &
+Barkour task 15 &
+Formula-derived workspace and orientation thresholds combined as a stricter
+terminal conjunction. \\
+
+HumanoidBench, UC Berkeley
+\citep{sferrazza2024humanoidbench,sferrazza2025humanoidbenchcode} &
+Academic humanoid benchmark &
+G1 tasks 1--13 &
+Adapted episode-return and terminal geometric criteria. \\
+
+RoboCup Soccer Humanoid League Laws of the Game (2025)
+\citep{robocup2025laws} &
+International competition standard &
+G1 tasks 14--18 &
+Adapted parkour, kicking, obstacle-navigation and long-stride protocols. \\
 \end{longtable}
 
-\noindent\emph{Provenance boundary:} MuJoCo Menagerie and manufacturer documentation provide robot models or morphology information. They are not presented as independent sources of task passing thresholds.
+\noindent\emph{Provenance boundary:} MuJoCo Menagerie, including the pinned
+Barkour vB model \citep{googledeepmind2026barkourvb}, and manufacturer
+documentation provide robot models or morphology information. They are not
+presented as independent sources of task passing thresholds.
 \endgroup
 \end{landscape}
