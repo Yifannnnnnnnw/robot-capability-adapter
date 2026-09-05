@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="680" viewBox="0 0 1600 680" role="img" aria-labelledby="title desc">
+  <title id="title">Auto-Adapter poster workflow</title>
+  <desc id="desc">Robot and task inputs enter a ReAct driver-generation loop. A separate evaluator checks observed behaviour in a fresh simulation, returning behavioural feedback for revision or passing an accepted driver to task evidence.</desc>
+
+  <defs>
+    <marker id="arrow-dark" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#13213C"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#F29A2E"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#6048D8"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#248A5B"/>
+    </marker>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#13213C" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <g font-family="Arial, Helvetica, sans-serif" fill="#13213C">
+    <!-- Stage headings -->
+    <text x="150" y="42" text-anchor="middle" font-size="22" font-weight="700" letter-spacing="2">ROBOT + TASK</text>
+    <text x="630" y="42" text-anchor="middle" font-size="22" font-weight="700" letter-spacing="2" fill="#6048D8">ReAct DRIVER GENERATION</text>
+    <text x="1145" y="42" text-anchor="middle" font-size="22" font-weight="700" letter-spacing="2" fill="#3478D4">INDEPENDENT EVALUATION</text>
+    <text x="1460" y="42" text-anchor="middle" font-size="22" font-weight="700" letter-spacing="2" fill="#248A5B">TASK EVIDENCE</text>
+
+    <!-- Input halo and robot silhouettes -->
+    <circle cx="150" cy="185" r="118" fill="#F1EEFF"/>
+
+    <!-- Manipulator -->
+    <g fill="none" stroke="#13213C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M54 215 H128"/>
+      <path d="M89 208 L118 162 L161 178 L195 121"/>
+      <circle cx="118" cy="162" r="10" fill="#FFFFFF"/>
+      <circle cx="161" cy="178" r="10" fill="#FFFFFF"/>
+      <path d="M191 119 L216 114 L205 139"/>
+    </g>
+    <circle cx="89" cy="208" r="12" fill="#6048D8"/>
+
+    <!-- Drone -->
+    <g fill="none" stroke="#13213C" stroke-width="4" stroke-linecap="round">
+      <path d="M86 98 L126 127 M173 98 L134 127 M86 157 L126 132 M173 157 L134 132"/>
+      <circle cx="74" cy="87" r="14" fill="#FFFFFF"/>
+      <circle cx="185" cy="87" r="14" fill="#FFFFFF"/>
+      <circle cx="74" cy="168" r="14" fill="#FFFFFF"/>
+      <circle cx="185" cy="168" r="14" fill="#FFFFFF"/>
+    </g>
+    <circle cx="130" cy="130" r="17" fill="#F29A2E" stroke="#13213C" stroke-width="3"/>
+
+    <!-- Quadruped -->
+    <g fill="none" stroke="#13213C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="126" y="225" width="93" height="46" rx="13" fill="#E9F3FF"/>
+      <circle cx="229" cy="236" r="18" fill="#3478D4"/>
+      <path d="M140 269 L132 294 M163 269 L160 296 M197 269 L202 296 M215 269 L224 293"/>
+    </g>
+
+    <!-- Input documents -->
+    <g filter="url(#soft-shadow)">
+      <path d="M45 330 H135 L154 349 V418 H45 Z" fill="#FFFFFF" stroke="#6048D8" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M135 330 V349 H154" fill="none" stroke="#6048D8" stroke-width="4"/>
+      <path d="M167 330 H257 L276 349 V418 H167 Z" fill="#FFFFFF" stroke="#F29A2E" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M257 330 V349 H276" fill="none" stroke="#F29A2E" stroke-width="4"/>
+    </g>
+    <text x="99" y="371" text-anchor="middle" font-size="17" font-weight="700">ROBOT</text>
+    <text x="99" y="394" text-anchor="middle" font-size="17" font-weight="700">SPEC</text>
+    <text x="221" y="371" text-anchor="middle" font-size="17" font-weight="700">TARGET</text>
+    <text x="221" y="394" text-anchor="middle" font-size="17" font-weight="700">TASK</text>
+
+    <!-- Cohort numbers -->
+    <text x="78" y="500" text-anchor="middle" font-size="54" font-weight="800" fill="#6048D8">15</text>
+    <text x="78" y="528" text-anchor="middle" font-size="14" font-weight="700" letter-spacing="1">PLATFORMS</text>
+    <line x1="151" y1="466" x2="151" y2="536" stroke="#C9D0DF" stroke-width="2"/>
+    <text x="222" y="500" text-anchor="middle" font-size="54" font-weight="800" fill="#3478D4">7</text>
+    <text x="222" y="528" text-anchor="middle" font-size="14" font-weight="700" letter-spacing="1">ROBOT TYPES</text>
+
+    <!-- Main process arrow -->
+    <path d="M283 332 H345" fill="none" stroke="#13213C" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-dark)"/>
+
+    <!-- ReAct loop boundary -->
+    <ellipse cx="630" cy="324" rx="285" ry="257" fill="#FCFBFF" stroke="#F29A2E" stroke-width="4" stroke-dasharray="13 12"/>
+
+    <!-- ReAct nodes -->
+    <g filter="url(#soft-shadow)">
+      <circle cx="630" cy="154" r="74" fill="#F1EEFF" stroke="#6048D8" stroke-width="5"/>
+      <circle cx="790" cy="377" r="74" fill="#FFF2DE" stroke="#F29A2E" stroke-width="5"/>
+      <circle cx="470" cy="377" r="74" fill="#EAF4FF" stroke="#3478D4" stroke-width="5"/>
+    </g>
+
+    <!-- Reason icon -->
+    <g fill="none" stroke="#6048D8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M608 126 C608 104 652 104 652 126 C652 139 642 142 639 151 H621 C618 141 608 138 608 126 Z"/>
+      <path d="M621 159 H639 M623 167 H637"/>
+    </g>
+    <text x="630" y="193" text-anchor="middle" font-size="23" font-weight="800">REASON</text>
+    <text x="630" y="214" text-anchor="middle" font-size="15">plan the edit</text>
+
+    <!-- Observe icon -->
+    <g fill="none" stroke="#3478D4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="438" y="333" width="64" height="37" rx="5"/>
+      <path d="M446 361 C457 346 466 365 476 347 C484 335 491 345 495 340"/>
+      <path d="M457 378 H483 M463 370 L458 378 M478 370 L483 378"/>
+    </g>
+    <text x="470" y="410" text-anchor="middle" font-size="23" font-weight="800">OBSERVE</text>
+    <text x="470" y="431" text-anchor="middle" font-size="15">simulator state</text>
+
+    <!-- Act icon -->
+    <g fill="none" stroke="#F29A2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M761 337 L748 351 L761 365 M819 337 L832 351 L819 365 M803 329 L778 372"/>
+      <path d="M770 379 H811"/>
+    </g>
+    <text x="790" y="410" text-anchor="middle" font-size="23" font-weight="800">ACT</text>
+    <text x="790" y="431" text-anchor="middle" font-size="15">write + run</text>
+
+    <!-- Driver at the centre -->
+    <g filter="url(#soft-shadow)">
+      <path d="M568 272 H672 L694 294 V380 H568 Z" fill="#FFFFFF" stroke="#6048D8" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M672 272 V294 H694" fill="none" stroke="#6048D8" stroke-width="5"/>
+    </g>
+    <text x="631" y="322" text-anchor="middle" font-family="Courier New, monospace" font-size="31" font-weight="700" fill="#6048D8">{ }</text>
+    <text x="631" y="354" text-anchor="middle" font-size="21" font-weight="800">driver.py</text>
+
+    <!-- Clockwise ReAct arrows -->
+    <path d="M691 181 C748 207 783 251 793 298" fill="none" stroke="#F29A2E" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+    <path d="M728 418 C660 478 557 478 506 434" fill="none" stroke="#F29A2E" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+    <path d="M432 314 C430 238 484 179 557 159" fill="none" stroke="#F29A2E" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+    <rect x="535" y="544" width="190" height="34" rx="17" fill="#FFFFFF"/>
+    <text x="630" y="567" text-anchor="middle" font-size="17" font-weight="800" fill="#F29A2E" letter-spacing="1">ReAct SYNTHESIS LOOP</text>
+
+    <!-- Candidate to evaluator -->
+    <path d="M916 331 H995" fill="none" stroke="#6048D8" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-purple)"/>
+
+    <!-- Independent evaluator shield -->
+    <path d="M1145 84 C1190 113 1242 116 1272 120 V319 C1272 420 1218 488 1145 523 C1072 488 1018 420 1018 319 V120 C1048 116 1100 113 1145 84 Z" fill="#EAF4FF" stroke="#3478D4" stroke-width="5"/>
+    <rect x="1063" y="142" width="164" height="48" rx="24" fill="#FFFFFF" stroke="#3478D4" stroke-width="3"/>
+    <text x="1145" y="173" text-anchor="middle" font-size="16" font-weight="800" fill="#3478D4">FRESH SIMULATION</text>
+
+    <!-- Evaluator eye -->
+    <path d="M1061 300 C1083 258 1116 237 1145 237 C1175 237 1208 260 1229 300 C1208 340 1175 363 1145 363 C1116 363 1083 341 1061 300 Z" fill="#FFFFFF" stroke="#13213C" stroke-width="5"/>
+    <circle cx="1145" cy="300" r="39" fill="#E8F7EF" stroke="#248A5B" stroke-width="5"/>
+    <path d="M1127 300 L1140 315 L1166 282" fill="none" stroke="#248A5B" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1145" y="407" text-anchor="middle" font-size="20" font-weight="800">OBSERVED BEHAVIOUR</text>
+    <text x="1145" y="432" text-anchor="middle" font-size="16">pass or revise</text>
+
+    <!-- Pass to evidence -->
+    <path d="M1277 331 H1352" fill="none" stroke="#248A5B" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+    <rect x="1296" y="292" width="60" height="27" rx="14" fill="#FFFFFF"/>
+    <text x="1326" y="312" text-anchor="middle" font-size="16" font-weight="800" fill="#248A5B">PASS</text>
+
+    <!-- Accepted driver -->
+    <g filter="url(#soft-shadow)">
+      <path d="M1402 91 H1500 L1521 112 V190 H1402 Z" fill="#E8F7EF" stroke="#248A5B" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M1500 91 V112 H1521" fill="none" stroke="#248A5B" stroke-width="4"/>
+    </g>
+    <text x="1461" y="132" text-anchor="middle" font-size="17" font-weight="800">ACCEPTED</text>
+    <text x="1461" y="156" text-anchor="middle" font-size="17" font-weight="800">DRIVER</text>
+
+    <!-- Task monitor -->
+    <rect x="1362" y="225" width="196" height="157" rx="13" fill="#E8F7EF" stroke="#248A5B" stroke-width="5"/>
+    <rect x="1379" y="243" width="162" height="111" rx="7" fill="#FFFFFF" stroke="#C9D0DF" stroke-width="3"/>
+    <g fill="none" stroke="#13213C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1394 333 H1450"/>
+      <path d="M1410 326 L1437 294 L1471 309 L1497 271"/>
+      <circle cx="1437" cy="294" r="8" fill="#FFFFFF"/>
+      <circle cx="1471" cy="309" r="8" fill="#FFFFFF"/>
+    </g>
+    <circle cx="1410" cy="326" r="10" fill="#6048D8"/>
+    <rect x="1497" y="310" width="25" height="25" rx="5" fill="#F29A2E"/>
+    <circle cx="1507" cy="270" r="24" fill="#FFF2DE" stroke="#F29A2E" stroke-width="3"/>
+    <path d="M1501 257 L1518 270 L1501 283 Z" fill="#F29A2E"/>
+
+    <!-- Filmstrip -->
+    <g stroke-width="3">
+      <rect x="1368" y="416" width="57" height="44" rx="6" fill="#F1EEFF" stroke="#6048D8"/>
+      <rect x="1432" y="416" width="57" height="44" rx="6" fill="#EAF4FF" stroke="#3478D4"/>
+      <rect x="1496" y="416" width="57" height="44" rx="6" fill="#E8F7EF" stroke="#248A5B"/>
+    </g>
+    <path d="M1380 448 L1393 431 L1406 442 L1416 427" fill="none" stroke="#6048D8" stroke-width="3"/>
+    <circle cx="1460" cy="438" r="10" fill="#3478D4"/>
+    <path d="M1511 438 L1523 449 L1541 428" fill="none" stroke="#248A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1460" y="503" text-anchor="middle" font-size="20" font-weight="800">VIDEO + VERDICT</text>
+
+    <!-- External repair loop -->
+    <path d="M1145 524 V600 H885 C843 600 822 532 808 456" fill="none" stroke="#F29A2E" stroke-width="5" stroke-dasharray="13 11" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+    <rect x="865" y="583" width="250" height="34" rx="17" fill="#FFFFFF"/>
+    <text x="990" y="606" text-anchor="middle" font-size="16" font-weight="800" fill="#F29A2E">REVISE — BEHAVIOURAL FEEDBACK</text>
+
+    <!-- Key architectural message -->
+    <text x="1260" y="650" text-anchor="middle" font-size="23" font-weight="800">Generate inside the loop. Judge outside it.</text>
+  </g>
+</svg>
