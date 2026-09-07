@@ -24,6 +24,7 @@ from autoadapter2.react import (
 )
 
 from .interactive import (
+    DriverDevelopmentConversation,
     PublicDevelopmentSession,
     render_interface_stub,
 )
@@ -198,7 +199,12 @@ Develop the complete executable driver from the supplied public inputs.
 Use write_file to write the complete source to driver.py, and use execute_python for any bounded
 public checks needed while developing it. Skeleton discovery is available only in the
 skeleton-assisted condition. Do not merely print source in a JSON answer; leave the valid canonical
-driver.py artifact in the workspace and end the turn."""
+driver.py artifact in the workspace and end the turn.
+After submission, the Framework may append DRIVER_VALIDATION_FEEDBACK_JSON to this same conversation.
+Continue editing the current driver using those failures; preserve behavior for passed checks.
+Read the referenced public diagnostic files only when needed. The development Python session and
+its budget persist across submissions. Reload changed driver code and rebuild development instances
+before checking a revision; existing Python objects can still contain the old implementation."""
 
 
 @dataclass(frozen=True)
@@ -859,6 +865,8 @@ def generate(
     runtime_contract: Mapping[str, Any] | None = None,
     probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
     source_root: str | Path | None = None,
+    development: DriverDevelopmentConversation | None = None,
+    max_turns: int | None = None,
 ) -> GenerationResult:
     """Generate, audit, compile, and write one model-authored ``driver.py``.
 
@@ -910,6 +918,8 @@ def generate(
             capability_methods=capability_methods,
             seed_interface_stub=True,
         )
+        if development is not None:
+            development.session = session
         calls = getattr(client, "calls", ())
         start = len(calls) if isinstance(calls, Sequence) else 0
 
@@ -960,7 +970,8 @@ def generate(
                 artifact_name="driver.py",
                 artifact_path=driver_path,
                 validate_artifact=validate_driver_file,
-                max_turns=_artifact_turn_budget("generate", selected_condition),
+                max_turns=max_turns if max_turns is not None else _artifact_turn_budget("generate", selected_condition),
+                conversation=development.messages if development is not None else None,
             )
         except ReactLoopError as exc:
             raise GenerationError(
@@ -975,7 +986,8 @@ def generate(
             interactive_probe_results = tuple(
                 _copy(dict(item)) for item in session.probe_results
             )
-            session.close()
+            if development is None:
+                session.close()
         if not isinstance(react_result.artifact, Mapping):
             raise GenerationError("driver.py validation did not return an artifact record")
         output = _copy(dict(react_result.artifact))

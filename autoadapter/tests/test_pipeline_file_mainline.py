@@ -460,6 +460,7 @@ def test_fresh_cell_order_visibility_freeze_and_partial_recap_whitelist(
     ) -> Any:
         events.append("generate")
         seen["generate_experience"] = kwargs["experience"]
+        seen["development"] = kwargs["development"]
         assert kwargs["max_turns"] == (
             22 if kwargs["condition"] == "skeleton-assisted" else 40
         )
@@ -500,6 +501,7 @@ def test_fresh_cell_order_visibility_freeze_and_partial_recap_whitelist(
 
     def repair_runner(_client: Any, **kwargs: Any) -> Any:
         events.append("repair")
+        assert kwargs["development"] is seen["development"]
         assert kwargs["max_turns"] == (
             22 if kwargs["condition"] == "skeleton-assisted" else 20
         )

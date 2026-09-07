@@ -534,6 +534,7 @@ def run_artifact_react(
     delivery_turns: int = 2,
     validate_after_write: bool = False,
     tool_output_chars: int = 24000,
+    conversation: list[dict[str, Any]] | None = None,
 ) -> ArtifactResult:
     """Run a bounded AA1-style file/artifact conversation.
 
@@ -570,7 +571,10 @@ def run_artifact_react(
     tool_map = {tool.name: tool for tool in tools}
     if len(tool_map) != len(tools):
         raise ValueError("artifact ReAct tool names must be unique")
-    messages: list[dict[str, Any]] = [{"role": "user", "content": user_prompt}]
+    # Driver submissions can share caller-owned history; other artifact
+    # stages retain independent conversations.
+    messages = conversation if conversation is not None else []
+    messages.append({"role": "user", "content": user_prompt})
     trace: list[dict[str, Any]] = []
     call_count = 0
 

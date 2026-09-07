@@ -37,6 +37,7 @@ from autoadapter2.driver_synthesis.generation import (
     study,
 )
 from autoadapter2.driver_synthesis.probe import ProbeBudget, ProbeError, run_probes
+from autoadapter2.driver_synthesis.interactive import DriverDevelopmentConversation
 from autoadapter2.driver_synthesis.repair import (
     MAX_TOTAL_ATTEMPTS,
     RepairError,
@@ -2208,7 +2209,7 @@ def _run_cell(
         raise PipelineError("completed STUDY has no successful real-MuJoCo probe")
     _write(workspace / "probe_results.json", {"results": list(probe_results)})
 
-    if study_result is not None and failure is None:
+    with DriverDevelopmentConversation() as development:
         for attempt in range(config.max_driver_attempts_per_condition):
             attempt_dir = workspace / f"attempt-{attempt}"
             attempt_dir.mkdir(parents=True, exist_ok=True)
@@ -2231,6 +2232,7 @@ def _run_cell(
                         runtime_contract=runtime_contract,
                         probe_budget=config.probe_budget,
                         source_root=_default_root() / "src",
+                        development=development,
                         max_turns=int(
                             config.phase_turn_budgets[
                                 "generate_skeleton"
@@ -2268,6 +2270,7 @@ def _run_cell(
                     before = _call_count(client)
                     repair_kwargs: dict[str, Any] = {
                         "previous_driver_source": current_source,
+                        "development": development,
                         "candidate_report": attempts[-1]["capability_validation"],
                         "media_manifest": attempts[-1]["capability_validation"].get(
                             "video_manifest", []

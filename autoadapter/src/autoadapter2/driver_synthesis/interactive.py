@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -29,6 +29,21 @@ class DevelopmentSessionError(RuntimeError):
 
 MAX_FILE_CHARS = 200_000
 MAX_EXECUTE_PYTHON_CHARS = 200_000
+
+
+@dataclass
+class DriverDevelopmentConversation:
+    """Caller-owned development history and tools, closed after the last trial."""
+
+    messages: list[dict[str, Any]] = field(default_factory=list)
+    session: PublicDevelopmentSession | None = None
+
+    def __enter__(self) -> DriverDevelopmentConversation:
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        if self.session is not None:
+            self.session.close()
 
 
 def _object_schema(
@@ -165,7 +180,7 @@ class PublicDevelopmentSession:
             self._sync_candidate_to_public()
 
     def close(self) -> None:
-        """Close the one stage-local execute_python process, if started."""
+        """Close the development execute_python process, if started."""
 
         python_session = getattr(self, "_python_session", None)
         if python_session is not None:
@@ -502,7 +517,7 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "execute_python",
-                "Execute credential-free public-only Python/MuJoCo code in one persistent stage-local session. Its current directory is this same condition workspace, so relative paths match write_file paths; public scene/package paths are available through the supplied environment. State survives across successful calls. After a timeout or worker exit, the next call uses a clean session and reports session_restarted=true; the phase control-step budget is not replenished. Time, output, and control-step budgets remain bounded.",
+                "Execute credential-free public-only Python/MuJoCo code in one persistent development session. Its current directory is this same condition workspace, so relative paths match write_file paths; public scene/package paths are available through the supplied environment. State survives across successful calls. After a timeout or worker exit, the next call uses a clean session and reports session_restarted=true; the session control-step budget is not replenished. Time, output, and control-step budgets remain bounded.",
                 _object_schema({"code": {"type": "string"}}, required=("code",)),
                 self.execute_python,
             ),

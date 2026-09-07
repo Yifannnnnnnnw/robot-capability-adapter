@@ -575,6 +575,26 @@ class AgentContextManager:
         summarized = projected_groups[:split]
         retained = projected_groups[split:]
         snapshots = self._latest_artifact_snapshots(messages)
+        # A Driver can continue across Harness submissions. Keep the latest
+        # failure instruction when its original group leaves the recent window.
+        latest_feedback = next(
+            (
+                message["content"]
+                for message in reversed(messages)
+                if message.get("role") == "user"
+                and isinstance(message.get("content"), str)
+                and message["content"].startswith("DRIVER_VALIDATION_FEEDBACK_JSON:\n")
+            ),
+            "",
+        )
+
+        def feedback_appendix() -> str:
+            if any(
+                latest_feedback in str(message.get("content", ""))
+                for group in retained for message in group.messages
+            ):
+                return ""
+            return latest_feedback
 
         def projected_history_chars() -> int:
             appendix = [
@@ -582,6 +602,7 @@ class AgentContextManager:
                 for text in (
                     self._summary_text(summarized),
                     self._snapshot_text(snapshots),
+                    feedback_appendix(),
                 )
                 if text
             ]
@@ -597,6 +618,7 @@ class AgentContextManager:
             for text in (
                 self._summary_text(summarized),
                 self._snapshot_text(snapshots),
+                feedback_appendix(),
             )
             if text
         ]

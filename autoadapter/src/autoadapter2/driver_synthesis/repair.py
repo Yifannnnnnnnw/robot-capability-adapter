@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -18,6 +19,7 @@ from .generation import (
     DriverSourceAuditError,
     GenerationCondition,
     GenerationError,
+    GENERATE_REACT_SYSTEM,
     JsonGenerator,
     ModelCallEvidence,
     _react_evidence,
@@ -27,7 +29,7 @@ from .generation import (
     _validate_public_invocation_abi,
     _invoke,
 )
-from .interactive import PublicDevelopmentSession
+from .interactive import DriverDevelopmentConversation, PublicDevelopmentSession
 from .probe import ProbeBudget, ProbeSourceError, audit_public_source, run_probes
 from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_source
 
@@ -96,28 +98,8 @@ modules. Public measured values, invocation arguments, failures, logs, guards, a
 remain available."""
 
 
-REPAIR_REACT_SYSTEM = """You are the interactive, condition-local Auto-Adapter Repair stage.
-The complete candidate-facing report and media manifest from the immediately preceding attempt are
-in the public input; only private IVC/Harness definitions and secrets have been removed. The current
-driver.py is the previous model-authored source. Diagnose the report and revise that source directly;
-both are already complete in the initial public input. Use read_file, write_file, and one persistent
-credential-free public Python/MuJoCo execute_python session. Skeleton discovery is available only in
-skeleton-assisted Repair; from-scratch must not read or import skeleton source. Preserve sealed
-method names and the exact (self, request) ABI; request is always the closed mapping declared by the
-sealed request_schema. Read only schema-declared fields and do not add task, scene, reset,
-private-criteria, or whole-task fields. Candidate imports are closed to __future__, math, json,
-typing, collections, dataclasses, numpy, mujoco, and, only in skeleton-assisted mode,
-autoadapter2.trusted_skeletons. End a turn after writing a corrected driver.py; the
-Framework validates its source and public import/build boundary. Never access or infer private suite
-construction, reference code, the other condition, credentials, or a final Harness verdict.""" + (
-    "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
-) + """
-
-Repair previous_driver_source from the complete supplied report. Start with
-repair_focus_summary, then consult candidate_report for the complete per-trial evidence. Use
-write_file to replace only driver.py and execute_python for bounded public checks. Leave a complete
-corrected driver.py artifact in the workspace and end the turn; do not merely print or return source
-in a JSON answer."""
+# One stable system instruction across initial generation and later submissions.
+REPAIR_REACT_SYSTEM = GENERATE_REACT_SYSTEM
 
 
 _PRIVATE_DEFINITION_KEYS = frozenset(
@@ -524,6 +506,59 @@ def _validate_attempt_budget(previous_attempt: int, max_total_attempts: int) -> 
         )
 
 
+def _write_repair_feedback(
+    inputs: Mapping[str, Any], workspace: Path,
+) -> dict[str, Any]:
+    """Keep candidate-visible diagnostics on disk and send only a failure index."""
+
+    directory = workspace / "validation_feedback" / f"attempt-{inputs['previous_attempt']}"
+    directory.mkdir(parents=True, exist_ok=True)
+    report = copy.deepcopy(dict(inputs["candidate_report"]))
+    report.setdefault("video_manifest", inputs["media_manifest"])
+    report_path = directory / "report.json"
+    report_path.write_text(json.dumps(report, ensure_ascii=True, sort_keys=True), encoding="utf-8")
+    feedback = _selected_fields(report, _REPAIR_SUMMARY_TOP_KEYS)
+    feedback.update({
+        "previous_attempt": inputs["previous_attempt"],
+        "max_total_attempts": inputs["max_total_attempts"],
+        "report_path": report_path.relative_to(workspace).as_posix(),
+        "failed_trials": [],
+        "passed_trials": [],
+        "instruction": (
+            "Continue fixing driver.py in this conversation. Preserve passed behavior. "
+            "Use the sealed public capability criteria already supplied as the expected behavior. "
+            "Read a trial diagnostic only as needed for logs, guards, trajectory and media. "
+            "Measurement errors can originate in the validator; do not change the interface "
+            "or invent driver behavior to compensate for an unresolved measurement. "
+            "Reload changed driver code before running development checks."
+        ),
+    })
+    for index, trial in enumerate(report.get("trials", [])):
+        if not isinstance(trial, Mapping):
+            continue
+        identity = _selected_fields(trial, ("trial_id", "case_id", "capability_id", "method_invoked"))
+        if trial.get("trial_passed") is True:
+            feedback["passed_trials"].append(identity)
+            continue
+        path = directory / f"trial-{index}.json"
+        path.write_text(json.dumps(trial, ensure_ascii=True, sort_keys=True), encoding="utf-8")
+        item = {
+            **identity,
+            **_selected_fields(trial, _REPAIR_SUMMARY_TRIAL_KEYS),
+            **_selected_fields(trial, ("public_arguments", "physical_integrity_passed", "contact_integrity")),
+            "diagnostic_path": path.relative_to(workspace).as_posix(),
+        }
+        guards = trial.get("guard_outcomes", {})
+        if isinstance(guards, Mapping):
+            item["failed_guards"] = {key: value for key, value in guards.items() if value is not True}
+        log = trial.get("candidate_log")
+        if log:
+            item["log_excerpt"] = str(log)[:1000]
+        feedback["failed_trials"].append(item)
+    _assert_public_context(feedback, where="validation_feedback")
+    return feedback
+
+
 def _read_previous_source(previous_driver_source: str | Path) -> str:
     if isinstance(previous_driver_source, Path):
         try:
@@ -762,6 +797,8 @@ def _interactive_repair(
     capability_methods: Sequence[str] | None,
     probe_budget: ProbeBudget,
     source_root: str | Path | None,
+    development: DriverDevelopmentConversation | None = None,
+    max_turns: int | None = None,
 ) -> RepairResult:
     _validate_attempt_budget(previous_attempt, max_total_attempts)
     source = _read_previous_source(previous_driver_source)
@@ -775,15 +812,33 @@ def _interactive_repair(
         max_total_attempts=max_total_attempts,
     )
     methods = _method_names(public_inputs, capability_methods)
-    session = PublicDevelopmentSession(
-        package=package,
-        condition=str(condition),
-        workspace=Path(workspace).resolve(),
-        budget=probe_budget,
-        source_root=_source_root(source_root),
-        capability_methods=methods,
-        initial_driver_source=source,
-    )
+    session = development.session if development is not None else None
+    if session is None:
+        session = PublicDevelopmentSession(
+            package=package,
+            condition=str(condition),
+            workspace=Path(workspace).resolve(),
+            budget=probe_budget,
+            source_root=_source_root(source_root),
+            capability_methods=methods,
+            initial_driver_source=source,
+        )
+        if development is not None:
+            development.session = session
+    initial_revision = session.revision
+    probe_start = len(session.probe_results)
+    continuing = development is not None and bool(development.messages)
+    feedback = _write_repair_feedback(repair_inputs, session.workspace)
+    prompt = REPAIR_REACT_SYSTEM
+    if continuing:
+        user_prompt = "DRIVER_VALIDATION_FEEDBACK_JSON:\n" + json.dumps(feedback, ensure_ascii=True, sort_keys=True)
+    else:
+        # Standalone Repair remains usable, but does not inline the complete report.
+        user_prompt = _react_user_prompt({
+            "public_context": public_inputs,
+            "driver_path": "driver.py",
+            "validation_feedback": feedback,
+        })
     calls = getattr(client, "calls", ())
     start = (
         len(calls)
@@ -800,7 +855,7 @@ def _interactive_repair(
             raise RepairError(f"driver.py cannot be read: {exc}") from exc
         if not driver_source.strip():
             raise RepairError("driver.py is empty")
-        if session.revision <= 0 or driver_source == source:
+        if session.revision <= initial_revision or driver_source == source:
             raise RepairError(
                 "driver.py is unchanged from the previous frozen driver; "
                 "Repair must revise it with write_file"
@@ -835,30 +890,32 @@ def _interactive_repair(
         react_result = run_artifact_react(
             client=client,
             stage="repair",
-            system_prompt=REPAIR_REACT_SYSTEM,
-            user_prompt=_react_user_prompt(repair_inputs),
+            system_prompt=prompt,
+            user_prompt=user_prompt,
             tools=session.artifact_tools(
                 include_skeleton=str(condition) == "skeleton-assisted"
             ),
             artifact_name="driver.py",
             artifact_path=driver_path,
             validate_artifact=validate_driver_file,
-            max_turns=_artifact_turn_budget("repair", str(condition)),
+            max_turns=max_turns if max_turns is not None else _artifact_turn_budget("repair", str(condition)),
+            conversation=development.messages if development is not None else None,
         )
     except ReactLoopError as exc:
         raise RepairError(
             f"interactive Repair did not produce a valid driver.py: {exc}",
             react_trace=exc.trace,
-            probe_results=session.probe_results,
+            probe_results=session.probe_results[probe_start:],
             candidate_path=session.candidate_path,
             model_turns=exc.model_turns,
             tool_calls=exc.tool_calls,
         ) from exc
     finally:
         interactive_probe_results = tuple(
-            copy.deepcopy(dict(item)) for item in session.probe_results
+            copy.deepcopy(dict(item)) for item in session.probe_results[probe_start:]
         )
-        session.close()
+        if development is None:
+            session.close()
     if not isinstance(react_result.artifact, Mapping):
         raise RepairError("driver.py validation did not return an artifact record")
     output = copy.deepcopy(dict(react_result.artifact))
@@ -867,8 +924,12 @@ def _interactive_repair(
         client,
         start=start,
         stage="repair",
-        prompt=REPAIR_REACT_SYSTEM,
-        inputs=repair_inputs,
+        prompt=prompt,
+        inputs=feedback if continuing else {
+            "public_context": public_inputs,
+            "driver_path": "driver.py",
+            "validation_feedback": feedback,
+        },
         output=output,
         trace=react_result.trace,
     )
@@ -930,6 +991,8 @@ def repair_with_probes(
     capability_methods: Sequence[str] | None = None,
     probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
     source_root: str | Path | None = None,
+    development: DriverDevelopmentConversation | None = None,
+    max_turns: int | None = None,
 ) -> RepairResult:
     """Run one interactive Repair, with a one-shot path retained for test fakes."""
 
@@ -948,6 +1011,8 @@ def repair_with_probes(
             capability_methods=capability_methods,
             probe_budget=probe_budget,
             source_root=source_root,
+            development=development,
+            max_turns=max_turns,
         )
 
     preparation = prepare_repair(

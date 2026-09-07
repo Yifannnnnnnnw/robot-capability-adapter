@@ -40,6 +40,8 @@ from autoadapter2.driver_synthesis.repair import (
 from autoadapter2.driver_synthesis.source_check import DriverSourceError, audit_driver_source
 from autoadapter2.libraries import RobotPackage
 from autoadapter2.react import ToolCall, ToolTurn
+from autoadapter2.driver_synthesis.interactive import DriverDevelopmentConversation
+from autoadapter2.agent_context import AgentContextManager
 
 
 FROM_SCRATCH_DRIVER = """
@@ -232,7 +234,7 @@ class DriverGenerationTests(unittest.TestCase):
         for system_prompt, fixed_sentinel in (
             (STUDY_REACT_SYSTEM, "Do not write driver.py"),
             (GENERATE_REACT_SYSTEM, "Do not merely print source in a JSON answer"),
-            (REPAIR_REACT_SYSTEM, "Repair previous_driver_source"),
+            (REPAIR_REACT_SYSTEM, "Continue editing the current driver using those failures"),
         ):
             self.assertIn(fixed_sentinel, system_prompt)
             self.assertNotIn(fixed_sentinel, user_prompt)
@@ -775,6 +777,97 @@ print("probe-time=" + str(data.time))
             if event.get("event") == "end_turn"
         )
         self.assertFalse(first_validation["artifact_valid"])
+
+    def test_generate_repair_share_history_python_and_budget_with_small_feedback(self) -> None:
+        """Scripted model, real public MuJoCo worker and real import/build checks."""
+        changed = FROM_SCRATCH_DRIVER.replace('request.get("target", 0.0)', 'request["target"]')
+
+        def tool(name, arguments):
+            return ToolTurn(content=None, finish_reason="tool_calls", tool_calls=(
+                ToolCall(name + str(len(json.dumps(arguments))), name, arguments, json.dumps(arguments)),
+            ))
+
+        class ScriptedClient:
+            def __init__(self):
+                self.messages = []
+                self.systems = []
+                self.turns = [
+                    tool("execute_python", {"code": (
+                        "import os\nimport mujoco\n"
+                        "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
+                        "data = mujoco.MjData(model)\n"
+                        "mujoco.mj_step(model, data)\ncontinuity_marker = 41\n"
+                    )}),
+                    tool("write_file", {"path": "driver.py", "content": FROM_SCRATCH_DRIVER}),
+                    ToolTurn(content="submitted", finish_reason="stop"),
+                    ToolTurn(content="unchanged submission", finish_reason="stop"),
+                    tool("execute_python", {"code": (
+                        "assert continuity_marker == 41\n"
+                        "mujoco.mj_step(model, data)\nprint('CONTINUED', data.time)\n"
+                    )}),
+                    tool("read_file", {"path": "validation_feedback/attempt-0/trial-0.json"}),
+                    tool("write_file", {"path": "driver.py", "content": changed}),
+                    ToolTurn(content="repaired", finish_reason="stop"),
+                ]
+
+            def generate_tool_turn(self, **kwargs):
+                self.messages.append(copy.deepcopy(kwargs["messages"]))
+                self.systems.append(kwargs["system_prompt"])
+                return self.turns.pop(0)
+
+        client = ScriptedClient()
+        workspace = Path(self.temporary.name) / "continuous"
+        with DriverDevelopmentConversation() as development:
+            generated = generate(
+                client, self.package, self.design, self._study("from-scratch"),
+                condition="from-scratch", workspace=workspace, development=development,
+                probe_budget=ProbeBudget(max_steps=3), max_turns=6,
+            )
+            session = development.session
+            worker = session._python_session
+            stage_dir = session.public_workspace.root
+            public_inputs = generated.call_evidence.inputs
+            repaired = repair_with_probes(
+                client, package=self.package, previous_driver_source=generated.driver_source,
+                candidate_report={"validation_passed": False, "trials": [{
+                    "case_id": "case-1", "capability_id": "cap-1", "trial_passed": False,
+                    "measurement_value": 0.2, "public_arguments": {"request": {"target": 0.4}},
+                    "measurement_binding": {"secret": "PRIVATE_BINDING_SENTINEL"},
+                    "candidate_log": "useful diagnostic",
+                }]}, media_manifest=[], public_inputs=public_inputs,
+                condition="from-scratch", previous_attempt=0, workspace=workspace,
+                development=development, max_turns=7,
+            )
+            self.assertIs(development.session, session)
+            self.assertIs(session._python_session, worker)
+            self.assertEqual(repaired.driver_source, changed)
+            self.assertEqual(len(repaired.probe_results), 2)  # explicit probe plus import/build
+            probe = repaired.probe_results[0]
+            self.assertTrue(probe["successful"], probe)
+            self.assertEqual(probe["physics_steps_total"], 2)
+            self.assertIn("CONTINUED", probe["stdout"])
+            self.assertEqual(client.systems[0], client.systems[3])
+            self.assertEqual(client.messages[0][0], client.messages[3][0])
+            self.assertGreater(len(client.messages[3]), 1)
+            latest = client.messages[3][-1]["content"]
+            self.assertTrue(latest.startswith("DRIVER_VALIDATION_FEEDBACK_JSON:\n"))
+            self.assertNotIn("public_context", latest)
+            self.assertNotIn("previous_driver_source", latest)
+            for path in (workspace / "validation_feedback").rglob("*.json"):
+                self.assertNotIn("PRIVATE_BINDING_SENTINEL", path.read_text())
+            self.assertIn("unchanged from the previous frozen driver", json.dumps(client.messages[4]))
+            read_event = next(event for event in repaired.call_evidence.react_trace
+                              if event.get("tool") == "read_file")
+            self.assertTrue(read_event["ok"], read_event)
+            self.assertIn("useful diagnostic", read_event["observation"])
+            # The failure remains available after it leaves the recent history window.
+            for project in (AgentContextManager(recent_groups=1).project_native,
+                            AgentContextManager(recent_groups=1).project_text_observation):
+                projected = project(development.messages)
+                self.assertIn("DRIVER_VALIDATION_FEEDBACK_JSON:", json.dumps(projected.messages))
+                self.assertIn('"target": 0.4', "\n".join(str(m.get("content")) for m in projected.messages))
+        self.assertIsNone(session._python_session)
+        self.assertFalse(stage_dir.exists())
 
     def test_repair_rejects_private_definitions_despite_public_study_criterion(self) -> None:
         unsafe_public_inputs = (

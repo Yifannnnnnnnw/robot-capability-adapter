@@ -302,6 +302,8 @@ fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，
   每 phase 20 simulated seconds；通用 mainline config 可把输出进一步固定为 12,000。
   Pipeline 会把同一 `execute_python` block 传给 STUDY、TGCD、IVC、Generate 和 Repair。历史实验
   的 runner/config 取值只记录在 archive 中；未来正式运行以届时获批的 config/runner 为准。
+  当前 Generate 与后续 Repair 共用一个开发 Session，其 physics-step budget 累计使用，
+  不会在进入 Repair 时重新补充；每次模型调用的时间和输出限制仍独立生效。
 - code 最多 200,000 characters。stdout/stderr 被合并在边界内，超出部分明确标记 truncated。
 - timeout、worker exit 或协议损坏会终止并丢弃当前持久进程；失败代码不会自动重放。下一次显式
   `execute_python` 会启动干净 worker，并返回 `session_restarted=true`，此前 Python globals 不再
@@ -368,7 +370,7 @@ canonical 结果保留 `status`、`planning_turns`、`capability_calls`、`inval
 | IVC | sealed design/`task_support`、source lineage、脱敏 capability+task instances/guards、non-addressable measurement examples、46-kind trusted operator catalog、scene entities、22-case SO/Go worked references、只读 assets | Experience、candidate/Repair/history/verdict、task/reference request、waypoint/task plan、reference source | `capability_validation_suite.json` | 6 turns |
 | Generate | sealed public design、STUDY、public package、runtime/probe facts、eligible Experience；skeleton condition 另见 skeleton | private suite/bindings/guards/reference/Harness | `driver.py` | skeleton 22；scratch 40 turns |
 | Capability Harness | frozen Driver、sealed design、IVC-authored inline suite、private scene mechanics/guards | 模型上下文、Experience；candidate 看不到 measurement/criteria/guards/task envelope | report + videos | 最多 3 frozen attempts |
-| Repair | prior Driver、紧前 attempt 的 candidate-facing report/media、public inputs、eligible Experience；按 condition 见 skeleton | private definitions/reference/Harness source | 修改同一 `driver.py` | skeleton 22；scratch 20 turns |
+| Repair | 延续 Generate 的对话、文件与开发 Python Session；追加紧前 attempt 的失败摘要，完整公开诊断按需读取 | private definitions/reference/Harness source | 修改同一 `driver.py` | skeleton 22；scratch 20 turns |
 | ReCAP Task Demo | public task、whitelisted capability schemas、public observations | Experience、未通过 capability、private criteria/guards/reference/verdict | controller trace | 每 task 16 planning turns / 12 capability calls |
 | Task Demo Harness | persistent worker evidence、private task clauses/bindings/guards | controller 无权读的私有定义 | task verdict + video | package task budget |
 | Evolution | 压缩后的 terminal candidate-facing facts | private definitions、当前 run mutation channels | `{}` 或五字段 proposal | 最多 1 call |
@@ -538,14 +540,19 @@ method invocation、actuator path、samples、contacts、exceptions、logs 和�
 - video completeness（需要视频时）；
 - case、capability 和 whole-suite verdict。
 
-Repair 只收到紧前 attempt 的 candidate-facing report。`repair.py` 移除 suite、binding/guard
-definitions、hidden expected values/trajectory、reference/Harness source、credential 和 private paths；
-保留对修复有用的公开 request、实测值、exception、guard outcome、trajectory endpoint summary 和
-视频 manifest。dense samples 会压缩，不把整个私有执行定义交给模型。
+Generate 与后续 Repair 共用同一开发对话、workspace 和公开 Python Session。Repair 只追加
+`DRIVER_VALIDATION_FEEDBACK_JSON`：失败项的调用参数、实测值、异常、失败 guard、日志摘要，
+以及通过项的简短列表。公开资料和整份源码不再每次重新注入。历史压缩保留最新验证反馈与
+当前源码快照；开发 Python 的执行预算跨提交累计，修改后必须重新加载代码再检查。
 
-Repair 直接从 prior source 初始化同一 workspace 的 `driver.py`，然后覆盖该文件；每次通过
-source/import boundary 的版本被复制为新的 frozen attempt。三次都未通过时，终态使用第三份
-frozen Driver 的报告。
+`repair.py` 沿用脱敏规则，移除 suite、binding/guard definitions、hidden expected values/trajectory、
+reference/Harness source、credential 和 private paths。完整 candidate-facing 报告（dense samples
+仍按既有规则压缩）与各失败 trial 的诊断保存在 `files/validation_feedback/attempt-N/`，模型可以
+按需读取日志、轨迹和媒体信息。Harness 仍对每个 case/repetition 独立初始化，不共享开发物理状态。
+
+Repair 原地修改同一 `driver.py`；必须相对上一提交产生源码变化，并通过 source/import boundary，
+才会复制为新的 frozen attempt。提交次数与各阶段模型轮次仍有上限。开发 Session 在最后一次
+验证或退出修复循环时关闭；终态使用最后一份实际提交给 Harness 的 frozen Driver 报告。
 
 ### 7.6 ReCAP Task Demo
 
