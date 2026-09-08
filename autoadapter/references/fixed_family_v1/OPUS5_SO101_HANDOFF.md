@@ -1,5 +1,9 @@
 # Opus 5: SO-101 single-robot diagnostic
 
+Completed attempt: [SO-101 result](OPUS5_SO101_RESULTS.md). The run stopped at a
+120-second Study request timeout before Driver generation; other robots remain
+undispatched. Combined returned usage has a $1.29 public-price estimate.
+
 The user requested sequential trials and at most one Repair. This first trial
 contains SO-101 only; the other ten fixed-family robots are not dispatched by
 this configuration. It remains diagnostic and does not change the thesis cohort.

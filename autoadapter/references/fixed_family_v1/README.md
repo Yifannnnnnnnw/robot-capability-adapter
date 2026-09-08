@@ -4,6 +4,10 @@ This is the user-approved 11-robot diagnostic of fixed capabilities and continuo
 Driver development. It is not a thesis experiment cohort or a formal denominator.
 No TGCD/IVC authoring, TaskDemo, Evolution, or policy training is performed.
 
+Latest single-robot trial: [Opus 5 SO-101](OPUS5_SO101_RESULTS.md), with at most
+one Repair authorized. Basic environment and protocol checks passed, but a
+Study request timed out before Driver generation. Other robots were not dispatched.
+
 Current execution evidence: [Holistic results](HOLISTIC_RESULTS.md), with V3.2
 transport interruptions and the separate low-cost Qwen fallback recorded apart.
 

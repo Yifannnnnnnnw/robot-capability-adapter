@@ -1,0 +1,140 @@
+{
+  "recorded_at_utc": "2026-09-08T14:19:45.536609+00:00",
+  "formal": false,
+  "robot": "robotstudio_so101",
+  "model_requested": "eu.anthropic.claude-opus-5",
+  "run_directory": "autoadapter/runs/diagnostic/fixed-family-v1-holistic-opus5-so101-20260908",
+  "scope": "one robot; all other ten fixed-family robots not started with Opus 5",
+  "max_harness_submissions": 2,
+  "max_repair_phases": 1,
+  "environment_passed": true,
+  "environment_report": "autoadapter/runs/diagnostic/fixed-family-v1-holistic-opus5-so101-20260908/robotstudio_so101/environment/environment_check.json",
+  "outcome": "Study API interruption before Driver generation",
+  "failure": {
+    "condition": "skeleton-assisted",
+    "message": "study model call exceeded 120s total wall deadline for eu.anthropic.claude-opus-5",
+    "robot": "robotstudio_so101",
+    "stage": "study",
+    "type": "ModelInvocationError"
+  },
+  "study_artifact_accepted": false,
+  "driver_generated": false,
+  "harness_submissions": 0,
+  "repair_executed": false,
+  "model_api_requests": 5,
+  "successful_model_responses": 4,
+  "requests": [
+    {
+      "call_index": 0,
+      "stage": "study",
+      "status": "success",
+      "http_status": 200,
+      "elapsed_s": 10.518454332952388,
+      "input_tokens": 50542,
+      "output_tokens": 783,
+      "finish_reason": "tool_calls",
+      "tool_names": [
+        "execute_python"
+      ],
+      "error": null
+    },
+    {
+      "call_index": 1,
+      "stage": "study",
+      "status": "success",
+      "http_status": 200,
+      "elapsed_s": 17.221004542079754,
+      "input_tokens": 52192,
+      "output_tokens": 1149,
+      "finish_reason": "tool_calls",
+      "tool_names": [
+        "execute_python"
+      ],
+      "error": null
+    },
+    {
+      "call_index": 2,
+      "stage": "study",
+      "status": "success",
+      "http_status": 200,
+      "elapsed_s": 12.157911374932155,
+      "input_tokens": 53739,
+      "output_tokens": 939,
+      "finish_reason": "tool_calls",
+      "tool_names": [
+        "execute_python"
+      ],
+      "error": null
+    },
+    {
+      "call_index": 3,
+      "stage": "study",
+      "status": "success",
+      "http_status": 200,
+      "elapsed_s": 21.40880916605238,
+      "input_tokens": 55081,
+      "output_tokens": 1575,
+      "finish_reason": "tool_calls",
+      "tool_names": [
+        "execute_python"
+      ],
+      "error": null
+    },
+    {
+      "call_index": 4,
+      "stage": "study",
+      "status": "timeout",
+      "http_status": null,
+      "elapsed_s": 120.02570245799143,
+      "input_tokens": null,
+      "output_tokens": null,
+      "finish_reason": null,
+      "tool_names": [],
+      "error": {
+        "type": "timeout",
+        "message": "total wall deadline exceeded"
+      }
+    }
+  ],
+  "candidate_usage": {
+    "input_tokens": 211554,
+    "output_tokens": 4446,
+    "gross_public_regional_estimate_usd": 1.285812,
+    "cache_breakdown_reported": false,
+    "reasoning_breakdown_reported": false
+  },
+  "successful_protocol_probe_usage": {
+    "input_tokens": 1007,
+    "output_tokens": 78,
+    "gross_public_regional_estimate_usd": 0.0076835,
+    "cache_breakdown_reported": false,
+    "reasoning_breakdown_reported": false
+  },
+  "combined_known_usage": {
+    "input_tokens": 212561,
+    "output_tokens": 4524,
+    "gross_public_regional_estimate_usd": 1.2934955,
+    "cache_breakdown_reported": false,
+    "reasoning_breakdown_reported": false
+  },
+  "price_reference": {
+    "currency": "USD",
+    "input_per_million_tokens": 5.5,
+    "output_per_million_tokens": 27.5,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "interpretation": "public base price plus 10% regional premium, without assumed cache discounts; actual Holistic billing unknown"
+  },
+  "usage_limitations": [
+    "Timeout request returned no usage; its eventual billable usage is unknown.",
+    "The two earlier rejected authentication probes returned HTTP 401 and no usage; their charge is not inferred.",
+    "Cache and reasoning breakdowns are unreported, not proven zero.",
+    "Four successful model replies requested execute_python, but this failed Study did not retain probe execution results; only the separate environment check establishes physical execution here."
+  ],
+  "evidence": {
+    "model_calls": "autoadapter/runs/diagnostic/fixed-family-v1-holistic-opus5-so101-20260908/robotstudio_so101/model_calls.json",
+    "cell_report": "autoadapter/runs/diagnostic/fixed-family-v1-holistic-opus5-so101-20260908/robotstudio_so101/candidate/cells/robotstudio_so101/skeleton-assisted/cell_report.json",
+    "experiment_report": "autoadapter/runs/diagnostic/fixed-family-v1-holistic-opus5-so101-20260908/robotstudio_so101/candidate/experiment_report.json",
+    "summary": "autoadapter/runs/diagnostic/fixed-family-v1-holistic-opus5-so101-20260908/diagnostic_summary.json",
+    "successful_tool_probe": "autoadapter/runs/diagnostic/holistic-opus5-so101-preflight-20260908/tool_roundtrip_native_new_credential.json"
+  }
+}
