@@ -121,28 +121,6 @@ traceable to public sources. The generated driver is not itself a task policy.
 Instead, it provides bounded robot operations that a separate controller may
 select and compose.
 
-Figure~\ref{fig:autoadapter-robot-cohort} presents the eleven configurations in
-the declared Direct-MuJoCo construction cohort. Their differing joint
-structures, actuator layouts, and end effectors illustrate the
-configuration-specific control requirements handled by each generated driver.
-The figure documents simulator package coverage only; it neither treats
-morphology as an experimental factor nor provides evidence of hardware
-behaviour.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[
-    width=0.96\linewidth
-  ]{assets/mujoco_robot_assets_contact_sheet.png}
-  \caption[MuJoCo robot cohort]
-  {Auto-Adapter MuJoCo construction cohort.
-  \textbf{Top:} SO-101, Unitree Go2, Franka Panda, Kinova Gen3 with Robotiq
-  2F-85, UFACTORY xArm7, and Universal Robots UR5e with Robotiq 2F-85.
-  \textbf{Bottom:} AgileX PiPER, KUKA LBR iiwa 14, LEAP Hand, Hello Robot
-  Stretch 2, and ALOHA 2.}
-  \label{fig:autoadapter-robot-cohort}
-\end{figure}
-
 Interactive simulation can help an agent develop the driver, but the generated
 code should not control the evidence used to assess it. Auto-Adapter therefore
 separates three responsibilities: defining the required capabilities,
@@ -327,6 +305,27 @@ Experiment 1 covers eleven robot configurations. These are SO-101, Unitree
 Go2, Franka Panda, Kinova Gen3, xArm7, UR5e, Piper, KUKA iiwa 14, LEAP Hand,
 Stretch 2 and ALOHA 2. Each configuration is evaluated in three fresh runs,
 giving 33 experimental units.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Robot platforms grouped by embodiment type.}
+  \label{tab:robot-platform-embodiment-types}
+  \small
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Robot type} & \textbf{Robot platforms} \\
+    \midrule
+    Fixed serial arm & SO-101; AgileX PiPER; UR5e; Franka Panda; KUKA LBR iiwa 14; Kinova Gen3; UFACTORY xArm7 \\
+    Quadruped & Unitree Go2; Unitree A1; ANYmal-C \\
+    Aerial quadrotor & Skydio X2 \\
+    Humanoid biped & Unitree H1 \\
+    Dexterous hand & LEAP Hand \\
+    Mobile manipulator & Hello Robot Stretch 2 \\
+    Bimanual manipulator & ALOHA 2 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 All runs use Claude Sonnet 4.6 under the same skeleton-assisted generation
 condition and execution limits. Within each robot, the task, capability design,
