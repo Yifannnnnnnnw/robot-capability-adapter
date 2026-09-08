@@ -10,6 +10,7 @@ from autoadapter2.fixed_family import reference
 from autoadapter2.harness.b1_contracts import evaluate_b1_contract
 from autoadapter2.harness.operators import inspect_scene_entities
 from autoadapter2.harness.runner import _trusted_measurement_evidence
+from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.libraries import load_indexed_robot_package
 from autoadapter2.pipeline import PipelineHooks, _load_fixed_inputs
 from autoadapter2.validation_compiler import IVCError, validate_capability_validation_suite
@@ -88,3 +89,34 @@ def test_new_quadruped_native_position_control_and_task_boundary(robot):
         skeleton.set_joint_torques([0.] * 12)
     skeleton.step(5)
     assert data.time > 0
+
+
+@pytest.mark.parametrize("robot", ["kinova_gen3_robotiq_2f85", "universal_robots_ur5e_robotiq_2f85"])
+def test_closed_linked_gripper_fixture_preserves_passive_joint_configuration(robot):
+    package = load_indexed_robot_package(ROOT, robot)
+    document = json.loads((package.root / "capability_validation/private/instances.json").read_text())
+    instance = next(i for i in document["instances"] if i["capability_id"] == "A3" and i["case_role"] == "calibrated_boundary")
+    model = mujoco.MjModel.from_xml_path(str(package.root / instance["scene_entrypoint"]))
+    data = mujoco.MjData(model)
+    apply_framework_reset(mujoco, model, data, {
+        "kind": "keyframe", "name": "home",
+        "joint_positions": {"right_driver_joint": .8, "left_driver_joint": .8},
+        "actuator_controls": {"fingers_actuator": 255},
+    })
+    assert min(c.dist for c in data.contact) < -.005
+    apply_framework_reset(mujoco, model, data, instance["reset"])
+    assert min((c.dist for c in data.contact), default=0.) >= -.005
+
+
+@pytest.mark.parametrize("robot", ["unitree_a1", "google_barkour_vb"])
+def test_stance_disturbance_does_not_start_inside_the_floor(robot):
+    package = load_indexed_robot_package(ROOT, robot, require_task_library=False)
+    document = json.loads((package.root / "capability_validation/private/instances.json").read_text())
+    model = mujoco.MjModel.from_xml_path(str(package.mjcf_path))
+    data = mujoco.MjData(model)
+    for instance in document["instances"]:
+        if instance["capability_id"] != "G5":
+            continue
+        apply_framework_reset(mujoco, model, data, instance["reset"])
+        assert abs(float(data.qpos[4])) > .04  # prescribed 5/8-degree roll remains
+        assert min((c.dist for c in data.contact), default=0.) >= -.005

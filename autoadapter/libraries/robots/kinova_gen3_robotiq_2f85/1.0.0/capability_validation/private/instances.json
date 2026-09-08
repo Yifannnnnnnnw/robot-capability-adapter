@@ -403,13 +403,50 @@
       "reset": {
         "kind": "keyframe",
         "name": "home",
-        "joint_positions": {
-          "right_driver_joint": 0.8,
-          "left_driver_joint": 0.8
-        },
-        "actuator_controls": {
-          "fingers_actuator": 255.0
-        }
+        "qpos": [
+          1.047197549316547,
+          0.26840474929346064,
+          3.141655341837275,
+          -2.2728667422862934,
+          1.0290163872729634e-05,
+          0.9542503787532246,
+          1.570799496434338,
+          0.786893039249358,
+          0.0004504003603315295,
+          0.7846430777590406,
+          -0.7659823309941532,
+          0.7868924059534494,
+          0.0004522990258532487,
+          0.784631824251227,
+          -0.766039682693385
+        ],
+        "qvel": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ctrl": [
+          1.04719755,
+          0.26179939,
+          3.14159265,
+          -2.26892803,
+          0.0,
+          0.95993109,
+          1.57079633,
+          255.0
+        ]
       },
       "guard_ids": [
         "kinova_gen3_robotiq_2f85-fixed-control",
@@ -424,7 +461,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "fixed_evidence"
+      "camera": "fixed_evidence",
+      "calibration_note": "Closed gripper state obtained from 4 seconds of native actuator-controlled MuJoCo settling; all coupled passive joints retained. No pass threshold changed."
     },
     {
       "instance_id": "kinova_gen3_robotiq_2f85-a4-nominal",

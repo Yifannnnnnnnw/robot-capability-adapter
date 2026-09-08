@@ -638,7 +638,7 @@
         "qpos": [
           0.0,
           0.0,
-          0.27,
+          0.27930673769871384,
           0.9990482215818578,
           0.043619387365336,
           0,
@@ -670,7 +670,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Framework-prescribed roll retained; free-base height lifted 0.009306738 m to avoid interpenetrating the floor at reset."
     },
     {
       "instance_id": "unitree_a1-g5-calibrated_boundary",
@@ -706,7 +707,7 @@
         "qpos": [
           0.0,
           0.0,
-          0.27,
+          0.2847020090977365,
           0.9975640502598242,
           0.0697564737441253,
           0,
@@ -738,7 +739,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Framework-prescribed roll retained; free-base height lifted 0.014702009 m to avoid interpenetrating the floor at reset."
     }
   ]
 }
