@@ -37,7 +37,13 @@ def write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, default=str) + "\n")
 
 
-def model_client(config: ExperimentConfig, *, holistic: bool = False) -> JsonModelClient:
+def model_client(
+    config: ExperimentConfig,
+    *,
+    holistic: bool = False,
+    evidence_dir: Path | None = None,
+    timeout_retries: int = 0,
+) -> JsonModelClient:
     manifest = config.model_manifest
     assert manifest is not None
     if not holistic and manifest["base_url"].rstrip("/") != "https://api.deepseek.com":
@@ -71,13 +77,13 @@ def model_client(config: ExperimentConfig, *, holistic: bool = False) -> JsonMod
             endpoint_path=route.endpoint_path, timeout_s=route.maximum_request_timeout_s,
             thinking=manifest["thinking"], max_tokens=manifest["max_output_tokens"],
             tool_history_mode=manifest["tool_history_mode"],
-        ))
+        ), evidence_dir=evidence_dir, timeout_retries=timeout_retries)
     runtime = replace(
         ModelConfig.from_env(), provider="deepseek", api_protocol="openai-compatible",
         model=manifest["model_id"], base_url=manifest["base_url"],
         thinking="disabled", max_tokens=manifest["max_output_tokens"],
     )
-    return JsonModelClient(runtime)
+    return JsonModelClient(runtime, evidence_dir=evidence_dir, timeout_retries=timeout_retries)
 
 
 _ENVIRONMENT_PROBE = '''import mujoco
@@ -218,6 +224,8 @@ def main() -> None:
     parser.add_argument("--holistic", action="store_true", help="Use the existing Holistic route and local company credential")
     parser.add_argument("--robots", nargs="+")
     parser.add_argument("--reference-only", action="store_true")
+    parser.add_argument("--retry-timeout-once", action="store_true",
+                        help="Allow at most one timeout retry across all model stages per robot")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     config = ExperimentConfig.from_path(args.config)
@@ -230,7 +238,8 @@ def main() -> None:
         parser.error("output must be fresh; existing cells must not be overwritten")
     output.mkdir(parents=True)
     write(output / "diagnostic_config.json", config.as_dict())
-    summary = {"formal": False, "reference_only": args.reference_only, "robots": {}}
+    summary = {"formal": False, "reference_only": args.reference_only,
+               "timeout_retries_per_robot": int(args.retry_timeout_once), "robots": {}}
     for robot in robots:
         result = {"prepared": False, "environment_passed": False,
                   "reference_executed": False, "reference_passed": None, "model_started": False}
@@ -270,7 +279,12 @@ def main() -> None:
                 check_environment(package, fixed[robot]['suite'], environment_dir, one)
                 result['environment_passed'] = True
                 stage = "model"
-                client = model_client(one, holistic=args.holistic)
+                result["model_request_evidence"] = str(output / robot / "model_requests")
+                client = model_client(
+                    one, holistic=args.holistic,
+                    evidence_dir=output / robot / "model_requests",
+                    timeout_retries=int(args.retry_timeout_once),
+                )
                 print(f"{robot}: real model synthesis", flush=True)
                 result["model_started"] = True
                 report = run_experiment(

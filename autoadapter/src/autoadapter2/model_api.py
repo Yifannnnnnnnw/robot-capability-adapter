@@ -17,6 +17,7 @@ import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from .agent_context import AgentContextManager
@@ -257,8 +258,20 @@ class ModelConfig:
 class JsonModelClient:
     """Small OpenAI-compatible client with concise, secret-free call evidence."""
 
-    def __init__(self, config: ModelConfig) -> None:
+    def __init__(
+        self,
+        config: ModelConfig,
+        *,
+        evidence_dir: str | Path | None = None,
+        timeout_retries: int = 0,
+    ) -> None:
+        if type(timeout_retries) is not int or timeout_retries not in (0, 1):
+            raise ValueError("timeout_retries must be zero or one per client")
         self.config = config
+        self._timeout_retries_remaining = timeout_retries
+        self._evidence_dir = Path(evidence_dir).resolve() if evidence_dir is not None else None
+        if self._evidence_dir is not None:
+            self._evidence_dir.mkdir(parents=True, exist_ok=True)
         self.calls: list[dict[str, Any]] = []
         self._calls_lock = threading.Lock()
         self._message_json_exchanges: list[dict[str, Any]] = []
@@ -520,6 +533,29 @@ class JsonModelClient:
     def _retry_pause() -> None:
         time.sleep(_RETRY_BACKOFF_S)
 
+    def _write_http_evidence(
+        self,
+        record: Mapping[str, Any],
+        body: Mapping[str, Any],
+        *,
+        response_text: str | None = None,
+    ) -> None:
+        """Persist the actual projected request before sending; never store auth headers."""
+        if self._evidence_dir is None:
+            return
+        value = {
+            "call": dict(record),
+            "request_body": dict(body),
+            "response_text": response_text,
+        }
+        encoded = json.dumps(value, ensure_ascii=True, indent=2) + "\n"
+        if self.config.api_key:
+            encoded = encoded.replace(self.config.api_key, "<redacted>")
+        path = self._evidence_dir / f"call-{int(record['call_index']):04d}.json"
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(encoded, encoding="utf-8")
+        temporary.replace(path)
+
     def _post_once(
         self,
         *,
@@ -545,6 +581,15 @@ class JsonModelClient:
         started_monotonic = time.monotonic()
         payload: dict[str, Any] | None = None
         response_headers: Any = None
+        response_text: str | None = None
+        record.update({
+            "transport_phase": "awaiting_response_headers",
+            "request_bytes": len(request.data or b""),
+            "time_to_response_headers_s": None,
+            "response_read_s": None,
+            "response_bytes": None,
+        })
+        self._write_http_evidence(record, body)
         try:
             with _model_call_deadline(self.config.timeout_s):
                 with urllib.request.urlopen(
@@ -554,13 +599,24 @@ class JsonModelClient:
                 ) as response:
                     record["http_status"] = self._http_status(response)
                     response_headers = getattr(response, "headers", None)
-                    decoded = json.loads(response.read().decode("utf-8"))
+                    record["time_to_response_headers_s"] = time.monotonic() - started_monotonic
+                    record["transport_phase"] = "reading_response_body"
+                    record["provider_request_id"] = self._provider_request_id(None, response_headers)
+                    self._write_http_evidence(record, body)
+                    read_started = time.monotonic()
+                    response_bytes = response.read()
+                    record["response_read_s"] = time.monotonic() - read_started
+                    record["response_bytes"] = len(response_bytes)
+                    record["transport_phase"] = "decoding_response"
+                    response_text = response_bytes.decode("utf-8")
+                    decoded = json.loads(response_text)
                     if not isinstance(decoded, dict):
                         raise ModelInvocationError(
                             "model API response must be a JSON object"
                         )
                     payload = decoded
                     record["status"] = "success"
+                    record["transport_phase"] = "complete"
         except _ModelCallDeadline as exc:
             record["status"] = "timeout"
             record["error"] = {
@@ -575,6 +631,17 @@ class JsonModelClient:
             record["status"] = "http_error"
             record["http_status"] = int(exc.code)
             response_headers = exc.headers
+            record["time_to_response_headers_s"] = time.monotonic() - started_monotonic
+            record["transport_phase"] = "http_error_response"
+            # A bounded error body can distinguish provider billing/auth errors.
+            # Keep its read inside a short deadline; never log request headers.
+            if self._evidence_dir is not None:
+                try:
+                    remaining_s = max(0.01, self.config.timeout_s - (time.monotonic() - started_monotonic))
+                    with _model_call_deadline(min(5.0, remaining_s)):
+                        response_text = exc.read(16000).decode("utf-8", errors="replace")
+                except (OSError, ValueError):
+                    pass
             record["error"] = {
                 "type": "http_error",
                 "message": f"HTTP {exc.code}",
@@ -644,6 +711,7 @@ class JsonModelClient:
                 record["raw_usage"] = raw_usage
                 record["usage"] = raw_usage or {}
                 record.update(self._normalised_usage(usage))
+            self._write_http_evidence(record, body, response_text=response_text)
         if payload is None:  # All failure paths above raise before reaching this guard.
             raise ModelInvocationError("model API response is unavailable")
         return payload
@@ -670,10 +738,14 @@ class JsonModelClient:
                     record = dict(self.calls[call_index])
                 if first_call_index is None:
                     first_call_index = call_index
-                if (
-                    retry_index + 1 >= _MAX_PHYSICAL_REQUESTS
-                    or not self._retryable_call(record)
-                ):
+                if retry_index + 1 >= _MAX_PHYSICAL_REQUESTS:
+                    raise
+                if record.get("status") == "timeout":
+                    with self._calls_lock:
+                        if self._timeout_retries_remaining <= 0:
+                            raise
+                        self._timeout_retries_remaining -= 1
+                elif not self._retryable_call(record):
                     raise
                 self._retry_pause()
         raise ModelInvocationError("model API retry budget exhausted")

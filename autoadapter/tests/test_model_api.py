@@ -8,6 +8,8 @@ import unittest
 import urllib.error
 from datetime import datetime
 from email.message import Message
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import mock
 
 from autoadapter2.agent_context import AgentContextManager
@@ -378,6 +380,82 @@ class ModelApiTests(unittest.TestCase):
         self.assertIsNone(record["raw_usage"])
         self.assertEqual(record["retry_index"], 0)
         self.assertIsNone(record["retry_of_call_index"])
+
+    def test_timeout_retry_preserves_request_and_is_shared_across_stages(self) -> None:
+        payload = {"id": "reply-2", "choices": [], "usage": {"prompt_tokens": 3}}
+        response = mock.MagicMock()
+        response.__enter__.return_value.status = 200
+        response.__enter__.return_value.headers = {"x-request-id": "header-2"}
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        body = {"model": "model", "messages": [{"role": "user", "content": "projected history"}]}
+        with TemporaryDirectory() as directory:
+            client = JsonModelClient(
+                ModelConfig(provider="company", model="model", base_url="https://model.example/v1", api_key="secret-value"),
+                evidence_dir=directory, timeout_retries=1,
+            )
+            requests = []
+
+            def send(request, **_kwargs):
+                index = len(requests)
+                requests.append(request.data)
+                saved = json.loads((Path(directory) / f"call-{index:04d}.json").read_text())
+                self.assertEqual(saved["request_body"], json.loads(request.data))
+                self.assertEqual(saved["call"]["status"], "in_progress")
+                if index != 1:
+                    raise TimeoutError()
+                return response
+
+            with mock.patch.object(client, "_retry_pause"), mock.patch("urllib.request.urlopen", side_effect=send):
+                self.assertEqual(client._post(stage="study", body=body), payload)
+                with self.assertRaises(ModelInvocationError):
+                    client._post(stage="repair", body=body)
+            self.assertEqual(len(requests), 3)
+            self.assertEqual(requests[0], requests[1])
+            self.assertEqual([r["retry_index"] for r in client.calls], [0, 1, 0])
+            first = json.loads((Path(directory) / "call-0000.json").read_text())
+            second = json.loads((Path(directory) / "call-0001.json").read_text())
+            self.assertEqual(first["call"]["transport_phase"], "awaiting_response_headers")
+            self.assertIsNone(first["call"]["time_to_response_headers_s"])
+            self.assertEqual(second["call"]["transport_phase"], "complete")
+            self.assertEqual(json.loads(second["response_text"]), payload)
+            self.assertNotIn("secret-value", "".join(p.read_text() for p in Path(directory).glob("*.json")))
+
+    def test_response_body_timeout_is_distinguished_from_waiting_for_headers(self) -> None:
+        with TemporaryDirectory() as directory:
+            client = JsonModelClient(
+                ModelConfig(provider="company", model="model", base_url="https://model.example/v1", api_key="secret-value"),
+                evidence_dir=directory,
+            )
+            response = mock.MagicMock()
+            response.__enter__.return_value.status = 200
+            response.__enter__.return_value.headers = {"x-request-id": "received-header"}
+            response.__enter__.return_value.read.side_effect = TimeoutError()
+            with mock.patch("urllib.request.urlopen", return_value=response):
+                with self.assertRaises(ModelInvocationError):
+                    client._post(stage="study", body={})
+            saved = json.loads((Path(directory) / "call-0000.json").read_text())
+            self.assertEqual(saved["call"]["transport_phase"], "reading_response_body")
+            self.assertEqual(saved["call"]["http_status"], 200)
+            self.assertEqual(saved["call"]["provider_request_id"], "received-header")
+            self.assertIsNotNone(saved["call"]["time_to_response_headers_s"])
+            self.assertIsNone(saved["response_text"])
+
+    def test_timeout_opt_in_keeps_two_send_limit_and_rejects_auth_retries(self) -> None:
+        for outcomes in ((TimeoutError(), TimeoutError()), (503, TimeoutError()), (401,), (402,)):
+            with self.subTest(outcomes=outcomes), TemporaryDirectory() as directory:
+                client = JsonModelClient(
+                    ModelConfig(provider="company", model="model", base_url="https://model.example/v1", api_key="secret-value"),
+                    evidence_dir=directory, timeout_retries=1,
+                )
+                errors = [
+                    urllib.error.HTTPError(client.config.endpoint_url, item, "error", Message(), None)
+                    if isinstance(item, int) else item for item in outcomes
+                ]
+                with mock.patch.object(client, "_retry_pause"), mock.patch("urllib.request.urlopen", side_effect=errors) as send:
+                    with self.assertRaises(ModelInvocationError):
+                        client._post(stage="study", body={})
+                self.assertEqual(send.call_count, len(outcomes))
+                self.assertEqual(len(client.calls), len(outcomes))
 
     def test_successful_call_records_timing_identity_and_normalised_usage(self) -> None:
         client = JsonModelClient(
