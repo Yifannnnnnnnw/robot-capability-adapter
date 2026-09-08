@@ -55,49 +55,62 @@ implementation work required of researchers developing high-level LLM
 controllers.
 
 \section{Background}
-\subsection{Cross-robot scaling}
 
-Robotics software has long sought portability across platforms by separating
-task logic from platform-specific execution. The Robot Operating System (ROS)
-provided modular communication and shared software packages, while ROS 2
-extended this architecture for distributed systems
-\citep{quigley2009ros,macenski2022ros2}. Capability-based frameworks expose
-robot functions as task-facing operations, and SkiROS2 organises these
-operations into executable skills
-\citep{pantano2022capabilitysurvey,mayr2023skiros2}. However, these abstractions
-do not themselves supply the platform-specific control interface required by a
-newly introduced robot. Auto-Adapter targets this integration step by
-generating a driver behind a stable capability interface. Its longer-term aim
-is to simplify future robot onboarding, whereas Experiment 3 examines this
-route within a bounded simulator cohort.
+\subsection{Reusable Robot Capabilities}
 
-\subsection{Physics-Grounded Feedback}
+Driver synthesis requires a description of the behaviour to be implemented.
+A reusable capability expresses an operation that can contribute to several
+tasks while leaving their sequencing to a higher-level controller. SkiROS2
+illustrates how conditions attached to robot skills support their composition
+\citep{mayr2023skiros2}. Code as Policies likewise composes robot programmes
+through supplied perception and control APIs \citep{liang2023codeaspolicies}.
+For driver synthesis, the further problem is to implement the operations
+exposed through such an interface.
 
-LLM coding agents use compiler and test failures as development feedback.
-\citet{tripathi2026testdriven} return structured \texttt{pytest} diagnostics
-that may include aggregate simulator measurements, while
-\citet{kim2026physicalcorrection} use physical simulation to correct
-LLM-generated tool-using primitives. The Auto-Adapter experiment asks whether
-a bounded, candidate-visible projection of MuJoCo state adds information beyond
-structured diagnostics. This public feedback remains distinct from the sealed
-validation cases and final \emph{Harness} verdict, and simulator state does not
-establish hardware behaviour.
+A capability therefore needs more than a function signature. For example, a
+Cartesian positioning operation must define how its target is interpreted and
+what reaching that target means. The same operation can support approaching
+an object or positioning a gripper without encoding either complete task.
+This motivates deriving reusable operations and their behavioural requirements
+from the tasks they must support.
 
-\subsection{Capability Design}
+\subsection{Execution-Guided Driver Synthesis}
 
-Task-conditioned robot programming commonly generates the code or operation
-needed for one instruction, potentially leaving other reusable operations
-unexplored \citep{liang2023codeaspolicies,mu2024robocodex}. Task-Grounded
-Capability Design instead supplies at least twenty source-backed tasks, without
-a capability catalogue or task-to-capability mapping, and asks the model to
-propose five to ten capabilities intended to cover the library. From the
-associated task-level standards, the model also forms capability-level pass
-criteria. An implementation-blind IVC audits whether those criteria preserve
-source obligations, binds them to private MuJoCo task instances and trusted
-measurement definitions, and compiles an executable validation suite; the
-\emph{Harness} retains final verdict authority. This design is intended to give
-the high-level controller a broader set of independently testable operations
-to select and compose.
+Implementing an operation requires connecting its intended effect to the
+selected robot's control facilities. A positioning request depends on the
+robot's joint structure, actuator mapping and coordinate conventions. Errors
+in these mappings may produce incorrect motion even when the code executes
+without an exception. Execution feedback can therefore inform revisions that
+source inspection alone may not resolve. \citet{tripathi2026testdriven}, for
+example, refine generated navigation controllers using diagnostics from
+structured tests, including evaluation in Webots.
+
+Physics simulation provides a setting in which candidate implementations can
+be executed and their effects observed. MuJoCo models articulated dynamics
+and contact, allowing control commands to be related to simulated motion
+\citep{todorov2012mujoco}. For a positioning operation, an observed trajectory
+can reveal whether the end effector approaches the requested target. Such
+observations support driver development, while acceptance still requires a
+specified behavioural criterion.
+
+\subsection{Independent Behavioural Validation}
+
+Determining whether observed execution satisfies its intended behaviour is
+the test oracle problem \citep{barr2015oracle}. For robot drivers, this requires
+connecting an operation's specification to an appropriate measurement and
+decision rule. A positioning test might measure whether the end effector
+reaches a declared tolerance within an allowed interval. A successful return
+value alone does not establish that outcome.
+
+This thesis consequently treats independent assessment as a requirement: the
+candidate implementation must not control the measurements or acceptance
+criteria used to judge it. Requirements must also be justified separately,
+since independence cannot correct an inappropriate specification. Passing
+capability tests supports behaviour under the tested conditions; completing
+a downstream task additionally depends on how operations are selected and
+composed. These distinctions motivate separating capability design, driver
+implementation and behavioural assessment in the framework that follows. The
+resulting simulation evidence does not establish hardware performance.
 
 \section{Auto-Adapter Framework}
 
