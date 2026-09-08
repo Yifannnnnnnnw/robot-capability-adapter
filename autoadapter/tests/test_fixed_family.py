@@ -84,5 +84,7 @@ def test_new_quadruped_native_position_control_and_task_boundary(robot):
     skeleton.apply_pd_posture(config["home_qpos"])
     assert list(data.qpos) == list(before)
     assert list(data.ctrl[skeleton._actuator_ids]) == pytest.approx(config["home_qpos"])
+    with pytest.raises(ValueError, match="native position actuators"):
+        skeleton.set_joint_torques([0.] * 12)
     skeleton.step(5)
     assert data.time > 0

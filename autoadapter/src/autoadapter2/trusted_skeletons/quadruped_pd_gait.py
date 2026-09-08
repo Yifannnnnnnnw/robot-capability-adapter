@@ -1,4 +1,4 @@
-"""Capability-neutral torque primitives for a four-legged robot.
+"""Capability-neutral joint-control primitives for a four-legged robot.
 
 The Framework supplies the canonical MuJoCo ``model`` and ``data`` objects.
 This module contains only reusable observations, joint-space PD, and a small
@@ -199,7 +199,7 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
     """Trusted four-legged PD and periodic-gait primitives.
 
     Construction is session-bound: ``model`` and ``data`` must be supplied by
-    the Framework.  Evaluated motion writes only torque commands to
+    the Framework. Evaluated motion writes torque or native position commands to
     ``data.ctrl`` and advances the same session with ``mj_step``.
     """
 
@@ -390,6 +390,8 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
     def set_joint_torques(self, torques: Sequence[float]) -> None:
         """Write clipped torque commands to the canonical ``data.ctrl`` only."""
 
+        if self.spec.actuation != "joint_torque":
+            raise ValueError("native position actuators require apply_pd_posture, not torque commands")
         self._resolve_indices()
         np = self._load_numpy()
         command = self._vector(torques, "torques")
@@ -402,7 +404,7 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
         q_target: Sequence[float],
         qd_target: Sequence[float] | None = None,
     ) -> None:
-        """Compute joint-space PD torque and write it to ``data.ctrl``."""
+        """Write PD torque or the native position-servo target to ``data.ctrl``."""
 
         self._resolve_indices()
         np = self._load_numpy()
@@ -414,6 +416,7 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
         )
         if self.spec.actuation == "joint_position":
             # Native position actuators already implement the joint servo.
+            target = np.clip(target, self._ctrl_lo, self._ctrl_hi)
             for index, actuator_id in enumerate(self._actuator_ids):
                 self.data.ctrl[actuator_id] = float(target[index])
             return
