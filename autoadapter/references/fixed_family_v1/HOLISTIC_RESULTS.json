@@ -1,5 +1,5 @@
 {
-  "snapshot_utc": "2026-09-08T12:29:41.353846+00:00",
+  "snapshot_utc": "2026-09-08T12:38:46.131479+00:00",
   "model": "deepseek.v3.2",
   "formal": false,
   "process_inspection_available": false,
@@ -252,14 +252,36 @@
     "universal_robots_ur5e_robotiq_2f85": {
       "robot": "universal_robots_ur5e_robotiq_2f85",
       "planned_cases": 10,
-      "state": "incomplete_process_not_confirmed",
-      "progress": "generate_attempt_0_harness_pending_or_running",
+      "state": "api_interrupted",
+      "progress": "terminal_recorded",
       "queue_runner_pids": [],
-      "terminal_evidence_exists": false,
+      "terminal_evidence_exists": true,
       "environment_passed": true,
       "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/environment/environment_check.json",
       "environment_error": null,
-      "runner_result": null,
+      "runner_result": {
+        "prepared": true,
+        "environment_passed": true,
+        "reference_executed": false,
+        "reference_passed": null,
+        "model_started": true,
+        "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/environment/environment_check.json",
+        "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/experiment_report.json",
+        "candidate_passed": false,
+        "pipeline_success": false,
+        "cells": [
+          {
+            "attempt_count": 1,
+            "case_counts": {
+              "passed": 2,
+              "total": 10
+            },
+            "capability_validation_executed": true,
+            "final_capability_validation_passed": false
+          }
+        ],
+        "model_call_count": 45
+      },
       "accepted_source_generated": true,
       "frozen_sources": [
         {
@@ -276,23 +298,201 @@
       "draft_exists": true,
       "workspace_source_kind": "non_stub_source",
       "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
-      "harness_submissions": 0,
-      "submissions": [],
+      "harness_submissions": 1,
+      "submissions": [
+        {
+          "attempt": 0,
+          "report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/attempt-0/capability_validation_report.json",
+          "passed": 2,
+          "total": 10,
+          "validation_passed": false,
+          "physical_validation_executed": true,
+          "complete_videos": 10,
+          "failed_cases": [
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a1-calibrated_boundary",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a3-nominal",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a3-calibrated_boundary",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": {
+                  "geom1": "left_pad1",
+                  "geom2": "right_pad1",
+                  "minimum_distance_m": -3.1841989097715755e-05
+                },
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": -3.1841989097715755e-05,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a5-nominal",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            },
+            {
+              "case_id": "universal_robots_ur5e_robotiq_2f85-a5-calibrated_boundary",
+              "measurement_value": 0.0,
+              "criterion_passed": false,
+              "worker_completed": true,
+              "physical_integrity_passed": true,
+              "physical_execution_passed": true,
+              "failed_guards": [],
+              "candidate_exception": null,
+              "measurement_error": null,
+              "contact_integrity": {
+                "deepest_contact_pair": null,
+                "maximum_allowed_penetration_m": 0.005,
+                "minimum_contact_distance_m": null,
+                "passed": true
+              }
+            }
+          ]
+        }
+      ],
       "candidate_passed": null,
-      "candidate_report": null,
-      "failure_class": null,
-      "pipeline_failures": [],
-      "generation_errors": [],
-      "failed_api_calls": [],
-      "api_requests_recorded": 36,
-      "successful_api_responses_recorded": 36,
-      "failed_api_requests_recorded": 0,
-      "api_calls_complete": false,
-      "model_calls_report": null,
-      "token_note": "Lower bound only: active stage calls may not yet be persisted.",
+      "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/experiment_report.json",
+      "failure_class": "api",
+      "pipeline_failures": [
+        {
+          "message": "repair model call returned HTTP 401 for deepseek.v3.2",
+          "stage": "repair",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "generation_errors": [
+        {
+          "attempt": 1,
+          "report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/attempt-1/generation_error.json",
+          "message": "repair model call returned HTTP 401 for deepseek.v3.2",
+          "stage": "repair",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "failed_api_calls": [
+        {
+          "call_index": 44,
+          "stage": "repair",
+          "status": "http_error",
+          "http_status": 401,
+          "error_type": null,
+          "error": {
+            "type": "http_error",
+            "message": "HTTP 401"
+          }
+        }
+      ],
+      "api_requests_recorded": 45,
+      "successful_api_responses_recorded": 44,
+      "failed_api_requests_recorded": 1,
+      "api_calls_complete": true,
+      "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/model_calls.json",
+      "token_note": "Complete persisted model-call record.",
       "tokens": {
-        "input_tokens": 1978715,
-        "output_tokens": 37521,
+        "input_tokens": 2541562,
+        "output_tokens": 49633,
         "cache_read_tokens": 0
       },
       "stages": {
@@ -308,6 +508,24 @@
           "tokens": {
             "input_tokens": 1323660,
             "output_tokens": 25948,
+            "cache_read_tokens": 0
+          }
+        },
+        "repair": {
+          "requests": 9,
+          "success": 8,
+          "errors": 1,
+          "error_statuses": {
+            "http_error": 1
+          },
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 8,
+            "401": 1
+          },
+          "tokens": {
+            "input_tokens": 562847,
+            "output_tokens": 12112,
             "cache_read_tokens": 0
           }
         },
@@ -327,9 +545,24 @@
           }
         }
       },
-      "continuous_repair_evidence": [],
+      "continuous_repair_evidence": [
+        {
+          "attempt": 1,
+          "evidence": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/attempt-1/generation_evidence.json",
+          "first_call_index": 36,
+          "first_call_original_history_messages": 45,
+          "first_call_projected_history_messages": 7,
+          "first_call_driver_revision": 3,
+          "prior_failed_harness_report": true,
+          "failure_feedback_supplied": false,
+          "successful_repair_responses": 8,
+          "modified_frozen_source": null,
+          "later_harness_submission_exists": false,
+          "verified_continuous_repair_and_resubmission": false
+        }
+      ],
       "verified_continuous_repair": false,
-      "video_files_found": 10,
+      "video_files_found": 11,
       "video_directories": [
         "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/attempt-0/capability-validation/videos",
         "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/environment"
@@ -339,8 +572,15 @@
           "attempt": 0,
           "evidence_exists": true,
           "frozen_source_exists": true,
-          "harness_report_exists": false,
+          "harness_report_exists": true,
           "error_exists": false
+        },
+        {
+          "attempt": 1,
+          "evidence_exists": true,
+          "frozen_source_exists": false,
+          "harness_report_exists": false,
+          "error_exists": true
         }
       ]
     },
@@ -730,16 +970,15 @@
   "totals": {
     "robots": 6,
     "states": {
-      "api_interrupted": 5,
-      "incomplete_process_not_confirmed": 1
+      "api_interrupted": 6
     },
-    "api_requests_recorded": 136,
-    "successful_api_responses_recorded": 131,
-    "failed_api_requests_recorded": 5,
-    "all_api_calls_complete": false,
+    "api_requests_recorded": 145,
+    "successful_api_responses_recorded": 139,
+    "failed_api_requests_recorded": 6,
+    "all_api_calls_complete": true,
     "tokens": {
-      "input_tokens": 5701890,
-      "output_tokens": 124179,
+      "input_tokens": 6264737,
+      "output_tokens": 136291,
       "cache_read_tokens": 0
     }
   },
@@ -2142,14 +2381,36 @@
         "unitree_a1": {
           "robot": "unitree_a1",
           "planned_cases": 10,
-          "state": "incomplete_process_not_confirmed",
-          "progress": "repair_attempt_1_in_progress_or_not_yet_persisted",
+          "state": "api_interrupted",
+          "progress": "terminal_recorded",
           "queue_runner_pids": [],
-          "terminal_evidence_exists": false,
+          "terminal_evidence_exists": true,
           "environment_passed": true,
           "environment_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/environment/environment_check.json",
           "environment_error": null,
-          "runner_result": null,
+          "runner_result": {
+            "prepared": true,
+            "environment_passed": true,
+            "reference_executed": false,
+            "reference_passed": null,
+            "model_started": true,
+            "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/environment/environment_check.json",
+            "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/experiment_report.json",
+            "candidate_passed": false,
+            "pipeline_success": false,
+            "cells": [
+              {
+                "attempt_count": 1,
+                "case_counts": {
+                  "passed": 5,
+                  "total": 10
+                },
+                "capability_validation_executed": true,
+                "final_capability_validation_passed": false
+              }
+            ],
+            "model_call_count": 43
+          },
           "accepted_source_generated": true,
           "frozen_sources": [
             {
@@ -2286,20 +2547,46 @@
             }
           ],
           "candidate_passed": null,
-          "candidate_report": null,
-          "failure_class": null,
-          "pipeline_failures": [],
-          "generation_errors": [],
-          "failed_api_calls": [],
-          "api_requests_recorded": 26,
-          "successful_api_responses_recorded": 26,
-          "failed_api_requests_recorded": 0,
-          "api_calls_complete": false,
-          "model_calls_report": null,
-          "token_note": "Lower bound only: active stage calls may not yet be persisted.",
+          "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/experiment_report.json",
+          "failure_class": "api",
+          "pipeline_failures": [
+            {
+              "message": "repair model call exceeded 120s total wall deadline for qwen.qwen3-coder-next",
+              "stage": "repair",
+              "type": "ModelInvocationError"
+            }
+          ],
+          "generation_errors": [
+            {
+              "attempt": 1,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/attempt-1/generation_error.json",
+              "message": "repair model call exceeded 120s total wall deadline for qwen.qwen3-coder-next",
+              "stage": "repair",
+              "type": "ModelInvocationError"
+            }
+          ],
+          "failed_api_calls": [
+            {
+              "call_index": 42,
+              "stage": "repair",
+              "status": "timeout",
+              "http_status": null,
+              "error_type": null,
+              "error": {
+                "type": "timeout",
+                "message": "total wall deadline exceeded"
+              }
+            }
+          ],
+          "api_requests_recorded": 43,
+          "successful_api_responses_recorded": 42,
+          "failed_api_requests_recorded": 1,
+          "api_calls_complete": true,
+          "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/model_calls.json",
+          "token_note": "Complete persisted model-call record.",
           "tokens": {
-            "input_tokens": 589798,
-            "output_tokens": 17308,
+            "input_tokens": 1085841,
+            "output_tokens": 39550,
             "cache_read_tokens": 0
           },
           "stages": {
@@ -2315,6 +2602,24 @@
               "tokens": {
                 "input_tokens": 533451,
                 "output_tokens": 16027,
+                "cache_read_tokens": 0
+              }
+            },
+            "repair": {
+              "requests": 17,
+              "success": 16,
+              "errors": 1,
+              "error_statuses": {
+                "timeout": 1
+              },
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 16,
+                "None": 1
+              },
+              "tokens": {
+                "input_tokens": 496043,
+                "output_tokens": 22242,
                 "cache_read_tokens": 0
               }
             },
@@ -2334,7 +2639,22 @@
               }
             }
           },
-          "continuous_repair_evidence": [],
+          "continuous_repair_evidence": [
+            {
+              "attempt": 1,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/attempt-1/generation_evidence.json",
+              "first_call_index": 26,
+              "first_call_original_history_messages": 48,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": 1,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": false,
+              "successful_repair_responses": 16,
+              "modified_frozen_source": null,
+              "later_harness_submission_exists": false,
+              "verified_continuous_repair_and_resubmission": false
+            }
+          ],
           "verified_continuous_repair": false,
           "video_files_found": 12,
           "video_directories": [
@@ -2351,10 +2671,10 @@
             },
             {
               "attempt": 1,
-              "evidence_exists": false,
+              "evidence_exists": true,
               "frozen_source_exists": false,
               "harness_report_exists": false,
-              "error_exists": false
+              "error_exists": true
             }
           ]
         }
@@ -2363,15 +2683,15 @@
         "robots": 2,
         "states": {
           "model_failed": 1,
-          "incomplete_process_not_confirmed": 1
+          "api_interrupted": 1
         },
-        "api_requests_recorded": 90,
-        "successful_api_responses_recorded": 90,
-        "failed_api_requests_recorded": 0,
-        "all_api_calls_complete": false,
+        "api_requests_recorded": 107,
+        "successful_api_responses_recorded": 106,
+        "failed_api_requests_recorded": 1,
+        "all_api_calls_complete": true,
         "tokens": {
-          "input_tokens": 4251093,
-          "output_tokens": 70759,
+          "input_tokens": 4747136,
+          "output_tokens": 93001,
           "cache_read_tokens": 0
         }
       },
@@ -3358,7 +3678,7 @@
     "Qwen fallback runs have separate model/history conditions and separate totals; they never overwrite V3.2 outcomes.",
     "Connectivity canaries and previous V4 Flash runs are excluded."
   ],
-  "all_observed_runs_ended": false,
+  "all_observed_runs_ended": true,
   "implementation_commits": [
     "78f8d03",
     "420848a",
@@ -3367,5 +3687,12 @@
   "complete_reference_suite_required": false,
   "reference_tests_rerun_in_this_followup": false,
   "separate_luna_conversation_used": false,
-  "usage_caveat": "Response-reported input/output tokens only; timed-out requests may be billed but return no usage. Missing cache detail is unknown, not proof of no cache. Holistic billing rate unknown."
+  "usage_caveat": "Response-reported input/output tokens only; timed-out requests may be billed but return no usage. Missing cache detail is unknown, not proof of no cache. Holistic billing rate unknown.",
+  "accepted_driver_robot_count": 6,
+  "all_capabilities_passed_robot_count": 0,
+  "verified_continuous_repair_robots": [
+    "kinova_gen3_robotiq_2f85",
+    "kuka_iiwa_14",
+    "anybotics_anymal_c"
+  ]
 }
