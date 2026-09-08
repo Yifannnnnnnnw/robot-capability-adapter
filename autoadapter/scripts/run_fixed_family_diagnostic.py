@@ -246,7 +246,7 @@ def check_environment(package, suite, output: Path, config: ExperimentConfig) ->
         write(output / 'environment_check.json', report)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None, *, client_factory=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=ROOT / "configs/diagnostics/fixed-family-v1.json")
     parser.add_argument("--holistic", action="store_true", help="Use the existing Holistic route and local company credential")
@@ -257,7 +257,7 @@ def main() -> None:
     parser.add_argument("--retry-timeout-once", action="store_true",
                         help="Allow at most one timeout retry across all model stages per robot")
     parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     config = ExperimentConfig.from_path(args.config)
     robots = args.robots or list(config.robots)
     if not set(robots) <= set(config.robots):
@@ -320,7 +320,7 @@ def main() -> None:
                 result['environment_passed'] = True
                 stage = "model"
                 result["model_request_evidence"] = str(output / robot / "model_requests")
-                client = model_client(
+                client = (client_factory or model_client)(
                     one, holistic=args.holistic,
                     evidence_dir=output / robot / "model_requests",
                     timeout_retries=int(args.retry_timeout_once),
