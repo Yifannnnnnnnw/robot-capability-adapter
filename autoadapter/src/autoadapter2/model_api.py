@@ -371,6 +371,21 @@ class JsonModelClient:
         return None
 
     @staticmethod
+    def _response_header_evidence(headers: Any) -> dict[str, str]:
+        getter = getattr(headers, "get", None)
+        if not callable(getter):
+            return {}
+        result = {}
+        for name in (
+            "x-request-id", "request-id", "x-amzn-requestid", "x-amz-request-id",
+            "x-amzn-trace-id", "content-type",
+        ):
+            value = getter(name)
+            if isinstance(value, str) and value:
+                result[name] = value
+        return result
+
+    @staticmethod
     def _token_count(value: Any) -> int | None:
         if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
             return value
@@ -588,6 +603,7 @@ class JsonModelClient:
             "time_to_response_headers_s": None,
             "response_read_s": None,
             "response_bytes": None,
+            "response_headers": {},
         })
         self._write_http_evidence(record, body)
         try:
@@ -599,6 +615,7 @@ class JsonModelClient:
                 ) as response:
                     record["http_status"] = self._http_status(response)
                     response_headers = getattr(response, "headers", None)
+                    record["response_headers"] = self._response_header_evidence(response_headers)
                     record["time_to_response_headers_s"] = time.monotonic() - started_monotonic
                     record["transport_phase"] = "reading_response_body"
                     record["provider_request_id"] = self._provider_request_id(None, response_headers)
@@ -631,6 +648,7 @@ class JsonModelClient:
             record["status"] = "http_error"
             record["http_status"] = int(exc.code)
             response_headers = exc.headers
+            record["response_headers"] = self._response_header_evidence(response_headers)
             record["time_to_response_headers_s"] = time.monotonic() - started_monotonic
             record["transport_phase"] = "http_error_response"
             # A bounded error body can distinguish provider billing/auth errors.

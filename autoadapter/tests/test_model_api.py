@@ -428,7 +428,10 @@ class ModelApiTests(unittest.TestCase):
             )
             response = mock.MagicMock()
             response.__enter__.return_value.status = 200
-            response.__enter__.return_value.headers = {"x-request-id": "received-header"}
+            response.__enter__.return_value.headers = {
+                "x-request-id": "received-header", "x-amzn-trace-id": "gateway-trace",
+                "set-cookie": "do-not-record-cookie",
+            }
             response.__enter__.return_value.read.side_effect = TimeoutError()
             with mock.patch("urllib.request.urlopen", return_value=response):
                 with self.assertRaises(ModelInvocationError):
@@ -437,6 +440,8 @@ class ModelApiTests(unittest.TestCase):
             self.assertEqual(saved["call"]["transport_phase"], "reading_response_body")
             self.assertEqual(saved["call"]["http_status"], 200)
             self.assertEqual(saved["call"]["provider_request_id"], "received-header")
+            self.assertEqual(saved["call"]["response_headers"]["x-amzn-trace-id"], "gateway-trace")
+            self.assertNotIn("do-not-record-cookie", json.dumps(saved))
             self.assertIsNotNone(saved["call"]["time_to_response_headers_s"])
             self.assertIsNone(saved["response_text"])
 
