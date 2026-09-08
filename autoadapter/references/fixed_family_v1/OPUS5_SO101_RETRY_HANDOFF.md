@@ -1,5 +1,9 @@
 # SO-101 retry with preserved interruption evidence
 
+Completed run: [retry results](OPUS5_SO101_RETRY_RESULTS.md). Study passed;
+Generate and its single timeout retry both reached 120 seconds before headers.
+The evidence fix is committed as `0bec852`.
+
 The user authorized another single SO-101 diagnostic after the original Study
 request timed out. Use a fresh run; the original missing conversation and closed
 MuJoCo worker cannot be recovered. The other ten robots remain undispatched.
