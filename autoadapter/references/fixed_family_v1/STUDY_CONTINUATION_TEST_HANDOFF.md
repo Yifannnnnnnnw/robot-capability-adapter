@@ -1,5 +1,9 @@
 # Isolated Study-result continuation test
 
+Completed: [real test result](STUDY_CONTINUATION_TEST_RESULTS.md). Preparation
+commit `9f14450`; Study reuse and Generate scene loading worked, but the next
+request and retry timed out before Driver/Harness/Repair.
+
 The user requested a separate test script to continue from an existing Study
 result through Generate, Harness and at most one Repair. The script
 `scripts/test_study_continuation.py` calls the existing fixed diagnostic runner;
