@@ -47,6 +47,11 @@ Arm movement guards retain gripper drift ≤ 5% of its joint opening range. A3
 retains TCP drift ≤ 15 mm and arm joint drift ≤ 0.03 rad. KUKA has no A3 or
 gripper-drift requirement. A6 is excluded for all arms.
 
+G5 accepts real actuator force during canonical physics steps as control evidence
+even when a native servo maintains the same target. Other capabilities retain
+the control-change rule. This does not waive any stance, support or contact
+criterion; it does not claim to detect re-writing an identical command.
+
 The gripper measurement is the existing normalized physical joint-opening proxy:
 `(measured_joint - closed_position) / (open_position - closed_position)`.
 Franka/Piper use a prismatic-joint range in metres; Robotiq/xArm use the linked
@@ -79,6 +84,16 @@ geometry remain robot-specific.
   tilted stance resets lift the base only enough to remove initial floor
   interpenetration while retaining the prescribed roll. Subsequent dynamic
   penetration remains subject to the unchanged 5 mm limit.
+- The approved follow-up adds KUKA gravity-bias compensation through native
+  position commands in its reference controller; actuator gains and limits remain
+  unchanged. Public control notes describe the compensation for model development.
+- A1, Barkour and ANYmal-C now use diagnostic model copies with foot `solimp`
+  `[0.9, 0.95, 0.001, 0.5, 2]`. Original assets, home targets and policy weights
+  remain intact. Public development and private validation use the same adapted
+  scene. A separate `fixed_settled` reset records three seconds of physical
+  settling from 0.5 mm foot-floor clearance. G4 heights use the measured settled
+  baseline; G5 retains the prescribed tilt. Normal standing is physically usable,
+  but existing locomotion policies may still fail under these contact conditions.
 
 ## Running and evidence
 

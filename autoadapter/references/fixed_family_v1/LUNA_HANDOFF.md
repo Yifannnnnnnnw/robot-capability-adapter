@@ -1,56 +1,35 @@
-# Separate Luna Max implementation handoff: Franka reference calibration
+# Bounded separate-conversation handoffs
 
-This is a prompt for a separate user-started Luna Max conversation. Luna Max did
-not implement or review the current batch.
+The approved follow-up has been implemented by the current session and its
+sub-agents, not by a separate Luna Max conversation. The earlier request to make
+Franka's reference reach 10/10 is superseded: complete reference success is no
+longer a synthesis prerequisite.
 
-## Outcome
+For a separate Luna Max conversation, select one batch below, read its handoff,
+inspect its diff and evidence, and limit any corrective edit to that batch's
+listed ownership. Do not redo already completed API samples. Root `AGENTS.md`,
+the approved diagnostic amendment in this README, and the canonical-session /
+trusted-Harness boundary in `thesis/C_03_framework.tex` apply. This is not a thesis
+experiment or a change to formal evidence claims.
 
-Resolve the observed Franka fixed-reference A4 boundary and A5 boundary failures
-without changing the approved pass criteria. The latest baseline is 8/10 reference
-trials in `runs/diagnostic/fixed-family-v1-arm-controls-20260908/franka_panda/reference/`.
-Read the actual per-trial report and physical evidence first; do not infer the
-cause from the capability name. This task does not include a new model synthesis.
+| Batch | Concrete behavior and owned implementation | Minimum evidence |
+| --- | --- | --- |
+| [A5](A5_TIMING_HANDOFF.md), `0bcf783` | `src/autoadapter2/harness/b1_contracts.py`, `tests/test_b1_harness.py`: return deadline starts at completed outbound hold | Timing regression and replay of xArm/UR5e ordinary versus insufficient-excursion boundary trajectories |
+| [G5](G5_CONTROL_HANDOFF.md), `589fc6b` | `src/autoadapter2/harness/{session,measurements,runner}.py`, `tests/test_g5_held_control.py`: held native-servo evidence limited to G5 | Real servo/passive/no-step checks; other-capability rule and complete G5 verdict retained |
+| [KUKA](KUKA_CONTROL_HANDOFF.md), `0a3a768` | KUKA package `reference/fixed_family_driver.py`, `assets/README.md`, `tests/test_kuka_fixed_control.py`: native position bias compensation | Two actual A1 Harness cases with guards and video; no requirement for 8/8 reference success |
+| [Entry](ENVIRONMENT_ENTRY_HANDOFF.md), `0a3a768` | `scripts/run_fixed_family_diagnostic.py`, `tests/test_fixed_diagnostic_entry.py`, one summary field in `src/autoadapter2/driver_synthesis/repair.py` | Basic environment success starts synthesis without full reference; physical failure blocks calls; real worker smoke |
+| [Quadrupeds](QUADRUPED_ENVIRONMENT_HANDOFF.md), `66a446f` | A1/Barkour/ANYmal-C package and matching fixed-input directories, `tests/test_fixed_quadruped_environment.py`: consistent contact and settled-reset adaptation | Three ordinary standing workers and six perturbed G5 workers with complete videos; retain failed capability verdicts |
 
-## Owned files
+The KUKA and entry changes share a commit because their reviewed files were
+staged concurrently. The commit is preserved; do not rewrite it. For any new
+batch, commit with explicit owned pathspecs and inspect the staged contents.
 
-- `autoadapter/libraries/robots/franka_panda/1.0.0/reference/fixed_family_driver.py`
-- `autoadapter/references/fixed_family_v1/FRANKA_CALIBRATION_HANDOFF.md` (new concise evidence note)
+Forbidden changes: candidate source, already-run private instances or thresholds,
+historical reports, policy weights/training, model budgets, thesis or archived
+experiment files. No new governance, approval-state or experiment runner layer.
+References must remain actuator-only through canonical MuJoCo objects.
 
-Use a fresh directory under `autoadapter/runs/diagnostic/` for run artifacts. Do
-not edit assets, fixtures, criteria, other robots, generated candidate drivers,
-the Harness, pipeline, thesis, experiment archive, model configuration or budgets.
-If fixing the reference requires another owned file, report the specific reason
-to the reviewer rather than silently expanding scope.
-
-## Interfaces and boundaries
-
-Follow root `AGENTS.md` and the user-approved fixed-family diagnostic in this
-directory's README. The relevant framework description is the Framework-owned
-canonical session and trusted evaluation/feedback boundary in
-`thesis/C_03_framework.tex`. This work supplies diagnostic calibration only; it
-does not change thesis Experiment 2a or Experiment 3 claims.
-
-The reference must expose `build(model, data)` and the exact five `(self, request)`
-capability methods. Keep motion actuator-only through the supplied canonical
-MuJoCo objects and `mj_step`. No direct qpos/qvel edits, reset, private criterion
-inspection, replay of a passed trajectory or weakening of side-effect/contact
-checks. Preserve A1/A2/A3 nominal and boundary behavior.
-
-## Minimum check and handoff
-
-Run one full real reference suite with videos:
-
-```sh
-cd autoadapter
-PYTHONPATH=src python scripts/run_fixed_family_diagnostic.py --robots franka_panda --reference-only
-```
-
-Inspect all ten trusted trial verdicts, contact integrity, guards and videos. A
-completed process or criterion-only success is insufficient. Stop after the
-reference reaches 10/10, or return the concrete remaining physical limitation;
-do not start policy training, broad tests or other robot work.
-
-Return changed files, the before/after failed-trial measurements, run path,
-limitations, and commit ID. Stage only owned files, inspect the staged diff, and
-make a new commit after the focused check. Final acceptance belongs to the
-architect/reviewer.
+Return changed files (or state no edits), focused check and real-run paths,
+remaining limitations and a new commit ID if edits were made. Preserve complete
+source revisions, worker feedback, videos and model usage. Acceptance distinguishes
+environment usability, optional reference scores and actual candidate success.
