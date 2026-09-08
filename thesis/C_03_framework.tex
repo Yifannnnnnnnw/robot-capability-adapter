@@ -25,25 +25,34 @@ tests be generated from task requirements? The resulting driver must then be
 evaluated in simulation using observations and verdicts that remain outside its
 control.
 
-This chapter presents Auto-Adapter, an LLM-agent framework that generates
-robot-specific Python drivers exposing reusable motion and observation
-operations. It uses public robot documentation, a simulation model and a task
-library to derive the required capabilities and measurable criteria for their
-behaviour. The corresponding tests are generated and fixed before driver
+This chapter presents Auto-Adapter, an LLM-agent framework for generating
+robot-specific drivers. It uses public robot documentation, a simulation model
+and a task library to define reusable robot operations and their behavioural
+requirements. The corresponding tests are generated and fixed before driver
 synthesis, without access to the eventual implementation. A coding agent
 develops the driver using simulation feedback, while a separate test harness
 assesses its behaviour from independently recorded simulator state. We use
 ReCAP \citep{zhang2025recap} as the high-level controller to select and compose
-these capabilities for robot task execution.
+these operations for robot task execution.
 
-The chapter's central empirical objective is to establish whether Auto-Adapter
-produces effective robot-specific drivers whose quality, operationalised as
-matched-task success under the same fixed high-level controller, exceeds that
-of the selected embodied-AI baselines. This comparison does not extend to
-expert-written or manually tuned drivers. Its practical motivation is to reduce
-integration effort and dependence on low-level robotics expertise, thereby
-lowering the entry barrier for researchers specialising in high-level
-language-model policies.
+Here, a capability specifies a reusable robot operation and its expected
+behaviour, while a driver provides its robot-specific Python implementation.
+For example, \texttt{p \ensuremath{\leftarrow} driver.get\_ee\_position()}
+invokes an observation capability, followed by
+\texttt{driver.move\_cartesian(p + [0.05, 0, 0])} to invoke a motion capability,
+with positions expressed in metres. The driver implements the first call by
+reading the robot state and the second by computing and applying actuator
+commands.
+
+The empirical objective is to assess whether Auto-Adapter can generate
+robot-specific drivers that satisfy defined behavioural requirements and
+support downstream robot tasks. Behavioural tests examine whether invoking
+each capability through the generated driver produces its specified outcome
+in simulation. Task success under ReCAP is assessed separately, preserving
+the distinction between implementing robot operations and using them to
+complete a task. The practical motivation is to reduce the robot-specific
+implementation work required of researchers developing high-level LLM
+controllers.
 
 \section{Background}
 \subsection{Cross-robot scaling}
