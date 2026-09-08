@@ -39,6 +39,13 @@ of USD 0.62 input / 1.85 output per million tokens as a reference estimate only.
 Holistic's actual billing rate is not known; report observed tokens separately
 and do not present that estimate as an account charge.
 
+The AWS V3.2 model card advertises an 8K output limit, below the diagnostic's
+16,384 requested ceiling. The gateway accepts the larger request field; its
+effective enforcement is not established. No run is credited with output budget
+that was not actually available. Repeated 120-second request timeouts are recorded
+as transport interruptions. A [separate Qwen fallback](QWEN_RUN_HANDOFF.md) starts
+with one robot to test a non-thinking coding model under the same run budgets.
+
 ## Check and run
 
 From the repository root, using the installed Python 3.11:
