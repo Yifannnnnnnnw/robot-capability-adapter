@@ -47,3 +47,9 @@ def test_basic_environment_controls_model_start_without_full_reference(monkeypat
     assert calls == (['client', 'model'] if environment_ok else [])
     if not environment_ok:
         assert result['failure_stage'] == 'environment'
+
+
+def test_holistic_config_requires_explicit_route_before_loading_credentials():
+    config = runner.ExperimentConfig.from_path(ROOT / 'configs/diagnostics/fixed-family-v1-holistic-v32.json')
+    with pytest.raises(ValueError, match='requires --holistic'):
+        runner.model_client(config)

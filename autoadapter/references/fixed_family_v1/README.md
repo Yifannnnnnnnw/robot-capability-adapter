@@ -11,7 +11,10 @@ as historical diagnostic evidence, not rescored under the corrected evaluators.
 
 After the user replaced the company API credential, [Holistic connectivity was
 verified](HOLISTIC_CONNECTIVITY.md) with DeepSeek V3.2. The gateway does not list
-V4 Flash. This separate connectivity test has not changed the experiment model.
+V4 Flash. The user then authorized a cheap model for the remaining six robots;
+their separate [V3.2 run configuration](HOLISTIC_RUN_HANDOFF.md) uses the existing
+text tool-observation compatibility mode after native tool-history requests
+failed at the gateway.
 
 ## Scope and executable inputs
 

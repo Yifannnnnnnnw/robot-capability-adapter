@@ -18,6 +18,10 @@ from pathlib import Path
 
 from autoadapter2.libraries import load_indexed_robot_package
 from autoadapter2.model_api import JsonModelClient, ModelConfig
+from autoadapter2.provider_config import (
+    HOLISTICAI_ROUTE_PROFILE_ID, HOLISTICAI_ROUTE_PROFILE_PATH,
+    resolve_holisticai_route_profile,
+)
 from autoadapter2.harness.runner import _merged_private_index, _run_worker
 from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.pipeline import (
@@ -33,9 +37,13 @@ def write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, default=str) + "\n")
 
 
-def model_client(config: ExperimentConfig) -> JsonModelClient:
+def model_client(config: ExperimentConfig, *, holistic: bool = False) -> JsonModelClient:
+    manifest = config.model_manifest
+    assert manifest is not None
+    if not holistic and manifest["base_url"].rstrip("/") != "https://api.deepseek.com":
+        raise ValueError("non-official diagnostic route requires --holistic")
     # Read simple dotenv assignments without executing shell code or logging secrets.
-    env_file = ROOT.parent / ".env"
+    env_file = ROOT.parent / (".env.company-api" if holistic else ".env")
     if env_file.exists():
         for line in env_file.read_text().splitlines():
             line = line.strip()
@@ -46,8 +54,24 @@ def model_client(config: ExperimentConfig) -> JsonModelClient:
                 values = shlex.split(raw, comments=True)
                 if len(values) == 1:
                     os.environ.setdefault(key.strip(), values[0])
-    manifest = config.model_manifest
-    assert manifest is not None
+    if holistic:
+        route = resolve_holisticai_route_profile(
+            {"path": HOLISTICAI_ROUTE_PROFILE_PATH, "profile_id": HOLISTICAI_ROUTE_PROFILE_ID},
+            ROOT.parent,
+        )
+        if manifest["base_url"].rstrip("/") != route.base_url.rstrip("/"):
+            raise ValueError("Holistic route does not match diagnostic model base_url")
+        key = os.environ.get(route.credential_env) or os.environ.get("AUTOADAPTER_COMPANY_API_KEY")
+        if not key:
+            raise ValueError("missing Holistic API credential")
+        return JsonModelClient(ModelConfig(
+            provider=manifest["vendor"], api_protocol=route.api_protocol,
+            model=manifest["model_id"], base_url=route.base_url, api_key=key,
+            auth_header=route.auth_header, auth_prefix=route.auth_prefix,
+            endpoint_path=route.endpoint_path, timeout_s=route.maximum_request_timeout_s,
+            thinking=manifest["thinking"], max_tokens=manifest["max_output_tokens"],
+            tool_history_mode=manifest["tool_history_mode"],
+        ))
     runtime = replace(
         ModelConfig.from_env(), provider="deepseek", api_protocol="openai-compatible",
         model=manifest["model_id"], base_url=manifest["base_url"],
@@ -190,11 +214,13 @@ def check_environment(package, suite, output: Path, config: ExperimentConfig) ->
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, default=ROOT / "configs/diagnostics/fixed-family-v1.json")
+    parser.add_argument("--holistic", action="store_true", help="Use the existing Holistic route and local company credential")
     parser.add_argument("--robots", nargs="+")
     parser.add_argument("--reference-only", action="store_true")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    config = ExperimentConfig.from_path(ROOT / "configs/diagnostics/fixed-family-v1.json")
+    config = ExperimentConfig.from_path(args.config)
     robots = args.robots or list(config.robots)
     if not set(robots) <= set(config.robots):
         parser.error("robot is outside the approved diagnostic cohort")
@@ -244,7 +270,7 @@ def main() -> None:
                 check_environment(package, fixed[robot]['suite'], environment_dir, one)
                 result['environment_passed'] = True
                 stage = "model"
-                client = model_client(one)
+                client = model_client(one, holistic=args.holistic)
                 print(f"{robot}: real model synthesis", flush=True)
                 result["model_started"] = True
                 report = run_experiment(
