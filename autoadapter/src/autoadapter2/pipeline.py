@@ -1007,6 +1007,15 @@ def _stage_evidence(
             result["react_trace"] = [
                 _copy(dict(item)) for item in react_trace if isinstance(item, Mapping)
             ]
+        react_messages = getattr(error, "react_messages", ())
+        if isinstance(react_messages, Sequence) and not isinstance(
+            react_messages, (str, bytes)
+        ):
+            result["react_messages"] = [
+                _copy(dict(item))
+                for item in react_messages
+                if isinstance(item, Mapping)
+            ]
         probe_results = getattr(error, "probe_results", ())
         if isinstance(probe_results, Sequence) and not isinstance(
             probe_results, (str, bytes)
@@ -2940,6 +2949,23 @@ def _pre_driver_failure_cell(
         for item in completed_probe_results
         if isinstance(item, Mapping)
     ]
+    study_stage = stage_outcomes["study"]
+    if not probe_results and isinstance(study_stage, Mapping):
+        probe_results = [
+            _copy(dict(item))
+            for item in study_stage.get("probe_results", [])
+            if isinstance(item, Mapping)
+        ]
+    study_trace = (
+        study_stage.get("react_trace", [])
+        if isinstance(study_stage, Mapping)
+        else []
+    )
+    study_attempted = bool(probe_results) or any(
+        isinstance(item, Mapping)
+        and item.get("tool") == "execute_python"
+        for item in study_trace
+    ) or bool(completed_study and completed_study.probe_results)
     experience_ids = _experience_ids(experience)
     raw_report: dict[str, Any] = {
         "cell_id": f"{robot}::{condition}",
@@ -2981,7 +3007,7 @@ def _pre_driver_failure_cell(
         "passed_capability_whitelist": [],
         "development_rejections": [],
         "development_probe": {
-            "attempted": bool(completed_study and completed_study.probe_requests),
+            "attempted": study_attempted,
             "successful_physics_probe": _has_successful_physics_probe(probe_results),
             "results": probe_results,
         },
@@ -3190,6 +3216,28 @@ def _run_study_phase(
                 error=exc,
             ),
             experience,
+        )
+        failed_probe_results = evidence.get("probe_results", [])
+        if not isinstance(failed_probe_results, list):
+            failed_probe_results = []
+        failed_react_trace = evidence.get("react_trace", [])
+        if not isinstance(failed_react_trace, list):
+            failed_react_trace = []
+        failed_react_messages = evidence.get("react_messages", [])
+        if not isinstance(failed_react_messages, list):
+            failed_react_messages = []
+        _write(
+            workspace / "study_evidence.json",
+            {
+                "artifact": str(workspace / "files" / "study.json"),
+                "completed": False,
+                "error_type": type(exc).__name__,
+                "error": _copy(evidence.get("error", {})),
+                "evidence": evidence,
+                "react_trace": _copy(failed_react_trace),
+                "react_messages": _copy(failed_react_messages),
+                "probe_results": _copy(failed_probe_results),
+            },
         )
         stage_log.append({"robot": robot, "condition": condition, **evidence})
         raise

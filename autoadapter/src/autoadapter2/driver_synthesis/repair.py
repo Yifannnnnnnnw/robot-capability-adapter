@@ -13,6 +13,7 @@ from autoadapter2.react import ReactLoopError, run_artifact_react
 
 from .generation import (
     _artifact_turn_budget,
+    _attach_interactive_failure,
     REPAIR_SCRATCH_MAX_TURNS,
     REPAIR_SKELETON_MAX_TURNS,
     IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT,
@@ -44,6 +45,7 @@ class RepairError(RuntimeError):
         self,
         message: str,
         *,
+        react_messages: Sequence[Mapping[str, Any]] = (),
         react_trace: Sequence[Mapping[str, Any]] = (),
         probe_results: Sequence[Mapping[str, Any]] = (),
         candidate_path: str | Path | None = None,
@@ -51,6 +53,7 @@ class RepairError(RuntimeError):
         tool_calls: int = 0,
     ) -> None:
         super().__init__(message)
+        self.react_messages = tuple(copy.deepcopy(dict(item)) for item in react_messages)
         self.react_trace = tuple(copy.deepcopy(dict(item)) for item in react_trace)
         self.probe_results = tuple(copy.deepcopy(dict(item)) for item in probe_results)
         self.candidate_path = (
@@ -905,12 +908,20 @@ def _interactive_repair(
     except ReactLoopError as exc:
         raise RepairError(
             f"interactive Repair did not produce a valid driver.py: {exc}",
+            react_messages=getattr(exc, "react_messages", ()),
             react_trace=exc.trace,
             probe_results=session.probe_results[probe_start:],
             candidate_path=session.candidate_path,
             model_turns=exc.model_turns,
             tool_calls=exc.tool_calls,
         ) from exc
+    except Exception as exc:
+        _attach_interactive_failure(
+            exc,
+            session,
+            include_candidate_path=True,
+        )
+        raise
     finally:
         interactive_probe_results = tuple(
             copy.deepcopy(dict(item)) for item in session.probe_results[probe_start:]

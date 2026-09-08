@@ -71,6 +71,7 @@ class GenerationError(RuntimeError):
         self,
         message: str,
         *,
+        react_messages: Sequence[Mapping[str, Any]] = (),
         react_trace: Sequence[Mapping[str, Any]] = (),
         probe_results: Sequence[Mapping[str, Any]] = (),
         candidate_path: str | Path | None = None,
@@ -78,6 +79,7 @@ class GenerationError(RuntimeError):
         tool_calls: int = 0,
     ) -> None:
         super().__init__(message)
+        self.react_messages = tuple(_copy(dict(item)) for item in react_messages)
         self.react_trace = tuple(_copy(dict(item)) for item in react_trace)
         self.probe_results = tuple(_copy(dict(item)) for item in probe_results)
         self.candidate_path = (
@@ -747,6 +749,29 @@ def _validate_study(
     return requests
 
 
+def _attach_interactive_failure(
+    error: Exception,
+    session: PublicDevelopmentSession,
+    *,
+    include_candidate_path: bool,
+) -> None:
+    """Retain the live public session before its cleanup runs."""
+
+    setattr(
+        error,
+        "probe_results",
+        tuple(
+            _copy(dict(item))
+            for item in session.probe_results
+            if isinstance(item, Mapping)
+        ),
+    )
+    if include_candidate_path:
+        candidate_path = getattr(session, "candidate_path", None)
+        if candidate_path is not None:
+            setattr(error, "candidate_path", Path(candidate_path))
+
+
 def study(
     client: JsonGenerator,
     package: RobotPackage,
@@ -834,11 +859,19 @@ def study(
         except ReactLoopError as exc:
             raise GenerationError(
                 f"interactive STUDY did not produce a valid study.json: {exc}",
+                react_messages=getattr(exc, "react_messages", ()),
                 react_trace=exc.trace,
                 probe_results=session.probe_results,
                 model_turns=exc.model_turns,
                 tool_calls=exc.tool_calls,
             ) from exc
+        except Exception as exc:
+            _attach_interactive_failure(
+                exc,
+                session,
+                include_candidate_path=False,
+            )
+            raise
         finally:
             interactive_probe_results = tuple(
                 _copy(dict(item)) for item in session.probe_results
@@ -1000,12 +1033,20 @@ def generate(
         except ReactLoopError as exc:
             raise GenerationError(
                 f"interactive GENERATE did not produce a valid driver.py: {exc}",
+                react_messages=getattr(exc, "react_messages", ()),
                 react_trace=exc.trace,
                 probe_results=session.probe_results,
                 candidate_path=session.candidate_path,
                 model_turns=exc.model_turns,
                 tool_calls=exc.tool_calls,
             ) from exc
+        except Exception as exc:
+            _attach_interactive_failure(
+                exc,
+                session,
+                include_candidate_path=True,
+            )
+            raise
         finally:
             interactive_probe_results = tuple(
                 _copy(dict(item)) for item in session.probe_results

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -619,12 +620,34 @@ def run_artifact_react(
         if delivery_turn:
             available_tools = [tool for tool in available_tools if tool.name == "write_file"]
         available_tool_names = {tool.name for tool in available_tools}
-        turn = client.generate_tool_turn(
-            stage=stage,
-            system_prompt=system_prompt,
-            messages=messages,
-            tools=[tool.model_definition() for tool in available_tools],
-        )
+        try:
+            turn = client.generate_tool_turn(
+                stage=stage,
+                system_prompt=system_prompt,
+                messages=messages,
+                tools=[tool.model_definition() for tool in available_tools],
+            )
+        except Exception as exc:
+            # Preserve the provider exception itself. The caller needs its
+            # concrete type and cause, while the bounded conversation leading
+            # to the failed request is the useful diagnostic context.
+            model_elapsed_s = max(0.0, time.monotonic() - model_started)
+            trace.append(
+                {
+                    "turn": turn_number,
+                    "event": "model_call_failed",
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:_ARTIFACT_VALIDATION_ERROR_CHARS],
+                    "model_turns": turn_number,
+                    "tool_calls": call_count,
+                    "elapsed_s": model_elapsed_s,
+                }
+            )
+            setattr(exc, "react_messages", copy.deepcopy(messages))
+            setattr(exc, "react_trace", copy.deepcopy(trace))
+            setattr(exc, "model_turns", turn_number)
+            setattr(exc, "tool_calls", call_count)
+            raise
         model_elapsed_s = max(0.0, time.monotonic() - model_started)
         messages.append(_assistant_message(turn))
 
