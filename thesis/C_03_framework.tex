@@ -71,26 +71,6 @@ generating a driver behind a stable capability interface. Its longer-term aim
 is to simplify future robot onboarding, whereas Experiment 3 examines this
 route within a bounded simulator cohort.
 
-Figure~\ref{fig:robot-platform-taxonomy} illustrates the morphological diversity
-of robot platforms. Differences in their physical structure motivate
-robot-specific implementations behind a common capability interface.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\linewidth]{assets/robot_platform_taxonomy_15_print.pdf}
-  \caption[Fifteen robot platforms grouped into seven embodiment types]
-  {Fifteen robot platforms grouped into seven embodiment types.
-  \textbf{Fixed arms:} SO-101, AgileX PiPER, UR5e, Franka Panda, KUKA LBR iiwa 14,
-  Kinova Gen3 and UFACTORY xArm7.
-  \textbf{Quadrupeds:} Unitree Go2, Unitree A1 and ANYmal-C.
-  \textbf{Aerial quadrotor:} Skydio X2.
-  \textbf{Humanoid biped:} Unitree H1.
-  \textbf{Dexterous hand:} LEAP Hand.
-  \textbf{Mobile manipulator:} Hello Robot Stretch 2.
-  \textbf{Bimanual manipulator:} ALOHA 2.}
-  \label{fig:robot-platform-taxonomy}
-\end{figure}
-
 \subsection{Physics-Grounded Feedback}
 
 LLM coding agents use compiler and test failures as development feedback.
@@ -309,12 +289,32 @@ and measurement criteria. It does not establish hardware performance,
 deployment safety, or sim-to-real transfer.
 
 
-\section{Experimental Configuration}
+\section{Experiments and Results}
+
+\subsection{Experimental Configuration}
 
 Experiment 1 covers eleven robot configurations. These are SO-101, Unitree
 Go2, Franka Panda, Kinova Gen3, xArm7, UR5e, Piper, KUKA iiwa 14, LEAP Hand,
 Stretch 2 and ALOHA 2. Each configuration is evaluated in three fresh runs,
 giving 33 experimental units.
+
+Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms grouped by embodiment type. Experiment 1 uses the eleven configurations listed above.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{assets/robot_platform_taxonomy_15_print.pdf}
+  \caption[Fifteen robot platforms grouped into seven embodiment types]
+  {Fifteen robot platforms grouped into seven embodiment types.
+  \textbf{Fixed arms:} SO-101, AgileX PiPER, UR5e, Franka Panda, KUKA LBR iiwa 14,
+  Kinova Gen3 and UFACTORY xArm7.
+  \textbf{Quadrupeds:} Unitree Go2, Unitree A1 and ANYmal-C.
+  \textbf{Aerial quadrotor:} Skydio X2.
+  \textbf{Humanoid biped:} Unitree H1.
+  \textbf{Dexterous hand:} LEAP Hand.
+  \textbf{Mobile manipulator:} Hello Robot Stretch 2.
+  \textbf{Bimanual manipulator:} ALOHA 2.}
+  \label{fig:robot-platform-taxonomy}
+\end{figure}
 
 \begin{table}[htbp]
   \centering
@@ -360,6 +360,8 @@ stage and reason. Results are summarised for each robot and for the experiment
 as a whole. The analysis is descriptive because the tasks and simulation
 environments differ between robots.
 
+
+\subsection{Results}
 
 \section{Interpretation and Limitations}
 
