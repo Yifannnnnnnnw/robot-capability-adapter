@@ -1,5 +1,50 @@
 # Opus failed-request replay with a 300-second client deadline
 
+**Actual result (2026-09-09): the unchanged Opus request returned HTTP 200 in
+72.834 seconds.** It proposed one `execute_python` call containing a 1,711-character
+public control probe. The code passes a static Python syntax check but was not
+executed. No Driver was written and no Harness or Repair phase was run.
+Preparation commit: `22b8125`.
+
+| Measurement | Actual result |
+| --- | --- |
+| Physical requests / retries | 1 / 0 |
+| Original versus replay request body | Identical serialized bytes: 91,079 |
+| Connection ready | 0.082522 s |
+| First response byte | 72.833992 s |
+| Wait after connection ready | 72.751470 s |
+| Total duration | 72.834434 s |
+| HTTP / curl exit | 200 / 0 |
+| Returned model / stop reason | `eu.anthropic.claude-opus-5` / `tool_calls` |
+| Returned input / output tokens | 35,364 / 5,402 |
+| Configured reference estimate | USD 0.343057; actual Holistic bill unknown |
+
+Because this success arrived before 120 seconds, it does not establish that the
+longer deadline caused recovery, or that this Opus backend supports waits beyond
+120 seconds. It establishes that the same request body that timed out twice can
+also return successfully. Upstream load, response-generation variability,
+caching and transport differences have not been isolated. A 300-second server
+ceiling is neither proved nor disproved by this replay. The earlier cheap-model
+test independently returned after a 143.5-second wait.
+
+The successful response contains no visible prose, but reports 5,402 output
+tokens and one tool request. No reasoning-token breakdown is supplied; total
+latency cannot be attributed entirely to thinking. Returned content remains
+an unexecuted proposal, not a robot synthesis success.
+
+Evidence: [result](../../runs/diagnostic/holistic-opus5-300s-replay-20260909/result.json),
+[request](../../runs/diagnostic/holistic-opus5-300s-replay-20260909/request.json),
+[response](../../runs/diagnostic/holistic-opus5-300s-replay-20260909/response.json),
+[connection timings](../../runs/diagnostic/holistic-opus5-300s-replay-20260909/curl_timing.json),
+[settings and source request](../../runs/diagnostic/holistic-opus5-300s-replay-20260909/test_settings.json).
+
+Two focused offline checks passed; actual wire bytes, timings, usage and returned
+tool type were checked after the request. An initial automatic approval rejection
+prevented process launch. Read-only checks confirmed this was the same previously
+authorized public-input payload and destination; re-review allowed the unchanged
+command. Only the subsequently launched request incurred model usage. The result
+batch updates this document only; mainline defaults remain unchanged.
+
 The user requested changing the wait to 300 seconds and testing. Replay exactly
 the saved `request_body` of Franka continuation test `call-0007`, which previously
 timed out at 120 seconds and again on its retry. This sends one Opus request;
