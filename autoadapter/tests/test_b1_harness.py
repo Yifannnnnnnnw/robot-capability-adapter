@@ -325,10 +325,44 @@ def test_b1_rejects_late_target_entry_and_over_budget_offset_legs() -> None:
     assert evaluate_b1_contract(
         parameters, evidence={"samples": offset_samples}, request=request
     ) == 1.0
-    request["max_duration_per_leg_s"] = 0.7
+    request["max_duration_per_leg_s"] = 0.4
     assert evaluate_b1_contract(
         parameters, evidence={"samples": offset_samples}, request=request
     ) == 0.0
+
+
+@pytest.mark.parametrize(
+    ("return_entry_s", "outbound_position_m", "expected"),
+    [
+        pytest.param(1.1, 0.02, 1.0, id="return-budget-starts-after-outbound-hold"),
+        pytest.param(1.4, 0.02, 0.0, id="return-entry-exceeds-its-budget"),
+        pytest.param(1.1, 0.015, 0.0, id="overlapping-tolerances-need-displacement"),
+    ],
+)
+def test_offset_return_budget_preserves_hold_and_displacement_checks(
+    return_entry_s: float, outbound_position_m: float, expected: float
+) -> None:
+    samples = [
+        {"time": time, "site_positions": {"gripperframe": [position, 0.0, 0.0]}}
+        for time, position in (
+            (0.0, 0.0),
+            (0.3, 0.01),
+            (0.6, outbound_position_m),
+            (0.85, outbound_position_m),
+            (return_entry_s, 0.01),
+            (return_entry_s + 0.5, 0.0),
+        )
+    ]
+    # The first outbound hold completes at 0.6 s. Its 0.3 s duration
+    # must not consume the separate 0.7 s return-entry budget.
+    assert evaluate_b1_contract(
+        {"contract_id": "A5", "site_name": "gripperframe"},
+        evidence={"samples": samples},
+        request={
+            "offset_robot_base_m": [0.02, 0.0, 0.0],
+            "max_duration_per_leg_s": 0.7,
+        },
+    ) == expected
 
 
 def test_so101_wrist_roll_requires_a_timed_target_hold_without_other_motion() -> None:

@@ -712,7 +712,9 @@ def _offset_return(
         ctx,
         returned[0],
         "max_duration_per_leg_s",
-        after_index=outbound[0],
+        # The return phase starts only after the required outbound hold.
+        # Charging that hold to the return budget shortens its public limit.
+        after_index=outbound[1],
     ):
         return False
     requested = _norm(world_offset)
