@@ -1,5 +1,9 @@
 # Fixed-family diagnostic results — 2026-09-08
 
+This is the initial run record. See [the follow-up](FOLLOWUP_RESULTS.md) for the
+corrected environments, removal of the full-reference gate, and eight subsequent
+API-blocked attempts. The initial outcomes below are preserved, not rescored.
+
 All 11 packages and 108 fixed cases passed loading/contract audit. Reference feasibility and model success are reported separately. These are diagnostic results only.
 
 | Robot | Reference trials | Candidate submissions | Model calls | Result |

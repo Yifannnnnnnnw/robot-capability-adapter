@@ -4,6 +4,11 @@ This is the user-approved 11-robot diagnostic of fixed capabilities and continuo
 Driver development. It is not a thesis experiment cohort or a formal denominator.
 No TGCD/IVC authoring, TaskDemo, Evolution, or policy training is performed.
 
+Latest execution: [follow-up results](FOLLOWUP_RESULTS.md). The eight new robots
+passed basic environment checks, but API HTTP 402 interrupted synthesis. This
+does not establish eight completed model outcomes. Initial results remain below
+as historical diagnostic evidence, not rescored under the corrected evaluators.
+
 ## Scope and executable inputs
 
 | Family | Robots | Capabilities | Cases |
