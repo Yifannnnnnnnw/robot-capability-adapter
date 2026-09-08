@@ -36,7 +36,7 @@ rules are:
 | A2 | Ordered Cartesian path | waypoint/cross-track ≤ 20 mm; endpoint ≤ 15 mm for 0.5 s |
 | A3 | Gripper opening | normalized error ≤ 0.10 for 0.25 s; excursion ≥ 0.50 of range |
 | A4 | Controlled contact | precontact ≤ 15 mm; lateral ray error ≤ 10 mm; contact ≥ 0.1 s; post-contact speed ≤ 0.02 m/s; penetration ≤ 5 mm; no unrelated contact |
-| A5 | Offset and return | outbound/return ≤ 15 mm; holds 0.25/0.5 s; ≥ 80% requested displacement |
+| A5 | Offset and return | outbound/return ≤ 15 mm; holds 0.25/0.5 s; ≥ 80% requested displacement; return deadline starts after outbound hold completes |
 | G1 | Planar twist | final 1 s mean velocity error ≤ 0.10 m/s; yaw-rate error ≤ 0.30 rad/s; direction error ≤ 10° in scored translating commands |
 | G2 | Relative body pose | position ≤ 0.10 m; yaw ≤ 0.0873 rad; speed ≤ 0.10 m/s for 0.5 s |
 | G3 | Planar path | waypoint/endpoint ≤ 0.10 m; cross-track ≤ 0.15 m; terminal speed ≤ 0.10 m/s for 0.5 s |
@@ -90,11 +90,16 @@ PYTHONPATH=src python scripts/run_fixed_family_diagnostic.py --reference-only
 ```
 
 Omit `--robots` for the full cohort. `--output` must name a fresh directory. The
-runner reads `configs/diagnostics/fixed-family-v1.json`, loads fixed inputs before
-model calls, and runs the real private reference suite first. A failed reference
-prevents model spending on that robot and is reported as a preparation gap.
-An implementation correction can be checked with a new reference-only run; it
-does not authorize another candidate synthesis for a robot already sampled.
+runner reads `configs/diagnostics/fixed-family-v1.json` and audits fixed inputs,
+real scene resets, and measurement bindings before model calls. A short real
+worker checks native actuator response; quadrupeds also perform an upright
+two-second hold. Invalid resets, absent control response, worker failures or
+deep contact penetration block that robot and are reported directly.
+Full capability reference success is not required. `--reference-only` remains
+available for local calibration, while normal synthesis skips the complete
+reference suite and reports its result as unexecuted, not failed or passed.
+The approved follow-up samples only the eight previously unsampled robots;
+SO101, Go2 and Piper are not resampled.
 
 Default model: DeepSeek V4 Flash, thinking disabled, skeleton-assisted, one fresh
 cell per robot, at most three Harness submissions. Study uses 16 model turns;

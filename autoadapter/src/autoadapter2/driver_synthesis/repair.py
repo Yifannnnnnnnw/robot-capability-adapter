@@ -288,6 +288,7 @@ _REPAIR_SUMMARY_PHYSICAL_KEYS = (
     "step_count",
     "canonical_model_data",
     "ctrl_changed_from_reset",
+    "actuator_force_nonzero_step_count",
     "ctrl_observed_before_step",
     "direct_state_write_detected",
     "contact_pair_step_counts",

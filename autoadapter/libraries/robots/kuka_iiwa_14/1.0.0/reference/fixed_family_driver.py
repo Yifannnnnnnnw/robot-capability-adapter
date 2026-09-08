@@ -15,6 +15,7 @@ class Driver:
         self.base = model.body(CONFIG['base']).id
         self.joints = [model.joint(n).id for n in CONFIG['spec']['arm_joint_names']]
         self.dofs = [int(model.jnt_dofadr[j]) for j in self.joints]
+        self.actuators = [model.actuator(n).id for n in CONFIG['spec']['arm_actuator_names']]
         self.grip = model.actuator(CONFIG['gripper_actuator']).id if CONFIG['gripper_actuator'] else None
         self.tools = set(CONFIG['tool_geom_ids'])
 
@@ -27,7 +28,11 @@ class Driver:
         q = self.arm.get_joint_positions() + np.clip(1.4 * dq, -.06, .06)
         limits = CONFIG['spec']['joint_limits']
         q = np.asarray([np.clip(v, *limits[n]) if n in limits else v for n,v in zip(CONFIG['spec']['arm_joint_names'],q)])
-        self.arm.set_arm_actuators(q)
+        # Native position servos need an offset to counter gravity/bias torque.
+        # Keep the desired joint pose bounded, then bound the compensated ctrl.
+        q_command = q + self.data.qfrc_bias[self.dofs] / self.model.actuator_gainprm[self.actuators, 0]
+        ctrlrange = self.model.actuator_ctrlrange[self.actuators]
+        self.arm.set_arm_actuators(np.clip(q_command, ctrlrange[:, 0], ctrlrange[:, 1]))
         if self.grip is not None and gripper is not None: self.data.ctrl[self.grip] = gripper
         mujoco.mj_step(self.model, self.data)
 

@@ -34,3 +34,22 @@ URDF description created by the [Drake](https://github.com/RobotLocomotion/drake
 ## License
 
 This model is released under a [BSD-3-Clause License](LICENSE).
+
+## AutoAdapter native position control
+
+The seven arm actuators use direct joint-position servos with gain `kp=2000`
+and velocity feedback `kv=200`. Writing a desired joint angle directly to
+`data.ctrl` does not compensate for gravity: holding a loaded arm can leave
+a Cartesian position error even when the kinematic target is reachable.
+
+For a bounded desired joint pose, a bias-compensated command is
+`q_command = q_desired + data.qfrc_bias[dof_ids] / model.actuator_gainprm[actuator_ids, 0]`.
+Resolve joint DOF and actuator IDs from the public names, clip the command
+to each actuator's `model.actuator_ctrlrange`, write `data.ctrl`, and advance
+MuJoCo normally. At rest the bias term compensates gravity; it also contains
+velocity-dependent Coriolis and centrifugal terms during motion. Read the
+current canonical model/data; do not write `qpos`, `qvel`, applied forces or
+model parameters to obtain the target pose.
+
+This advice applies to this package's direct position actuators. Torque
+actuators and transmissions with different gearing need their own mapping.
