@@ -70,6 +70,8 @@ class ToolSpec:
     handler: Callable[[Mapping[str, Any]], Any]
     terminal: bool = False
     available: Callable[[], bool] | None = None
+    # Only for file handlers that already enforce a file-size and path boundary.
+    preserve_full_result: bool = False
 
     def is_available(self) -> bool:
         return self.available is None or bool(self.available())
@@ -126,6 +128,12 @@ def _bounded_text(value: Any, limit: int) -> str:
         return text
     suffix = "...[truncated]"
     return text[: limit - len(suffix)] + suffix
+
+
+def _tool_observation(envelope: Mapping[str, Any], tool: ToolSpec | None, limit: int) -> str:
+    if tool is not None and tool.preserve_full_result and envelope.get("ok"):
+        return json.dumps(envelope, ensure_ascii=True, sort_keys=True)
+    return _bounded_text(envelope, limit)
 
 
 def _assistant_message(turn: ToolTurn) -> dict[str, Any]:
@@ -384,7 +392,7 @@ def run_react(
                 }
             else:
                 envelope = {"ok": True, "result": result, "budget": budget_status}
-            observation = _bounded_text(envelope, tool_output_chars)
+            observation = _tool_observation(envelope, tool, tool_output_chars)
             messages.append(
                 {
                     "role": "tool",
@@ -714,7 +722,7 @@ def run_artifact_react(
                 }
             else:
                 envelope = {"ok": True, "result": result, "budget": budget_status}
-            observation = _bounded_text(envelope, tool_output_chars)
+            observation = _tool_observation(envelope, tool, tool_output_chars)
             messages.append(
                 {
                     "role": "tool",

@@ -198,11 +198,11 @@ credential 不会进入这些记录。`generate_message_json` 的 raw exchange �
 文件 phase 不设另一个 aggregate tool-call ceiling。限制位于每个具体工具：路径、文件/代码大小、
 每次执行 wall time、每阶段 MuJoCo step/simulated-time、输出大小和权限。
 
-所有 file-phase tools 还共享一层 ReAct observation boundary：返回给下一模型 turn 的序列化 tool
-envelope 最多 24,000 characters，trace 中保存的 raw arguments 最多 4,000 characters。因而下文的
-200,000 file/code limit 是 handler 的输入/读取拒绝线，不表示单次 `read_file` 的 200,000 characters
-一定会全部进入模型上下文；当前 mainline 的 `execute_python` 12,000-character output limit 更窄，
-会先行生效。
+ReAct 默认将返回给下一模型 turn 的序列化 tool envelope 限为 24,000 characters；开发会话
+`PublicDevelopmentSession` 的 `read_file` 和 `inspect_skeleton` 成功结果例外：在原有路径隔离及
+200,000-byte 文件读取上限内，一次返回完整文件，不分页、不再次截断。旧消息仍受历史预算压缩。
+其他工具和错误保留原有限制；`execute_python` 的 12,000-character output limit 会先行生效。
+trace 中保存的 raw arguments 仍最多 4,000 characters。
 
 `generation.py`、TGCD 和 IVC 中仍可看到只实现 `generate_json` 的兼容分支，它们用于既有 focused
 fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，因此共享主线会选择上述

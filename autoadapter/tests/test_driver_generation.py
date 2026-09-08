@@ -41,7 +41,7 @@ from autoadapter2.driver_synthesis.repair import (
 )
 from autoadapter2.driver_synthesis.source_check import DriverSourceError, audit_driver_source
 from autoadapter2.libraries import RobotPackage
-from autoadapter2.react import ToolCall, ToolTurn, _bounded_text
+from autoadapter2.react import ToolCall, ToolTurn, run_artifact_react
 from autoadapter2.driver_synthesis.interactive import (
     DevelopmentSessionError, DriverDevelopmentConversation, PublicDevelopmentSession,
 )
@@ -865,18 +865,6 @@ print("probe-time=" + str(data.time))
                 )
                 try:
                     compact = _prepare_fixed_generation_files(full, session)
-                    def read_complete(path):
-                        offset = 0
-                        pages = []
-                        while True:
-                            page = session.read_file({"path": path, "offset": offset})
-                            # Exercise the actual ReAct observation cap, not only
-                            # the raw file handler: long runtime source used to truncate.
-                            delivered = json.loads(_bounded_text({"ok": True, "result": page}, 24000))["result"]
-                            pages.append(delivered["content"])
-                            if delivered["next_offset"] is None:
-                                return "".join(pages)
-                            offset = delivered["next_offset"]
                     self.assertEqual(full, before)
                     self.assertEqual(compact["sealed_capability_design"], self.design)
                     self.assertNotIn("task_library", compact["public_robot_package"])
@@ -909,12 +897,44 @@ print("probe-time=" + str(data.time))
                         self.assertTrue(all("source" not in item for item in sources))
                         runtime = next(item["path"] for item in sources if "/runtime/" in item["path"])
                         expected = next(item["source"] for item in full["condition_eligible_artifacts"]["source_files"] if item["path"].startswith("runtime/"))
-                        self.assertEqual(read_complete(runtime), expected)
+                        self.assertEqual(session.read_file({"path": runtime})["content"], expected)
                         self.assertIn("class ArmSpec", expected)
                         self.assertIn("class ArmSerialDLSSkeleton", expected)
                         inspection = session.inspect_skeleton({"name": runtime.removeprefix("skeleton/")})
-                        self.assertIsNotNone(inspection["next_offset"])
-                        json.loads(_bounded_text({"ok": True, "result": inspection}, 24000))
+                        self.assertEqual(inspection["source"], expected)
+                        self.assertNotIn("next_offset", inspection)
+                        # The next model turn must receive complete real source,
+                        # including through native message projection, not just the handler.
+                        observed = []
+                        class FileReaderClient:
+                            def generate_tool_turn(self, **kwargs):
+                                observed.append(kwargs["messages"].copy())
+                                if len(observed) == 1:
+                                    return ToolTurn(content=None, tool_calls=tuple(
+                                        ToolCall(name, name, args, json.dumps(args))
+                                        for name, args in (
+                                            ("read_file", {"path": runtime}),
+                                            ("inspect_skeleton", {"name": runtime.removeprefix("skeleton/")}),
+                                        )
+                                    ))
+                                return ToolTurn(content="done")
+                        fixture = workspace / "delivery_fixture.txt"
+                        fixture.write_text("file delivery test artifact")
+                        file_tools = session.artifact_tools(include_skeleton=True)
+                        self.assertNotIn("offset", file_tools[0].input_schema["properties"])
+                        run_artifact_react(
+                            client=FileReaderClient(), stage="file-delivery-test",
+                            system_prompt="Read the source.", user_prompt="Read both tools.",
+                            tools=file_tools, artifact_name=fixture.name,
+                            artifact_path=fixture, max_turns=4,
+                        )
+                        delivered = AgentContextManager().project_native(observed[1]).messages
+                        for message, field in zip(
+                            (m for m in delivered if m["role"] == "tool"),
+                            ("content", "source"), strict=True,
+                        ):
+                            self.assertGreater(len(message["content"]), 24000)
+                            self.assertEqual(json.loads(message["content"])["result"][field], expected)
                         self.assertNotIn("class ArmSerialDLSSkeleton", json.dumps(compact))
                     else:
                         with self.assertRaises(DevelopmentSessionError):

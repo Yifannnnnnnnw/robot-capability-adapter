@@ -351,8 +351,7 @@ This run has predeclared capabilities. The initial input contains their complete
 interfaces and criteria, robot morphology, and a public file index. Implement these capabilities;
 the original task catalogue is not a separate implementation requirement.
 First read_file public_files.study for the completed Study findings and implementation plan.
-Public reads return bounded pages. When next_offset is not null, continue read_file with
-that offset until the needed file is complete; this also applies after inspect_skeleton.
+read_file and inspect_skeleton return the complete file in one tool result.
 Use public_files.study_probe_results only when the underlying probe evidence is needed.
 In skeleton-assisted mode, inspect the selected skeleton and read its indexed runtime source
 for the actual Spec and method signatures; a package inventory can be only a re-export wrapper.
@@ -369,7 +368,6 @@ def _prepare_fixed_generation_files(
 ) -> dict[str, Any]:
     """Keep fixed Generate's essentials inline; expose full materials through read_file."""
     compact = _copy(dict(inputs))
-    session.public_file_paging = True
     public_package = compact["public_robot_package"]
     public_package.pop("task_library", None)
     public_package["morphology"]["invocation_abi"] = _sealed_invocation_abi(

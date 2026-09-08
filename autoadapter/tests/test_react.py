@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
+from pathlib import Path
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -12,6 +14,7 @@ from autoadapter2.react import (
     ToolSpec,
     ToolTurn,
     run_react,
+    run_artifact_react,
 )
 
 
@@ -46,6 +49,35 @@ def call(call_id: str, name: str, arguments: Mapping[str, Any]) -> ToolCall:
 
 
 class ReactLoopTests(unittest.TestCase):
+    def test_complete_file_observations_preserve_unicode_but_other_tools_stay_bounded(self) -> None:
+        source = "机器人 source\n" * 6000 + "SOURCE_END"
+        for artifact_loop in (False, True):
+            with self.subTest(artifact_loop=artifact_loop), tempfile.TemporaryDirectory() as tmp:
+                client = ScriptedClient([
+                    ToolTurn(content=None, tool_calls=(
+                        call("file", "read_file", {}), call("log", "execute_python", {}),
+                    )),
+                    ToolTurn(content="done") if artifact_loop else ToolTurn(
+                        content=None, tool_calls=(call("end", "finish", {}),),
+                    ),
+                ])
+                tools = (
+                    ToolSpec("read_file", "Read fixture.", {}, lambda _: {"content": source}, preserve_full_result=True),
+                    ToolSpec("execute_python", "Fixture output.", {}, lambda _: {"stdout": source}),
+                    ToolSpec("finish", "Finish.", {}, lambda _: {}, terminal=True),
+                )
+                kwargs = dict(client=client, stage="fixture", system_prompt="test", user_prompt="test", tools=tools, max_turns=4)
+                if artifact_loop:
+                    artifact = Path(tmp) / "fixture.txt"
+                    artifact.write_text("fixture")
+                    run_artifact_react(**kwargs, artifact_name=artifact.name, artifact_path=artifact)
+                else:
+                    run_react(**kwargs)
+                observations = [m["content"] for m in client.seen_messages[1] if m["role"] == "tool"]
+                self.assertEqual(json.loads(observations[0])["result"]["content"], source)
+                self.assertEqual(len(observations[1]), 24000)
+                self.assertTrue(observations[1].endswith("...[truncated]"))
+
     def test_fatal_live_tool_transport_aborts_without_another_model_turn(self) -> None:
         def abort(_arguments: Mapping[str, Any]) -> None:
             raise ReactToolAbort("worker transport failed")

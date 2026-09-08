@@ -153,10 +153,11 @@ The existing runner enables this only for `fixed_inputs_from`; Study and dynamic
 generation retain their current projections. JSON-only clients without file tools
 retain the inline representation.
 
-Large public files use `read_file` character offsets and `next_offset`, including
-continuation after `inspect_skeleton`, so the existing 24,000-character ReAct
-observation limit does not silently cut off source or Study text. Workspace
-artifact reads retain their previous behavior.
+Development `read_file` and `inspect_skeleton` return complete files without
+pagination or a second ReAct observation truncation. The existing 200,000-byte
+read limit and path isolation still apply; other tool observations retain their
+24,000-character limit. The existing history budget can still summarize older
+messages; complete file delivery does not imply permanent history retention.
 Public materials remain available in the same development session through Repair.
 A copy and `initial_inputs.json` are retained beside the `files/` workspace in
 `files-inputs/` after the temporary public session closes. This changes input

@@ -2,13 +2,14 @@
 """Single-robot Study-result continuation test using the existing diagnostic runner.
 
 Requires --study-from; remaining flags are the existing runner's flags.
-Only the native history's three-group cutoff changes in this test. Its original
-character budget, canonical snapshots, feedback retention and real tools remain.
+This test uses a 300-second request deadline and retains native history within its
+original character budget. Canonical snapshots, feedback retention and real tools remain.
 """
 
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import sys
 from pathlib import Path
 
@@ -33,6 +34,8 @@ def continuation_client(*args, **kwargs):
     client = runner.model_client(*args, **kwargs)
     if client.config.tool_history_mode != "native":
         raise ValueError("this diagnostic test requires native tool history")
+    route_timeout_s = client.config.timeout_s
+    client.config = replace(client.config, timeout_s=300.0)
     client._context_manager = BudgetOnlyNativeContext(
         history_char_budget=client.config.history_char_budget,
     )
@@ -42,6 +45,8 @@ def continuation_client(*args, **kwargs):
             "script": "scripts/test_study_continuation.py",
             "history_char_budget": client.config.history_char_budget,
             "retention_policy": "within_existing_character_budget",
+            "request_timeout_s": client.config.timeout_s,
+            "route_default_timeout_s": route_timeout_s,
             "mainline_default_changed": False,
         })
     return client

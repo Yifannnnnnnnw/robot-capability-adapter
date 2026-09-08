@@ -1,4 +1,4 @@
-"""Focused pagination regression for the explicit Study continuation test script."""
+"""Historical pagination/context regression for the Study continuation test script."""
 
 import importlib
 import json
