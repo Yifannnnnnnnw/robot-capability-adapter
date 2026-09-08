@@ -366,6 +366,61 @@ class DriverGenerationTests(unittest.TestCase):
         self.assertEqual(result.output["condition"], "from-scratch")
         self.assertEqual(result.output["model_declared_condition"], "from_scratch")
 
+    def test_study_prompt_matches_projected_fixed_design(self) -> None:
+        """Prompt wiring only: the scripted model does not establish physics evidence."""
+        design = copy.deepcopy(self.design)
+        design["capabilities"][0]["criteria"] = [{"threshold": 0.015}]
+        output = self._study("from-scratch")
+
+        class ScriptedStudyClient:
+            def __init__(self):
+                self.sent = []
+
+            def generate_tool_turn(self, **kwargs):
+                self.sent.append(copy.deepcopy(kwargs))
+                if len(self.sent) == 1:
+                    arguments = {"path": "study.json", "content": json.dumps(output)}
+                    return ToolTurn(content=None, tool_calls=(
+                        ToolCall("write-study", "write_file", arguments, json.dumps(arguments)),
+                    ), finish_reason="tool_calls")
+                return ToolTurn(content="Study complete.", finish_reason="stop")
+
+        for interactive in (False, True):
+            for label, supplied, fixed in (
+                ("fixed", design, True),
+                ("dynamic", None, False),
+                ("unsealed", {"capabilities": design["capabilities"]}, False),
+            ):
+                with self.subTest(interactive=interactive, design=label):
+                    client = ScriptedStudyClient() if interactive else FakeJsonGenerator({"study": output})
+                    with patch(
+                        "autoadapter2.driver_synthesis.generation.PublicDevelopmentSession.has_successful_physics_probe",
+                        return_value=True,
+                    ):
+                        result = study(
+                            client, self.package, supplied, condition="from-scratch",
+                            workspace=Path(self.temporary.name) / f"prompt-{interactive}-{label}",
+                        )
+                    if interactive:
+                        sent = client.sent[0]
+                        prompt = sent["system_prompt"]
+                        inputs = json.loads(sent["messages"][0]["content"].split("\n", 1)[1])
+                    else:
+                        prompt = client.calls[0]["prompt"]
+                        inputs = client.inputs[0]
+                    self.assertEqual(result.call_evidence.prompt, prompt)
+                    self.assertEqual("sealed_capability_design" in inputs, fixed)
+                    self.assertNotIn("capability_validation_suite", inputs)
+                    normalized = " ".join(prompt.split())
+                    if fixed:
+                        self.assertIn("sealed_capability_design", normalized)
+                        self.assertIn("public criteria", normalized)
+                        self.assertNotIn("no capability design", normalized)
+                        self.assertEqual(inputs["sealed_capability_design"], design)
+                    else:
+                        self.assertIn("no capability design", normalized)
+                    self.assertFalse(inputs["condition_eligible_artifacts"]["skeleton_available"])
+
     def test_asset_closure_excludes_sibling_scene_but_keeps_include_and_mesh(self) -> None:
         manifest = public_asset_closure_manifest(self.package)
         paths = {str(item["path"]) for item in manifest["files"]}

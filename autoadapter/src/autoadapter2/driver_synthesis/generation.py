@@ -179,6 +179,27 @@ with non-empty findings, implementation_plan, and probe_requests. Do not write d
 skeletons. End the turn only after study.json is complete."""
 
 
+_FIXED_STUDY_CONTEXT = """This run uses a predeclared capability design. Study the supplied public robot
+package, runtime contract, eligible Experience, and sealed_capability_design, including its method
+names, request_schema, and public criteria. Use these requirements to guide your implementation
+plan and public physics probes. Do not redefine the capability interface or its criteria. Private
+test cases and measurement bindings are unavailable in this phase."""
+
+FIXED_STUDY_PROMPT = STUDY_PROMPT.replace(
+    """Study only the supplied public robot package, runtime contract, and eligible experience. This is a
+pre-TGCD study: no capability design, task dispatch, private criteria, or whole-task request is
+available or needed.""",
+    _FIXED_STUDY_CONTEXT,
+)
+
+FIXED_STUDY_REACT_SYSTEM = STUDY_REACT_SYSTEM.replace(
+    """STUDY is identical across skeleton-assisted and from-scratch conditions: use only the supplied
+public package projection, runtime contract, and eligible Experience. This is pre-TGCD, so no
+capability design, task dispatch, private criteria, or whole-task request is available or needed.""",
+    "STUDY is identical across skeleton-assisted and from-scratch conditions.\n" + _FIXED_STUDY_CONTEXT,
+)
+
+
 GENERATE_REACT_SYSTEM = """You are the interactive Auto-Adapter GENERATE/GEN_ALGO stage.
 Use read_file and execute_python on the supplied public projection and use write_file to create the
 canonical condition-workspace artifact driver.py. The interface-only stub, when present, is only a
@@ -753,6 +774,9 @@ def study(
         experience=experience,
         runtime_contract=runtime_contract,
     )
+    fixed_design = "sealed_capability_design" in inputs
+    system_prompt = FIXED_STUDY_REACT_SYSTEM if fixed_design else STUDY_REACT_SYSTEM
+    json_prompt = FIXED_STUDY_PROMPT if fixed_design else STUDY_PROMPT
     if _supports_react(client):
         if workspace is None:
             raise GenerationError("interactive STUDY requires a condition-local workspace")
@@ -799,7 +823,7 @@ def study(
             react_result = run_artifact_react(
                 client=client,
                 stage="study",
-                system_prompt=STUDY_REACT_SYSTEM,
+                system_prompt=system_prompt,
                 user_prompt=_react_user_prompt(inputs),
                 tools=session.artifact_tools(include_skeleton=False),
                 artifact_name="study.json",
@@ -827,13 +851,13 @@ def study(
             client,
             start=start,
             stage="study",
-            prompt=STUDY_REACT_SYSTEM,
+            prompt=system_prompt,
             inputs=inputs,
             output=output,
             trace=react_result.trace,
         )
     else:
-        output, evidence = _invoke(client, stage="study", prompt=STUDY_PROMPT, inputs=inputs)
+        output, evidence = _invoke(client, stage="study", prompt=json_prompt, inputs=inputs)
         interactive_probe_results = ()
     declared_condition = output.get("condition")
     if declared_condition != selected_condition:
