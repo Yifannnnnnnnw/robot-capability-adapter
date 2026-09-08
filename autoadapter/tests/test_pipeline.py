@@ -1393,7 +1393,12 @@ def test_fixed_inputs_skip_authoring_stay_private_and_preserve_whitelist(
     fixed_root = tmp_path / "fixed"
     fixed_design, fixed_suite = _write_fixed_inputs(fixed_root)
     base_harness = hooks.harness_runner
+    base_generate = hooks.generate_runner
     task_demo_calls: list[dict[str, Any]] = []
+
+    def fixed_generate(*args: Any, **kwargs: Any) -> Any:
+        assert kwargs["fixed_file_inputs"] is True
+        return base_generate(*args, **kwargs)
 
     def forbidden_authoring(*args: Any, **kwargs: Any) -> dict[str, Any]:
         raise AssertionError("TGCD/IVC must not run for fixed inputs")
@@ -1433,6 +1438,7 @@ def test_fixed_inputs_skip_authoring_stay_private_and_preserve_whitelist(
         hooks,
         tgcd_runner=forbidden_authoring,
         ivc_runner=forbidden_authoring,
+        generate_runner=fixed_generate,
         harness_runner=selective_harness,
         task_demo_runner=task_demo_runner,
     )

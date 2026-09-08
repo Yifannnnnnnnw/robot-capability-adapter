@@ -143,6 +143,40 @@ Generate and each Repair use 22. Generate/Repair share their conversation and
 development worker, including the existing 4,000-step execution budget. The fixed
 thresholds and instances must not be relaxed after candidate failure.
 
+Fixed-input interactive Generate now starts with the complete public capability
+design/criteria, robot morphology, runtime constraints, interface stub and a file
+index. It reads the completed Study first; probe logs, MJCF text and trusted
+skeleton implementations are available through `read_file` as needed. The initial
+prompt no longer repeats the task catalogue, Study/probe bodies, asset contents
+or skeleton source. The public morphology file uses the sealed capability ABI.
+The existing runner enables this only for `fixed_inputs_from`; Study and dynamic
+generation retain their current projections. JSON-only clients without file tools
+retain the inline representation.
+
+Large public files use `read_file` character offsets and `next_offset`, including
+continuation after `inspect_skeleton`, so the existing 24,000-character ReAct
+observation limit does not silently cut off source or Study text. Workspace
+artifact reads retain their previous behavior.
+Public materials remain available in the same development session through Repair.
+A copy and `initial_inputs.json` are retained beside the `files/` workspace in
+`files-inputs/` after the temporary public session closes. This changes input
+delivery, not capability definitions, private tests, model settings or budgets.
+
+The 2026-09-08 [Franka input check](../../runs/diagnostic/fixed-generate-file-input-check-20260908/check_result.json)
+replayed the saved public Generate input through this projection: initial user
+content fell from 187,131 to 20,282 characters (89.16%). This is a character
+comparison, not a new API token measurement. All seven indexed text files were
+readable and exactly reassembled after passing through the ReAct output limit
+(Study in two pages, runtime skeleton in three); the real public worker loaded
+Franka, imported the skeleton and advanced
+10 finite MuJoCo steps. No model API call was made and timeout improvement is not
+yet established. Five focused tests plus eight subtests passed, including the
+existing scripted-model/real-worker Generate-to-Repair continuity check:
+
+```sh
+PYTHONPATH=src python -m pytest -q tests/test_driver_generation.py tests/test_pipeline.py -k 'fixed_generate_files or generate_repair_share_history or study_prompt_matches_projected_fixed_design or interactive_driver_prompts_expose_mapping_request_abi or fixed_inputs_skip_authoring_stay_private_and_preserve_whitelist'
+```
+
 Raw results live under `runs/diagnostic/`: reference and candidate reports,
 per-trial videos, generated source revisions, feedback and API call usage.
 `diagnostic_summary.json` separates preparation, reference completion and candidate

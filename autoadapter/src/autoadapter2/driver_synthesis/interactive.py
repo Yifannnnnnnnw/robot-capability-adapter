@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -126,6 +127,7 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError(f"unknown generation condition {condition!r}")
         self.package = package
         self.condition = condition
+        self.public_file_paging = False
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         # Keep Framework-staged public inputs outside the model-writable
@@ -319,6 +321,21 @@ class PublicDevelopmentSession:
             content = path.read_text(encoding="utf-8")
         except UnicodeDecodeError as exc:
             raise DevelopmentSessionError("file is not UTF-8 text") from exc
+        if self.public_file_paging and root_name == "public_package":
+            offset = arguments.get("offset", 0)
+            if type(offset) is not int or not 0 <= offset <= len(content):
+                raise DevelopmentSessionError("offset must be a character position inside the file")
+            page = content[offset:offset + 16000]
+            # Leave room for the tool envelope under ReAct's existing 24000-char
+            # observation cap, including JSON escapes in non-ASCII material.
+            while len(json.dumps(page, ensure_ascii=True)) > 18000:
+                page = page[:len(page) // 2]
+            end = offset + len(page)
+            return {
+                "path": relative, "root": root_name, "content": page,
+                "offset": offset, "total_chars": len(content),
+                "next_offset": end if end < len(content) else None,
+            }
         return {"path": relative, "root": root_name, "content": content}
 
     def write_file(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
@@ -414,6 +431,9 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError(f"skeleton does not exist: {relative}")
         if path.stat().st_size > MAX_FILE_CHARS:
             raise DevelopmentSessionError("skeleton source is too large for the model tool")
+        if self.public_file_paging:
+            page = self.read_file({"path": "skeleton/" + relative})
+            return {"name": relative, "source": page.pop("content"), **page}
         return {"name": relative, "source": path.read_text(encoding="utf-8")}
 
     def _audit_candidate(self) -> tuple[DriverSourceAudit, str]:
@@ -503,11 +523,16 @@ class PublicDevelopmentSession:
         implementation source.
         """
 
+        read_properties: dict[str, Any] = {"path": {"type": "string"}}
+        read_description = "Read one UTF-8 file from the public package projection or this condition workspace. Paths are relative and cannot escape either root."
+        if self.public_file_paging:
+            read_properties["offset"] = {"type": "integer", "minimum": 0}
+            read_description += " Public files are paginated: if next_offset is not null, call read_file with that offset to continue."
         tools: list[ToolSpec] = [
             ToolSpec(
                 "read_file",
-                "Read one UTF-8 file from the public package projection or this condition workspace. Paths are relative and cannot escape either root.",
-                _object_schema({"path": {"type": "string"}}, required=("path",)),
+                read_description,
+                _object_schema(read_properties, required=("path",)),
                 self.read_file,
             ),
             ToolSpec(

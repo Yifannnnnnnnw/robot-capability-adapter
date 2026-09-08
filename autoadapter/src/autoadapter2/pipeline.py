@@ -2245,6 +2245,7 @@ def _run_cell(
                         probe_budget=config.probe_budget,
                         source_root=_default_root() / "src",
                         development=development,
+                        fixed_file_inputs=fixed_input_provenance is not None,
                         max_turns=int(
                             config.phase_turn_budgets[
                                 "generate_skeleton"

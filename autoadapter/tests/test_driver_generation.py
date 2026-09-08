@@ -14,6 +14,8 @@ from autoadapter2.driver_synthesis.generation import (
     STUDY_PROMPT,
     STUDY_REACT_SYSTEM,
     GenerationError,
+    _build_study_inputs,
+    _prepare_fixed_generation_files,
     _react_user_prompt,
     build_public_generation_inputs,
     generate,
@@ -39,8 +41,10 @@ from autoadapter2.driver_synthesis.repair import (
 )
 from autoadapter2.driver_synthesis.source_check import DriverSourceError, audit_driver_source
 from autoadapter2.libraries import RobotPackage
-from autoadapter2.react import ToolCall, ToolTurn
-from autoadapter2.driver_synthesis.interactive import DriverDevelopmentConversation
+from autoadapter2.react import ToolCall, ToolTurn, _bounded_text
+from autoadapter2.driver_synthesis.interactive import (
+    DevelopmentSessionError, DriverDevelopmentConversation, PublicDevelopmentSession,
+)
 from autoadapter2.agent_context import AgentContextManager
 
 
@@ -833,6 +837,102 @@ print("probe-time=" + str(data.time))
         )
         self.assertFalse(first_validation["artifact_valid"])
 
+    def test_fixed_generate_files_keep_study_scene_and_real_skeleton_readable(self) -> None:
+        """Fixed inputs remain complete on disk without being repeated in the prompt."""
+        self.package.morphology["invocation_abi"] = {
+            "request_required": ["task_id", "task_parameters"]
+        }
+        (self.package.skeleton_dir / "primitive.py").write_text(
+            "from autoadapter2.trusted_skeletons.arm_serial_dls import ArmSerialDLSSkeleton, ArmSpec\n"
+        )
+        source_root = Path(__file__).resolve().parents[1] / "src"
+        original_morphology = (self.package.root / "morphology.json").read_text()
+        for condition in ("skeleton-assisted", "from-scratch"):
+            with self.subTest(condition=condition):
+                study_inputs = _build_study_inputs(
+                    self.package, self.design, condition=condition,
+                    experience=(), runtime_contract=None,
+                )
+                full = build_public_generation_inputs(
+                    self.package, self.design, condition=condition,
+                    study_output=self._study(condition), probe_results=[{"stdout": "PROBE_EVIDENCE"}],
+                )
+                before = copy.deepcopy(full)
+                workspace = Path(self.temporary.name) / condition / "files"
+                session = PublicDevelopmentSession(
+                    package=self.package, condition=condition, workspace=workspace,
+                    budget=ProbeBudget(), source_root=source_root,
+                )
+                try:
+                    compact = _prepare_fixed_generation_files(full, session)
+                    def read_complete(path):
+                        offset = 0
+                        pages = []
+                        while True:
+                            page = session.read_file({"path": path, "offset": offset})
+                            # Exercise the actual ReAct observation cap, not only
+                            # the raw file handler: long runtime source used to truncate.
+                            delivered = json.loads(_bounded_text({"ok": True, "result": page}, 24000))["result"]
+                            pages.append(delivered["content"])
+                            if delivered["next_offset"] is None:
+                                return "".join(pages)
+                            offset = delivered["next_offset"]
+                    self.assertEqual(full, before)
+                    self.assertEqual(compact["sealed_capability_design"], self.design)
+                    self.assertNotIn("task_library", compact["public_robot_package"])
+                    self.assertNotIn("study", compact)
+                    self.assertNotIn("probe_results", compact)
+                    self.assertEqual(
+                        compact["public_robot_package"]["morphology"]["invocation_abi"],
+                        self.design["invocation_abi"],
+                    )
+                    for path in compact["public_files"].values():
+                        content = session.read_file({"path": path})["content"]
+                        self.assertTrue(content)
+                        with self.assertRaises(DevelopmentSessionError):
+                            session.write_file({"path": path, "content": "overwrite"})
+                    self.assertEqual(
+                        json.loads(session.read_file({"path": compact["public_files"]["study"]})["content"]),
+                        self._study(condition),
+                    )
+                    self.assertEqual(
+                        json.loads(session.read_file({"path": "morphology.json"})["content"])["invocation_abi"],
+                        self.design["invocation_abi"],
+                    )
+                    self.assertIn("PROBE_EVIDENCE", session.read_file({
+                        "path": compact["public_files"]["study_probe_results"]
+                    })["content"])
+                    for path in compact["public_robot_package"]["selected_mjcf_closure"]["text_files"]:
+                        self.assertTrue(session.read_file({"path": path})["content"])
+                    if condition == "skeleton-assisted":
+                        sources = compact["condition_eligible_artifacts"]["source_files"]
+                        self.assertTrue(all("source" not in item for item in sources))
+                        runtime = next(item["path"] for item in sources if "/runtime/" in item["path"])
+                        expected = next(item["source"] for item in full["condition_eligible_artifacts"]["source_files"] if item["path"].startswith("runtime/"))
+                        self.assertEqual(read_complete(runtime), expected)
+                        self.assertIn("class ArmSpec", expected)
+                        self.assertIn("class ArmSerialDLSSkeleton", expected)
+                        inspection = session.inspect_skeleton({"name": runtime.removeprefix("skeleton/")})
+                        self.assertIsNotNone(inspection["next_offset"])
+                        json.loads(_bounded_text({"ok": True, "result": inspection}, 24000))
+                        self.assertNotIn("class ArmSerialDLSSkeleton", json.dumps(compact))
+                    else:
+                        with self.assertRaises(DevelopmentSessionError):
+                            session.read_file({"path": "skeleton/primitive.py"})
+                    for private_path in ("tasks/private/instances.json", "reference/driver.py", "assets/private_scene.xml"):
+                        with self.assertRaises(DevelopmentSessionError):
+                            session.read_file({"path": private_path})
+                finally:
+                    session.close()
+                evidence = workspace.with_name("files-inputs")
+                self.assertEqual(json.loads((evidence / "initial_inputs.json").read_text()), compact)
+                self.assertTrue((evidence / compact["public_files"]["study"]).is_file())
+                self.assertEqual(study_inputs, _build_study_inputs(
+                    self.package, self.design, condition=condition,
+                    experience=(), runtime_contract=None,
+                ))
+        self.assertEqual((self.package.root / "morphology.json").read_text(), original_morphology)
+
     def test_generate_repair_share_history_python_and_budget_with_small_feedback(self) -> None:
         """Scripted model, real public MuJoCo worker and real import/build checks."""
         changed = FROM_SCRATCH_DRIVER.replace('request.get("target", 0.0)', 'request["target"]')
@@ -858,6 +958,9 @@ print("probe-time=" + str(data.time))
                     ToolTurn(content="unchanged submission", finish_reason="stop"),
                     tool("execute_python", {"code": (
                         "assert continuity_marker == 41\n"
+                        "import json\n"
+                        "with open(os.path.join(os.environ['AUTOADAPTER_PROBE_PUBLIC_PACKAGE'], 'generation_inputs/study.json')) as f:\n"
+                        "    assert json.load(f)['condition'] == 'from-scratch'\n"
                         "mujoco.mj_step(model, data)\nprint('CONTINUED', data.time)\n"
                     )}),
                     tool("read_file", {"path": "validation_feedback/attempt-0/trial-0.json"}),
@@ -877,11 +980,14 @@ print("probe-time=" + str(data.time))
                 client, self.package, self.design, self._study("from-scratch"),
                 condition="from-scratch", workspace=workspace, development=development,
                 probe_budget=ProbeBudget(max_steps=3), max_turns=6,
+                fixed_file_inputs=True,
             )
             session = development.session
             worker = session._python_session
             stage_dir = session.public_workspace.root
             public_inputs = generated.call_evidence.inputs
+            self.assertIn("public_files", public_inputs)
+            self.assertNotIn("task_library", public_inputs["public_robot_package"])
             repaired = repair_with_probes(
                 client, package=self.package, previous_driver_source=generated.driver_source,
                 candidate_report={"validation_passed": False, "trials": [{

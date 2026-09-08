@@ -345,6 +345,84 @@ def _react_user_prompt(inputs: Mapping[str, Any]) -> str:
     )
 
 
+FIXED_GENERATE_FILE_INSTRUCTIONS = """
+This run has predeclared capabilities. The initial input contains their complete public
+interfaces and criteria, robot morphology, and a public file index. Implement these capabilities;
+the original task catalogue is not a separate implementation requirement.
+First read_file public_files.study for the completed Study findings and implementation plan.
+Public reads return bounded pages. When next_offset is not null, continue read_file with
+that offset until the needed file is complete; this also applies after inspect_skeleton.
+Use public_files.study_probe_results only when the underlying probe evidence is needed.
+In skeleton-assisted mode, inspect the selected skeleton and read its indexed runtime source
+for the actual Spec and method signatures; a package inventory can be only a re-export wrapper.
+Read the indexed MJCF files only for missing robot details. All indexed paths are relative to
+read_file's public package root. For Python file reads, join them to
+os.environ["AUTOADAPTER_PROBE_PUBLIC_PACKAGE"]. Load physics only from AUTOADAPTER_PROBE_SCENE.
+The inline sealed capability design defines the invocation ABI and public passing criteria.
+Write driver.py in the existing workspace and keep the existing development session.
+"""
+
+
+def _prepare_fixed_generation_files(
+    inputs: Mapping[str, Any], session: PublicDevelopmentSession,
+) -> dict[str, Any]:
+    """Keep fixed Generate's essentials inline; expose full materials through read_file."""
+    compact = _copy(dict(inputs))
+    session.public_file_paging = True
+    public_package = compact["public_robot_package"]
+    public_package.pop("task_library", None)
+    public_package["morphology"]["invocation_abi"] = _sealed_invocation_abi(
+        compact["sealed_capability_design"]
+    )
+    study_path = "generation_inputs/study.json"
+    probes_path = "generation_inputs/study_probe_results.json"
+    files = {
+        study_path: json.dumps(compact.pop("study"), ensure_ascii=True, indent=2),
+        probes_path: json.dumps(compact.pop("probe_results"), ensure_ascii=True, indent=2),
+        "morphology.json": json.dumps(public_package["morphology"], ensure_ascii=True, indent=2),
+    }
+    closure = public_package["selected_mjcf_closure"]
+    text_paths = []
+    for item in closure["files"]:
+        if isinstance(item.get("text"), str):
+            relative = "assets/" + item["path"]
+            text_paths.append(relative)
+            files[relative] = item["text"]
+    public_package["selected_mjcf_closure"] = {
+        "root": "assets",
+        "entrypoint": closure["entrypoint"],
+        "text_files": text_paths,
+    }
+    compact["public_files"] = {
+        "study": study_path,
+        "study_probe_results": probes_path,
+        "morphology": "morphology.json",
+        "scene": "assets/" + closure["entrypoint"],
+    }
+    compact["file_reading_instructions"] = FIXED_GENERATE_FILE_INSTRUCTIONS.strip()
+    artifacts = compact["condition_eligible_artifacts"]
+    if artifacts.get("kind") == "trusted-skeleton-family":
+        source_index = []
+        for item in artifacts["source_files"]:
+            relative = "skeleton/" + item["path"]
+            files[relative] = item["source"]
+            source_index.append({"path": relative})
+        artifacts["source_files"] = source_index
+
+    # The public staging area is read-only to the candidate and survives through
+    # continuous Repair. Keep one evidence copy after its temporary directory closes.
+    evidence_root = session.workspace.with_name(session.workspace.name + "-inputs")
+    for relative, content in files.items():
+        for root in (session.public_workspace.root, evidence_root):
+            destination = session._under(root, relative, label="generation input")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(content, encoding="utf-8")
+    (evidence_root / "initial_inputs.json").write_text(
+        json.dumps(compact, ensure_ascii=True, indent=2) + "\n", encoding="utf-8"
+    )
+    return compact
+
+
 def _artifact_turn_budget(stage: str, condition: GenerationCondition) -> int:
     if stage == "study":
         return STUDY_REACT_MAX_TURNS
@@ -924,6 +1002,7 @@ def generate(
     source_root: str | Path | None = None,
     development: DriverDevelopmentConversation | None = None,
     max_turns: int | None = None,
+    fixed_file_inputs: bool = False,
 ) -> GenerationResult:
     """Generate, audit, compile, and write one model-authored ``driver.py``.
 
@@ -977,6 +1056,12 @@ def generate(
         )
         if development is not None:
             development.session = session
+        if fixed_file_inputs:
+            try:
+                inputs = _prepare_fixed_generation_files(inputs, session)
+            except Exception:
+                session.close()
+                raise
         calls = getattr(client, "calls", ())
         start = len(calls) if isinstance(calls, Sequence) else 0
 
