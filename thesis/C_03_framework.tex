@@ -116,9 +116,9 @@ resulting simulation evidence does not establish hardware performance.
 
 \subsection{Framework Structure and Agent Workspace}
 
-Auto-Adapter generates a robot-specific Python interface, referred to here as
-a driver, through which a task-level controller can invoke reusable robot
-capabilities. Its inputs comprise public robot documentation, the fixed MuJoCo
+Auto-Adapter constructs a capability interface for a given robot and generates
+a Python driver that implements its operations. Its inputs comprise public
+robot documentation, the fixed MuJoCo
 model used throughout a run, and task definitions whose requirements are
 traceable to public sources. The generated driver is not itself a task policy.
 Instead, it provides bounded robot operations that a separate controller may
