@@ -1923,6 +1923,7 @@ def evaluate_guards(
     guard_definitions: Sequence[Mapping[str, Any]],
     *,
     worker_result: Mapping[str, Any],
+    allow_held_actuator_control: bool = False,
 ) -> dict[str, bool]:
     evidence = worker_result.get("physical_evidence")
     if not isinstance(evidence, Mapping):
@@ -1938,7 +1939,13 @@ def evaluate_guards(
             outcomes[guard_id] = (
                 int(evidence.get("step_count", 0)) > 0
                 and bool(evidence.get("ctrl_observed_before_step"))
-                and bool(evidence.get("ctrl_changed_from_reset"))
+                and (
+                    bool(evidence.get("ctrl_changed_from_reset"))
+                    or (
+                        allow_held_actuator_control
+                        and int(evidence.get("actuator_force_nonzero_step_count", 0)) > 0
+                    )
+                )
             )
         elif kind == "no_direct_state_write":
             outcomes[guard_id] = not bool(evidence.get("direct_state_write_detected"))

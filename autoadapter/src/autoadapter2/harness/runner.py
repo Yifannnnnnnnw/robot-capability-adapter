@@ -1023,7 +1023,16 @@ def run_private_suite(
                     "aggregation": {"kind": "all_trials"},
                 }
             try:
-                guard_outcomes = evaluate_guards(guards, worker_result=worker)
+                guard_outcomes = evaluate_guards(
+                    guards,
+                    worker_result=worker,
+                    # G5 permits a native servo to maintain an unchanged target;
+                    # the trusted stance measurement still checks full recovery.
+                    allow_held_actuator_control=binding.get("kind") in {
+                        "go2_stable_stance_recovery",
+                        "quadruped_stable_stance_recovery",
+                    },
+                )
                 if worker.get("candidate_exception") is None and worker.get("method_invoked"):
                     if not isinstance(criterion, Mapping):
                         raise ValueError("private case criterion must be an object")

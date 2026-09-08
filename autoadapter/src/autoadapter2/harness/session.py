@@ -306,6 +306,7 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         self.direct_state_write_fields: set[str] = set()
         self.ctrl_observed = False
         self.ctrl_changed = False
+        self.actuator_force_nonzero_step_count = 0
         self.control_range_violation_detected = False
         self.control_range_violation_actuators: set[str] = set()
         self.samples: list[dict[str, Any]] = []
@@ -454,6 +455,11 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         import numpy as np
 
         self.step_count += 1
+        # Sample only after the original mj_step has computed the applied force;
+        # forward/reset observations alone do not count as physical actuation.
+        forces = np.asarray(self.data.actuator_force, dtype=float)
+        if np.all(np.isfinite(forces)) and np.any(np.abs(forces) > 1.0e-12):
+            self.actuator_force_nonzero_step_count += 1
         for name, address in self._tracked_joint_qpos_addresses.items():
             deviation = abs(
                 float(self.data.qpos[address]) - self._initial_joint_positions[name]
@@ -611,6 +617,7 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
             "physics_timestep_s": float(self.model.opt.timestep),
             "ctrl_observed_before_step": self.ctrl_observed,
             "ctrl_changed_from_reset": self.ctrl_changed,
+            "actuator_force_nonzero_step_count": self.actuator_force_nonzero_step_count,
             "control_range_monitoring_complete": True,
             "control_range_violation_detected": self.control_range_violation_detected,
             "control_range_violation_actuators": sorted(
