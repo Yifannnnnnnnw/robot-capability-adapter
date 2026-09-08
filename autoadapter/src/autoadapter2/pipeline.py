@@ -2752,7 +2752,8 @@ def _run_cell(
         "passed_capability_whitelist": list(passed_capability_ids),
         "development_rejections": development_rejections,
         "development_probe": {
-            "attempted": bool(study_result and study_result.probe_requests),
+            "attempted": bool(study_result.probe_requests) and not bool(study_result.reused_from),
+            "study_reused_from": study_result.reused_from,
             "successful_physics_probe": _has_successful_physics_probe(probe_results),
             "results": list(probe_results),
         },
@@ -2967,6 +2968,9 @@ def _pre_driver_failure_cell(
         and item.get("tool") == "execute_python"
         for item in study_trace
     ) or bool(completed_study and completed_study.probe_results)
+    study_reused_from = completed_study.reused_from if completed_study else None
+    if study_reused_from:
+        study_attempted = False
     experience_ids = _experience_ids(experience)
     raw_report: dict[str, Any] = {
         "cell_id": f"{robot}::{condition}",
@@ -3009,6 +3013,7 @@ def _pre_driver_failure_cell(
         "development_rejections": [],
         "development_probe": {
             "attempted": study_attempted,
+            "study_reused_from": study_reused_from,
             "successful_physics_probe": _has_successful_physics_probe(probe_results),
             "results": probe_results,
         },
@@ -3175,6 +3180,10 @@ def _run_study_phase(
             for item in getattr(result, "probe_results", ())
             if isinstance(item, Mapping)
         )
+        if result.reused_from:
+            if not probe_results:
+                raise PipelineError("reused STUDY must include its recorded physics probes")
+            probe_results = tuple({**item, "reused": True} for item in probe_results)
         if not probe_results:
             raw = hooks.probe_runner(
                 result.probe_requests,
@@ -3197,6 +3206,14 @@ def _run_study_phase(
             _stage_evidence(client, stage="study", before=before, completed=True),
             experience,
         )
+        if result.reused_from:
+            evidence.update({
+                "attempted": False, "completed": False, "skipped": True,
+                "reused": True, "source_completed": True,
+                "reused_from": result.reused_from,
+                "physics_executed_in_this_run": False,
+                "reason": "accepted Study and recorded probes reused by explicit request",
+            })
         stage_log.append({"robot": robot, "condition": condition, **evidence})
         _write(
             workspace / "study_evidence.json",

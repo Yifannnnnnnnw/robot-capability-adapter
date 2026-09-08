@@ -254,6 +254,7 @@ class StudyResult:
     probe_requests: tuple[dict[str, Any], ...]
     call_evidence: ModelCallEvidence
     probe_results: tuple[dict[str, Any], ...] = ()
+    reused_from: str | None = None
 
 
 @dataclass(frozen=True)

@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from autoadapter2.libraries import load_indexed_robot_package
+from autoadapter2.driver_synthesis.generation import ModelCallEvidence, StudyResult, _validate_study
 from autoadapter2.model_api import JsonModelClient, ModelConfig
 from autoadapter2.provider_config import (
     HOLISTICAI_ROUTE_PROFILE_ID, HOLISTICAI_ROUTE_PROFILE_PATH,
@@ -26,7 +27,7 @@ from autoadapter2.harness.runner import _merged_private_index, _run_worker
 from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.pipeline import (
     ExperimentConfig, PipelineHooks, _load_fixed_inputs,
-    _run_reference_positive_control, run_experiment,
+    _run_reference_positive_control, _has_successful_physics_probe, run_experiment,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +36,33 @@ ROOT = Path(__file__).resolve().parents[1]
 def write(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, default=str) + "\n")
+
+
+def load_reused_study(source: Path, package, design: dict, condition: str) -> StudyResult:
+    """Reuse an accepted diagnostic artifact, never the old model or worker state."""
+    source = source.resolve()
+    output = json.loads((source / "files/study.json").read_text())
+    record = json.loads((source / "study_evidence.json").read_text())
+    if not record.get("evidence", {}).get("completed"):
+        raise ValueError("source Study did not complete successfully")
+    if (output.get("robot_configuration_id") != package.robot_configuration_id
+            or output.get("package_version") != package.package_version
+            or output.get("condition") != condition):
+        raise ValueError("source Study robot, package version or condition does not match")
+    if json.loads((source / "design/capability_design.json").read_text()) != design:
+        raise ValueError("source Study capability design does not match the fixed inputs")
+    requests = _validate_study(output, condition)
+    probes = tuple({**item, "reused": True} for item in record.get("probe_results", []))
+    if not _has_successful_physics_probe(probes):
+        raise ValueError("source Study has no successful recorded physics probe")
+    return StudyResult(
+        condition=condition, output=output, probe_requests=requests,
+        probe_results=probes, reused_from=str(source),
+        call_evidence=ModelCallEvidence(
+            stage="study", prompt="Reused accepted diagnostic Study",
+            inputs={"reused_from": str(source)}, output=output,
+        ),
+    )
 
 
 def model_client(
@@ -224,6 +252,8 @@ def main() -> None:
     parser.add_argument("--holistic", action="store_true", help="Use the existing Holistic route and local company credential")
     parser.add_argument("--robots", nargs="+")
     parser.add_argument("--reference-only", action="store_true")
+    parser.add_argument("--study-from", type=Path,
+                        help="Reuse the accepted Study from one prior condition-cell directory; start a fresh Generate worker")
     parser.add_argument("--retry-timeout-once", action="store_true",
                         help="Allow at most one timeout retry across all model stages per robot")
     parser.add_argument("--output", type=Path)
@@ -232,6 +262,8 @@ def main() -> None:
     robots = args.robots or list(config.robots)
     if not set(robots) <= set(config.robots):
         parser.error("robot is outside the approved diagnostic cohort")
+    if args.study_from and (len(robots) != 1 or len(config.generation_conditions) != 1 or args.reference_only):
+        parser.error("--study-from requires one robot, one condition and model synthesis")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = (args.output or ROOT / "runs/diagnostic" / f"fixed-family-v1-{stamp}").resolve()
     if output.exists():
@@ -254,6 +286,14 @@ def main() -> None:
             )
             result["prepared"] = True
             one = replace(config, robots=(robot,))
+            hooks = PipelineHooks()
+            if args.study_from:
+                reused = load_reused_study(
+                    args.study_from, package, fixed[robot]["design"], one.generation_conditions[0],
+                )
+                hooks = replace(hooks, study_runner=lambda *_args, **_kwargs: reused)
+                result["study_reused_from"] = reused.reused_from
+                result["study_model_calls_in_this_run"] = 0
             if args.reference_only:
                 stage = "reference"
                 result['reference_executed'] = True
@@ -292,6 +332,7 @@ def main() -> None:
                     run_id=f"fixed-family-{stamp}-{robot}", client=client,
                     fixed_inputs_from=ROOT / "references/fixed_family_v1",
                     skip_reference_calibration=True,
+                    hooks=hooks,
                 )
                 result["pipeline_report"] = str(output / robot / "candidate/experiment_report.json")
                 result["candidate_passed"] = bool(report.get("final_capability_validation_passed"))

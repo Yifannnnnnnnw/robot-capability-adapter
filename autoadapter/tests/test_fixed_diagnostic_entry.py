@@ -53,3 +53,44 @@ def test_holistic_config_requires_explicit_route_before_loading_credentials():
     config = runner.ExperimentConfig.from_path(ROOT / 'configs/diagnostics/fixed-family-v1-holistic-v32.json')
     with pytest.raises(ValueError, match='requires --holistic'):
         runner.model_client(config)
+
+
+def test_reused_study_is_historical_and_makes_no_new_calls(tmp_path):
+    """Recorded probe fixture tests bookkeeping, not new physics or model success."""
+    from dataclasses import replace
+    from autoadapter2.pipeline import _run_study_phase
+
+    source = tmp_path / 'old-cell'
+    package = SimpleNamespace(robot_configuration_id='franka_panda', package_version='1.0.0', morphology={})
+    design = {'test': 'fixed-design'}
+    output = {'robot_configuration_id': 'franka_panda', 'package_version': '1.0.0',
+              'condition': 'skeleton-assisted', 'findings': ['fixture'],
+              'implementation_plan': ['fixture'], 'probe_requests': [{'probe_id': 'p', 'script': 'fixture'}]}
+    probe = {'exit_code': 0, 'physics_steps': 2, 'timed_out': False, 'spawn_error': None}
+    runner.write(source / 'files/study.json', output)
+    runner.write(source / 'design/capability_design.json', design)
+    record = {'evidence': {'completed': True, 'model_call_count': 13}, 'probe_results': [probe]}
+    runner.write(source / 'study_evidence.json', record)
+    reused = runner.load_reused_study(source, package, design, 'skeleton-assisted')
+    hooks = replace(runner.PipelineHooks(), study_runner=lambda *a, **kw: reused)
+    client = SimpleNamespace(calls=[])
+    config = runner.ExperimentConfig.from_path(ROOT / 'configs/diagnostics/fixed-family-v1-holistic-opus5-franka-one-repair.json')
+    events = []
+    _, probes = _run_study_phase(
+        package=package, robot='franka_panda', condition='skeleton-assisted',
+        config=config, client=client, experience=(), workspace=tmp_path / 'new-cell',
+        hooks=hooks, stage_log=events, design=design,
+    )
+    assert client.calls == []
+    assert events[0]['reused'] is True
+    assert events[0]['attempted'] is False and events[0]['completed'] is False
+    assert events[0]['model_call_count'] == 0
+    assert events[0]['physics_executed_in_this_run'] is False
+    assert probes[0]['reused'] is True
+    assert json.loads((tmp_path / 'new-cell/files/study.json').read_text()) == output
+    with pytest.raises(ValueError, match='capability design'):
+        runner.load_reused_study(source, package, {'different': True}, 'skeleton-assisted')
+    record['evidence']['completed'] = False
+    runner.write(source / 'study_evidence.json', record)
+    with pytest.raises(ValueError, match='did not complete'):
+        runner.load_reused_study(source, package, design, 'skeleton-assisted')
