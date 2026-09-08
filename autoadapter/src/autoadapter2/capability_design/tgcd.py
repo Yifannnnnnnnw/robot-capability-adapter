@@ -612,6 +612,12 @@ def validate_capability_design(
                 ),
                 None,
             )
+            if not require_task_support:
+                from autoadapter2.fixed_family import reference as fixed_reference
+
+                fixed = fixed_reference(robot_id)
+                if fixed is not None:
+                    reference = fixed["capability_design"]
             reference_capabilities = {
                 item.get("capability_id"): item
                 for item in reference.get("capabilities", [])

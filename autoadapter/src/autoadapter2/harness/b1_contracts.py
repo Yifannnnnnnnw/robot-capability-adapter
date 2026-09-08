@@ -601,6 +601,17 @@ def _side_effects_pass(ctx: _Context, contract_id: str) -> bool:
         return _so101_side_effects(ctx, contract_id)
     if profile == "aloha2":
         return _aloha_side_effects(ctx, contract_id)
+    if profile == "fixed_arm":
+        names = ctx.parameters.get("guarded_joint_names", [])
+        tolerances = ctx.parameters.get("guarded_joint_tolerances", [])
+        if len(names) != len(tolerances):
+            raise B1ContractError("fixed arm joint guard names and tolerances must match")
+        if any(float(value) <= 0 for value in tolerances):
+            raise B1ContractError("fixed arm joint guard tolerances must be positive")
+        if contract_id == "A3":
+            if not names or not _point_drift_within(ctx, _name(ctx.parameters, "guard_site_name"), 0.015):
+                return False
+        return _joint_drift_within(ctx, dict(zip(names, tolerances)))
     raise B1ContractError(f"unsupported side-effect guard profile {profile!r}")
 
 

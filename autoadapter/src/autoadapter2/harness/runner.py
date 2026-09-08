@@ -31,6 +31,7 @@ from .operators import (
     MeasurementOperatorError,
     audit_inline_measurement_binding,
     measurement_operator_evaluation_mode,
+    resolve_geom_id,
 )
 
 
@@ -574,12 +575,8 @@ def _trusted_measurement_evidence(
         import numpy as np
 
         model = mujoco.MjModel.from_xml_path(str(scene_path))
-        geom_a_id = int(
-            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, geom_a_name)
-        )
-        geom_b_id = int(
-            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, geom_b_name)
-        )
+        geom_a_id = resolve_geom_id(model, geom_a_name)
+        geom_b_id = resolve_geom_id(model, geom_b_name)
         if geom_a_id < 0 or geom_b_id < 0 or geom_a_id == geom_b_id:
             raise HarnessError("geom-pair measurement cannot resolve two distinct geoms")
         data = mujoco.MjData(model)

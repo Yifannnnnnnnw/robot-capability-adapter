@@ -837,6 +837,7 @@ def _load_fixed_inputs(
                         raw_suite,
                         package=package,
                         design=design,
+                        fixed_family=not require_task_support,
                     )
                 )
             )

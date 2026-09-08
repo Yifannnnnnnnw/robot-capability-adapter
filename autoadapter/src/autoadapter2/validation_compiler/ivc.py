@@ -205,11 +205,18 @@ def load_sanitized_ivc_examples(
     return load_ivc_worked_references(path)
 
 
-def _semantic_reference_contracts() -> dict[str, dict[str, Any]]:
+def _semantic_reference_contracts(fixed_robot_id: str | None = None) -> dict[str, dict[str, Any]]:
     """Index fixed B1 semantic operators by their sealed worked contract."""
 
     result: dict[str, dict[str, Any]] = {}
-    for reference in load_ivc_worked_references():
+    references = load_ivc_worked_references()
+    if fixed_robot_id is not None:
+        from autoadapter2.fixed_family import reference as fixed_reference
+
+        fixed = fixed_reference(fixed_robot_id)
+        if fixed is not None:
+            references = [fixed]
+    for reference in references:
         design = reference.get("capability_design")
         suite = reference.get("validation_suite")
         if not isinstance(design, Mapping) or not isinstance(suite, Mapping):
@@ -1061,6 +1068,7 @@ def validate_capability_validation_suite(
     package: Any,
     design: Mapping[str, Any],
     private_inputs: Mapping[str, Any] | None = None,
+    fixed_family: bool = False,
 ) -> dict[str, Any]:
     """Audit exact two-case-per-capability coverage and criterion copying."""
 
@@ -1092,7 +1100,14 @@ def validate_capability_validation_suite(
     instances = _id_map(private.get("instances"), field="instances", id_field="instance_id")
     guards = _id_map(private.get("guards"), field="guards", id_field="guard_id")
     capabilities = _design_map(design)
-    semantic_reference_contracts = _semantic_reference_contracts()
+    fixed_robot_id = ids.get("robot_configuration_id") if fixed_family else None
+    if fixed_robot_id:
+        from autoadapter2.fixed_family import reference as fixed_reference
+
+        fixed = fixed_reference(fixed_robot_id)
+        if fixed is not None and suite != fixed["validation_suite"]:
+            raise IVCError("fixed family suite must match the repository-owned standard")
+    semantic_reference_contracts = _semantic_reference_contracts(fixed_robot_id)
     cases = suite.get("cases")
     expected_count = 2 * len(capabilities)
     if not isinstance(cases, list) or len(cases) != expected_count:

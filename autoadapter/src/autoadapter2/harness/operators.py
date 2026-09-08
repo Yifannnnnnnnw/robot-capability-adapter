@@ -916,6 +916,26 @@ _REFERENCE_CONTRACT_IDS = {
 }
 
 
+# Family aliases preserve the trusted temporal evaluators. The fixed-input
+# validator admits only the repository-owned robot-specific binding.
+for _original, _contract in tuple(_REFERENCE_CONTRACT_IDS.items()):
+    if _contract == "A6":
+        continue
+    _family_kind = _original.replace("so101_", "arm_", 1).replace("go2_", "quadruped_", 1)
+    _family_spec = copy.deepcopy(_OPERATOR_SPECS[_original])
+    if _contract.startswith("A"):
+        _family_spec["parameter_schema"]["properties"].update({
+            "guarded_joint_names": {"type": "string_array"},
+            "guarded_joint_tolerances": {"type": "number_array"},
+            "guard_site_name": {"type": "string"},
+        })
+        _family_spec["entity_parameters"].update({
+            "guarded_joint_names": "joint_array", "guard_site_name": "site",
+        })
+    _OPERATOR_SPECS[_family_kind] = _family_spec
+    _REFERENCE_CONTRACT_IDS[_family_kind] = _contract
+
+
 def measurement_operator_catalog() -> dict[str, Any]:
     """Return the JSON-serializable trusted operator vocabulary."""
 
@@ -1546,6 +1566,22 @@ def _scene_model(scene_path: Path) -> Any:
         raise MeasurementOperatorError(
             f"cannot load selected MuJoCo scene {scene_path}: {exc}"
         ) from exc
+
+
+def resolve_geom_id(model: Any, name: str) -> int:
+    """Resolve a real name first, then the catalog alias of an unnamed geom."""
+    import mujoco
+
+    identifier = int(mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name))
+    if identifier >= 0:
+        return identifier
+    suffix = name.removeprefix("geom_")
+    if name.startswith("geom_") and suffix.isdigit():
+        identifier = int(suffix)
+        if 0 <= identifier < model.ngeom and name == f"geom_{identifier}":
+            if not mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, identifier):
+                return identifier
+    return -1
 
 
 def inspect_scene_entities(scene_path: str | Path) -> dict[str, Any]:
