@@ -1,5 +1,9 @@
 # Franka Panda single-robot Opus diagnostic
 
+Completed run: [Franka results](OPUS5_FRANKA_RESULTS.md). Study passed;
+Generate recovered once from timeout, then a later timeout ended the run before
+Harness. Preparation commit: `ce4c4d7`.
+
 The user requested a different robot after the SO-101 retry completed Study but
 timed out during Generate. This run selects Franka Panda only. It is a fresh
 diagnostic; no SO-101 conversation, Driver or result is reused as Franka evidence.

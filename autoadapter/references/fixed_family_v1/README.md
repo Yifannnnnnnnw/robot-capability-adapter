@@ -4,11 +4,11 @@ This is the user-approved 11-robot diagnostic of fixed capabilities and continuo
 Driver development. It is not a thesis experiment cohort or a formal denominator.
 No TGCD/IVC authoring, TaskDemo, Evolution, or policy training is performed.
 
-Latest single-robot trial: [Opus 5 SO-101 retry](OPUS5_SO101_RETRY_RESULTS.md),
-with at most one Repair authorized. Environment and Study passed; Generate and
-its one permitted timeout retry both reached the 120-second deadline before
-response headers. Other robots were not dispatched. The [first Opus trial](OPUS5_SO101_RESULTS.md)
-remains separately recorded.
+Latest single-robot trial: [Opus 5 Franka Panda](OPUS5_FRANKA_RESULTS.md).
+Environment and Study passed; Generate recovered from its first timeout, then
+stopped at a later timeout after the shared retry allowance was used. No Harness
+or Repair ran. The [SO-101 retry](OPUS5_SO101_RETRY_RESULTS.md) and
+[first Opus trial](OPUS5_SO101_RESULTS.md) remain separately recorded.
 
 Current execution evidence: [Holistic results](HOLISTIC_RESULTS.md), with V3.2
 transport interruptions and the separate low-cost Qwen fallback recorded apart.
