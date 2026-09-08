@@ -1,5 +1,9 @@
 # Franka diagnostic: resume from accepted Study
 
+Completed: [run result](OPUS5_FRANKA_STUDY_REUSE_RESULTS.md). Preparation commit
+`7139c9b`; Study was reused, seven Generate requests succeeded, and the next
+request plus its retry timed out before any Driver/Harness submission.
+
 The user requested one robot after the fixed Generate file-input change
 (`5995cfe`), explicitly allowing reuse of Study. Use the accepted Franka Study
 from `fixed-family-v1-holistic-opus5-franka-20260908`, whose robot metadata,
