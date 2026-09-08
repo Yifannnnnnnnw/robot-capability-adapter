@@ -474,6 +474,14 @@ class PublicDevelopmentSession:
             # exception. Prefer it to a long traceback whose useful tail can
             # be lost again when the artifact loop bounds its observation.
             detail = result.get("error") or result.get("stderr") or result.get("stdout")
+            if result.get("timed_out") or result.get("session_lost") or not detail:
+                detail = {
+                    "detail": detail or "Worker returned no diagnostic text",
+                    **{key: result[key] for key in (
+                        "timed_out", "session_lost", "wall_time_s",
+                        "physics_steps_total", "physics_step_budget_exhausted",
+                    ) if key in result},
+                }
             raise DevelopmentSessionError(
                 f"driver.py public import/build failed: {str(detail)[:2000]}"
             )

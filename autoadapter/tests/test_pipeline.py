@@ -20,6 +20,7 @@ from autoadapter2.pipeline import (
     ExperimentConfig,
     PipelineError,
     PipelineHooks,
+    _load_fixed_inputs,
     _validate_model_preflight,
     _stage_evidence,
     _public_experience,
@@ -58,6 +59,31 @@ def test_config_accepts_a_single_robot_single_condition_canary() -> None:
 
     assert config.robots == ("r-arm",)
     assert config.generation_conditions == ("skeleton-assisted",)
+
+
+def test_fixed_inputs_can_omit_task_support_only_when_explicit(tmp_path: Path) -> None:
+    package = _package(tmp_path / "package", "r-arm")
+    inputs = tmp_path / "inputs" / "r-arm"
+    inputs.mkdir(parents=True)
+    for name in ("capability_design", "capability_validation_suite"):
+        (inputs / f"{name}.json").write_text("{}")
+
+    def validate(design: Any, package: Any, *, require_task_support: bool = True) -> Any:
+        if require_task_support:
+            raise ValueError("missing task_support")
+        return design
+
+    hooks = PipelineHooks(
+        capability_design_validator=validate,
+        capability_suite_validator=lambda suite, **kwargs: suite,
+    )
+    with pytest.raises(PipelineError, match="missing task_support"):
+        _load_fixed_inputs(inputs.parent, packages={"r-arm": package}, hooks=hooks)
+    loaded, _ = _load_fixed_inputs(
+        inputs.parent, packages={"r-arm": package}, hooks=hooks,
+        require_task_support=False,
+    )
+    assert loaded["r-arm"]["design"] == {}
 
 
 def test_config_can_disable_task_demo_for_a_pre_recap_diagnostic() -> None:

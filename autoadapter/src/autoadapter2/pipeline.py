@@ -777,6 +777,7 @@ def _load_fixed_inputs(
     *,
     packages: Mapping[str, RobotPackage],
     hooks: PipelineHooks,
+    require_task_support: bool = True,
 ) -> tuple[dict[str, dict[str, dict[str, Any]]], dict[str, Any]]:
     """Load and audit one predeclared capability-v2 design/suite per robot.
 
@@ -816,6 +817,7 @@ def _load_fixed_inputs(
                         hooks.capability_design_validator,
                         raw_design,
                         package,
+                        require_task_support=require_task_support,
                     )
                 )
             )
@@ -3349,6 +3351,7 @@ def run_experiment(
             fixed_inputs_from,
             packages=packages,
             hooks=selected_hooks,
+            require_task_support=config.task_demo_enabled,
         )
         _write(
             destination / "fixed_input_provenance.json",

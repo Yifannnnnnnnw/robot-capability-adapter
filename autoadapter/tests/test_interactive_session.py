@@ -589,6 +589,18 @@ def build(model, data):
         ):
             self.session.validate_driver_artifact()
 
+    def test_empty_build_timeout_reports_worker_state(self) -> None:
+        self.session.write_file({"path": "driver.py", "content": DRIVER_SOURCE})
+        with mock.patch.object(self.session, "execute_python", return_value={
+            "successful": False, "stdout": "", "stderr": "",
+            "timed_out": True, "session_lost": True,
+            "physics_steps_total": 4000, "physics_step_budget_exhausted": True,
+        }), self.assertRaises(DevelopmentSessionError) as raised:
+            self.session.validate_driver_artifact()
+        self.assertIn("'timed_out': True", str(raised.exception))
+        self.assertIn("'session_lost': True", str(raised.exception))
+        self.assertIn("'physics_step_budget_exhausted': True", str(raised.exception))
+
     def test_candidate_task_dispatch_is_rejected_before_freeze(self) -> None:
         invalid = DRIVER_SOURCE.replace(
             'request["target"]', 'request["task_id"]'
