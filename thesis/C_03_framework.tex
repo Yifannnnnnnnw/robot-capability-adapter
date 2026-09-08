@@ -25,19 +25,16 @@ tests be generated from task requirements? The resulting driver must then be
 evaluated in simulation using observations and verdicts that remain outside its
 control.
 
-This chapter presents Auto-Adapter, a framework that uses public robot
-descriptions, a simulation model, and documented tasks to construct reusable
-robot capabilities and a robot-specific Python driver. Task-Grounded
-Capability Design identifies bounded operations shared across tasks; for
-example, reaching and manipulation tasks may motivate an end-effector
-capability whose success requires reaching and holding a target within a stated
-tolerance. Before driver generation, an Independent Validation Compiler
-converts these requirements into executable tests without access to the
-eventual implementation. A ReAct coding agent then develops the driver by
-reading permitted files, revising its artefacts, and running bounded Python and
-simulation checks \citep{yao2023react}. Final acceptance uses simulator state
-recorded independently of the generated code, rather than its return values or
-self-reported success.
+This chapter presents Auto-Adapter, an LLM-agent framework that generates
+robot-specific Python drivers exposing reusable motion and observation
+operations. It uses public robot documentation, a simulation model and a task
+library to derive the required capabilities and measurable criteria for their
+behaviour. The corresponding tests are generated and fixed before driver
+synthesis, without access to the eventual implementation. A coding agent
+develops the driver using simulation feedback, while a separate test harness
+assesses its behaviour from independently recorded simulator state. We use
+ReCAP \citep{zhang2025recap} as the high-level controller to select and compose
+these capabilities for robot task execution.
 
 The chapter's central empirical objective is to establish whether Auto-Adapter
 produces effective robot-specific drivers whose quality, operationalised as
