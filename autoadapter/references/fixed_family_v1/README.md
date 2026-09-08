@@ -9,6 +9,10 @@ passed basic environment checks, but API HTTP 402 interrupted synthesis. This
 does not establish eight completed model outcomes. Initial results remain below
 as historical diagnostic evidence, not rescored under the corrected evaluators.
 
+After the user replaced the company API credential, [Holistic connectivity was
+verified](HOLISTIC_CONNECTIVITY.md) with DeepSeek V3.2. The gateway does not list
+V4 Flash. This separate connectivity test has not changed the experiment model.
+
 ## Scope and executable inputs
 
 | Family | Robots | Capabilities | Cases |
