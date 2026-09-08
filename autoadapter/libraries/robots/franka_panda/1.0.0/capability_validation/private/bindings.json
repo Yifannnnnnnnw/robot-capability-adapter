@@ -1,0 +1,258 @@
+{
+  "artifact_type": "capability_validation_private_bindings",
+  "robot_configuration_id": "franka_panda",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "franka-panda-metaworld-source-protocols-2026-08-19-v1",
+  "bindings": [
+    {
+      "binding_id": "franka_panda-a1-nominal",
+      "kind": "b1_contract",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a1-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a2-nominal",
+      "kind": "b1_contract",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a2-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a3-nominal",
+      "kind": "b1_contract",
+      "metric": "normalised_aperture_error",
+      "unit": "ratio",
+      "parameters": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "fixed_arm",
+        "joint_name": "finger_joint1",
+        "closed_position": 0.0,
+        "open_position": 0.04,
+        "guarded_joint_names": [
+          "joint1",
+          "joint2",
+          "joint3",
+          "joint4",
+          "joint5",
+          "joint6",
+          "joint7"
+        ],
+        "guarded_joint_tolerances": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "guard_site_name": "fixed_tcp"
+      }
+    },
+    {
+      "binding_id": "franka_panda-a3-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "normalised_aperture_error",
+      "unit": "ratio",
+      "parameters": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "fixed_arm",
+        "joint_name": "finger_joint1",
+        "closed_position": 0.0,
+        "open_position": 0.04,
+        "guarded_joint_names": [
+          "joint1",
+          "joint2",
+          "joint3",
+          "joint4",
+          "joint5",
+          "joint6",
+          "joint7"
+        ],
+        "guarded_joint_tolerances": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "guard_site_name": "fixed_tcp"
+      }
+    },
+    {
+      "binding_id": "franka_panda-a4-nominal",
+      "kind": "b1_contract",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "tool_body_names": [
+          "hand",
+          "left_finger",
+          "right_finger"
+        ],
+        "tool_geom_names": [
+          "geom_65",
+          "geom_68",
+          "geom_69",
+          "geom_70",
+          "geom_71",
+          "geom_72",
+          "geom_73",
+          "geom_76",
+          "geom_77",
+          "geom_78",
+          "geom_79",
+          "geom_80",
+          "geom_81"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a4-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "tool_body_names": [
+          "hand",
+          "left_finger",
+          "right_finger"
+        ],
+        "tool_geom_names": [
+          "geom_65",
+          "geom_68",
+          "geom_69",
+          "geom_70",
+          "geom_71",
+          "geom_72",
+          "geom_73",
+          "geom_76",
+          "geom_77",
+          "geom_78",
+          "geom_79",
+          "geom_80",
+          "geom_81"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a5-nominal",
+      "kind": "b1_contract",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "base_body_name": "link0",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    },
+    {
+      "binding_id": "franka_panda-a5-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "base_body_name": "link0",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      }
+    }
+  ]
+}

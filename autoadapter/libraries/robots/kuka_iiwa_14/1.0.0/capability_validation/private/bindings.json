@@ -1,0 +1,118 @@
+{
+  "artifact_type": "capability_validation_private_bindings",
+  "robot_configuration_id": "kuka_iiwa_14",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
+  "bindings": [
+    {
+      "binding_id": "kuka_iiwa_14-a1-nominal",
+      "kind": "b1_contract",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a1-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a2-nominal",
+      "kind": "b1_contract",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a2-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a4-nominal",
+      "kind": "b1_contract",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site",
+        "tool_body_names": [
+          "link7"
+        ],
+        "tool_geom_names": [
+          "link7_contact_geom"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a4-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site",
+        "tool_body_names": [
+          "link7"
+        ],
+        "tool_geom_names": [
+          "link7_contact_geom"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a5-nominal",
+      "kind": "b1_contract",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site",
+        "base_body_name": "base"
+      }
+    },
+    {
+      "binding_id": "kuka_iiwa_14-a5-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "attachment_site",
+        "base_body_name": "base"
+      }
+    }
+  ]
+}

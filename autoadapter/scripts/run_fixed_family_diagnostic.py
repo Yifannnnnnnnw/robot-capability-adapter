@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,7 +65,7 @@ def main() -> None:
     if not set(robots) <= set(config.robots):
         parser.error("robot is outside the approved diagnostic cohort")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    output = args.output or ROOT / "runs/diagnostic" / f"fixed-family-v1-{stamp}"
+    output = (args.output or ROOT / "runs/diagnostic" / f"fixed-family-v1-{stamp}").resolve()
     if output.exists():
         parser.error("output must be fresh; existing cells must not be overwritten")
     output.mkdir(parents=True)
@@ -76,7 +77,7 @@ def main() -> None:
         client = None
         stage = "preparation"
         try:
-            package = load_indexed_robot_package(ROOT, robot)
+            package = load_indexed_robot_package(ROOT, robot, require_task_library=False)
             fixed, _ = _load_fixed_inputs(
                 ROOT / "references/fixed_family_v1", packages={robot: package},
                 hooks=PipelineHooks(), require_task_support=False,
@@ -85,9 +86,15 @@ def main() -> None:
             one = replace(config, robots=(robot,))
             stage = "reference"
             print(f"{robot}: reference control", flush=True)
+            fixed_reference = package.root / "reference/fixed_family_driver.py"
+            def render_fixed(design, destination):
+                destination = Path(destination)
+                destination.mkdir(parents=True, exist_ok=True)
+                return Path(shutil.copy2(fixed_reference, destination / "driver.py"))
+            reference_hooks = PipelineHooks(reference_renderer=render_fixed) if fixed_reference.exists() else PipelineHooks()
             _run_reference_positive_control(
                 package=package, design=fixed[robot]["design"], suite=fixed[robot]["suite"],
-                config=one, hooks=PipelineHooks(), output_dir=output / robot / "reference",
+                config=one, hooks=reference_hooks, output_dir=output / robot / "reference",
                 run_id=f"fixed-family-reference-{stamp}-{robot}",
             )
             result["reference_passed"] = True
@@ -103,7 +110,12 @@ def main() -> None:
                     skip_reference_calibration=True,
                 )
                 result["pipeline_report"] = str(output / robot / "candidate/experiment_report.json")
-                result["pipeline_success_claim"] = report.get("success_claim")
+                result["candidate_passed"] = bool(report.get("final_capability_validation_passed"))
+                result["pipeline_success"] = bool(report.get("success"))
+                result["cells"] = [{key: cell.get(key) for key in (
+                    "attempt_count", "case_counts", "capability_validation_executed",
+                    "final_capability_validation_passed",
+                )} for cell in report.get("cells", [])]
         except Exception as exc:
             result["failure_stage"] = stage
             result["error"] = f"{type(exc).__name__}: {exc}"

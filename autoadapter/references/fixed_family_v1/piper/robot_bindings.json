@@ -1,0 +1,95 @@
+{
+  "family": "arm",
+  "site": "ee_site",
+  "base": "base_link",
+  "spec": {
+    "ee_site_name": "ee_site",
+    "arm_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6"
+    ],
+    "arm_actuator_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6"
+    ],
+    "joint_limits": {
+      "joint1": [
+        -2.618,
+        2.618
+      ],
+      "joint2": [
+        0.0,
+        3.14
+      ],
+      "joint3": [
+        -2.697,
+        0.0
+      ],
+      "joint4": [
+        -1.832,
+        1.832
+      ],
+      "joint5": [
+        -1.22,
+        1.22
+      ],
+      "joint6": [
+        -3.14,
+        3.14
+      ]
+    },
+    "continuous_joint_names": [],
+    "ik_max_iter": 100,
+    "ik_damping": 0.02
+  },
+  "gripper_actuator": "gripper",
+  "gripper_joint": "joint7",
+  "gripper_closed_ctrl": 0.0,
+  "gripper_open_ctrl": 0.035,
+  "closed_position": 0.0,
+  "open_position": 0.035,
+  "tool_geom_ids": [
+    82,
+    84,
+    85,
+    87,
+    88
+  ],
+  "tool_geom_names": [
+    "geom_82",
+    "geom_84",
+    "geom_85",
+    "geom_87",
+    "geom_88"
+  ],
+  "tool_body_names": [
+    "link6",
+    "link7",
+    "link8"
+  ],
+  "fixture_origin_m": [
+    0.4989499513951784,
+    0.0014141646717092525,
+    0.3652504521410361
+  ],
+  "fk_targets_m": [
+    [
+      0.5278726066989874,
+      0.0014136382917729296,
+      0.2932552441045567
+    ],
+    [
+      0.5397902112858992,
+      0.001413369142007601,
+      0.2505259409261455
+    ]
+  ]
+}

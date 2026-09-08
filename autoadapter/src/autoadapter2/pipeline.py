@@ -3040,6 +3040,7 @@ def load_experiment_packages(
     *,
     package_loader: Callable[..., RobotPackage] = load_indexed_robot_package,
     check_self_containment: bool = True,
+    require_task_library: bool = True,
 ) -> tuple[dict[str, RobotPackage], dict[str, Any]]:
     """Load every indexed package before any model-authored call."""
 
@@ -3053,7 +3054,7 @@ def load_experiment_packages(
     packages: dict[str, RobotPackage] = {}
     for robot in config.robots:
         try:
-            package = package_loader(root, robot)
+            package = _call_supported(package_loader, root, robot, require_task_library=require_task_library)
         except (RobotPackageError, OSError, ValueError) as exc:
             raise PipelineError(
                 f"runnable package {robot!r} failed closed before model calls: {exc}"
@@ -3330,6 +3331,7 @@ def run_experiment(
         config,
         package_loader=selected_hooks.package_loader,
         check_self_containment=check_self_containment,
+        require_task_library=fixed_inputs_from is None or config.task_demo_enabled,
     )
     package_check = {
         "experiment_id": config.experiment_id,

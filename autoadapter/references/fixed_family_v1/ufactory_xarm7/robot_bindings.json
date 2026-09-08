@@ -1,0 +1,113 @@
+{
+  "family": "arm",
+  "site": "link_tcp",
+  "base": "link_base",
+  "spec": {
+    "ee_site_name": "link_tcp",
+    "arm_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "joint7"
+    ],
+    "arm_actuator_names": [
+      "act1",
+      "act2",
+      "act3",
+      "act4",
+      "act5",
+      "act6",
+      "act7"
+    ],
+    "joint_limits": {
+      "joint1": [
+        -6.28319,
+        6.28319
+      ],
+      "joint2": [
+        -2.059,
+        2.0944
+      ],
+      "joint3": [
+        -6.28319,
+        6.28319
+      ],
+      "joint4": [
+        -0.19198,
+        3.927
+      ],
+      "joint5": [
+        -6.28319,
+        6.28319
+      ],
+      "joint6": [
+        -1.69297,
+        3.14159
+      ],
+      "joint7": [
+        -6.28319,
+        6.28319
+      ]
+    },
+    "continuous_joint_names": [],
+    "ik_max_iter": 100,
+    "ik_damping": 0.02
+  },
+  "gripper_actuator": "gripper",
+  "gripper_joint": "left_driver_joint",
+  "gripper_closed_ctrl": 255.0,
+  "gripper_open_ctrl": 0.0,
+  "closed_position": 0.85,
+  "open_position": 0.0,
+  "tool_geom_ids": [
+    10,
+    11,
+    13,
+    14,
+    15,
+    16,
+    18,
+    19,
+    20
+  ],
+  "tool_geom_names": [
+    "geom_10",
+    "geom_11",
+    "left_finger_pad_1",
+    "left_finger_pad_2",
+    "geom_15",
+    "geom_16",
+    "right_finger_pad_1",
+    "right_finger_pad_2",
+    "geom_20"
+  ],
+  "tool_body_names": [
+    "left_finger",
+    "left_inner_knuckle",
+    "left_outer_knuckle",
+    "right_finger",
+    "right_inner_knuckle",
+    "right_outer_knuckle",
+    "xarm_gripper_base_link"
+  ],
+  "fixture_origin_m": [
+    0.4788623253741006,
+    4.004423330964655e-18,
+    0.7990808675583131
+  ],
+  "fk_targets_m": [
+    [
+      0.5316801823134014,
+      1.3780148461936065e-17,
+      0.7282271264209389
+    ],
+    [
+      0.5572487743191955,
+      -4.5619714696856745e-17,
+      0.6846467227940822
+    ]
+  ]
+}

@@ -1,0 +1,820 @@
+{
+  "artifact_type": "capability_validation_private_instances",
+  "robot_configuration_id": "kinova_gen3_robotiq_2f85",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "kinova-gen3-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1",
+  "instances": [
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a1-nominal",
+      "capability_id": "A1",
+      "case_role": "nominal",
+      "calibration_profile": "A1",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "target_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A1 request bounds: target_position_m"
+                }
+              ]
+            }
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+      "capability_id": "A1",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A1",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "target_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A1 request bounds: target_position_m"
+                }
+              ]
+            }
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a2-nominal",
+      "capability_id": "A2",
+      "case_role": "nominal",
+      "calibration_profile": "A2",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "waypoints_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "unit": "m",
+              "frame": "world",
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+                  }
+                ]
+              }
+            }
+          },
+          "max_duration_per_segment_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 5.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "waypoints_m",
+          "max_duration_per_segment_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+      "capability_id": "A2",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A2",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "waypoints_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "unit": "m",
+              "frame": "world",
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+                  }
+                ]
+              }
+            }
+          },
+          "max_duration_per_segment_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 5.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "waypoints_m",
+          "max_duration_per_segment_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 13.0,
+      "max_steps": 6501,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a3-nominal",
+      "capability_id": "A3",
+      "case_role": "nominal",
+      "calibration_profile": "A3",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "opening_fraction": {
+            "type": "number",
+            "unit": "ratio",
+            "frame": "none",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "opening_fraction",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "right_driver_joint": 0.0,
+          "left_driver_joint": 0.0
+        },
+        "actuator_controls": {
+          "fingers_actuator": 0.0
+        }
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a3-calibrated_boundary",
+      "capability_id": "A3",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A3",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "opening_fraction": {
+            "type": "number",
+            "unit": "ratio",
+            "frame": "none",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "opening_fraction",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "right_driver_joint": 0.8,
+          "left_driver_joint": 0.8
+        },
+        "actuator_controls": {
+          "fingers_actuator": 255.0
+        }
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a4-nominal",
+      "capability_id": "A4",
+      "case_role": "nominal",
+      "calibration_profile": "A4",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "precontact_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+                }
+              ]
+            }
+          },
+          "approach_direction_unit": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "unitless",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "unitless",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+                }
+              ]
+            }
+          },
+          "max_travel_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "none",
+            "exclusiveMinimum": 0.0,
+            "maximum": 0.08,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+              }
+            ]
+          },
+          "max_approach_speed_m_s": {
+            "type": "number",
+            "unit": "m/s",
+            "frame": "none",
+            "exclusiveMinimum": 0.0,
+            "maximum": 0.05,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "precontact_position_m",
+          "approach_direction_unit",
+          "max_travel_m",
+          "max_approach_speed_m_s",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "mocap_body_positions": {
+          "fixed_contact_target": {
+            "frame_body_name": "world",
+            "position_m": [
+              0.3960670760802139,
+              -0.46222533228614965,
+              0.4337243941512558
+            ]
+          }
+        }
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+      "capability_id": "A4",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A4",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "precontact_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+                }
+              ]
+            }
+          },
+          "approach_direction_unit": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "unitless",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "unitless",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+                }
+              ]
+            }
+          },
+          "max_travel_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "none",
+            "exclusiveMinimum": 0.0,
+            "maximum": 0.08,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+              }
+            ]
+          },
+          "max_approach_speed_m_s": {
+            "type": "number",
+            "unit": "m/s",
+            "frame": "none",
+            "exclusiveMinimum": 0.0,
+            "maximum": 0.05,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "precontact_position_m",
+          "approach_direction_unit",
+          "max_travel_m",
+          "max_approach_speed_m_s",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "mocap_body_positions": {
+          "fixed_contact_target": {
+            "frame_body_name": "world",
+            "position_m": [
+              0.4060670760802139,
+              -0.46222533228614965,
+              0.4337243941512558
+            ]
+          }
+        }
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a5-nominal",
+      "capability_id": "A5",
+      "case_role": "nominal",
+      "calibration_profile": "A5",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "offset_robot_base_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "robot_base",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "robot_base",
+              "minimum": -0.06,
+              "maximum": 0.06,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+                }
+              ]
+            }
+          },
+          "max_duration_per_leg_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 5.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "offset_robot_base_m",
+          "max_duration_per_leg_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    },
+    {
+      "instance_id": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+      "capability_id": "A5",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A5",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "offset_robot_base_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "robot_base",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "robot_base",
+              "minimum": -0.06,
+              "maximum": 0.06,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+                }
+              ]
+            }
+          },
+          "max_duration_per_leg_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 5.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "offset_robot_base_m",
+          "max_duration_per_leg_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/fixed_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "kinova_gen3_robotiq_2f85-fixed-control",
+        "kinova_gen3_robotiq_2f85-fixed-no-state-write",
+        "kinova_gen3_robotiq_2f85-fixed-canonical",
+        "kinova_gen3_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 9.0,
+      "max_steps": 4501,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "fixed_evidence"
+    }
+  ]
+}

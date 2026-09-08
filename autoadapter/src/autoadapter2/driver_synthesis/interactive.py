@@ -478,7 +478,7 @@ class PublicDevelopmentSession:
                 detail = {
                     "detail": detail or "Worker returned no diagnostic text",
                     **{key: result[key] for key in (
-                        "timed_out", "session_lost", "wall_time_s",
+                        "timed_out", "session_lost", "elapsed_wall_s",
                         "physics_steps_total", "physics_step_budget_exhausted",
                     ) if key in result},
                 }

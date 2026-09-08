@@ -849,8 +849,20 @@ def validate_capability_design(
             _validate_structured_criterion(item, where=f"{where}.criteria[{criterion_index}]")
             for criterion_index, item in enumerate(criteria)
         ]
+        fixed_semantic_match = False
+        if not require_task_support:
+            from autoadapter2.fixed_family import reference as fixed_reference
+
+            fixed = fixed_reference(ids["robot_configuration_id"])
+            if fixed is not None:
+                fixed_semantic_match = any(
+                    item["capability_id"] == capability_id
+                    and capability_execution_contract(raw) == capability_execution_contract(item)
+                    for item in fixed["capability_design"]["capabilities"]
+                )
         if (
             ids["robot_configuration_id"] not in SEMANTIC_REFERENCE_ROBOT_IDS
+            and not fixed_semantic_match
             and not is_authorable_numeric_criterion(canonical_criteria[0])
         ):
             raise CapabilityProtocolError(
@@ -897,7 +909,7 @@ def validate_capability_design(
         seen_ids.add(capability_id)
         seen_methods.add(method_name)
 
-    task_ids = {str(task.get("task_id")) for task in _package_tasks(package)}
+    task_ids = {str(task.get("task_id")) for task in _package_tasks(package)} if require_task_support else set()
     support = _normalise_task_support(
         design.get("task_support"), capability_ids=seen_ids, task_ids=task_ids
     ) if require_task_support else []

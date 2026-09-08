@@ -1080,6 +1080,14 @@ def _validate_private_inputs(
         if document.get("task_snapshot_id") != snapshot_id:
             raise RobotPackageError(f"task snapshot mismatch in private {name}.json")
 
+    if not tasks:
+        if any(document.get(name) != [] for name, document in documents.items()):
+            raise RobotPackageError("a task-free diagnostic package must have empty private task records")
+        if not all((package_root / "capability_validation/private" / f"{name}.json").is_file()
+                   for name in ("instances", "bindings", "guards")):
+            raise RobotPackageError("task-free diagnostics require a complete private capability context")
+        return
+
     binding_values = _required_list(documents["bindings"], "bindings", where="bindings.json")
     bindings: dict[str, dict[str, Any]] = {}
     for index, binding in enumerate(binding_values):
@@ -1435,7 +1443,7 @@ def _validate_private_inputs(
         _validate_mjcf(scene)
 
 
-def load_robot_package(root: str | Path) -> RobotPackage:
+def load_robot_package(root: str | Path, *, require_task_library: bool = True) -> RobotPackage:
     """Load one package only after its complete runnable inputs pass checks."""
 
     package_root = Path(root).resolve()
@@ -1462,21 +1470,23 @@ def load_robot_package(root: str | Path) -> RobotPackage:
             package_version=package_version,
         )
     sources = _validate_sources(sources_document, path=sources_path)
-    tasks = _validate_tasks(
+    tasks = () if not require_task_library and catalog_document.get("tasks") == [] else _validate_tasks(
         catalog_document,
         path=catalog_path,
         source_ids={str(item["source_id"]) for item in sources},
     )
     snapshot_id = _required_text(catalog_document, "snapshot_id", where=catalog_path.name)
 
-    _validate_private_inputs(
-        package_root=package_root,
-        private_dir=private_dir,
-        robot_configuration_id=robot_configuration_id,
-        package_version=package_version,
-        snapshot_id=snapshot_id,
-        tasks=tasks,
-    )
+    if require_task_library or all((private_dir / f"{name}.json").is_file()
+                                   for name in ("instances", "bindings", "guards")):
+        _validate_private_inputs(
+            package_root=package_root, private_dir=private_dir,
+            robot_configuration_id=robot_configuration_id, package_version=package_version,
+            snapshot_id=snapshot_id, tasks=tasks,
+        )
+    elif not all((package_root / "capability_validation/private" / f"{name}.json").is_file()
+                 for name in ("instances", "bindings", "guards")):
+        raise RobotPackageError("fixed diagnostics require complete private capability inputs")
 
     skeleton_dir = package_root / "skeleton"
     if not skeleton_dir.is_dir() or not any(skeleton_dir.glob("*.py")):
@@ -1512,6 +1522,8 @@ def load_robot_package(root: str | Path) -> RobotPackage:
 def load_indexed_robot_package(
     mainline_root: str | Path,
     robot_configuration_id: str,
+    *,
+    require_task_library: bool = True,
 ) -> RobotPackage:
     """Resolve only an explicitly indexed runnable package under the mainline."""
 
@@ -1531,4 +1543,4 @@ def load_indexed_robot_package(
         relative,
         field=f"robot index entry {robot_configuration_id!r}",
     )
-    return load_robot_package(package_root)
+    return load_robot_package(package_root, require_task_library=require_task_library)

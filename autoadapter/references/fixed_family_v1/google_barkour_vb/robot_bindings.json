@@ -1,0 +1,89 @@
+{
+  "family": "quadruped",
+  "base": "torso",
+  "feet": [
+    [
+      "geom_9"
+    ],
+    [
+      "geom_15"
+    ],
+    [
+      "geom_19"
+    ],
+    [
+      "geom_25"
+    ]
+  ],
+  "spec": {
+    "base_body_name": "torso",
+    "leg_joint_names": {
+      "front_left": [
+        "abduction_front_left",
+        "hip_front_left",
+        "knee_front_left"
+      ],
+      "hind_left": [
+        "abduction_hind_left",
+        "hip_hind_left",
+        "knee_hind_left"
+      ],
+      "front_right": [
+        "abduction_front_right",
+        "hip_front_right",
+        "knee_front_right"
+      ],
+      "hind_right": [
+        "abduction_hind_right",
+        "hip_hind_right",
+        "knee_hind_right"
+      ]
+    },
+    "leg_actuator_names": {
+      "front_left": [
+        "abduction_front_left",
+        "hip_front_left",
+        "knee_front_left"
+      ],
+      "hind_left": [
+        "abduction_hind_left",
+        "hip_hind_left",
+        "knee_hind_left"
+      ],
+      "front_right": [
+        "abduction_front_right",
+        "hip_front_right",
+        "knee_front_right"
+      ],
+      "hind_right": [
+        "abduction_hind_right",
+        "hip_hind_right",
+        "knee_hind_right"
+      ]
+    },
+    "home_qpos": [
+      0.0,
+      0.5,
+      1.0,
+      0.0,
+      0.5,
+      1.0,
+      0.0,
+      0.5,
+      1.0,
+      0.0,
+      0.5,
+      1.0
+    ],
+    "actuation": "joint_position",
+    "body_height_target": 0.28
+  },
+  "home_height_m": 0.28,
+  "barkour": true,
+  "foot_geom_ids": [
+    9,
+    15,
+    19,
+    25
+  ]
+}

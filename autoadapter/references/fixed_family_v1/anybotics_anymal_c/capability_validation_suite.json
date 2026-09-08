@@ -1,0 +1,899 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "anybotics_anymal_c",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "anybotics_anymal_c-fixed-family-v1",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "anybotics_anymal_c-g1-nominal",
+      "case_role": "nominal",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.2,
+          0.0
+        ],
+        "yaw_rate_rad_s": 0.0,
+        "duration_s": 2.2
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G1 request bounds: duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g1-nominal",
+      "measurement_binding": {
+        "metric": "planar_velocity_error",
+        "unit": "m/s",
+        "kind": "quadruped_planar_twist_tracking",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "planar_velocity_error",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "final_window",
+            "duration_s": 1.0
+          },
+          "aggregation": {
+            "kind": "mean_velocity_and_yaw_rate"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G1: final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "yaw_rate_error",
+              "unit": "rad/s",
+              "comparator": "<=",
+              "threshold": 0.3
+            },
+            {
+              "metric": "direction_error",
+              "unit": "deg",
+              "comparator": "<=",
+              "threshold": 10.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g1-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.25,
+          0.0
+        ],
+        "yaw_rate_rad_s": -0.3,
+        "duration_s": 3.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G1 request bounds: duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g1-calibrated_boundary",
+      "measurement_binding": {
+        "metric": "planar_velocity_error",
+        "unit": "m/s",
+        "kind": "quadruped_planar_twist_tracking",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "planar_velocity_error",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "final_window",
+            "duration_s": 1.0
+          },
+          "aggregation": {
+            "kind": "mean_velocity_and_yaw_rate"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G1: final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "yaw_rate_error",
+              "unit": "rad/s",
+              "comparator": "<=",
+              "threshold": 0.3
+            },
+            {
+              "metric": "direction_error",
+              "unit": "deg",
+              "comparator": "<=",
+              "threshold": 10.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g2-nominal",
+      "case_role": "nominal",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.08,
+          0.0
+        ],
+        "yaw_delta_rad": 0.1,
+        "max_duration_s": 5.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G2 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g2-nominal",
+      "measurement_binding": {
+        "metric": "terminal_planar_position_error",
+        "unit": "m",
+        "kind": "quadruped_relative_pose_motion",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "terminal_planar_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "continuous_terminal_hold",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "position_yaw_and_speed"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G2: position error <= 0.10 m, yaw error <= 0.0873 rad, speed <= 0.10 m/s for 0.5 s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "wrapped_yaw_error",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0873
+            },
+            {
+              "metric": "planar_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g2-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.06,
+          0.04
+        ],
+        "yaw_delta_rad": 0.15,
+        "max_duration_s": 6.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G2 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g2-calibrated_boundary",
+      "measurement_binding": {
+        "metric": "terminal_planar_position_error",
+        "unit": "m",
+        "kind": "quadruped_relative_pose_motion",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "terminal_planar_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "continuous_terminal_hold",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "position_yaw_and_speed"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G2: position error <= 0.10 m, yaw error <= 0.0873 rad, speed <= 0.10 m/s for 0.5 s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "wrapped_yaw_error",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0873
+            },
+            {
+              "metric": "planar_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g3-nominal",
+      "case_role": "nominal",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.05,
+            0.0
+          ],
+          [
+            0.1,
+            0.0
+          ]
+        ],
+        "max_duration_s": 5.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G3 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g3-nominal",
+      "measurement_binding": {
+        "metric": "planar_path_error",
+        "unit": "m",
+        "kind": "quadruped_planar_path_tracking",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "planar_path_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "ordered_waypoints_and_terminal_hold",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "waypoints_cross_track_endpoint_and_speed"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G3: waypoint error <= 0.10 m, cross-track <= 0.15 m, endpoint error/speed <= 0.10"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "cross_track_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.15
+            },
+            {
+              "metric": "endpoint_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g3-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.04,
+            -0.02
+          ],
+          [
+            0.08,
+            -0.04
+          ],
+          [
+            0.12,
+            0.0
+          ]
+        ],
+        "max_duration_s": 6.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G3 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g3-calibrated_boundary",
+      "measurement_binding": {
+        "metric": "planar_path_error",
+        "unit": "m",
+        "kind": "quadruped_planar_path_tracking",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "planar_path_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "ordered_waypoints_and_terminal_hold",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "waypoints_cross_track_endpoint_and_speed"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G3: waypoint error <= 0.10 m, cross-track <= 0.15 m, endpoint error/speed <= 0.10"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "cross_track_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.15
+            },
+            {
+              "metric": "endpoint_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g4-nominal",
+      "case_role": "nominal",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "request": {
+        "target_height_m": 0.47,
+        "max_duration_s": 3.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G4 request bounds: target_height_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G4 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g4-nominal",
+      "measurement_binding": {
+        "metric": "body_height_error",
+        "unit": "m",
+        "kind": "quadruped_body_height_regulation",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "body_height_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.03,
+          "temporal": {
+            "kind": "continuous_terminal_hold",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "height_attitude_displacement_and_yaw"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G4: height <= 0.03 m, roll/pitch <= 0.1745 rad, displacement <= 0.05 m, yaw drift <= 0.0873 rad"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "absolute_roll_pitch",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.1745
+            },
+            {
+              "metric": "planar_displacement",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.05
+            },
+            {
+              "metric": "yaw_drift",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0873
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g4-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "request": {
+        "target_height_m": 0.54,
+        "max_duration_s": 4.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G4 request bounds: target_height_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G4 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g4-calibrated_boundary",
+      "measurement_binding": {
+        "metric": "body_height_error",
+        "unit": "m",
+        "kind": "quadruped_body_height_regulation",
+        "parameters": {
+          "body_name": "base"
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "body_height_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.03,
+          "temporal": {
+            "kind": "continuous_terminal_hold",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "height_attitude_displacement_and_yaw"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G4: height <= 0.03 m, roll/pitch <= 0.1745 rad, displacement <= 0.05 m, yaw drift <= 0.0873 rad"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "absolute_roll_pitch",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.1745
+            },
+            {
+              "metric": "planar_displacement",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.05
+            },
+            {
+              "metric": "yaw_drift",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0873
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g5-nominal",
+      "case_role": "nominal",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "request": {
+        "duration_s": 1.2
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G5 request bounds: duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g5-nominal",
+      "measurement_binding": {
+        "metric": "stable_stance_integrity",
+        "unit": "mixed",
+        "kind": "quadruped_stable_stance_recovery",
+        "parameters": {
+          "body_name": "base",
+          "foot_geom_groups": [
+            [
+              "geom_52"
+            ],
+            [
+              "geom_66"
+            ],
+            [
+              "geom_80"
+            ],
+            [
+              "geom_94"
+            ]
+          ],
+          "floor_geom_names": [
+            "floor"
+          ],
+          "forbidden_floor_geom_names": [
+            "geom_7",
+            "geom_8",
+            "geom_9",
+            "geom_10",
+            "geom_11",
+            "geom_17",
+            "geom_18",
+            "geom_19",
+            "geom_23",
+            "geom_24",
+            "geom_25",
+            "geom_32"
+          ]
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "stable_stance_integrity",
+          "unit": "mixed",
+          "comparator": "==",
+          "threshold": 1,
+          "temporal": {
+            "kind": "disturbance_recovery_then_hold",
+            "recovery_s": 0.5
+          },
+          "aggregation": {
+            "kind": "all_stability_support_and_contact_gates"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G5: recover roll/pitch <= 0.0524 rad within 0.5 s, then stability/drift/support/forbidden-contact gates"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "recovery_roll_pitch",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0524
+            },
+            {
+              "metric": "hold_roll_pitch",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0873
+            },
+            {
+              "metric": "height_drift",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.03
+            },
+            {
+              "metric": "planar_drift",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.05
+            },
+            {
+              "metric": "mean_planar_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.05
+            },
+            {
+              "metric": "terminal_vertical_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.05
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "anybotics_anymal_c-g5-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "request": {
+        "duration_s": 1.8
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Go2 G5 request bounds: duration_s"
+        }
+      ],
+      "instance_id": "anybotics_anymal_c-g5-calibrated_boundary",
+      "measurement_binding": {
+        "metric": "stable_stance_integrity",
+        "unit": "mixed",
+        "kind": "quadruped_stable_stance_recovery",
+        "parameters": {
+          "body_name": "base",
+          "foot_geom_groups": [
+            [
+              "geom_52"
+            ],
+            [
+              "geom_66"
+            ],
+            [
+              "geom_80"
+            ],
+            [
+              "geom_94"
+            ]
+          ],
+          "floor_geom_names": [
+            "floor"
+          ],
+          "forbidden_floor_geom_names": [
+            "geom_7",
+            "geom_8",
+            "geom_9",
+            "geom_10",
+            "geom_11",
+            "geom_17",
+            "geom_18",
+            "geom_19",
+            "geom_23",
+            "geom_24",
+            "geom_25",
+            "geom_32"
+          ]
+        }
+      },
+      "guard_ids": [
+        "anybotics_anymal_c-fixed-control",
+        "anybotics_anymal_c-fixed-no-state-write",
+        "anybotics_anymal_c-fixed-canonical",
+        "anybotics_anymal_c-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "stable_stance_integrity",
+          "unit": "mixed",
+          "comparator": "==",
+          "threshold": 1,
+          "temporal": {
+            "kind": "disturbance_recovery_then_hold",
+            "recovery_s": 0.5
+          },
+          "aggregation": {
+            "kind": "all_stability_support_and_contact_gates"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "Go2 G5: recover roll/pitch <= 0.0524 rad within 0.5 s, then stability/drift/support/forbidden-contact gates"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "recovery_roll_pitch",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0524
+            },
+            {
+              "metric": "hold_roll_pitch",
+              "unit": "rad",
+              "comparator": "<=",
+              "threshold": 0.0873
+            },
+            {
+              "metric": "height_drift",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.03
+            },
+            {
+              "metric": "planar_drift",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.05
+            },
+            {
+              "metric": "mean_planar_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.05
+            },
+            {
+              "metric": "terminal_vertical_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.05
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

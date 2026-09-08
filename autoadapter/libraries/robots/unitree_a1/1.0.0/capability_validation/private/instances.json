@@ -1,0 +1,744 @@
+{
+  "artifact_type": "capability_validation_private_instances",
+  "robot_configuration_id": "unitree_a1",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree_a1-fixed-family-v1",
+  "instances": [
+    {
+      "instance_id": "unitree_a1-g1-nominal",
+      "capability_id": "G1",
+      "case_role": "nominal",
+      "calibration_profile": "G1",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "linear_velocity_body_m_s": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "unit": "m/s",
+            "frame": "body",
+            "items": {
+              "type": "number",
+              "unit": "m/s",
+              "frame": "body",
+              "minimum": -0.4,
+              "maximum": 0.4,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+                }
+              ]
+            }
+          },
+          "yaw_rate_rad_s": {
+            "type": "number",
+            "unit": "rad/s",
+            "frame": "none",
+            "minimum": -1.0,
+            "maximum": 1.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+              }
+            ]
+          },
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 2.0,
+            "maximum": 4.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "linear_velocity_body_m_s",
+          "yaw_rate_rad_s",
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g1-calibrated_boundary",
+      "capability_id": "G1",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G1",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "linear_velocity_body_m_s": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "unit": "m/s",
+            "frame": "body",
+            "items": {
+              "type": "number",
+              "unit": "m/s",
+              "frame": "body",
+              "minimum": -0.4,
+              "maximum": 0.4,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+                }
+              ]
+            }
+          },
+          "yaw_rate_rad_s": {
+            "type": "number",
+            "unit": "rad/s",
+            "frame": "none",
+            "minimum": -1.0,
+            "maximum": 1.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+              }
+            ]
+          },
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 2.0,
+            "maximum": 4.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "linear_velocity_body_m_s",
+          "yaw_rate_rad_s",
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g2-nominal",
+      "capability_id": "G2",
+      "case_role": "nominal",
+      "calibration_profile": "G2",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "translation_initial_yaw_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "unit": "m",
+            "frame": "initial_body_yaw",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "initial_body_yaw",
+              "minimum": -0.3,
+              "maximum": 0.3,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+                }
+              ]
+            }
+          },
+          "yaw_delta_rad": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "none",
+            "minimum": -0.6,
+            "maximum": 0.6,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "translation_initial_yaw_m",
+          "yaw_delta_rad",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g2-calibrated_boundary",
+      "capability_id": "G2",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G2",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "translation_initial_yaw_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "unit": "m",
+            "frame": "initial_body_yaw",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "initial_body_yaw",
+              "minimum": -0.3,
+              "maximum": 0.3,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+                }
+              ]
+            }
+          },
+          "yaw_delta_rad": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "none",
+            "minimum": -0.6,
+            "maximum": 0.6,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "translation_initial_yaw_m",
+          "yaw_delta_rad",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g3-nominal",
+      "capability_id": "G3",
+      "case_role": "nominal",
+      "calibration_profile": "G3",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "waypoints_initial_yaw_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "unit": "m",
+            "frame": "initial_body_yaw",
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "unit": "m",
+              "frame": "initial_body_yaw",
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "initial_body_yaw",
+                "minimum": -0.4,
+                "maximum": 0.4,
+                "evidence_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+                  }
+                ]
+              }
+            }
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "waypoints_initial_yaw_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g3-calibrated_boundary",
+      "capability_id": "G3",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G3",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "waypoints_initial_yaw_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "unit": "m",
+            "frame": "initial_body_yaw",
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "unit": "m",
+              "frame": "initial_body_yaw",
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "initial_body_yaw",
+                "minimum": -0.4,
+                "maximum": 0.4,
+                "evidence_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+                  }
+                ]
+              }
+            }
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "waypoints_initial_yaw_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g4-nominal",
+      "capability_id": "G4",
+      "case_role": "nominal",
+      "calibration_profile": "G4",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "target_height_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "world",
+            "minimum": 0.216,
+            "maximum": 0.324,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: target_height_m"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_height_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g4-calibrated_boundary",
+      "capability_id": "G4",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G4",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "target_height_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "world",
+            "minimum": 0.216,
+            "maximum": 0.324,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: target_height_m"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_height_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g5-nominal",
+      "capability_id": "G5",
+      "case_role": "nominal",
+      "calibration_profile": "G5",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 1.0,
+            "maximum": 2.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G5 request bounds: duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "qpos": [
+          0.0,
+          0.0,
+          0.27,
+          0.9990482215818578,
+          0.043619387365336,
+          0,
+          0,
+          0.0,
+          0.9,
+          -1.8,
+          0.0,
+          0.9,
+          -1.8,
+          0.0,
+          0.9,
+          -1.8,
+          0.0,
+          0.9,
+          -1.8
+        ]
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "unitree_a1-g5-calibrated_boundary",
+      "capability_id": "G5",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G5",
+      "request_domain": {
+        "type": "object",
+        "properties": {
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 1.0,
+            "maximum": 2.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G5 request bounds: duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "qpos": [
+          0.0,
+          0.0,
+          0.27,
+          0.9975640502598242,
+          0.0697564737441253,
+          0,
+          0,
+          0.0,
+          0.9,
+          -1.8,
+          0.0,
+          0.9,
+          -1.8,
+          0.0,
+          0.9,
+          -1.8,
+          0.0,
+          0.9,
+          -1.8
+        ]
+      },
+      "guard_ids": [
+        "unitree_a1-fixed-control",
+        "unitree_a1-fixed-no-state-write",
+        "unitree_a1-fixed-canonical",
+        "unitree_a1-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 4001,
+      "sample_hz": 40,
+      "video_fps": 10,
+      "video_width": 640,
+      "video_height": 480,
+      "camera": "evidence"
+    }
+  ]
+}

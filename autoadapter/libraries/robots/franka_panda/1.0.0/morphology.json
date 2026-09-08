@@ -9,7 +9,7 @@
     "actuated_gripper": 1,
     "passive_mirrored_finger": 1
   },
-  "mjcf_entrypoint": "assets/pushbench.xml",
+  "mjcf_entrypoint": "assets/fixed_scene.xml",
   "public_control": {
     "actuation": "joint_position",
     "joint_names": [
@@ -64,6 +64,8 @@
   },
   "public_observations": {
     "end_effector_body": "hand",
+    "end_effector_site": "fixed_tcp",
+    "end_effector_site_definition": "hand frame + [0,0,0.107] m, midpoint of the parallel fingers",
     "object_bodies": ["tee", "cube_red", "cube_green", "cube_blue", "obs"],
     "frames": ["world", "robot_base", "joint"]
   },

@@ -50,6 +50,7 @@ class QuadrupedSpec:
     leg_joint_names: Mapping[str, Sequence[str]]
     leg_actuator_names: Mapping[str, Sequence[str]]
     home_qpos: Sequence[float]
+    actuation: str = "joint_torque"
     kp: float = 80.0
     kd: float = 4.0
     gait_freq_hz: float = 1.5
@@ -66,6 +67,8 @@ class QuadrupedSpec:
     sit_calf_offset: float = -0.35
 
     def __post_init__(self) -> None:
+        if self.actuation not in {"joint_torque", "joint_position"}:
+            raise ValueError("actuation must be joint_torque or joint_position")
         object.__setattr__(self, "base_body_name", _name(self.base_body_name, "base_body_name"))
 
         if not isinstance(self.leg_joint_names, Mapping):
@@ -409,6 +412,11 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
             if qd_target is None
             else self._vector(qd_target, "qd_target")
         )
+        if self.spec.actuation == "joint_position":
+            # Native position actuators already implement the joint servo.
+            for index, actuator_id in enumerate(self._actuator_ids):
+                self.data.ctrl[actuator_id] = float(target[index])
+            return
         torque = self.spec.kp * (target - self.get_joint_positions()) + self.spec.kd * (
             velocity_target - self.get_joint_velocities()
         )

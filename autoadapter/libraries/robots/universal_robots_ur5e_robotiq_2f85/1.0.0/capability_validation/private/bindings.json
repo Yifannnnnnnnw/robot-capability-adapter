@@ -1,0 +1,270 @@
+{
+  "artifact_type": "capability_validation_private_bindings",
+  "robot_configuration_id": "universal_robots_ur5e_robotiq_2f85",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "universal-robots-ur5e-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1",
+  "bindings": [
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+      "kind": "b1_contract",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a1-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+      "kind": "b1_contract",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a2-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a3-nominal",
+      "kind": "b1_contract",
+      "metric": "normalised_aperture_error",
+      "unit": "ratio",
+      "parameters": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "fixed_arm",
+        "joint_name": "right_driver_joint",
+        "closed_position": 0.8,
+        "open_position": 0.0,
+        "guarded_joint_names": [
+          "shoulder_pan_joint",
+          "shoulder_lift_joint",
+          "elbow_joint",
+          "wrist_1_joint",
+          "wrist_2_joint",
+          "wrist_3_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "guard_site_name": "pinch_site"
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a3-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "normalised_aperture_error",
+      "unit": "ratio",
+      "parameters": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "fixed_arm",
+        "joint_name": "right_driver_joint",
+        "closed_position": 0.8,
+        "open_position": 0.0,
+        "guarded_joint_names": [
+          "shoulder_pan_joint",
+          "shoulder_lift_joint",
+          "elbow_joint",
+          "wrist_1_joint",
+          "wrist_2_joint",
+          "wrist_3_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "guard_site_name": "pinch_site"
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+      "kind": "b1_contract",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "tool_body_names": [
+          "left_coupler",
+          "left_driver",
+          "left_follower",
+          "left_pad",
+          "left_spring_link",
+          "right_coupler",
+          "right_driver",
+          "right_follower",
+          "right_pad",
+          "right_spring_link",
+          "robotiq_base"
+        ],
+        "tool_geom_names": [
+          "geom_33",
+          "geom_35",
+          "geom_37",
+          "geom_39",
+          "geom_41",
+          "right_pad1",
+          "right_pad2",
+          "geom_47",
+          "geom_49",
+          "geom_51",
+          "geom_53",
+          "left_pad1",
+          "left_pad2"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "tool_body_names": [
+          "left_coupler",
+          "left_driver",
+          "left_follower",
+          "left_pad",
+          "left_spring_link",
+          "right_coupler",
+          "right_driver",
+          "right_follower",
+          "right_pad",
+          "right_spring_link",
+          "robotiq_base"
+        ],
+        "tool_geom_names": [
+          "geom_33",
+          "geom_35",
+          "geom_37",
+          "geom_39",
+          "geom_41",
+          "right_pad1",
+          "right_pad2",
+          "geom_47",
+          "geom_49",
+          "geom_51",
+          "geom_53",
+          "left_pad1",
+          "left_pad2"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a5-nominal",
+      "kind": "b1_contract",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "base_body_name": "base",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    },
+    {
+      "binding_id": "universal_robots_ur5e_robotiq_2f85-a5-calibrated_boundary",
+      "kind": "b1_contract",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "base_body_name": "base",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      }
+    }
+  ]
+}

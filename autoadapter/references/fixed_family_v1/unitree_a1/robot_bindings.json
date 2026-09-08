@@ -1,0 +1,88 @@
+{
+  "family": "quadruped",
+  "spec": {
+    "base_body_name": "trunk",
+    "leg_joint_names": {
+      "FL": [
+        "FL_hip_joint",
+        "FL_thigh_joint",
+        "FL_calf_joint"
+      ],
+      "FR": [
+        "FR_hip_joint",
+        "FR_thigh_joint",
+        "FR_calf_joint"
+      ],
+      "RL": [
+        "RL_hip_joint",
+        "RL_thigh_joint",
+        "RL_calf_joint"
+      ],
+      "RR": [
+        "RR_hip_joint",
+        "RR_thigh_joint",
+        "RR_calf_joint"
+      ]
+    },
+    "leg_actuator_names": {
+      "FL": [
+        "FL_hip",
+        "FL_thigh",
+        "FL_calf"
+      ],
+      "FR": [
+        "FR_hip",
+        "FR_thigh",
+        "FR_calf"
+      ],
+      "RL": [
+        "RL_hip",
+        "RL_thigh",
+        "RL_calf"
+      ],
+      "RR": [
+        "RR_hip",
+        "RR_thigh",
+        "RR_calf"
+      ]
+    },
+    "home_qpos": [
+      0.0,
+      0.9,
+      -1.8,
+      0.0,
+      0.9,
+      -1.8,
+      0.0,
+      0.9,
+      -1.8,
+      0.0,
+      0.9,
+      -1.8
+    ],
+    "actuation": "joint_position",
+    "body_height_target": 0.27
+  },
+  "feet": [
+    [
+      "geom_30"
+    ],
+    [
+      "geom_19"
+    ],
+    [
+      "geom_50"
+    ],
+    [
+      "geom_40"
+    ]
+  ],
+  "base": "trunk",
+  "home_height_m": 0.27,
+  "foot_geom_ids": [
+    30,
+    19,
+    50,
+    40
+  ]
+}

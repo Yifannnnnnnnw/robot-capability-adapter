@@ -1,0 +1,169 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "anybotics_anymal_c",
+  "robot_configuration_id": "anybotics_anymal_c",
+  "package_version": "1.0.0",
+  "morphology_kind": "free_base_quadruped",
+  "degrees_of_freedom": {
+    "floating_base": 6,
+    "actuated_joints": 12
+  },
+  "mjcf_entrypoint": "assets/scene.xml",
+  "public_control": {
+    "actuation": "joint_position",
+    "leg_order": [
+      "LF",
+      "RF",
+      "LH",
+      "RH"
+    ],
+    "joint_names": [
+      "LF_HAA",
+      "LF_HFE",
+      "LF_KFE",
+      "RF_HAA",
+      "RF_HFE",
+      "RF_KFE",
+      "LH_HAA",
+      "LH_HFE",
+      "LH_KFE",
+      "RH_HAA",
+      "RH_HFE",
+      "RH_KFE"
+    ],
+    "actuator_names": [
+      "LF_HAA",
+      "LF_HFE",
+      "LF_KFE",
+      "RF_HAA",
+      "RF_HFE",
+      "RF_KFE",
+      "LH_HAA",
+      "LH_HFE",
+      "LH_KFE",
+      "RH_HAA",
+      "RH_HFE",
+      "RH_KFE"
+    ],
+    "nominal_home_qpos_rad": [
+      0.0,
+      0.7,
+      -1.4,
+      0.0,
+      0.7,
+      -1.4,
+      0.0,
+      -0.7,
+      1.4,
+      0.0,
+      -0.7,
+      1.4
+    ],
+    "skeleton_spec": {
+      "base_body_name": "base",
+      "leg_joint_names": {
+        "LF": [
+          "LF_HAA",
+          "LF_HFE",
+          "LF_KFE"
+        ],
+        "RF": [
+          "RF_HAA",
+          "RF_HFE",
+          "RF_KFE"
+        ],
+        "LH": [
+          "LH_HAA",
+          "LH_HFE",
+          "LH_KFE"
+        ],
+        "RH": [
+          "RH_HAA",
+          "RH_HFE",
+          "RH_KFE"
+        ]
+      },
+      "leg_actuator_names": {
+        "LF": [
+          "LF_HAA",
+          "LF_HFE",
+          "LF_KFE"
+        ],
+        "RF": [
+          "RF_HAA",
+          "RF_HFE",
+          "RF_KFE"
+        ],
+        "LH": [
+          "LH_HAA",
+          "LH_HFE",
+          "LH_KFE"
+        ],
+        "RH": [
+          "RH_HAA",
+          "RH_HFE",
+          "RH_KFE"
+        ]
+      },
+      "home_qpos": [
+        0.0,
+        0.7,
+        -1.4,
+        0.0,
+        0.7,
+        -1.4,
+        0.0,
+        -0.7,
+        1.4,
+        0.0,
+        -0.7,
+        1.4
+      ],
+      "actuation": "joint_position",
+      "body_height_target": 0.5
+    }
+  },
+  "public_observations": {
+    "base_body": "base",
+    "foot_geom_groups": [
+      [
+        "geom_52"
+      ],
+      [
+        "geom_66"
+      ],
+      [
+        "geom_80"
+      ],
+      [
+        "geom_94"
+      ]
+    ],
+    "frames": [
+      "world",
+      "body",
+      "initial_body_yaw",
+      "joint"
+    ]
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "base_pose",
+      "base_velocity",
+      "body_height",
+      "foot_contacts",
+      "simulation_time"
+    ]
+  },
+  "asset_source": {
+    "repository": "https://github.com/google-deepmind/mujoco_menagerie",
+    "revision": "8161bba264d7fa7c99ca301e91e7fb44737676ad",
+    "directory": "anybotics_anymal_c"
+  },
+  "diagnostic_scope": "Fixed G1-G5 only. No downstream task library or trained policy."
+}
