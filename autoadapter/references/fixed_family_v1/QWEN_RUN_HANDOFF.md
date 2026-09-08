@@ -6,7 +6,9 @@ request deadline in KUKA/Kinova Study and A1 Generate before any Driver submissi
 Those records remain failed/interrupted V3.2 runs. They are not overwritten or
 relabelled as Qwen, and are not capability failures.
 
-The next bounded check uses `qwen.qwen3-coder-next` on KUKA first. Only robots
+The first bounded check used `qwen.qwen3-coder-next` on KUKA and exercised real
+generation, Harness and continuous Repair. [Current results](HOLISTIC_RESULTS.md)
+record subsequent fallback runs separately. Only robots
 interrupted before an accepted Driver may be considered for this separate
 fallback condition. It does not resume the terminated V3.2 conversation, and
 must not be described as the same independent synthesis sample. No candidate

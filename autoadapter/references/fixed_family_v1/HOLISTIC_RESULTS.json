@@ -1,0 +1,3371 @@
+{
+  "snapshot_utc": "2026-09-08T12:29:41.353846+00:00",
+  "model": "deepseek.v3.2",
+  "formal": false,
+  "process_inspection_available": false,
+  "robots": {
+    "kinova_gen3_robotiq_2f85": {
+      "robot": "kinova_gen3_robotiq_2f85",
+      "planned_cases": 10,
+      "state": "api_interrupted",
+      "progress": "terminal_recorded",
+      "queue_runner_pids": [],
+      "terminal_evidence_exists": true,
+      "environment_passed": true,
+      "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/kinova_gen3_robotiq_2f85/environment/environment_check.json",
+      "environment_error": null,
+      "runner_result": {
+        "prepared": true,
+        "environment_passed": true,
+        "reference_executed": false,
+        "reference_passed": null,
+        "model_started": true,
+        "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/kinova_gen3_robotiq_2f85/environment/environment_check.json",
+        "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/kinova_gen3_robotiq_2f85/candidate/experiment_report.json",
+        "candidate_passed": false,
+        "pipeline_success": false,
+        "cells": [
+          {
+            "attempt_count": 0,
+            "case_counts": {
+              "passed": 0,
+              "total": 0
+            },
+            "capability_validation_executed": false,
+            "final_capability_validation_passed": false
+          }
+        ],
+        "model_call_count": 11
+      },
+      "accepted_source_generated": false,
+      "frozen_sources": [],
+      "latest_accepted_source": null,
+      "workspace_source_exists": false,
+      "interface_stub": false,
+      "draft_exists": false,
+      "workspace_source_kind": "absent",
+      "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+      "harness_submissions": 0,
+      "submissions": [],
+      "candidate_passed": null,
+      "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/kinova_gen3_robotiq_2f85/candidate/experiment_report.json",
+      "failure_class": "api",
+      "pipeline_failures": [
+        {
+          "condition": "skeleton-assisted",
+          "message": "study model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "robot": "kinova_gen3_robotiq_2f85",
+          "stage": "study",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "generation_errors": [],
+      "failed_api_calls": [
+        {
+          "call_index": 10,
+          "stage": "study",
+          "status": "timeout",
+          "http_status": null,
+          "error_type": null,
+          "error": {
+            "type": "timeout",
+            "message": "total wall deadline exceeded"
+          }
+        }
+      ],
+      "api_requests_recorded": 11,
+      "successful_api_responses_recorded": 10,
+      "failed_api_requests_recorded": 1,
+      "api_calls_complete": true,
+      "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/kinova_gen3_robotiq_2f85/model_calls.json",
+      "token_note": "Complete persisted model-call record.",
+      "tokens": {
+        "input_tokens": 457234,
+        "output_tokens": 12090,
+        "cache_read_tokens": 0
+      },
+      "stages": {
+        "study": {
+          "requests": 11,
+          "success": 10,
+          "errors": 1,
+          "error_statuses": {
+            "timeout": 1
+          },
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 10,
+            "None": 1
+          },
+          "tokens": {
+            "input_tokens": 457234,
+            "output_tokens": 12090,
+            "cache_read_tokens": 0
+          }
+        }
+      },
+      "continuous_repair_evidence": [],
+      "verified_continuous_repair": false,
+      "video_files_found": 1,
+      "video_directories": [
+        "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/kinova_gen3_robotiq_2f85/environment"
+      ],
+      "attempt_directories": []
+    },
+    "ufactory_xarm7": {
+      "robot": "ufactory_xarm7",
+      "planned_cases": 10,
+      "state": "api_interrupted",
+      "progress": "terminal_recorded",
+      "queue_runner_pids": [],
+      "terminal_evidence_exists": true,
+      "environment_passed": true,
+      "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/environment/environment_check.json",
+      "environment_error": null,
+      "runner_result": {
+        "prepared": true,
+        "environment_passed": true,
+        "reference_executed": false,
+        "reference_passed": null,
+        "model_started": true,
+        "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/environment/environment_check.json",
+        "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/candidate/experiment_report.json",
+        "candidate_passed": false,
+        "pipeline_success": false,
+        "cells": [
+          {
+            "attempt_count": 0,
+            "case_counts": {
+              "passed": 0,
+              "total": 0
+            },
+            "capability_validation_executed": false,
+            "final_capability_validation_passed": false
+          }
+        ],
+        "model_call_count": 34
+      },
+      "accepted_source_generated": false,
+      "frozen_sources": [],
+      "latest_accepted_source": null,
+      "workspace_source_exists": true,
+      "interface_stub": false,
+      "draft_exists": true,
+      "workspace_source_kind": "non_stub_source",
+      "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+      "harness_submissions": 0,
+      "submissions": [],
+      "candidate_passed": null,
+      "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/candidate/experiment_report.json",
+      "failure_class": "api",
+      "pipeline_failures": [
+        {
+          "message": "generate model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "stage": "generate",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "generation_errors": [
+        {
+          "attempt": 0,
+          "report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/attempt-0/generation_error.json",
+          "message": "generate model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "stage": "generate",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "failed_api_calls": [
+        {
+          "call_index": 33,
+          "stage": "generate",
+          "status": "timeout",
+          "http_status": null,
+          "error_type": null,
+          "error": {
+            "type": "timeout",
+            "message": "total wall deadline exceeded"
+          }
+        }
+      ],
+      "api_requests_recorded": 34,
+      "successful_api_responses_recorded": 33,
+      "failed_api_requests_recorded": 1,
+      "api_calls_complete": true,
+      "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/model_calls.json",
+      "token_note": "Complete persisted model-call record.",
+      "tokens": {
+        "input_tokens": 1613846,
+        "output_tokens": 22733,
+        "cache_read_tokens": 0
+      },
+      "stages": {
+        "generate": {
+          "requests": 21,
+          "success": 20,
+          "errors": 1,
+          "error_statuses": {
+            "timeout": 1
+          },
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 20,
+            "None": 1
+          },
+          "tokens": {
+            "input_tokens": 1134834,
+            "output_tokens": 16317,
+            "cache_read_tokens": 0
+          }
+        },
+        "study": {
+          "requests": 13,
+          "success": 13,
+          "errors": 0,
+          "error_statuses": {},
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 13
+          },
+          "tokens": {
+            "input_tokens": 479012,
+            "output_tokens": 6416,
+            "cache_read_tokens": 0
+          }
+        }
+      },
+      "continuous_repair_evidence": [],
+      "verified_continuous_repair": false,
+      "video_files_found": 1,
+      "video_directories": [
+        "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/ufactory_xarm7/environment"
+      ],
+      "attempt_directories": [
+        {
+          "attempt": 0,
+          "evidence_exists": true,
+          "frozen_source_exists": false,
+          "harness_report_exists": false,
+          "error_exists": true
+        }
+      ]
+    },
+    "universal_robots_ur5e_robotiq_2f85": {
+      "robot": "universal_robots_ur5e_robotiq_2f85",
+      "planned_cases": 10,
+      "state": "incomplete_process_not_confirmed",
+      "progress": "generate_attempt_0_harness_pending_or_running",
+      "queue_runner_pids": [],
+      "terminal_evidence_exists": false,
+      "environment_passed": true,
+      "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/environment/environment_check.json",
+      "environment_error": null,
+      "runner_result": null,
+      "accepted_source_generated": true,
+      "frozen_sources": [
+        {
+          "attempt": 0,
+          "path": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+        }
+      ],
+      "latest_accepted_source": {
+        "attempt": 0,
+        "path": "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+      },
+      "workspace_source_exists": true,
+      "interface_stub": false,
+      "draft_exists": true,
+      "workspace_source_kind": "non_stub_source",
+      "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+      "harness_submissions": 0,
+      "submissions": [],
+      "candidate_passed": null,
+      "candidate_report": null,
+      "failure_class": null,
+      "pipeline_failures": [],
+      "generation_errors": [],
+      "failed_api_calls": [],
+      "api_requests_recorded": 36,
+      "successful_api_responses_recorded": 36,
+      "failed_api_requests_recorded": 0,
+      "api_calls_complete": false,
+      "model_calls_report": null,
+      "token_note": "Lower bound only: active stage calls may not yet be persisted.",
+      "tokens": {
+        "input_tokens": 1978715,
+        "output_tokens": 37521,
+        "cache_read_tokens": 0
+      },
+      "stages": {
+        "generate": {
+          "requests": 21,
+          "success": 21,
+          "errors": 0,
+          "error_statuses": {},
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 21
+          },
+          "tokens": {
+            "input_tokens": 1323660,
+            "output_tokens": 25948,
+            "cache_read_tokens": 0
+          }
+        },
+        "study": {
+          "requests": 15,
+          "success": 15,
+          "errors": 0,
+          "error_statuses": {},
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 15
+          },
+          "tokens": {
+            "input_tokens": 655055,
+            "output_tokens": 11573,
+            "cache_read_tokens": 0
+          }
+        }
+      },
+      "continuous_repair_evidence": [],
+      "verified_continuous_repair": false,
+      "video_files_found": 10,
+      "video_directories": [
+        "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/candidate/cells/universal_robots_ur5e_robotiq_2f85/skeleton-assisted/attempt-0/capability-validation/videos",
+        "runs/diagnostic/fixed-family-v1-holistic-v32-arms-20260908/universal_robots_ur5e_robotiq_2f85/environment"
+      ],
+      "attempt_directories": [
+        {
+          "attempt": 0,
+          "evidence_exists": true,
+          "frozen_source_exists": true,
+          "harness_report_exists": false,
+          "error_exists": false
+        }
+      ]
+    },
+    "kuka_iiwa_14": {
+      "robot": "kuka_iiwa_14",
+      "planned_cases": 8,
+      "state": "api_interrupted",
+      "progress": "terminal_recorded",
+      "queue_runner_pids": [],
+      "terminal_evidence_exists": true,
+      "environment_passed": true,
+      "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/kuka_iiwa_14/environment/environment_check.json",
+      "environment_error": null,
+      "runner_result": {
+        "prepared": true,
+        "environment_passed": true,
+        "reference_executed": false,
+        "reference_passed": null,
+        "model_started": true,
+        "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/kuka_iiwa_14/environment/environment_check.json",
+        "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/kuka_iiwa_14/candidate/experiment_report.json",
+        "candidate_passed": false,
+        "pipeline_success": false,
+        "cells": [
+          {
+            "attempt_count": 0,
+            "case_counts": {
+              "passed": 0,
+              "total": 0
+            },
+            "capability_validation_executed": false,
+            "final_capability_validation_passed": false
+          }
+        ],
+        "model_call_count": 7
+      },
+      "accepted_source_generated": false,
+      "frozen_sources": [],
+      "latest_accepted_source": null,
+      "workspace_source_exists": false,
+      "interface_stub": false,
+      "draft_exists": false,
+      "workspace_source_kind": "absent",
+      "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+      "harness_submissions": 0,
+      "submissions": [],
+      "candidate_passed": null,
+      "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/kuka_iiwa_14/candidate/experiment_report.json",
+      "failure_class": "api",
+      "pipeline_failures": [
+        {
+          "condition": "skeleton-assisted",
+          "message": "study model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "robot": "kuka_iiwa_14",
+          "stage": "study",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "generation_errors": [],
+      "failed_api_calls": [
+        {
+          "call_index": 6,
+          "stage": "study",
+          "status": "timeout",
+          "http_status": null,
+          "error_type": null,
+          "error": {
+            "type": "timeout",
+            "message": "total wall deadline exceeded"
+          }
+        }
+      ],
+      "api_requests_recorded": 7,
+      "successful_api_responses_recorded": 6,
+      "failed_api_requests_recorded": 1,
+      "api_calls_complete": true,
+      "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/kuka_iiwa_14/model_calls.json",
+      "token_note": "Complete persisted model-call record.",
+      "tokens": {
+        "input_tokens": 208539,
+        "output_tokens": 3618,
+        "cache_read_tokens": 0
+      },
+      "stages": {
+        "study": {
+          "requests": 7,
+          "success": 6,
+          "errors": 1,
+          "error_statuses": {
+            "timeout": 1
+          },
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 6,
+            "None": 1
+          },
+          "tokens": {
+            "input_tokens": 208539,
+            "output_tokens": 3618,
+            "cache_read_tokens": 0
+          }
+        }
+      },
+      "continuous_repair_evidence": [],
+      "verified_continuous_repair": false,
+      "video_files_found": 1,
+      "video_directories": [
+        "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/kuka_iiwa_14/environment"
+      ],
+      "attempt_directories": []
+    },
+    "unitree_a1": {
+      "robot": "unitree_a1",
+      "planned_cases": 10,
+      "state": "api_interrupted",
+      "progress": "terminal_recorded",
+      "queue_runner_pids": [],
+      "terminal_evidence_exists": true,
+      "environment_passed": true,
+      "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/environment/environment_check.json",
+      "environment_error": null,
+      "runner_result": {
+        "prepared": true,
+        "environment_passed": true,
+        "reference_executed": false,
+        "reference_passed": null,
+        "model_started": true,
+        "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/environment/environment_check.json",
+        "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/candidate/experiment_report.json",
+        "candidate_passed": false,
+        "pipeline_success": false,
+        "cells": [
+          {
+            "attempt_count": 0,
+            "case_counts": {
+              "passed": 0,
+              "total": 0
+            },
+            "capability_validation_executed": false,
+            "final_capability_validation_passed": false
+          }
+        ],
+        "model_call_count": 15
+      },
+      "accepted_source_generated": false,
+      "frozen_sources": [],
+      "latest_accepted_source": null,
+      "workspace_source_exists": true,
+      "interface_stub": true,
+      "draft_exists": false,
+      "workspace_source_kind": "framework_interface_stub",
+      "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+      "harness_submissions": 0,
+      "submissions": [],
+      "candidate_passed": null,
+      "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/candidate/experiment_report.json",
+      "failure_class": "api",
+      "pipeline_failures": [
+        {
+          "message": "generate model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "stage": "generate",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "generation_errors": [
+        {
+          "attempt": 0,
+          "report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/attempt-0/generation_error.json",
+          "message": "generate model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "stage": "generate",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "failed_api_calls": [
+        {
+          "call_index": 14,
+          "stage": "generate",
+          "status": "timeout",
+          "http_status": null,
+          "error_type": null,
+          "error": {
+            "type": "timeout",
+            "message": "total wall deadline exceeded"
+          }
+        }
+      ],
+      "api_requests_recorded": 15,
+      "successful_api_responses_recorded": 14,
+      "failed_api_requests_recorded": 1,
+      "api_calls_complete": true,
+      "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/model_calls.json",
+      "token_note": "Complete persisted model-call record.",
+      "tokens": {
+        "input_tokens": 357875,
+        "output_tokens": 17070,
+        "cache_read_tokens": 0
+      },
+      "stages": {
+        "generate": {
+          "requests": 7,
+          "success": 6,
+          "errors": 1,
+          "error_statuses": {
+            "timeout": 1
+          },
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 6,
+            "None": 1
+          },
+          "tokens": {
+            "input_tokens": 202802,
+            "output_tokens": 1863,
+            "cache_read_tokens": 0
+          }
+        },
+        "study": {
+          "requests": 8,
+          "success": 8,
+          "errors": 0,
+          "error_statuses": {},
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 8
+          },
+          "tokens": {
+            "input_tokens": 155073,
+            "output_tokens": 15207,
+            "cache_read_tokens": 0
+          }
+        }
+      },
+      "continuous_repair_evidence": [],
+      "verified_continuous_repair": false,
+      "video_files_found": 2,
+      "video_directories": [
+        "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/unitree_a1/environment"
+      ],
+      "attempt_directories": [
+        {
+          "attempt": 0,
+          "evidence_exists": true,
+          "frozen_source_exists": false,
+          "harness_report_exists": false,
+          "error_exists": true
+        }
+      ]
+    },
+    "anybotics_anymal_c": {
+      "robot": "anybotics_anymal_c",
+      "planned_cases": 10,
+      "state": "api_interrupted",
+      "progress": "terminal_recorded",
+      "queue_runner_pids": [],
+      "terminal_evidence_exists": true,
+      "environment_passed": true,
+      "environment_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/environment/environment_check.json",
+      "environment_error": null,
+      "runner_result": {
+        "prepared": true,
+        "environment_passed": true,
+        "reference_executed": false,
+        "reference_passed": null,
+        "model_started": true,
+        "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/environment/environment_check.json",
+        "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/candidate/experiment_report.json",
+        "candidate_passed": false,
+        "pipeline_success": false,
+        "cells": [
+          {
+            "attempt_count": 0,
+            "case_counts": {
+              "passed": 0,
+              "total": 0
+            },
+            "capability_validation_executed": false,
+            "final_capability_validation_passed": false
+          }
+        ],
+        "model_call_count": 33
+      },
+      "accepted_source_generated": false,
+      "frozen_sources": [],
+      "latest_accepted_source": null,
+      "workspace_source_exists": true,
+      "interface_stub": false,
+      "draft_exists": true,
+      "workspace_source_kind": "non_stub_source",
+      "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+      "harness_submissions": 0,
+      "submissions": [],
+      "candidate_passed": null,
+      "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/candidate/experiment_report.json",
+      "failure_class": "api",
+      "pipeline_failures": [
+        {
+          "message": "generate model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "stage": "generate",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "generation_errors": [
+        {
+          "attempt": 0,
+          "report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-0/generation_error.json",
+          "message": "generate model call exceeded 120s total wall deadline for deepseek.v3.2",
+          "stage": "generate",
+          "type": "ModelInvocationError"
+        }
+      ],
+      "failed_api_calls": [
+        {
+          "call_index": 32,
+          "stage": "generate",
+          "status": "timeout",
+          "http_status": null,
+          "error_type": null,
+          "error": {
+            "type": "timeout",
+            "message": "total wall deadline exceeded"
+          }
+        }
+      ],
+      "api_requests_recorded": 33,
+      "successful_api_responses_recorded": 32,
+      "failed_api_requests_recorded": 1,
+      "api_calls_complete": true,
+      "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/model_calls.json",
+      "token_note": "Complete persisted model-call record.",
+      "tokens": {
+        "input_tokens": 1085681,
+        "output_tokens": 31147,
+        "cache_read_tokens": 0
+      },
+      "stages": {
+        "generate": {
+          "requests": 20,
+          "success": 19,
+          "errors": 1,
+          "error_statuses": {
+            "timeout": 1
+          },
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 19,
+            "None": 1
+          },
+          "tokens": {
+            "input_tokens": 776024,
+            "output_tokens": 16247,
+            "cache_read_tokens": 0
+          }
+        },
+        "study": {
+          "requests": 13,
+          "success": 13,
+          "errors": 0,
+          "error_statuses": {},
+          "other_statuses": {},
+          "http_statuses": {
+            "200": 13
+          },
+          "tokens": {
+            "input_tokens": 309657,
+            "output_tokens": 14900,
+            "cache_read_tokens": 0
+          }
+        }
+      },
+      "continuous_repair_evidence": [],
+      "verified_continuous_repair": false,
+      "video_files_found": 2,
+      "video_directories": [
+        "runs/diagnostic/fixed-family-v1-holistic-v32-mixed-20260908/anybotics_anymal_c/environment"
+      ],
+      "attempt_directories": [
+        {
+          "attempt": 0,
+          "evidence_exists": true,
+          "frozen_source_exists": false,
+          "harness_report_exists": false,
+          "error_exists": true
+        }
+      ]
+    }
+  },
+  "totals": {
+    "robots": 6,
+    "states": {
+      "api_interrupted": 5,
+      "incomplete_process_not_confirmed": 1
+    },
+    "api_requests_recorded": 136,
+    "successful_api_responses_recorded": 131,
+    "failed_api_requests_recorded": 5,
+    "all_api_calls_complete": false,
+    "tokens": {
+      "input_tokens": 5701890,
+      "output_tokens": 124179,
+      "cache_read_tokens": 0
+    }
+  },
+  "fallback_runs": {
+    "fixed-family-v1-holistic-qwen-anymal-20260908": {
+      "root": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908",
+      "model": "qwen.qwen3-coder-next",
+      "tool_history_mode": "text-observation",
+      "independent_condition": true,
+      "supersedes_v32": false,
+      "robots": {
+        "anybotics_anymal_c": {
+          "robot": "anybotics_anymal_c",
+          "planned_cases": 10,
+          "state": "model_failed",
+          "progress": "terminal_recorded",
+          "queue_runner_pids": [],
+          "terminal_evidence_exists": true,
+          "environment_passed": true,
+          "environment_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/environment/environment_check.json",
+          "environment_error": null,
+          "runner_result": {
+            "prepared": true,
+            "environment_passed": true,
+            "reference_executed": false,
+            "reference_passed": null,
+            "model_started": true,
+            "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/environment/environment_check.json",
+            "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/experiment_report.json",
+            "candidate_passed": false,
+            "pipeline_success": false,
+            "cells": [
+              {
+                "attempt_count": 3,
+                "case_counts": {
+                  "passed": 0,
+                  "total": 10
+                },
+                "capability_validation_executed": false,
+                "final_capability_validation_passed": false
+              }
+            ],
+            "model_call_count": 53
+          },
+          "accepted_source_generated": true,
+          "frozen_sources": [
+            {
+              "attempt": 0,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+            },
+            {
+              "attempt": 1,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/frozen-driver-attempts/attempt-2/driver.py"
+            },
+            {
+              "attempt": 2,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/frozen-driver-attempts/attempt-3/driver.py"
+            }
+          ],
+          "latest_accepted_source": {
+            "attempt": 2,
+            "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/frozen-driver-attempts/attempt-3/driver.py"
+          },
+          "workspace_source_exists": true,
+          "interface_stub": false,
+          "draft_exists": true,
+          "workspace_source_kind": "non_stub_source",
+          "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+          "harness_submissions": 3,
+          "submissions": [
+            {
+              "attempt": 0,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-0/capability_validation_report.json",
+              "passed": 0,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": false,
+              "complete_videos": 8,
+              "failed_cases": [
+                {
+                  "case_id": "anybotics_anymal_c-g1-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.0030637350277795683
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0030637350277795683,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g1-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.004005694248013031
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.004005694248013031,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.0009863430560043962
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0009863430560043962,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.0009863450792890471
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0009863450792890471,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g3-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "candidate exceeded 8.0 simulated seconds",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-38cxort4/driver.py\", line 192, in trace_planar_path\n    self._visit_waypoints(world_waypoints, max_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-38cxort4/driver.py\", line 205, in _visit_waypoints\n    self._move_to_position(waypoint, segment_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-38cxort4/driver.py\", line 230, in _move_to_position\n    self._skeleton.step(1)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 436, in step\n    mj.mj_step(self.model, self.data)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 393, in tracked_step\n    self._after_step()\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 524, in _after_step\n    raise StepBudgetExceeded(\nautoadapter2.harness.session.StepBudgetExceeded: candidate exceeded 8.0 simulated seconds\n",
+                    "type": "StepBudgetExceeded"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.00098634762944122
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00098634762944122,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g3-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "candidate exceeded 8.0 simulated seconds",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dd3lsu5s/driver.py\", line 192, in trace_planar_path\n    self._visit_waypoints(world_waypoints, max_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dd3lsu5s/driver.py\", line 205, in _visit_waypoints\n    self._move_to_position(waypoint, segment_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dd3lsu5s/driver.py\", line 230, in _move_to_position\n    self._skeleton.step(1)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 436, in step\n    mj.mj_step(self.model, self.data)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 393, in tracked_step\n    self._after_step()\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 524, in _after_step\n    raise StepBudgetExceeded(\nautoadapter2.harness.session.StepBudgetExceeded: candidate exceeded 8.0 simulated seconds\n",
+                    "type": "StepBudgetExceeded"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.00098634762944122
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00098634762944122,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.005607299277058518
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.005607299277058518,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.005686642626297492
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.005686642626297492,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g5-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.009230259454247984
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.009230259454247984,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.00957611147015737
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00957611147015737,
+                    "passed": false
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 1,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-1/capability_validation_report.json",
+              "passed": 0,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": false,
+              "complete_videos": 8,
+              "failed_cases": [
+                {
+                  "case_id": "anybotics_anymal_c-g1-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.0030637350277795683
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0030637350277795683,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g1-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.004005694248013031
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.004005694248013031,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.0009863430560043962
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0009863430560043962,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.0009863450792890471
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0009863450792890471,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g3-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "candidate exceeded 8.0 simulated seconds",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dcrn9uto/driver.py\", line 193, in trace_planar_path\n    self._visit_waypoints(world_waypoints, max_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dcrn9uto/driver.py\", line 206, in _visit_waypoints\n    self._move_to_position(waypoint, segment_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dcrn9uto/driver.py\", line 230, in _move_to_position\n    self._skeleton.step(1)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 436, in step\n    mj.mj_step(self.model, self.data)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 393, in tracked_step\n    self._after_step()\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 524, in _after_step\n    raise StepBudgetExceeded(\nautoadapter2.harness.session.StepBudgetExceeded: candidate exceeded 8.0 simulated seconds\n",
+                    "type": "StepBudgetExceeded"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.00098634762944122
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00098634762944122,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g3-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "anybotics_anymal_c-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "candidate exceeded 8.0 simulated seconds",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-vgjkrxs3/driver.py\", line 193, in trace_planar_path\n    self._visit_waypoints(world_waypoints, max_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-vgjkrxs3/driver.py\", line 206, in _visit_waypoints\n    self._move_to_position(waypoint, segment_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-vgjkrxs3/driver.py\", line 230, in _move_to_position\n    self._skeleton.step(1)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 436, in step\n    mj.mj_step(self.model, self.data)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 393, in tracked_step\n    self._after_step()\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 524, in _after_step\n    raise StepBudgetExceeded(\nautoadapter2.harness.session.StepBudgetExceeded: candidate exceeded 8.0 simulated seconds\n",
+                    "type": "StepBudgetExceeded"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.00098634762944122
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00098634762944122,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.005607299277058518
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.005607299277058518,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.005686642626297492
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.005686642626297492,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g5-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.009230259454247984
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.009230259454247984,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.00957611147015737
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00957611147015737,
+                    "passed": false
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 2,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-2/capability_validation_report.json",
+              "passed": 0,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": false,
+              "complete_videos": 8,
+              "failed_cases": [
+                {
+                  "case_id": "anybotics_anymal_c-g1-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.0030637350277795683
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0030637350277795683,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g1-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.004005694248013031
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.004005694248013031,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.000994192535138022
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.000994192535138022,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.0009899113679973093
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0009899113679973093,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g3-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [],
+                  "candidate_exception": {
+                    "message": "candidate exceeded 8.0 simulated seconds",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-mk4rj2op/driver.py\", line 233, in trace_planar_path\n    self._visit_waypoints(world_waypoints, max_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-mk4rj2op/driver.py\", line 248, in _visit_waypoints\n    self._move_to_position(waypoint, segment_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-mk4rj2op/driver.py\", line 274, in _move_to_position\n    self._skeleton.command_planar_velocity(\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 527, in command_planar_velocity\n    self.step(1)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 436, in step\n    mj.mj_step(self.model, self.data)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 393, in tracked_step\n    self._after_step()\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 524, in _after_step\n    raise StepBudgetExceeded(\nautoadapter2.harness.session.StepBudgetExceeded: candidate exceeded 8.0 simulated seconds\n",
+                    "type": "StepBudgetExceeded"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.000990338269167168
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.000990338269167168,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g3-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [],
+                  "candidate_exception": {
+                    "message": "candidate exceeded 8.0 simulated seconds",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-p_a1jf8p/driver.py\", line 233, in trace_planar_path\n    self._visit_waypoints(world_waypoints, max_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-p_a1jf8p/driver.py\", line 248, in _visit_waypoints\n    self._move_to_position(waypoint, segment_duration)\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-p_a1jf8p/driver.py\", line 274, in _move_to_position\n    self._skeleton.command_planar_velocity(\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 527, in command_planar_velocity\n    self.step(1)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/quadruped_pd_gait.py\", line 436, in step\n    mj.mj_step(self.model, self.data)\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 393, in tracked_step\n    self._after_step()\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/session.py\", line 524, in _after_step\n    raise StepBudgetExceeded(\nautoadapter2.harness.session.StepBudgetExceeded: candidate exceeded 8.0 simulated seconds\n",
+                    "type": "StepBudgetExceeded"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.000992275060544584
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.000992275060544584,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_66",
+                      "minimum_distance_m": -0.005615078072448099
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.005615078072448099,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.005677643641756207
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.005677643641756207,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g5-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.009230259454247984
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.009230259454247984,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "anybotics_anymal_c-g5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_52",
+                      "minimum_distance_m": -0.00957611147015737
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00957611147015737,
+                    "passed": false
+                  }
+                }
+              ]
+            }
+          ],
+          "candidate_passed": false,
+          "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/experiment_report.json",
+          "failure_class": "capability_validation",
+          "pipeline_failures": [],
+          "generation_errors": [],
+          "failed_api_calls": [],
+          "api_requests_recorded": 53,
+          "successful_api_responses_recorded": 53,
+          "failed_api_requests_recorded": 0,
+          "api_calls_complete": true,
+          "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/model_calls.json",
+          "token_note": "Complete persisted model-call record.",
+          "tokens": {
+            "input_tokens": 1685812,
+            "output_tokens": 29499,
+            "cache_read_tokens": 0
+          },
+          "stages": {
+            "generate": {
+              "requests": 18,
+              "success": 18,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 18
+              },
+              "tokens": {
+                "input_tokens": 543197,
+                "output_tokens": 8153,
+                "cache_read_tokens": 0
+              }
+            },
+            "repair": {
+              "requests": 24,
+              "success": 24,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 24
+              },
+              "tokens": {
+                "input_tokens": 919528,
+                "output_tokens": 18570,
+                "cache_read_tokens": 0
+              }
+            },
+            "study": {
+              "requests": 11,
+              "success": 11,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 11
+              },
+              "tokens": {
+                "input_tokens": 223087,
+                "output_tokens": 2776,
+                "cache_read_tokens": 0
+              }
+            }
+          },
+          "continuous_repair_evidence": [
+            {
+              "attempt": 1,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-1/generation_evidence.json",
+              "first_call_index": 29,
+              "first_call_original_history_messages": 39,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": 1,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": true,
+              "successful_repair_responses": 8,
+              "modified_frozen_source": true,
+              "later_harness_submission_exists": true,
+              "verified_continuous_repair_and_resubmission": true
+            },
+            {
+              "attempt": 2,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-2/generation_evidence.json",
+              "first_call_index": 37,
+              "first_call_original_history_messages": 55,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": 2,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": true,
+              "successful_repair_responses": 16,
+              "modified_frozen_source": true,
+              "later_harness_submission_exists": true,
+              "verified_continuous_repair_and_resubmission": true
+            }
+          ],
+          "verified_continuous_repair": true,
+          "video_files_found": 32,
+          "video_directories": [
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-0/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-1/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/candidate/cells/anybotics_anymal_c/skeleton-assisted/attempt-2/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-anymal-20260908/anybotics_anymal_c/environment"
+          ],
+          "attempt_directories": [
+            {
+              "attempt": 0,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 1,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 2,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            }
+          ]
+        }
+      },
+      "totals": {
+        "robots": 1,
+        "states": {
+          "model_failed": 1
+        },
+        "api_requests_recorded": 53,
+        "successful_api_responses_recorded": 53,
+        "failed_api_requests_recorded": 0,
+        "all_api_calls_complete": true,
+        "tokens": {
+          "input_tokens": 1685812,
+          "output_tokens": 29499,
+          "cache_read_tokens": 0
+        }
+      },
+      "scope_note": "Only observed robot directories/terminal entries are listed; an allowed-cohort config does not prove all robots were requested."
+    },
+    "fixed-family-v1-holistic-qwen-followup-20260908": {
+      "root": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908",
+      "model": "qwen.qwen3-coder-next",
+      "tool_history_mode": "text-observation",
+      "independent_condition": true,
+      "supersedes_v32": false,
+      "robots": {
+        "kinova_gen3_robotiq_2f85": {
+          "robot": "kinova_gen3_robotiq_2f85",
+          "planned_cases": 10,
+          "state": "model_failed",
+          "progress": "terminal_recorded",
+          "queue_runner_pids": [],
+          "terminal_evidence_exists": true,
+          "environment_passed": true,
+          "environment_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/environment/environment_check.json",
+          "environment_error": null,
+          "runner_result": {
+            "prepared": true,
+            "environment_passed": true,
+            "reference_executed": false,
+            "reference_passed": null,
+            "model_started": true,
+            "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/environment/environment_check.json",
+            "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/experiment_report.json",
+            "candidate_passed": false,
+            "pipeline_success": false,
+            "cells": [
+              {
+                "attempt_count": 3,
+                "case_counts": {
+                  "passed": 5,
+                  "total": 10
+                },
+                "capability_validation_executed": true,
+                "final_capability_validation_passed": false
+              }
+            ],
+            "model_call_count": 64
+          },
+          "accepted_source_generated": true,
+          "frozen_sources": [
+            {
+              "attempt": 0,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+            },
+            {
+              "attempt": 1,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/frozen-driver-attempts/attempt-2/driver.py"
+            },
+            {
+              "attempt": 2,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/frozen-driver-attempts/attempt-3/driver.py"
+            }
+          ],
+          "latest_accepted_source": {
+            "attempt": 2,
+            "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/frozen-driver-attempts/attempt-3/driver.py"
+          },
+          "workspace_source_exists": true,
+          "interface_stub": false,
+          "draft_exists": true,
+          "workspace_source_kind": "non_stub_source",
+          "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+          "harness_submissions": 3,
+          "submissions": [
+            {
+              "attempt": 0,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-0/capability_validation_report.json",
+              "passed": 5,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": true,
+              "complete_videos": 10,
+              "failed_cases": [
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 1,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-1/capability_validation_report.json",
+              "passed": 5,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": true,
+              "complete_videos": 10,
+              "failed_cases": [
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 2,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-2/capability_validation_report.json",
+              "passed": 5,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": true,
+              "complete_videos": 10,
+              "failed_cases": [
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            }
+          ],
+          "candidate_passed": false,
+          "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/experiment_report.json",
+          "failure_class": "capability_validation",
+          "pipeline_failures": [],
+          "generation_errors": [],
+          "failed_api_calls": [],
+          "api_requests_recorded": 64,
+          "successful_api_responses_recorded": 64,
+          "failed_api_requests_recorded": 0,
+          "api_calls_complete": true,
+          "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/model_calls.json",
+          "token_note": "Complete persisted model-call record.",
+          "tokens": {
+            "input_tokens": 3661295,
+            "output_tokens": 53451,
+            "cache_read_tokens": 0
+          },
+          "stages": {
+            "generate": {
+              "requests": 22,
+              "success": 22,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 22
+              },
+              "tokens": {
+                "input_tokens": 1187292,
+                "output_tokens": 13325,
+                "cache_read_tokens": 0
+              }
+            },
+            "repair": {
+              "requests": 34,
+              "success": 34,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 34
+              },
+              "tokens": {
+                "input_tokens": 2152851,
+                "output_tokens": 35379,
+                "cache_read_tokens": 0
+              }
+            },
+            "study": {
+              "requests": 8,
+              "success": 8,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 8
+              },
+              "tokens": {
+                "input_tokens": 321152,
+                "output_tokens": 4747,
+                "cache_read_tokens": 0
+              }
+            }
+          },
+          "continuous_repair_evidence": [
+            {
+              "attempt": 1,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-1/generation_evidence.json",
+              "first_call_index": 30,
+              "first_call_original_history_messages": 49,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": 3,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": true,
+              "successful_repair_responses": 21,
+              "modified_frozen_source": true,
+              "later_harness_submission_exists": true,
+              "verified_continuous_repair_and_resubmission": true
+            },
+            {
+              "attempt": 2,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-2/generation_evidence.json",
+              "first_call_index": 51,
+              "first_call_original_history_messages": 93,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": null,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": true,
+              "successful_repair_responses": 13,
+              "modified_frozen_source": true,
+              "later_harness_submission_exists": true,
+              "verified_continuous_repair_and_resubmission": true
+            }
+          ],
+          "verified_continuous_repair": true,
+          "video_files_found": 31,
+          "video_directories": [
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-0/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-1/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/candidate/cells/kinova_gen3_robotiq_2f85/skeleton-assisted/attempt-2/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/kinova_gen3_robotiq_2f85/environment"
+          ],
+          "attempt_directories": [
+            {
+              "attempt": 0,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 1,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 2,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            }
+          ]
+        },
+        "unitree_a1": {
+          "robot": "unitree_a1",
+          "planned_cases": 10,
+          "state": "incomplete_process_not_confirmed",
+          "progress": "repair_attempt_1_in_progress_or_not_yet_persisted",
+          "queue_runner_pids": [],
+          "terminal_evidence_exists": false,
+          "environment_passed": true,
+          "environment_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/environment/environment_check.json",
+          "environment_error": null,
+          "runner_result": null,
+          "accepted_source_generated": true,
+          "frozen_sources": [
+            {
+              "attempt": 0,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+            }
+          ],
+          "latest_accepted_source": {
+            "attempt": 0,
+            "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+          },
+          "workspace_source_exists": true,
+          "interface_stub": false,
+          "draft_exists": true,
+          "workspace_source_kind": "non_stub_source",
+          "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+          "harness_submissions": 1,
+          "submissions": [
+            {
+              "attempt": 0,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/attempt-0/capability_validation_report.json",
+              "passed": 5,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": true,
+              "complete_videos": 10,
+              "failed_cases": [
+                {
+                  "case_id": "unitree_a1-g1-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_50",
+                      "minimum_distance_m": -0.0005891186695186172
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0005891186695186172,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "unitree_a1-g1-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_40",
+                      "minimum_distance_m": -0.0009464914707562021
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0009464914707562021,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "unitree_a1-g2-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_50",
+                      "minimum_distance_m": -0.0005102430241768312
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0005102430241768312,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "unitree_a1-g2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_50",
+                      "minimum_distance_m": -0.000410549755603961
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.000410549755603961,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "unitree_a1-g3-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "floor",
+                      "geom2": "geom_50",
+                      "minimum_distance_m": -0.0008848569506649355
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.0008848569506649355,
+                    "passed": true
+                  }
+                }
+              ]
+            }
+          ],
+          "candidate_passed": null,
+          "candidate_report": null,
+          "failure_class": null,
+          "pipeline_failures": [],
+          "generation_errors": [],
+          "failed_api_calls": [],
+          "api_requests_recorded": 26,
+          "successful_api_responses_recorded": 26,
+          "failed_api_requests_recorded": 0,
+          "api_calls_complete": false,
+          "model_calls_report": null,
+          "token_note": "Lower bound only: active stage calls may not yet be persisted.",
+          "tokens": {
+            "input_tokens": 589798,
+            "output_tokens": 17308,
+            "cache_read_tokens": 0
+          },
+          "stages": {
+            "generate": {
+              "requests": 22,
+              "success": 22,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 22
+              },
+              "tokens": {
+                "input_tokens": 533451,
+                "output_tokens": 16027,
+                "cache_read_tokens": 0
+              }
+            },
+            "study": {
+              "requests": 4,
+              "success": 4,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 4
+              },
+              "tokens": {
+                "input_tokens": 56347,
+                "output_tokens": 1281,
+                "cache_read_tokens": 0
+              }
+            }
+          },
+          "continuous_repair_evidence": [],
+          "verified_continuous_repair": false,
+          "video_files_found": 12,
+          "video_directories": [
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/candidate/cells/unitree_a1/skeleton-assisted/attempt-0/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-followup-20260908/unitree_a1/environment"
+          ],
+          "attempt_directories": [
+            {
+              "attempt": 0,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 1,
+              "evidence_exists": false,
+              "frozen_source_exists": false,
+              "harness_report_exists": false,
+              "error_exists": false
+            }
+          ]
+        }
+      },
+      "totals": {
+        "robots": 2,
+        "states": {
+          "model_failed": 1,
+          "incomplete_process_not_confirmed": 1
+        },
+        "api_requests_recorded": 90,
+        "successful_api_responses_recorded": 90,
+        "failed_api_requests_recorded": 0,
+        "all_api_calls_complete": false,
+        "tokens": {
+          "input_tokens": 4251093,
+          "output_tokens": 70759,
+          "cache_read_tokens": 0
+        }
+      },
+      "scope_note": "Only observed robot directories/terminal entries are listed; an allowed-cohort config does not prove all robots were requested."
+    },
+    "fixed-family-v1-holistic-qwen-kuka-20260908": {
+      "root": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908",
+      "model": "qwen.qwen3-coder-next",
+      "tool_history_mode": "text-observation",
+      "independent_condition": true,
+      "supersedes_v32": false,
+      "robots": {
+        "kuka_iiwa_14": {
+          "robot": "kuka_iiwa_14",
+          "planned_cases": 8,
+          "state": "model_failed",
+          "progress": "terminal_recorded",
+          "queue_runner_pids": [],
+          "terminal_evidence_exists": true,
+          "environment_passed": true,
+          "environment_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/environment/environment_check.json",
+          "environment_error": null,
+          "runner_result": {
+            "prepared": true,
+            "environment_passed": true,
+            "reference_executed": false,
+            "reference_passed": null,
+            "model_started": true,
+            "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/environment/environment_check.json",
+            "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/experiment_report.json",
+            "candidate_passed": false,
+            "pipeline_success": false,
+            "cells": [
+              {
+                "attempt_count": 3,
+                "case_counts": {
+                  "passed": 3,
+                  "total": 8
+                },
+                "capability_validation_executed": false,
+                "final_capability_validation_passed": false
+              }
+            ],
+            "model_call_count": 32
+          },
+          "accepted_source_generated": true,
+          "frozen_sources": [
+            {
+              "attempt": 0,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+            },
+            {
+              "attempt": 1,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/frozen-driver-attempts/attempt-2/driver.py"
+            },
+            {
+              "attempt": 2,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/frozen-driver-attempts/attempt-3/driver.py"
+            }
+          ],
+          "latest_accepted_source": {
+            "attempt": 2,
+            "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/frozen-driver-attempts/attempt-3/driver.py"
+          },
+          "workspace_source_exists": true,
+          "interface_stub": false,
+          "draft_exists": true,
+          "workspace_source_kind": "non_stub_source",
+          "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+          "harness_submissions": 3,
+          "submissions": [
+            {
+              "attempt": 0,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-0/capability_validation_report.json",
+              "passed": 4,
+              "total": 8,
+              "validation_passed": false,
+              "physical_validation_executed": true,
+              "complete_videos": 8,
+              "failed_cases": [
+                {
+                  "case_id": "kuka_iiwa_14-a2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "fixed_contact_geom",
+                      "geom2": "link7_contact_geom",
+                      "minimum_distance_m": -0.00831430153130857
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00831430153130857,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "fixed_contact_geom",
+                      "geom2": "link7_contact_geom",
+                      "minimum_distance_m": -0.00822608766579485
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00822608766579485,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a5-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 1,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-1/capability_validation_report.json",
+              "passed": 3,
+              "total": 8,
+              "validation_passed": false,
+              "physical_validation_executed": false,
+              "complete_videos": 6,
+              "failed_cases": [
+                {
+                  "case_id": "kuka_iiwa_14-a2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "fixed_contact_geom",
+                      "geom2": "link7_contact_geom",
+                      "minimum_distance_m": -0.00831430153130857
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00831430153130857,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "fixed_contact_geom",
+                      "geom2": "link7_contact_geom",
+                      "minimum_distance_m": -0.00822608766579485
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00822608766579485,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a5-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [],
+                  "candidate_exception": {
+                    "message": "IK did not converge: residual=0.013388 > tolerance=0.008000",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-dy2jr7fi/driver.py\", line 216, in move_cartesian_offset_and_return\n    outbound_success = self._skeleton.move_cartesian(\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/arm_serial_dls.py\", line 639, in move_cartesian\n    raise IKUnreachableError(\nautoadapter2.trusted_skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: residual=0.013388 > tolerance=0.008000\n",
+                    "type": "IKUnreachableError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a5-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [],
+                  "candidate_exception": {
+                    "message": "IK did not converge: residual=0.012510 > tolerance=0.008000",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-tn9r4g7m/driver.py\", line 216, in move_cartesian_offset_and_return\n    outbound_success = self._skeleton.move_cartesian(\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/arm_serial_dls.py\", line 639, in move_cartesian\n    raise IKUnreachableError(\nautoadapter2.trusted_skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: residual=0.012510 > tolerance=0.008000\n",
+                    "type": "IKUnreachableError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 2,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-2/capability_validation_report.json",
+              "passed": 3,
+              "total": 8,
+              "validation_passed": false,
+              "physical_validation_executed": false,
+              "complete_videos": 6,
+              "failed_cases": [
+                {
+                  "case_id": "kuka_iiwa_14-a2-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a4-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "fixed_contact_geom",
+                      "geom2": "link7_contact_geom",
+                      "minimum_distance_m": -0.00831430153130857
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00831430153130857,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a4-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "fixed_contact_geom",
+                      "geom2": "link7_contact_geom",
+                      "minimum_distance_m": -0.00822608766579485
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.00822608766579485,
+                    "passed": false
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a5-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [],
+                  "candidate_exception": {
+                    "message": "IK did not converge: residual=0.013388 > tolerance=0.012000",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-_a8yboq_/driver.py\", line 216, in move_cartesian_offset_and_return\n    outbound_success = self._skeleton.move_cartesian(\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/arm_serial_dls.py\", line 639, in move_cartesian\n    raise IKUnreachableError(\nautoadapter2.trusted_skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: residual=0.013388 > tolerance=0.012000\n",
+                    "type": "IKUnreachableError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "kuka_iiwa_14-a5-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [],
+                  "candidate_exception": {
+                    "message": "IK did not converge: residual=0.012510 > tolerance=0.012000",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-e53g6yt6/driver.py\", line 216, in move_cartesian_offset_and_return\n    outbound_success = self._skeleton.move_cartesian(\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/trusted_skeletons/arm_serial_dls.py\", line 639, in move_cartesian\n    raise IKUnreachableError(\nautoadapter2.trusted_skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: residual=0.012510 > tolerance=0.012000\n",
+                    "type": "IKUnreachableError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            }
+          ],
+          "candidate_passed": false,
+          "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/experiment_report.json",
+          "failure_class": "capability_validation",
+          "pipeline_failures": [],
+          "generation_errors": [],
+          "failed_api_calls": [],
+          "api_requests_recorded": 32,
+          "successful_api_responses_recorded": 32,
+          "failed_api_requests_recorded": 0,
+          "api_calls_complete": true,
+          "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/model_calls.json",
+          "token_note": "Complete persisted model-call record.",
+          "tokens": {
+            "input_tokens": 1508804,
+            "output_tokens": 12863,
+            "cache_read_tokens": 0
+          },
+          "stages": {
+            "generate": {
+              "requests": 9,
+              "success": 9,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 9
+              },
+              "tokens": {
+                "input_tokens": 399600,
+                "output_tokens": 2293,
+                "cache_read_tokens": 0
+              }
+            },
+            "repair": {
+              "requests": 19,
+              "success": 19,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 19
+              },
+              "tokens": {
+                "input_tokens": 974964,
+                "output_tokens": 8089,
+                "cache_read_tokens": 0
+              }
+            },
+            "study": {
+              "requests": 4,
+              "success": 4,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 4
+              },
+              "tokens": {
+                "input_tokens": 134240,
+                "output_tokens": 2481,
+                "cache_read_tokens": 0
+              }
+            }
+          },
+          "continuous_repair_evidence": [
+            {
+              "attempt": 1,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-1/generation_evidence.json",
+              "first_call_index": 13,
+              "first_call_original_history_messages": 21,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": 1,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": true,
+              "successful_repair_responses": 16,
+              "modified_frozen_source": true,
+              "later_harness_submission_exists": true,
+              "verified_continuous_repair_and_resubmission": true
+            },
+            {
+              "attempt": 2,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-2/generation_evidence.json",
+              "first_call_index": 29,
+              "first_call_original_history_messages": 53,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": null,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": true,
+              "successful_repair_responses": 3,
+              "modified_frozen_source": true,
+              "later_harness_submission_exists": true,
+              "verified_continuous_repair_and_resubmission": true
+            }
+          ],
+          "verified_continuous_repair": true,
+          "video_files_found": 25,
+          "video_directories": [
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-0/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-1/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/candidate/cells/kuka_iiwa_14/skeleton-assisted/attempt-2/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-kuka-20260908/kuka_iiwa_14/environment"
+          ],
+          "attempt_directories": [
+            {
+              "attempt": 0,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 1,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 2,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            }
+          ]
+        }
+      },
+      "totals": {
+        "robots": 1,
+        "states": {
+          "model_failed": 1
+        },
+        "api_requests_recorded": 32,
+        "successful_api_responses_recorded": 32,
+        "failed_api_requests_recorded": 0,
+        "all_api_calls_complete": true,
+        "tokens": {
+          "input_tokens": 1508804,
+          "output_tokens": 12863,
+          "cache_read_tokens": 0
+        }
+      },
+      "scope_note": "Only observed robot directories/terminal entries are listed; an allowed-cohort config does not prove all robots were requested."
+    },
+    "fixed-family-v1-holistic-qwen-xarm-20260908": {
+      "root": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908",
+      "model": "qwen.qwen3-coder-next",
+      "tool_history_mode": "text-observation",
+      "independent_condition": true,
+      "supersedes_v32": false,
+      "robots": {
+        "ufactory_xarm7": {
+          "robot": "ufactory_xarm7",
+          "planned_cases": 10,
+          "state": "api_interrupted",
+          "progress": "terminal_recorded",
+          "queue_runner_pids": [],
+          "terminal_evidence_exists": true,
+          "environment_passed": true,
+          "environment_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/environment/environment_check.json",
+          "environment_error": null,
+          "runner_result": {
+            "prepared": true,
+            "environment_passed": true,
+            "reference_executed": false,
+            "reference_passed": null,
+            "model_started": true,
+            "environment_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/environment/environment_check.json",
+            "pipeline_report": "/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/experiment_report.json",
+            "candidate_passed": false,
+            "pipeline_success": false,
+            "cells": [
+              {
+                "attempt_count": 1,
+                "case_counts": {
+                  "passed": 0,
+                  "total": 10
+                },
+                "capability_validation_executed": false,
+                "final_capability_validation_passed": false
+              }
+            ],
+            "model_call_count": 35
+          },
+          "accepted_source_generated": true,
+          "frozen_sources": [
+            {
+              "attempt": 0,
+              "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+            }
+          ],
+          "latest_accepted_source": {
+            "attempt": 0,
+            "path": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/frozen-driver-attempts/attempt-1/driver.py"
+          },
+          "workspace_source_exists": true,
+          "interface_stub": false,
+          "draft_exists": true,
+          "workspace_source_kind": "non_stub_source",
+          "workspace_source_note": "A Framework interface stub is not a model draft. A non-stub file may be unfinished; only accepted frozen evidence establishes accepted source.",
+          "harness_submissions": 1,
+          "submissions": [
+            {
+              "attempt": 0,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/attempt-0/capability_validation_report.json",
+              "passed": 0,
+              "total": 10,
+              "validation_passed": false,
+              "physical_validation_executed": false,
+              "complete_videos": 2,
+              "failed_cases": [
+                {
+                  "case_id": "ufactory_xarm7-a1-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access local variable 'np' where it is not associated with a value",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-l_v2cfpj/driver.py\", line 119, in move_end_effector_to_position\n    target_xyz = np.array(request[\"target_position_m\"], dtype=float)\n                 ^^\nUnboundLocalError: cannot access local variable 'np' where it is not associated with a value\n",
+                    "type": "UnboundLocalError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a1-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access local variable 'np' where it is not associated with a value",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-jznak89c/driver.py\", line 119, in move_end_effector_to_position\n    target_xyz = np.array(request[\"target_position_m\"], dtype=float)\n                 ^^\nUnboundLocalError: cannot access local variable 'np' where it is not associated with a value\n",
+                    "type": "UnboundLocalError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a2-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access free variable 'np' where it is not associated with a value in enclosing scope",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-jjnnv_93/driver.py\", line 210, in trace_cartesian_path\n    waypoints = [\n                ^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-jjnnv_93/driver.py\", line 211, in <listcomp>\n    np.array(wp, dtype=float) for wp in request[\"waypoints_m\"]\n    ^^\nNameError: cannot access free variable 'np' where it is not associated with a value in enclosing scope\n",
+                    "type": "NameError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a2-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access free variable 'np' where it is not associated with a value in enclosing scope",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-ciwd4k2u/driver.py\", line 210, in trace_cartesian_path\n    waypoints = [\n                ^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-ciwd4k2u/driver.py\", line 211, in <listcomp>\n    np.array(wp, dtype=float) for wp in request[\"waypoints_m\"]\n    ^^\nNameError: cannot access free variable 'np' where it is not associated with a value in enclosing scope\n",
+                    "type": "NameError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a3-nominal",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a3-calibrated_boundary",
+                  "measurement_value": 0.0,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": true,
+                  "physical_execution_passed": true,
+                  "failed_guards": [],
+                  "candidate_exception": null,
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": {
+                      "geom1": "left_finger_pad_1",
+                      "geom2": "right_finger_pad_1",
+                      "minimum_distance_m": -0.003858089875365088
+                    },
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": -0.003858089875365088,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a4-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access local variable 'np' where it is not associated with a value",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-p0svcyp4/driver.py\", line 386, in approach_until_contact\n    precontact = np.array(request[\"precontact_position_m\"], dtype=float)\n                 ^^\nUnboundLocalError: cannot access local variable 'np' where it is not associated with a value\n",
+                    "type": "UnboundLocalError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a4-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access local variable 'np' where it is not associated with a value",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-btiis6ee/driver.py\", line 386, in approach_until_contact\n    precontact = np.array(request[\"precontact_position_m\"], dtype=float)\n                 ^^\nUnboundLocalError: cannot access local variable 'np' where it is not associated with a value\n",
+                    "type": "UnboundLocalError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a5-nominal",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access local variable 'np' where it is not associated with a value",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-_etvh0bu/driver.py\", line 502, in move_cartesian_offset_and_return\n    offset = np.array(request[\"offset_robot_base_m\"], dtype=float)\n             ^^\nUnboundLocalError: cannot access local variable 'np' where it is not associated with a value\n",
+                    "type": "UnboundLocalError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                },
+                {
+                  "case_id": "ufactory_xarm7-a5-calibrated_boundary",
+                  "measurement_value": null,
+                  "criterion_passed": false,
+                  "worker_completed": true,
+                  "physical_integrity_passed": false,
+                  "physical_execution_passed": false,
+                  "failed_guards": [
+                    "ufactory_xarm7-fixed-canonical",
+                    "ufactory_xarm7-fixed-control"
+                  ],
+                  "candidate_exception": {
+                    "message": "cannot access local variable 'np' where it is not associated with a value",
+                    "traceback": "Traceback (most recent call last):\n  File \"/Users/wangyifan/Projects/auto_adapter2.0/autoadapter/src/autoadapter2/harness/worker.py\", line 292, in execute_case\n    returned = method(**dict(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/autoadapter2-eval-6ocju16x/driver.py\", line 502, in move_cartesian_offset_and_return\n    offset = np.array(request[\"offset_robot_base_m\"], dtype=float)\n             ^^\nUnboundLocalError: cannot access local variable 'np' where it is not associated with a value\n",
+                    "type": "UnboundLocalError"
+                  },
+                  "measurement_error": null,
+                  "contact_integrity": {
+                    "deepest_contact_pair": null,
+                    "maximum_allowed_penetration_m": 0.005,
+                    "minimum_contact_distance_m": null,
+                    "passed": true
+                  }
+                }
+              ]
+            }
+          ],
+          "candidate_passed": null,
+          "candidate_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/experiment_report.json",
+          "failure_class": "api",
+          "pipeline_failures": [
+            {
+              "message": "repair model call exceeded 120s total wall deadline for qwen.qwen3-coder-next",
+              "stage": "repair",
+              "type": "ModelInvocationError"
+            }
+          ],
+          "generation_errors": [
+            {
+              "attempt": 1,
+              "report": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/attempt-1/generation_error.json",
+              "message": "repair model call exceeded 120s total wall deadline for qwen.qwen3-coder-next",
+              "stage": "repair",
+              "type": "ModelInvocationError"
+            }
+          ],
+          "failed_api_calls": [
+            {
+              "call_index": 34,
+              "stage": "repair",
+              "status": "timeout",
+              "http_status": null,
+              "error_type": null,
+              "error": {
+                "type": "timeout",
+                "message": "total wall deadline exceeded"
+              }
+            }
+          ],
+          "api_requests_recorded": 35,
+          "successful_api_responses_recorded": 34,
+          "failed_api_requests_recorded": 1,
+          "api_calls_complete": true,
+          "model_calls_report": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/model_calls.json",
+          "token_note": "Complete persisted model-call record.",
+          "tokens": {
+            "input_tokens": 1733384,
+            "output_tokens": 58626,
+            "cache_read_tokens": 0
+          },
+          "stages": {
+            "generate": {
+              "requests": 22,
+              "success": 22,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 22
+              },
+              "tokens": {
+                "input_tokens": 1177562,
+                "output_tokens": 32832,
+                "cache_read_tokens": 0
+              }
+            },
+            "repair": {
+              "requests": 5,
+              "success": 4,
+              "errors": 1,
+              "error_statuses": {
+                "timeout": 1
+              },
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 4,
+                "None": 1
+              },
+              "tokens": {
+                "input_tokens": 254440,
+                "output_tokens": 18361,
+                "cache_read_tokens": 0
+              }
+            },
+            "study": {
+              "requests": 8,
+              "success": 8,
+              "errors": 0,
+              "error_statuses": {},
+              "other_statuses": {},
+              "http_statuses": {
+                "200": 8
+              },
+              "tokens": {
+                "input_tokens": 301382,
+                "output_tokens": 7433,
+                "cache_read_tokens": 0
+              }
+            }
+          },
+          "continuous_repair_evidence": [
+            {
+              "attempt": 1,
+              "evidence": "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/attempt-1/generation_evidence.json",
+              "first_call_index": 30,
+              "first_call_original_history_messages": 48,
+              "first_call_projected_history_messages": 7,
+              "first_call_driver_revision": 5,
+              "prior_failed_harness_report": true,
+              "failure_feedback_supplied": false,
+              "successful_repair_responses": 4,
+              "modified_frozen_source": null,
+              "later_harness_submission_exists": false,
+              "verified_continuous_repair_and_resubmission": false
+            }
+          ],
+          "verified_continuous_repair": false,
+          "video_files_found": 11,
+          "video_directories": [
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/candidate/cells/ufactory_xarm7/skeleton-assisted/attempt-0/capability-validation/videos",
+            "runs/diagnostic/fixed-family-v1-holistic-qwen-xarm-20260908/ufactory_xarm7/environment"
+          ],
+          "attempt_directories": [
+            {
+              "attempt": 0,
+              "evidence_exists": true,
+              "frozen_source_exists": true,
+              "harness_report_exists": true,
+              "error_exists": false
+            },
+            {
+              "attempt": 1,
+              "evidence_exists": true,
+              "frozen_source_exists": false,
+              "harness_report_exists": false,
+              "error_exists": true
+            }
+          ]
+        }
+      },
+      "totals": {
+        "robots": 1,
+        "states": {
+          "api_interrupted": 1
+        },
+        "api_requests_recorded": 35,
+        "successful_api_responses_recorded": 34,
+        "failed_api_requests_recorded": 1,
+        "all_api_calls_complete": true,
+        "tokens": {
+          "input_tokens": 1733384,
+          "output_tokens": 58626,
+          "cache_read_tokens": 0
+        }
+      },
+      "scope_note": "Only observed robot directories/terminal entries are listed; an allowed-cohort config does not prove all robots were requested."
+    }
+  },
+  "warnings": [],
+  "notes": [
+    "Read-only snapshot; missing reports never imply success.",
+    "Running is claimed only when a matching live queue runner was observed.",
+    "Frozen accepted source, full Harness pass, and continuous Repair are separate observations.",
+    "Qwen fallback runs have separate model/history conditions and separate totals; they never overwrite V3.2 outcomes.",
+    "Connectivity canaries and previous V4 Flash runs are excluded."
+  ],
+  "all_observed_runs_ended": false,
+  "implementation_commits": [
+    "78f8d03",
+    "420848a",
+    "9205033"
+  ],
+  "complete_reference_suite_required": false,
+  "reference_tests_rerun_in_this_followup": false,
+  "separate_luna_conversation_used": false,
+  "usage_caveat": "Response-reported input/output tokens only; timed-out requests may be billed but return no usage. Missing cache detail is unknown, not proof of no cache. Holistic billing rate unknown."
+}
