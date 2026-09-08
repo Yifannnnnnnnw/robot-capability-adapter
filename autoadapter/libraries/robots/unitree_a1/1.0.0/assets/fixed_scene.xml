@@ -1,0 +1,21 @@
+<mujoco model="a1 scene">
+  <include file="fixed_robot.xml" />
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
+    <rgba haze="0.15 0.25 0.35 1" />
+    <global azimuth="120" elevation="-20" />
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072" />
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2" />
+  </asset>
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true" />
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
+    <camera name="evidence" pos="2 -3 1.5" xyaxes="0.832 0.555 0 -0.2 0.3 0.935" />
+  </worldbody>
+  <keyframe>
+    <key name="fixed_settled" qpos="-0.009287943329024754 0.0001620980901417257 0.2608028758756205 0.9999976858294743 -0.0004624525165845869 -0.0020995356178032444 8.01470826695388e-05 -0.001059610642179041 0.8918105312811574 -1.842911825736777 0.0014381050869636427 0.8922241306750055 -1.8440813767324955 -0.0010934875372204176 0.8960778424490191 -1.8511799557201327 0.0018874496447732027 0.8963763608717943 -1.8521340763917118" qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" ctrl="0.0 0.9 -1.8 0.0 0.9 -1.8 0.0 0.9 -1.8 0.0 0.9 -1.8" />
+  </keyframe>
+</mujoco>

@@ -8,7 +8,7 @@
     "floating_base": 6,
     "actuated_joints": 12
   },
-  "mjcf_entrypoint": "assets/scene.xml",
+  "mjcf_entrypoint": "assets/fixed_scene.xml",
   "public_control": {
     "actuation": "joint_position",
     "leg_order": [
@@ -120,8 +120,10 @@
         -1.8
       ],
       "actuation": "joint_position",
-      "body_height_target": 0.27
-    }
+      "body_height_target": 0.2608028758756205
+    },
+    "nominal_body_height_m": 0.2608028758756205,
+    "fixed_diagnostic_scene_note": "assets/fixed_scene.xml changes only foot contact solimp relative to assets/scene.xml; original home joint targets, actuator gains and any policy weights are retained. See assets/FIXED_DIAGNOSTIC.md."
   },
   "public_observations": {
     "base_body": "trunk",
@@ -165,5 +167,15 @@
     "revision": "8161bba264d7fa7c99ca301e91e7fb44737676ad",
     "directory": "unitree_a1"
   },
-  "diagnostic_scope": "Fixed G1-G5 only. No downstream task library or trained policy."
+  "diagnostic_scope": "Fixed G1-G5 only. No downstream task library or trained policy.",
+  "reset_fact": {
+    "owner": "framework",
+    "fixed_diagnostic_reset": {
+      "keyframe": "fixed_settled",
+      "body_height_m": 0.2608028758756205,
+      "settling_duration_s": 3.0,
+      "standing_ctrl_source": "home",
+      "note": "Full state after physical settling; qvel is zeroed for the independent reset. Original home keyframe remains unchanged and is the policy action center."
+    }
+  }
 }

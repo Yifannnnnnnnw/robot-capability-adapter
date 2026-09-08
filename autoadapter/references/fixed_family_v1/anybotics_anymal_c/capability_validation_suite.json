@@ -501,7 +501,7 @@
       "capability_id": "G4",
       "method_name": "set_body_height",
       "request": {
-        "target_height_m": 0.47,
+        "target_height_m": 0.35132253838730165,
         "max_duration_s": 3.0
       },
       "request_grounding_refs": [
@@ -579,7 +579,7 @@
       "capability_id": "G4",
       "method_name": "set_body_height",
       "request": {
-        "target_height_m": 0.54,
+        "target_height_m": 0.40364717176413384,
         "max_duration_s": 4.0
       },
       "request_grounding_refs": [

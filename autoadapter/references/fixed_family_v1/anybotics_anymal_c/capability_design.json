@@ -369,8 +369,8 @@
             "type": "number",
             "unit": "m",
             "frame": "world",
-            "minimum": 0.4,
-            "maximum": 0.6,
+            "minimum": 0.2989979050104695,
+            "maximum": 0.44849685751570423,
             "evidence_refs": [
               {
                 "source_id": "b1_driver_validation_criteria",

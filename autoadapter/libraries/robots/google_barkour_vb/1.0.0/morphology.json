@@ -14,7 +14,7 @@
     "nv": 18,
     "nu": 12
   },
-  "mjcf_entrypoint": "assets/scene.xml",
+  "mjcf_entrypoint": "assets/fixed_scene.xml",
   "public_control": {
     "actuation": "joint_position",
     "transmission": "direct_joint",
@@ -117,7 +117,9 @@
         "kv": 0.5,
         "forcerange": [-18.0, 18.0]
       }
-    }
+    },
+    "nominal_body_height_m": 0.25636956301084757,
+    "fixed_diagnostic_scene_note": "assets/fixed_scene.xml changes only foot contact solimp relative to assets/scene.xml; original home joint targets, actuator gains and any policy weights are retained. See assets/FIXED_DIAGNOSTIC.md."
   },
   "public_observations": {
     "base_body": "torso",
@@ -212,7 +214,14 @@
       0.0,
       0.5,
       1.0
-    ]
+    ],
+    "fixed_diagnostic_reset": {
+      "keyframe": "fixed_settled",
+      "body_height_m": 0.25636956301084757,
+      "settling_duration_s": 3.0,
+      "standing_ctrl_source": "home",
+      "note": "Full state after physical settling; qvel is zeroed for the independent reset. Original home keyframe remains unchanged and is the policy action center."
+    }
   },
   "asset_provenance": {
     "model_title": "Google Barkour vB Description (MJCF)",

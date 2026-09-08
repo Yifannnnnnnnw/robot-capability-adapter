@@ -61,7 +61,7 @@
       -1.8
     ],
     "actuation": "joint_position",
-    "body_height_target": 0.27
+    "body_height_target": 0.2608028758756205
   },
   "feet": [
     [
@@ -78,11 +78,13 @@
     ]
   ],
   "base": "trunk",
-  "home_height_m": 0.27,
+  "home_height_m": 0.2608028758756205,
   "foot_geom_ids": [
     30,
     19,
     50,
     40
-  ]
+  ],
+  "fixed_reset_keyframe": "fixed_settled",
+  "fixed_scene_entrypoint": "assets/fixed_scene.xml"
 }

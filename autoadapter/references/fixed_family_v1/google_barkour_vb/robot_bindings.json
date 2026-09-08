@@ -76,14 +76,16 @@
       1.0
     ],
     "actuation": "joint_position",
-    "body_height_target": 0.28
+    "body_height_target": 0.25636956301084757
   },
-  "home_height_m": 0.28,
+  "home_height_m": 0.25636956301084757,
   "barkour": true,
   "foot_geom_ids": [
     9,
     15,
     19,
     25
-  ]
+  ],
+  "fixed_reset_keyframe": "fixed_settled",
+  "fixed_scene_entrypoint": "assets/fixed_scene.xml"
 }

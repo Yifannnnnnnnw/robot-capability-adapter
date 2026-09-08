@@ -66,10 +66,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -84,7 +84,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g1-calibrated_boundary",
@@ -148,10 +149,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -166,7 +167,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g2-nominal",
@@ -230,10 +232,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -248,7 +250,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g2-calibrated_boundary",
@@ -312,10 +315,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -330,7 +333,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g3-nominal",
@@ -387,10 +391,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -405,7 +409,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g3-calibrated_boundary",
@@ -462,10 +467,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -480,7 +485,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g4-nominal",
@@ -494,8 +500,8 @@
             "type": "number",
             "unit": "m",
             "frame": "world",
-            "minimum": 0.4,
-            "maximum": 0.6,
+            "minimum": 0.2989979050104695,
+            "maximum": 0.44849685751570423,
             "evidence_refs": [
               {
                 "source_id": "b1_driver_validation_criteria",
@@ -523,10 +529,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -541,7 +547,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g4-calibrated_boundary",
@@ -555,8 +562,8 @@
             "type": "number",
             "unit": "m",
             "frame": "world",
-            "minimum": 0.4,
-            "maximum": 0.6,
+            "minimum": 0.2989979050104695,
+            "maximum": 0.44849685751570423,
             "evidence_refs": [
               {
                 "source_id": "b1_driver_validation_criteria",
@@ -584,10 +591,10 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home"
+        "name": "fixed_settled"
       },
       "guard_ids": [
         "anybotics_anymal_c-fixed-control",
@@ -602,7 +609,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Full fixed_settled state after 3 seconds native home-target control; zero initial velocity. Reference capability success is not required."
     },
     {
       "instance_id": "anybotics_anymal_c-g5-nominal",
@@ -631,30 +639,30 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home",
+        "name": "fixed_settled",
         "qpos": [
-          0.0,
-          0.0,
-          0.5,
-          0.9990482215818578,
-          0.043619387365336,
-          0,
-          0,
-          0.0,
-          0.7,
-          -1.4,
-          0.0,
-          0.7,
-          -1.4,
-          0.0,
-          -0.7,
-          1.4,
-          0.0,
-          -0.7,
-          1.4
+          -6.457461251270239e-05,
+          -4.0079877731544627e-08,
+          0.40079146995663634,
+          0.9990481426003925,
+          0.04361941891263808,
+          0.00039328349943266257,
+          1.971083894506999e-05,
+          0.020591450148335508,
+          0.770537984484883,
+          -1.6141525703160493,
+          -0.02059728480101888,
+          0.7705545265158582,
+          -1.6141540324739536,
+          0.020436246310086646,
+          -0.7715761145163276,
+          1.612170647340874,
+          -0.020430469788245705,
+          -0.7715593719230994,
+          1.612169384791414
         ]
       },
       "guard_ids": [
@@ -670,7 +678,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Original 5-degree roll applied to physically settled state; base lifted 0.027044089 m for 0.5 mm minimum foot-floor clearance. Home policy center and all physical acceptance thresholds unchanged."
     },
     {
       "instance_id": "anybotics_anymal_c-g5-calibrated_boundary",
@@ -699,30 +708,30 @@
         ],
         "additionalProperties": false
       },
-      "scene_entrypoint": "assets/scene.xml",
+      "scene_entrypoint": "assets/fixed_scene.xml",
       "reset": {
         "kind": "keyframe",
-        "name": "home",
+        "name": "fixed_settled",
         "qpos": [
-          0.0,
-          0.0,
-          0.5,
-          0.9975640502598242,
-          0.0697564737441253,
-          0,
-          0,
-          0.0,
-          0.7,
-          -1.4,
-          0.0,
-          0.7,
-          -1.4,
-          0.0,
-          -0.7,
-          1.4,
-          0.0,
-          -0.7,
-          1.4
+          -6.457461251270239e-05,
+          -4.0079877731544627e-08,
+          0.414784998983595,
+          0.9975639704796118,
+          0.06975650321312317,
+          0.0003926327613877116,
+          2.999904636784097e-05,
+          0.020591450148335508,
+          0.770537984484883,
+          -1.6141525703160493,
+          -0.02059728480101888,
+          0.7705545265158582,
+          -1.6141540324739536,
+          0.020436246310086646,
+          -0.7715761145163276,
+          1.612170647340874,
+          -0.020430469788245705,
+          -0.7715593719230994,
+          1.612169384791414
         ]
       },
       "guard_ids": [
@@ -738,7 +747,8 @@
       "video_fps": 10,
       "video_width": 640,
       "video_height": 480,
-      "camera": "evidence"
+      "camera": "evidence",
+      "calibration_note": "Original 8-degree roll applied to physically settled state; base lifted 0.041037618 m for 0.5 mm minimum foot-floor clearance. Home policy center and all physical acceptance thresholds unchanged."
     }
   ]
 }
