@@ -61,6 +61,26 @@ generating a driver behind a stable capability interface. Its longer-term aim
 is to simplify future robot onboarding, whereas Experiment 3 examines this
 route within a bounded simulator cohort.
 
+Figure~\ref{fig:robot-platform-taxonomy} illustrates the morphological diversity
+of robot platforms. Differences in their physical structure motivate
+robot-specific implementations behind a common capability interface.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{assets/robot_platform_taxonomy_15_print.pdf}
+  \caption[Fifteen robot platforms grouped into seven embodiment types]
+  {Fifteen robot platforms grouped into seven embodiment types.
+  \textbf{Fixed arms:} SO-101, AgileX PiPER, UR5e, Franka Panda, KUKA LBR iiwa 14,
+  Kinova Gen3 and UFACTORY xArm7.
+  \textbf{Quadrupeds:} Unitree Go2, Unitree A1 and ANYmal-C.
+  \textbf{Aerial quadrotor:} Skydio X2.
+  \textbf{Humanoid biped:} Unitree H1.
+  \textbf{Dexterous hand:} LEAP Hand.
+  \textbf{Mobile manipulator:} Hello Robot Stretch 2.
+  \textbf{Bimanual manipulator:} ALOHA 2.}
+  \label{fig:robot-platform-taxonomy}
+\end{figure}
+
 \subsection{Physics-Grounded Feedback}
 
 LLM coding agents use compiler and test failures as development feedback.
