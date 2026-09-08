@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""One cheap, non-streaming Holistic request with a diagnostic 300-second wait.
+"""One non-streaming Holistic request with a diagnostic 300-second wait.
 
 This measures transport only: no robot, tools, generated-code execution or retry.
 It does not change the mainline route profile or its default request deadline.
+Defaults to a cheap long-output probe; --replay-request resends saved request JSON.
 """
 
 from __future__ import annotations
@@ -46,7 +47,8 @@ def result_fields(call: dict) -> dict:
         "interpretation": (
             "This request returned successfully more than 120 seconds after the "
             "connection was ready; a universal 120-second cutoff on this gateway "
-            "is contradicted for this tested model/path. Opus behavior is not established."
+            "is contradicted for this tested model/path. Other requests/backends "
+            "are not established."
             if crossed else
             "This request does not establish support beyond 120 seconds; a fast "
             "success or a failure cannot establish a universal gateway deadline."
@@ -54,27 +56,45 @@ def result_fields(call: dict) -> dict:
     }
 
 
+def replay_body(path: Path, model: str) -> dict:
+    body = json.loads(path.read_text())["request_body"]
+    if not isinstance(body, dict) or body.get("model") != model:
+        raise ValueError("saved request model must match the selected config")
+    if body.get("stream"):
+        raise ValueError("this probe requires a non-streaming saved request")
+    return body
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--config", type=Path,
+                        default=runner.ROOT / "configs/diagnostics/fixed-family-v1-holistic-v32.json")
+    parser.add_argument("--replay-request", type=Path,
+                        help="Resend the request_body from saved model HTTP evidence without changing its content")
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists():
         parser.error("output must be fresh")
     output.mkdir(parents=True)
-    config_path = runner.ROOT / "configs/diagnostics/fixed-family-v1-holistic-v32.json"
+    config_path = args.config.resolve()
     config = runner.ExperimentConfig.from_path(config_path)
+    model = config.model_manifest["model_id"]
+    body = replay_body(args.replay_request, model) if args.replay_request else request_body(model)
     client = runner.model_client(config, holistic=True)
     runner.write(output / "test_settings.json", {
         "formal": False, "model": client.config.model,
         "source_config": str(config_path), "client_timeout_s": 300,
-        "mainline_profile_timeout_s": 120, "max_output_tokens": 8192,
-        "physical_requests_maximum": 1, "stream": False, "thinking": "disabled",
+        "mainline_profile_timeout_s": 120, "max_output_tokens": body.get("max_tokens"),
+        "physical_requests_maximum": 1, "stream": body.get("stream", False),
+        "thinking": body.get("thinking"),
+        "replay_from": str(args.replay_request.resolve()) if args.replay_request else None,
         "robot_or_tool_execution": False, "transport": "curl HTTP/1.1",
         "connection_timeout_s": 15,
     })
-    runner.write(output / "request.json", request_body(client.config.model))
-    print("Holistic DeepSeek V3.2: one request, 8192 output-token limit, 300s client deadline", flush=True)
+    # Match JsonModelClient._post_once serialization, including separators.
+    (output / "request.json").write_text(json.dumps(body, ensure_ascii=True), encoding="utf-8")
+    print(f"Holistic {model}: one request, {body.get('max_tokens')} output-token limit, 300s client deadline", flush=True)
     # Keep the credential in curl's stdin, never argv, a tracked file or stdout.
     header = client.config.auth_header + ": " + client.config.auth_prefix + client.config.api_key
     curl_config = "header = " + json.dumps(header) + '\nheader = "Content-Type: application/json"\n'
