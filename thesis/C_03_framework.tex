@@ -14,13 +14,16 @@ that follow.
 
 \section{Introduction}
 
-Large language models support task-level robot planning, but the methods
-considered here commonly rely on supplied skills, motion mechanisms, or control
-APIs rather than implementing the robot-specific actuation layer
-\citep{ahn2022saycan,huang2023innermonologue,liang2023codeaspolicies}. Recent
-agentic systems use test, execution, or physical feedback to refine controller
-and policy code
-\citep{tripathi2026testdriven,xiao2026enpire,fu2026capx,lu2026aspire}.
+Large language models (LLMs) can plan robot actions
+\citep{ahn2022saycan,huang2023innermonologue}, but carrying out those plans
+requires robot-specific software for motion and observation. Code as Policies
+generates robot programmes through supplied APIs
+\citep{liang2023codeaspolicies}, while recent agentic systems revise controller
+code using execution feedback \citep{tripathi2026testdriven}. This chapter turns
+to the robot interface itself: how can its reusable operations and behavioural
+tests be generated from task requirements? The resulting driver must then be
+evaluated in simulation using observations and verdicts that remain outside its
+control.
 
 This chapter presents Auto-Adapter, a framework that uses public robot
 descriptions, a simulation model, and documented tasks to construct reusable
