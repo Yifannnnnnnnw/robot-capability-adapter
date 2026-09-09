@@ -30,7 +30,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .agent import ReactLoop, ReactResult, ToolSpec
-from .robot_catalog import SKELETON_FOR_CLASS, find_robot_definition
+from .robot_catalog import (
+    REPO_ROOT, SKELETON_FOR_CLASS, find_robot_definition,
+    capability_generation_context, load_capability_design,
+)
 from .agent.tools import (
     make_execute_python_tool,
     make_inspect_skeleton_tool,
@@ -262,6 +265,31 @@ vs open per your probe.
 """
 
 
+_CAPABILITY_GENERATE_SYSTEM = """\
+You are Phase 2 GENERATE for a catalogued capability profile.
+Read study.json, list_skeletons and inspect_skeleton to examine the required
+low-level skeleton and its public methods. Re-open the real MJCF where needed.
+Write driver.py with a Robot subclass of the catalogued skeleton and build()
+returning Robot.from_mjcf('mjcf.xml', spec=...). Fill robot-specific bindings,
+then IMPLEMENT every required method(request). The inherited low-level IK,
+actuator and gait primitives do not implement the complete public contracts.
+Generate feedback, request-dependent targets, ordering, holds, stopping and
+bounded failure handling. Do not hard-code test requests or success outcomes.
+Use native actuator commands and advance the same MuJoCo model/data. Never
+teleport or modify live state to complete an action. Kinematic calculations
+may use scratch data. Probe real gripper direction and joint limits as needed.
+Use local_exec to construct and develop the real driver. Public skeleton code,
+robot assets, study and the capability contract are available; private tests
+and complete reference drivers are not generation inputs. Do not read them.
+Keep ALL code outputs, including write_file, under 150 lines per call. Write
+driver.py incrementally: the initial imports/class/bindings first, then append
+methods with write_file(append=true). Save the first chunk within your first
+six tool turns; probe and refine the saved driver instead of repeating setup.
+Finish by checking that
+every required capability method exists, and summarize the bindings/control.
+"""
+
+
 _VALIDATE_SYSTEM_DGX = """\
 You are Phase 3 VALIDATE. Your job is to copy driver.py to the DGX, run a \
 behavior smoke test there, and pull back a report.
@@ -442,6 +470,9 @@ class SelfAssemble:
         if catalog_class and cfg.expected_robot_class and catalog_class != cfg.expected_robot_class:
             raise ValueError("expected_robot_class conflicts with robot zoo")
         self.expected_robot_class = catalog_class or cfg.expected_robot_class
+        self.capability_design = load_capability_design(self.robot_definition)
+        if self.capability_design and self.robot_definition.get("capability_mjcf"):
+            cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         (self.workspace / "traces").mkdir(parents=True, exist_ok=True)
@@ -647,6 +678,7 @@ class SelfAssemble:
             f"study.json is in the workspace. MJCF is at {self.mjcf_workspace_path}.\n"
             "Produce driver.py per the procedure."
         )
+        user_msg += capability_generation_context(self.robot_definition)
         if prior_validate_failures:
             user_msg += (
                 "\n\nIMPORTANT — your previous driver.py was generated but the "
@@ -658,7 +690,7 @@ class SelfAssemble:
             )
         return self._run_phase(
             name="02_generate",
-            system=_GENERATE_SYSTEM,
+            system=_CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM,
             user_msg=user_msg,
             tools=tools,
             max_iters=self.cfg.max_iters_generate,
@@ -795,7 +827,17 @@ class SelfAssemble:
             cls_name = type(skel).__name__
             try:
                 expected_skeleton = SKELETON_FOR_CLASS.get(self.expected_robot_class)
-                if self.expected_robot_class and cls_name != expected_skeleton:
+                if self.capability_design:
+                    from auto_adapter.robot_catalog import validate_capability_driver
+                    from autoadapter_bench.capability_eval import run_capability_suite
+                    validate_capability_driver(skel, self.robot_definition)
+                    outcome = run_capability_suite(
+                        skel, self.robot_definition, self.workspace / "capability_validation",
+                        driver_origin="real_model_generation")
+                    tests.extend(outcome["tests"])
+                    if not outcome["tests"]:
+                        raise ValueError("capability suite produced no checks")
+                elif self.expected_robot_class and cls_name != expected_skeleton:
                     _record_phase("expected_morphology", False,
                                   f"catalog expects {self.expected_robot_class} "
                                   f"({expected_skeleton}), got {cls_name}", 0.0, tests)
@@ -1163,7 +1205,10 @@ class SelfAssemble:
         skipping = False
         skip_reason = ""
         for phase in self.PHASES:
-            if skipping:
+            if phase == "validate":
+                # Recorded inside GENERATE, including its failure/skip result.
+                pass
+            elif skipping:
                 results.append(
                     PhaseResult(name=phase, ok=False, duration_sec=0.0, error=skip_reason)
                 )
@@ -1175,8 +1220,10 @@ class SelfAssemble:
                 gen_res: Optional[PhaseResult] = None
                 val_res: Optional[PhaseResult] = None
                 outer_iter = 0
+                attempts = 0
                 prior_failures: Optional[str] = None
                 while outer_iter < max_outer:
+                    attempts += 1
                     gen_res = self._phase_generate(prior_validate_failures=prior_failures)
                     if not gen_res.ok:
                         # GENERATE itself failed — no point retrying VALIDATE
@@ -1190,7 +1237,7 @@ class SelfAssemble:
                 # Record both phases with the outer-loop count noted on GENERATE
                 if gen_res is not None:
                     gen_res.metadata = dict(gen_res.metadata or {})
-                    gen_res.metadata["outer_gen_val_iters"] = outer_iter + 1
+                    gen_res.metadata["outer_gen_val_iters"] = attempts
                     results.append(gen_res)
                 if val_res is not None:
                     results.append(val_res)
@@ -1198,7 +1245,7 @@ class SelfAssemble:
                         skipping = True
                         skip_reason = (
                             f"skipped — outer GEN←VAL loop exhausted "
-                            f"({outer_iter+1} attempts) and structural tests still fail: "
+                            f"({attempts} attempts) and structural tests still fail: "
                             f"{val_res.error}"
                         )
                 elif gen_res is not None and not gen_res.ok:
@@ -1209,10 +1256,6 @@ class SelfAssemble:
                     ))
                     skipping = True
                     skip_reason = f"skipped — upstream `generate` failed: {gen_res.error}"
-            elif phase == "validate":
-                # Already handled inside the `generate` branch above (outer
-                # GEN←VAL loop). Still honor stop_after="validate" below.
-                pass
             else:
                 res = method_for[phase]()
                 results.append(res)

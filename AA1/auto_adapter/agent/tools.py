@@ -41,30 +41,36 @@ def _resolve_under(root: Path, rel_path: str) -> Path:
 
 
 def make_write_file_tool(workspace: Path) -> ToolSpec:
-    """`write_file(path, content)` — writes a text file under workspace."""
+    """`write_file(path, content, append=False)` — save a complete text chunk."""
 
     workspace = Path(workspace).resolve()
     workspace.mkdir(parents=True, exist_ok=True)
 
     def _handler(inp: dict) -> dict:
         path = inp["path"]
+        if "content" not in inp:
+            raise ValueError("missing content; the previous output may have been truncated. "
+                             "Send a complete chunk of at most 150 lines, then use append=true.")
         content = inp["content"]
         p = _resolve_under(workspace, path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content)
+        with p.open("a" if inp.get("append", False) else "w", encoding="utf-8") as handle:
+            handle.write(content)
         return {"path": str(p), "bytes_written": len(content.encode("utf-8"))}
 
     return ToolSpec(
         name="write_file",
         description=(
             "Write a text file under the workspace. Use this to save driver.py, "
-            "skills.py, mcp_server.py, etc. `path` is workspace-relative; .. is rejected."
+            "skills.py, mcp_server.py, etc. Keep each chunk under 150 lines; "
+            "use append=true for subsequent chunks. `path` is workspace-relative; .. is rejected."
         ),
         input_schema={
             "type": "object",
             "properties": {
                 "path": {"type": "string", "description": "workspace-relative file path"},
-                "content": {"type": "string", "description": "full text content"},
+                "content": {"type": "string", "description": "complete text chunk, at most 150 lines"},
+                "append": {"type": "boolean", "description": "append a chunk instead of replacing the file", "default": False},
             },
             "required": ["path", "content"],
         },
@@ -239,6 +245,7 @@ def make_inspect_skeleton_tool() -> ToolSpec:
         spec_map = {
             "ArmSerialDLSSkeleton": "ArmSpec",
             "QuadrupedPDGaitSkeleton": "QuadrupedSpec",
+            "Go2VelocityPolicySkeleton": "Go2VelocityPolicySpec",
             "HandFingertipDLSSkeleton": "HandFingertipDLSSpec",
             "StretchMobileManipulationSkeleton": "StretchMobileManipulationSpec",
             "BimanualSerialDLSSkeleton": "BimanualSerialDLSSpec",
@@ -256,6 +263,12 @@ def make_inspect_skeleton_tool() -> ToolSpec:
             "skeleton": skel_name,
             "doc": (skel_cls.__doc__ or "").strip(),
             "spec_schema": _inspect_spec(spec_cls),
+            "public_methods": {
+                name: {"signature": str(inspect.signature(method)),
+                       "description": (inspect.getdoc(method) or "").split("\n")[0]}
+                for name, method in inspect.getmembers(skel_cls, predicate=inspect.isfunction)
+                if not name.startswith("_")
+            },
         }
 
     return ToolSpec(
@@ -263,7 +276,8 @@ def make_inspect_skeleton_tool() -> ToolSpec:
         description=(
             "Given a skeleton class name (from list_skeletons), return the "
             "matching Spec dataclass schema you need to fill: "
-            "field names, types, defaults, and which fields are required."
+            "field names, types, defaults, and which fields are required, plus "
+            "the public low-level method signatures available to generated code."
         ),
         input_schema={
             "type": "object",

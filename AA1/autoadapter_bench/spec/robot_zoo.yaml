@@ -92,6 +92,9 @@ robots:
 
   - id: piper
     mjcf: assets/mjcf/piper/scene.xml
+    capability_mjcf: assets/mjcf/capabilities/piper/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/piper
+    capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: ee_site}
     class: arm
     dof: 6

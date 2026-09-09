@@ -403,7 +403,12 @@ class FromScratchOrchestrator:
     """
 
     def __init__(self, cfg: FromScratchConfig) -> None:
+        from .robot_catalog import REPO_ROOT, find_robot_definition, load_capability_design
         self.cfg = cfg
+        self.robot_definition = find_robot_definition(cfg.robot_id, cfg.mjcf_path)
+        self.capability_design = load_capability_design(self.robot_definition)
+        if self.capability_design and self.robot_definition.get("capability_mjcf"):
+            cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         (self.workspace / "traces").mkdir(parents=True, exist_ok=True)
@@ -527,8 +532,16 @@ class FromScratchOrchestrator:
             "Write driver_from_scratch.py — full Robot class with YOUR own\n"
             "FK / IK / motion / gripper code, no auto_adapter.skeletons imports."
         )
+        from .robot_catalog import capability_generation_context
+        user += capability_generation_context(self.robot_definition, from_scratch=True)
+        system = _GEN_ALGO_SYSTEM
+        if self.capability_design:
+            system += ("\nFor a catalogued capability profile, implement its complete "
+                       "method(request) interface in addition to build/home/step/render. "
+                       "The profile supersedes the legacy per-class motion API lists. "
+                       "No retained policies, supplied skeletons or reference drivers.")
         return self._run_loop(
-            name="02_gen_algo", system=_GEN_ALGO_SYSTEM, user_msg=user,
+            name="02_gen_algo", system=system, user_msg=user,
             tools=tools, max_iters=self.cfg.max_iters_gen_algo,
         )
 
@@ -677,6 +690,23 @@ class FromScratchOrchestrator:
                     return report
                 report["tests"].append({"test": "build_from_mjcf", "ok": True,
                                          "detail": "OK", "metric": 1.0})
+
+                if self.capability_design:
+                    from auto_adapter.robot_catalog import validate_capability_driver
+                    from autoadapter_bench.capability_eval import run_capability_suite
+                    try:
+                        validate_capability_driver(r, self.robot_definition, from_scratch=True)
+                        outcome = run_capability_suite(
+                            r, self.robot_definition, self.workspace / "capability_validation",
+                            from_scratch=True, driver_origin="real_model_generation")
+                        if not outcome["tests"]:
+                            raise ValueError("capability suite produced no checks")
+                        report["tests"].extend(outcome["tests"])
+                    except Exception as exc:
+                        report["tests"].append({"test": "required_capabilities", "ok": False,
+                                                 "detail": f"{type(exc).__name__}: {exc}", "metric": 0.0})
+                    report["all_ok"] = all(test["ok"] for test in report["tests"])
+                    return report
 
                 # Detect robot class from available methods. Arm: has
                 # get_ee_pose + move_cartesian. Quadruped: has stand_up + sit.
