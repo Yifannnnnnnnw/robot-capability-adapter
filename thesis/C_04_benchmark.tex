@@ -11,46 +11,26 @@ with a summary that leads into the cross-robot evaluation in Chapter 5.
 
 \section[Introduction]{Introduction}
 
-A robot policy or large language model (LLM) can operate a particular robot
-only through robot-specific software. This software translates requested
-operations into commands understood by the simulator, robot controller, or
-vendor software development kit. This thesis uses the term \emph{driver} for
-a reusable Python interface that implements defined motion, sensing, and
-lifecycle capabilities for one robot. An LLM may help by generating this
-software or by planning through an existing driver, but success in one role
-does not establish success in the other.
+Comparing LLMs within Auto-Adapter requires distinguishing driver quality from
+planning performance. When the LLM changes in both roles, differences in
+end-to-end task success can arise from implementation, planning, or their
+interaction.
 
-This distinction creates a practical evaluation problem. Driver generation
-must be judged from independently observed behaviour rather than source code
-alone. Driver use must instead be judged by whether a controller completes a
-task through capabilities that already exist. Combining these outcomes would
-hide whether a model failed to construct the robot-facing software or failed
-to use it effectively.
+HumanEval evaluates generated programs for functional correctness
+\citep{chen2021codex}, whereas ProgPrompt evaluates task plans constructed from
+supplied robot actions \citep{singh2023progprompt}. These approaches motivate
+separate evaluation of the implementation behind an interface and the decisions
+made through it. For driver synthesis, this requires a fixed behavioural
+specification and a verdict based on independently recorded robot state.
 
-The declared AutoAdapter-Bench cohort contains seven LLM configurations and
-eleven robot configurations across five robot types: fixed serial arms,
-quadrupeds, dexterous hands, mobile manipulators, and bimanual manipulators.
-This breadth describes the range of robot configurations represented in the
-benchmark; it does not imply that every configuration has been evaluated in
-every experiment. Chapter~3 selects SO-101 and Unitree Go2 as contrasting
-representatives of fixed-arm manipulation and quadruped locomotion. Their
-different control requirements provide a bounded comparison across two robot
-types without treating morphology as an experimental effect.
-
-Against this background, the chapter asks how the seven LLM configurations
-differ in two roles. The first is generating a driver that satisfies fixed
-capability-level behavioural requirements. The second is completing a robot
-task through an existing, capability-validated driver. The two roles are
-evaluated separately on the selected arm and quadruped configurations.
-
-The experiments therefore retain separate statistical units, success
-criteria, and results. Their evidence is limited to the declared model
-endpoints, the two selected robot configurations, the declared
-physics-simulation route, and the fixed protocols. It does not establish
-hardware performance, effects of robot morphology, or a universal model
-ranking. The remainder of the chapter defines the research questions before
-describing the benchmark design, the two experiments, and their separate
-findings.
+AutoAdapter-Bench evaluates these capabilities separately in MuJoCo, using
+SO-101 and Unitree Go2 as representatives of robotic arms and quadrupeds,
+respectively. For each robot, the synthesis experiment measures how often each
+LLM produces a driver that meets the same interface and behavioural
+requirements. The driver-use experiment measures task completion while keeping
+the validated driver, task conditions and planning procedure fixed within each
+robot. The aim is to support model selection for each role within the evaluated
+configurations.
 
 
 
