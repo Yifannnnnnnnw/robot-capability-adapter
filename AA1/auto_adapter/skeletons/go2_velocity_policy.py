@@ -52,13 +52,6 @@ class Go2VelocityPolicySpec:
     action_scale: float = 0.25
     policy_period_s: float = 0.02
     expected_physics_timestep_s: float = 0.002
-    feedback_period_s: float = 0.04
-    planar_feedback_kp: float = 0.4
-    planar_feedback_ki: float = 0.3
-    yaw_feedback_kp: float = 0.4
-    yaw_feedback_ki: float = 0.3
-    maximum_planar_correction_m_s: float = 0.4
-    maximum_yaw_correction_rad_s: float = 0.8
     maximum_planar_speed_m_s: float = 1.2
     maximum_yaw_rate_rad_s: float = 3.0
     maximum_command_duration_s: float = 30.0
@@ -88,9 +81,6 @@ class Go2VelocityPolicySpec:
             "action_scale",
             "policy_period_s",
             "expected_physics_timestep_s",
-            "feedback_period_s",
-            "maximum_planar_correction_m_s",
-            "maximum_yaw_correction_rad_s",
             "maximum_planar_speed_m_s",
             "maximum_yaw_rate_rad_s",
             "maximum_command_duration_s",
@@ -99,37 +89,6 @@ class Go2VelocityPolicySpec:
             if value <= 0.0:
                 raise ValueError(f"{field_name} must be positive")
             object.__setattr__(self, field_name, value)
-
-        for field_name in (
-            "planar_feedback_kp",
-            "planar_feedback_ki",
-            "yaw_feedback_kp",
-            "yaw_feedback_ki",
-        ):
-            value = _finite(getattr(self, field_name), field_name)
-            if value < 0.0:
-                raise ValueError(f"{field_name} must be non-negative")
-            object.__setattr__(self, field_name, value)
-        if self.planar_feedback_kp == 0.0 and self.planar_feedback_ki == 0.0:
-            raise ValueError("planar feedback requires a positive gain")
-        if self.yaw_feedback_kp == 0.0 and self.yaw_feedback_ki == 0.0:
-            raise ValueError("yaw feedback requires a positive gain")
-        feedback_ratio = self.feedback_period_s / self.policy_period_s
-        if feedback_ratio < 1.0 or not math.isclose(
-            feedback_ratio,
-            round(feedback_ratio),
-            rel_tol=0.0,
-            abs_tol=1.0e-9,
-        ):
-            raise ValueError(
-                "feedback_period_s must be an integer number of policy periods"
-            )
-        if self.feedback_period_s > 0.05:
-            raise ValueError("feedback_period_s must not exceed 0.05 s")
-        if self.maximum_planar_correction_m_s > self.maximum_planar_speed_m_s:
-            raise ValueError("maximum planar correction exceeds the policy bound")
-        if self.maximum_yaw_correction_rad_s > self.maximum_yaw_rate_rad_s:
-            raise ValueError("maximum yaw correction exceeds the policy bound")
 
         object.__setattr__(self, "joint_names", joints)
         object.__setattr__(self, "actuator_names", actuators)
@@ -543,147 +502,6 @@ class Go2VelocityPolicySkeleton(SkeletonBase):
             "linear_body_yaw_m_s": linear_body_yaw,
             "angular_world_rad_s": angular_world.copy(),
             "yaw_rate_rad_s": yaw_rate,
-        }
-
-    def track_planar_velocity(
-        self,
-        vx: float,
-        vy: float,
-        yaw_rate: float,
-        duration: float = 1.0,
-    ) -> dict[str, Any]:
-        """Track a local planar twist with bounded fresh-velocity PI feedback."""
-
-        self._resolve()
-        np = self._load_numpy()
-        requested = np.asarray(
-            (
-                _finite(vx, "vx"),
-                _finite(vy, "vy"),
-                _finite(yaw_rate, "yaw_rate"),
-            ),
-            dtype=float,
-        )
-        if (
-            float(np.linalg.norm(requested[:2]))
-            > self.spec.maximum_planar_speed_m_s
-        ):
-            raise ValueError("planar velocity request exceeds the policy bound")
-        if abs(float(requested[2])) > self.spec.maximum_yaw_rate_rad_s:
-            raise ValueError("yaw-rate request exceeds the policy bound")
-        duration_s = _finite(duration, "duration")
-        if (
-            duration_s <= 0.0
-            or duration_s > self.spec.maximum_command_duration_s
-        ):
-            raise ValueError("duration is outside the policy bound")
-
-        timestep = float(self.model.opt.timestep)
-        total_steps = max(1, int(math.ceil(duration_s / timestep)))
-        feedback_steps = int(round(self.spec.feedback_period_s / timestep))
-        integral = np.zeros(3, dtype=float)
-        remaining_steps = total_steps
-        feedback_cycles = 0
-        physics_steps = 0
-        last_policy_command = requested.copy()
-
-        while remaining_steps > 0:
-            chunk_steps = min(feedback_steps, remaining_steps)
-            chunk_duration = chunk_steps * timestep
-            twist = self.get_base_twist()
-            measured = np.asarray(
-                (
-                    twist["linear_body_yaw_m_s"][0],
-                    twist["linear_body_yaw_m_s"][1],
-                    twist["yaw_rate_rad_s"],
-                ),
-                dtype=float,
-            )
-            error = requested - measured
-            integral += error * chunk_duration
-            if self.spec.planar_feedback_ki > 0.0:
-                planar_integral_limit = (
-                    self.spec.maximum_planar_correction_m_s
-                    / self.spec.planar_feedback_ki
-                )
-                integral[:2] = np.clip(
-                    integral[:2], -planar_integral_limit, planar_integral_limit
-                )
-            else:
-                integral[:2] = 0.0
-            if self.spec.yaw_feedback_ki > 0.0:
-                yaw_integral_limit = (
-                    self.spec.maximum_yaw_correction_rad_s
-                    / self.spec.yaw_feedback_ki
-                )
-                integral[2] = float(
-                    np.clip(integral[2], -yaw_integral_limit, yaw_integral_limit)
-                )
-            else:
-                integral[2] = 0.0
-
-            correction = np.asarray(
-                (
-                    self.spec.planar_feedback_kp * error[0]
-                    + self.spec.planar_feedback_ki * integral[0],
-                    self.spec.planar_feedback_kp * error[1]
-                    + self.spec.planar_feedback_ki * integral[1],
-                    self.spec.yaw_feedback_kp * error[2]
-                    + self.spec.yaw_feedback_ki * integral[2],
-                ),
-                dtype=float,
-            )
-            correction_norm = float(np.linalg.norm(correction[:2]))
-            if correction_norm > self.spec.maximum_planar_correction_m_s:
-                correction[:2] *= (
-                    self.spec.maximum_planar_correction_m_s / correction_norm
-                )
-            correction[2] = float(
-                np.clip(
-                    correction[2],
-                    -self.spec.maximum_yaw_correction_rad_s,
-                    self.spec.maximum_yaw_correction_rad_s,
-                )
-            )
-            policy_command = requested + correction
-            policy_speed = float(np.linalg.norm(policy_command[:2]))
-            safe_planar_limit = float(
-                np.nextafter(
-                    np.float32(self.spec.maximum_planar_speed_m_s),
-                    np.float32(0.0),
-                )
-            )
-            if policy_speed > safe_planar_limit:
-                policy_command[:2] *= safe_planar_limit / policy_speed
-            safe_yaw_limit = float(
-                np.nextafter(
-                    np.float32(self.spec.maximum_yaw_rate_rad_s),
-                    np.float32(0.0),
-                )
-            )
-            policy_command[2] = float(
-                np.clip(policy_command[2], -safe_yaw_limit, safe_yaw_limit)
-            )
-            result = self.command_planar_velocity(
-                float(policy_command[0]),
-                float(policy_command[1]),
-                float(policy_command[2]),
-                duration=chunk_duration,
-            )
-            physics_steps += int(result["physics_steps"])
-            remaining_steps -= chunk_steps
-            feedback_cycles += 1
-            last_policy_command = policy_command
-
-        final_twist = self.get_base_twist()
-        return {
-            "requested_velocity_body_yaw_m_s": requested[:2].copy(),
-            "requested_yaw_rate_rad_s": float(requested[2]),
-            "requested_duration_s": duration_s,
-            "physics_steps": physics_steps,
-            "feedback_cycles": feedback_cycles,
-            "last_policy_command": last_policy_command.copy(),
-            "final_twist": final_twist,
         }
 
     def command_planar_velocity(

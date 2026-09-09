@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import fields
 from pathlib import Path
 
 import mujoco
@@ -146,6 +147,16 @@ def test_go2_policy_uses_shared_aa1_session_and_basic_joint_targets() -> None:
     assert description["base_type"] == "SkeletonBase"
     assert description["dof"] == 12
     assert description["policy"]["artifact_id"] == POLICY_ARTIFACT_ID
+
+
+def test_go2_public_policy_excludes_upper_level_velocity_feedback() -> None:
+    policy = _policy()
+    public_fields = {field.name for field in fields(Go2VelocityPolicySpec)}
+    assert not hasattr(policy, "track_planar_velocity")
+    assert not any("feedback" in name for name in public_fields)
+    assert not any("correction" in name for name in public_fields)
+    description = policy.describe()
+    assert "feedback" not in json.dumps(description).lower()
 
 
 def test_go2_policy_command_runs_real_mujoco_steps() -> None:
