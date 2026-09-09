@@ -1,0 +1,122 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "A1",
+  "case_id": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+  "detail": "A1 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2750,
+    "body_max_displacement_from_reset": {
+      "base": 0.09672569698896957,
+      "base_link": 0.0,
+      "bracelet_link": 0.08350264434331217,
+      "fixed_contact_target": 0.0,
+      "forearm_link": 0.08035969670772167,
+      "half_arm_1_link": 1.447478134813009e-05,
+      "half_arm_2_link": 0.04019147468462976,
+      "left_coupler": 0.10800370818936143,
+      "left_driver": 0.10882961903136448,
+      "left_follower": 0.11858291060759163,
+      "left_pad": 0.12156542381610612,
+      "left_silicone_pad": 0.12156542381610612,
+      "left_spring_link": 0.11012204960415745,
+      "right_coupler": 0.1077657451715353,
+      "right_driver": 0.10871220052280371,
+      "right_follower": 0.11831795665524958,
+      "right_pad": 0.12137328707459508,
+      "right_silicone_pad": 0.12137328707459508,
+      "right_spring_link": 0.11007128863773798,
+      "shoulder_link": 0.0,
+      "spherical_wrist_1_link": 0.06365554065367264,
+      "spherical_wrist_2_link": 0.061895945778303915,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint_1": 0.0026929833901438993,
+      "joint_2": 0.1911905514323689,
+      "joint_3": 0.0035239518214127408,
+      "joint_4": 0.01749721073484123,
+      "joint_5": 0.0012334039296932721,
+      "joint_6": 0.059977576419841694,
+      "joint_7": 3.563106654169701e-08,
+      "left_coupler_joint": 2.2943627441269067e-06,
+      "left_driver_joint": 9.450464532152888e-05,
+      "left_follower_joint": 0.00010230208139564139,
+      "left_spring_link_joint": 0.00010074586542447965,
+      "right_coupler_joint": 2.340195865292743e-06,
+      "right_driver_joint": 9.452056489916375e-05,
+      "right_follower_joint": 0.0001024956009708991,
+      "right_spring_link_joint": 0.00010089135869867719
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "pinch": 0.12885262548438256,
+      "pinch_site": 0.12325721158506117
+    },
+    "step_count": 2750
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+  "method_name": "move_end_effector_to_position",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A1",
+    "measurements": {
+      "best_error_m": 0.00035324001323707084,
+      "final_error_m": 0.00035324001323707084,
+      "longest_target_hold_s": 1.0379999999998857,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 5.499999999999561,
+      "site_max_displacement_m": 0.12325721158506117
+    },
+    "parameters": {
+      "contract_id": "A1",
+      "guarded_joint_names": [
+        "right_driver_joint"
+      ],
+      "guarded_joint_tolerances": [
+        0.04000000000000001
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "pinch_site"
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 56,
+  "ok": true,
+  "physics_steps": 2750,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 5.499999999999561,
+  "test": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/kinova_gen3_robotiq_2f85/framework_reference/kinova_gen3_robotiq_2f85-a1-calibrated_boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 56,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/kinova_gen3_robotiq_2f85/framework_reference/kinova_gen3_robotiq_2f85-a1-calibrated_boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/kinova_gen3_robotiq_2f85/framework_reference/kinova_gen3_robotiq_2f85-a1-calibrated_boundary/video.mp4"
+}

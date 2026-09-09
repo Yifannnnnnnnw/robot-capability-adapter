@@ -1,0 +1,22 @@
+<mujoco model="kinova gen3 robotiq 2f85 capability scene">
+  <include file="kinova_gen3_robotiq_2f85_fixed.xml"/>
+  <statistic meansize="0.05"/>
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="fixed_groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="fixed_groundplane" texture="fixed_groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+  <worldbody>
+    <light pos="0 0 1.5" directional="true"/>
+    <geom name="fixed_floor" size="0 0 0.05" type="plane" material="fixed_groundplane"/>
+    <body name="fixed_contact_target" mocap="true" pos="1.0 0.5 0.8">
+      <geom name="fixed_contact_geom" type="box" size="0.005 0.025 0.025" rgba="0.8 0.2 0.1 1" contype="1" conaffinity="1"/>
+    </body>
+    <camera name="fixed_evidence" pos="1.8 -2 1.4" xyaxes="0.75 0.66 0 -0.3 0.34 0.89"/>
+  </worldbody>
+</mujoco>
