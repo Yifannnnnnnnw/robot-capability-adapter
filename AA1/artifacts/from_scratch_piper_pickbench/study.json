@@ -1,0 +1,63 @@
+{
+  "robot_id": "from_scratch_piper_pickbench",
+  "estimated_class": "arm",
+  "dof": 6,
+  "arm_joint_names": [
+    "joint1",
+    "joint2",
+    "joint3",
+    "joint4",
+    "joint5",
+    "joint6"
+  ],
+  "arm_actuator_names": [
+    "joint1",
+    "joint2",
+    "joint3",
+    "joint4",
+    "joint5",
+    "joint6"
+  ],
+  "joint_limits": {
+    "joint1": [
+      -2.618,
+      2.618
+    ],
+    "joint2": [
+      0.0,
+      3.14
+    ],
+    "joint3": [
+      -2.697,
+      0.0
+    ],
+    "joint4": [
+      -1.832,
+      1.832
+    ],
+    "joint5": [
+      -1.22,
+      1.22
+    ],
+    "joint6": [
+      -3.14,
+      3.14
+    ]
+  },
+  "ee_site": "ee_site",
+  "ee_body": "link6",
+  "gripper_actuator_names": [
+    "gripper"
+  ],
+  "gripper_ctrlrange": [
+    0.0,
+    0.035
+  ],
+  "weld_graspable_bodies": [
+    "cube_red",
+    "cube_green",
+    "cube_blue"
+  ],
+  "actuator_type_hint": "position",
+  "notes": "6-DOF Piper arm with parallel-jaw gripper using weld-based grasping for pick-and-place tasks"
+}

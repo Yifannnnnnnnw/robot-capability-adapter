@@ -1,0 +1,32 @@
+% Headline ablation: USING a synthesized tool layer vs SYNTHESIZING it.
+% Numbers are trial-level physics success on the SO-101 13-task suite (N=5),
+% corrected (numpy-bool serialization bug fixed) with the feasible
+% waypoint-verified draw_letter_L. Bold = best of the three "uses" methods.
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{llrrrcr}
+\toprule
+ & & \multicolumn{3}{c}{\textbf{Uses API}} & \multicolumn{2}{c}{\textbf{Writes API}} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-7}
+\textbf{Model} & \textbf{Vendor} & \textbf{A-A} & \textbf{CaP} & \textbf{CaP\textsubscript{fs}} & \textbf{Syn} & \textbf{Self} \\
+\midrule
+Sonnet~4.6    & Anthropic & \textbf{69} & 57          & 54 & $\times^{\,\mathrm{V}}$ & -- \\
+Opus~4.8      & Anthropic & \textbf{63} & 51          & 42 & \checkmark & 46 \\
+Haiku~4.5     & Anthropic & \textbf{62} & 54          & 62 & \checkmark & 46 \\
+Nova~Pro      & Amazon    & \textbf{60} & 57          & 46 & $\times^{\,\mathrm{S}}$ & -- \\
+DeepSeek~V3.2 & DeepSeek  & 57          & \phantom{0}9 & \textbf{60} & \checkmark & 28 \\
+Ministral~8B  & Mistral   & \textbf{54} & 23          & 43 & $\times^{\,\mathrm{S}}$ & -- \\
+Qwen3~32B     & Alibaba   & 49          & \textbf{72} & 57 & $\times^{\,\mathrm{V}}$ & -- \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Using vs.\ synthesizing the tool layer} (SO-101,
+13 tasks, pass \%, $N{=}5$). \textbf{Uses API} (fixed driver):
+A-A = Auto-Adapter, CaP = zero-shot Code-as-Policies,
+CaP\textsubscript{fs} = CaP with few-shot exemplars; bold = best of
+the three. \textbf{Writes API}: Syn = passes validation
+($\times^{\mathrm{S}}$/$\times^{\mathrm{V}}$ = study/validate
+failure); Self = end-to-end on the model's own driver.}
+\label{tab:portability}
+\end{table}

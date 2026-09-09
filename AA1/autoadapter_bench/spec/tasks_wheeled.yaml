@@ -1,0 +1,52 @@
+# AutoAdapter-Bench — Wheeled / mobile-base task suite.
+# Physics-graded locomotion for differential-drive bases (reuses
+# forward_progress + adds turn_to_heading). Primitives: drive_forward,
+# turn, get_base_pose, get_base_yaw (zero driver extension).
+version: "v1.0"
+robot_class: wheeled
+suites:
+  simple:
+    description: Single-skill drive / turn, physics-graded on base pose.
+    tasks:
+      - id: drive_forward_30cm
+        prompt: |
+          Drive straight forward about 30 cm and stop.
+        success: {type: forward_progress, x_min_m: 0.20, abs_y_max_m: 0.15, n_trials: 5}
+      - id: drive_forward_60cm
+        prompt: |
+          Drive forward at least 60 cm from your start, staying straight.
+        success: {type: forward_progress, x_min_m: 0.50, abs_y_max_m: 0.20, n_trials: 5}
+      - id: turn_left_90
+        prompt: |
+          Turn left (counter-clockwise) by about 90 degrees in place.
+        success: {type: turn_to_heading, delta_rad: 1.5708, tol_rad: 0.35, n_trials: 5}
+      - id: turn_right_90
+        prompt: |
+          Turn right (clockwise) by about 90 degrees in place.
+        success: {type: turn_to_heading, delta_rad: -1.5708, tol_rad: 0.35, n_trials: 5}
+  hard:
+    description: Composed drive+turn with thresholds (analogue of arm/quad hard).
+    tasks:
+      - id: drive_band_40cm
+        prompt: |
+          Advance roughly 40 cm in +X using short drives and base-pose
+          checks; stop inside the 35-45 cm band.
+        success: {type: forward_progress, x_min_m: 0.35, x_max_m: 0.45, abs_y_max_m: 0.20, n_trials: 5}
+      - id: drive_then_turn
+        prompt: |
+          Drive forward about 30 cm, then turn left 90 degrees.
+        success:
+          # Verifies BOTH legs: peak drive >=20 cm AND final turn >=60 deg.
+          type: drive_and_turn
+          min_drive_m: 0.20
+          min_turn_rad: 1.05
+          n_trials: 5
+      - id: turn_180
+        prompt: |
+          Turn around in place (about 180 degrees).
+        success: {type: turn_to_heading, delta_rad: 3.1416, tol_rad: 0.45, n_trials: 5}
+      - id: bounded_drift_drive
+        prompt: |
+          Drive forward at least 40 cm while keeping sideways (Y) drift
+          small; use short drives and pose checks.
+        success: {type: forward_progress, x_min_m: 0.40, abs_y_max_m: 0.15, n_trials: 5}

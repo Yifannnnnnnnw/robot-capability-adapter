@@ -1,0 +1,2 @@
+{"iter": 0, "thought": "I'll call the `add` function with x=2 and y=3 right away!", "actions": [{"name": "add", "input": {"x": 2, "y": 3}}], "observations": [{"tool_use_id": "toolu_bdrk_012M8ydzaUwEhHjJoSsPt8WB", "content": "5", "is_error": false}], "duration_ms": 2006.641149520874, "token_usage": {"in": 594, "out": 90}, "stop_reason": "tool_use"}
+{"iter": 1, "thought": "The `add` tool returned **5**. So, 2 + 3 = **5**! \ud83c\udf89", "actions": [], "observations": [], "duration_ms": 1336.2560272216797, "token_usage": {"in": 707, "out": 31}, "stop_reason": "end_turn"}

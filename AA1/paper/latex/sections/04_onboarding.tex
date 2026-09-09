@@ -1,0 +1,23 @@
+\section{Onboarding cost across 8 robots}
+\label{sec:onboarding}
+
+\input{sections/figure_hero}
+
+Running the pipeline once on each of the eight robots in
+Figure~\ref{fig:hero} (top) gives 8/8 structural-validation pass;
+under the released strict harness 0/8 \emph{fully} pass (arms: a
+post-synthesis perception check; quadrupeds: locomotion tests;
+Appendix~\ref{app:onboarding}). Mean
+wall-clock time is $7.8 \pm 1.6$ minutes (5.1\,min on SO-101 to
+10.0\,min on ANYmal-C) and mean LLM-inference cost is
+$\$2.98 \pm \$0.84$ per robot ($\$23.80$ and 62\,min total).
+
+These numbers are in self-contained mode (\S\ref{sec:modes})
+with bounded per-phase iteration caps. Validation
+per robot covers five shared steps: no-skeleton import, robot-class
+check, driver build, \texttt{home()} settling, and a \texttt{describe} check. It
+then runs an IK round-trip and \texttt{gripper\_cycle} on arms, or
+\texttt{stand\_up}/\texttt{sit}/\texttt{walk\_forward} on quadrupeds.
+\emph{Practitioner takeaway: structural onboarding of a new MJCF
+costs ${\approx}\$3$ and ${\approx}8$ minutes of LLM time, before
+any human driver engineering.}

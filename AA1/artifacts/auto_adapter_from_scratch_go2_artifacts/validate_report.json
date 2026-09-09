@@ -1,0 +1,63 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "stand_up",
+      "ok": true,
+      "detail": "body height 0.277 \u2192 0.277, returned True",
+      "metric": 0.2769024595709707
+    },
+    {
+      "test": "sit",
+      "ok": true,
+      "detail": "body height after sit: 0.280, returned False",
+      "metric": 0.2798987617275283
+    },
+    {
+      "test": "walk_forward",
+      "ok": true,
+      "detail": "ran without exception",
+      "metric": 1.0
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "str (len=1307)",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 546,
+    "n_chars": 18130,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "unknown"
+  },
+  "structural_ok": true,
+  "n_passed": 8,
+  "n_total": 8
+}

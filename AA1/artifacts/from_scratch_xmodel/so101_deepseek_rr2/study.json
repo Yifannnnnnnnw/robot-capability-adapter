@@ -1,0 +1,66 @@
+{
+  "robot_id": "so101_deepseek_rr2",
+  "estimated_class": "arm",
+  "dof": 6,
+  "arm_joint_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll",
+    "jaw_visual_joint"
+  ],
+  "arm_actuator_names": [
+    "act_shoulder_pan",
+    "act_shoulder_lift",
+    "act_elbow_flex",
+    "act_wrist_flex",
+    "act_wrist_roll",
+    "act_jaw_visual"
+  ],
+  "joint_limits": {
+    "shoulder_pan": [
+      -1.92,
+      1.92
+    ],
+    "shoulder_lift": [
+      -1.75,
+      1.75
+    ],
+    "elbow_flex": [
+      -1.69,
+      1.69
+    ],
+    "wrist_flex": [
+      -1.66,
+      1.66
+    ],
+    "wrist_roll": [
+      -2.74,
+      2.84
+    ],
+    "jaw_visual_joint": [
+      -0.175,
+      1.75
+    ]
+  },
+  "ee_site": "ee_site",
+  "ee_body": "gripper_link",
+  "gripper_actuator_names": [
+    "act_jaw_visual"
+  ],
+  "gripper_ctrlrange": [
+    -0.175,
+    1.75
+  ],
+  "weld_graspable_bodies": [
+    "banana",
+    "mug",
+    "bottle",
+    "screwdriver",
+    "duck",
+    "lego"
+  ],
+  "actuator_type_hint": "position",
+  "notes": "SO-101 6-DOF tabletop robotic arm with visual gripper jaw and weld-based grasping"
+}

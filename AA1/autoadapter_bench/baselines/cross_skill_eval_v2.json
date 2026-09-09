@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "n_episodes_per_reach_variant": 10,
+    "n_episodes_per_pick": 10,
+    "deterministic": true,
+    "reach_variants_count": 4,
+    "pick_ctrl_scale": 0.1,
+    "ppo_reach_model": "autoadapter_bench/baselines/rl/trained/so101_reach_multi.zip",
+    "ppo_pick_model": "autoadapter_bench/baselines/rl/trained/so101_pick_smoke.zip (200k variant \u2014 final 50-ep succ 0.82, deterministic-cross 0%)",
+    "workspace": "artifacts/auto_adapter_so101_v2_artifacts",
+    "note": "metadata backfilled 2026-05-31; eval was originally run via eval_cross_skill.py with --n-episodes 10"
+  },
+  "results": {
+    "ppo_reach_on_reach": {
+      "reach_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.01813056106641562
+      },
+      "reach_x-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.01650592388190774
+      },
+      "reach_y+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.013454867340217678
+      },
+      "reach_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.0144316373887449
+      }
+    },
+    "ppo_reach_on_pick": {
+      "success_rate": 0.5,
+      "mean_lift_m": 0.01362554608316065
+    },
+    "ppo_pick_on_reach": {
+      "reach_x+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.28272249353412027
+      },
+      "reach_x-5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.2732348532941439
+      },
+      "reach_y+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.2719038506109729
+      },
+      "reach_z+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.31271566358044395
+      }
+    },
+    "ppo_pick_on_pick": {
+      "success_rate": 0.0,
+      "mean_lift_m": -0.004548768170624072
+    }
+  }
+}

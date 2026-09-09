@@ -1,0 +1,60 @@
+# AutoAdapter-Bench — Humanoid / biped task suite (Unitree H1).
+# CAVEAT: H1 is reported in the paper at the ONBOARDING-VALIDATION level only
+# (the orchestrator steps physics directly for stand+squat). This downstream
+# task suite was NOT used for those historical paper numbers. The AA1 15-robot
+# diagnostic now checks every real MuJoCo step and elapsed simulation time for
+# stand_balance_2s; inaction cannot pass that task. Other tasks remain outside
+# this diagnostic, including the coarse per-call squat graders, which cannot
+# reliably see an intra-call dip. This is not a formal experiment protocol.
+# Physics-graded static balance for a tall inverted pendulum. Primitives:
+# stand_balance, squat, get_base_pose, get_torso_height. Every grader requires
+# the torso to stay UPRIGHT (body z-axis .z >= 0.7); falling fails. Dynamic
+# walking is out of scope (documented limit) — these grade STATIC balance.
+version: "v1.0"
+robot_class: humanoid
+suites:
+  simple:
+    description: Single-skill stand / squat, graded on torso pose.
+    tasks:
+      - id: stand_balance_2s
+        prompt: |
+          Stand and balance in place for about 2 seconds, keeping the torso
+          upright and at standing height. Do not fall.
+        success: {type: torso_upright_height, min_torso_h_m: 0.85, min_upright: 0.7, duration_s: 2.0, n_trials: 5}
+      - id: stand_in_place
+        prompt: |
+          Stand and hold your position without drifting sideways or falling.
+        success: {type: stayed_in_place, max_drift_m: 0.20, min_torso_h_m: 0.80, min_upright: 0.7, n_trials: 5}
+      - id: squat_shallow
+        prompt: |
+          From standing, squat down about 0.12 m by bending hips and knees,
+          then stand back up. Stay balanced.
+        success: {type: squat_and_recover, min_drop_m: 0.08, recover_tol_m: 0.10, min_upright: 0.7, n_trials: 5}
+      - id: squat_deep
+        prompt: |
+          From standing, squat down about 0.20 m (deeper bend), then return to
+          standing without toppling.
+        success: {type: squat_and_recover, min_drop_m: 0.15, recover_tol_m: 0.12, min_upright: 0.7, n_trials: 5}
+  hard:
+    description: Longer holds and composed squats (still static balance).
+    tasks:
+      - id: balance_hold_long
+        prompt: |
+          Stand and balance steadily for a longer hold, torso upright and at
+          full standing height the whole time.
+        success: {type: torso_upright_height, min_torso_h_m: 0.90, min_upright: 0.8, n_trials: 5}
+      - id: double_squat
+        prompt: |
+          From standing, perform two squats in a row (down ~0.15 m and up,
+          twice), staying balanced and recovering to standing at the end.
+        success: {type: squat_and_recover, min_drop_m: 0.12, recover_tol_m: 0.10, min_upright: 0.7, n_trials: 5}
+      - id: squat_and_hold_tight
+        prompt: |
+          Squat down about 0.15 m, then stand back up and hold a steady,
+          upright stance without drifting.
+        success: {type: squat_and_recover, min_drop_m: 0.12, recover_tol_m: 0.08, min_upright: 0.8, n_trials: 5}
+      - id: stand_no_drift_tight
+        prompt: |
+          Stand and hold position very steadily — keep horizontal drift small
+          and stay upright at full height.
+        success: {type: stayed_in_place, max_drift_m: 0.12, min_torso_h_m: 0.90, min_upright: 0.8, n_trials: 5}

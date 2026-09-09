@@ -1,0 +1,152 @@
+\section{Capability evaluation}
+\label{sec:capability}
+
+This section asks whether the synthesized API is useful for
+downstream LLM agents (\S\ref{sec:cap-cross},
+\S\ref{sec:cap-rlsteelman}), holds across LLM tiers
+(\S\ref{sec:cap-portability}), and transfers beyond SO-101
+(\S\ref{sec:cap-cross-robot}). Same-API comparisons hold the driver
+fixed (agent style); synthesis itself is evaluated only in
+\S\ref{sec:cap-portability}.
+
+\subsection{SO-101 cross-skill: Reach-and-Pick}
+\label{sec:cap-cross}
+
+For this experiment the SO-101 driver is produced in spec mode
+(\S\ref{sec:modes}), which exposes two interfaces: a low-level
+joint interface the PPO and Diffusion Policy baselines read directly,
+and the high-level Cartesian+gripper API the LLM uses. To make the RL comparison
+like-for-like, we also train standard PPO on that high-level API. Its
+action space is a Cartesian delta resolved by the driver's IK, plus a
+gripper bit. We goal-condition it in three regimes (reach-only,
+pick-only, both), $N{=}3$ seeds each (Appendix~\ref{app:robustness}). Reach evaluates 4 variants $\times$
+10 episodes; Pick 10 episodes in which a banana must be lifted
+$\geq$2\,cm from a randomized XY pose (same-API rows: $n{=}30$).
+Table~\ref{tab:cross-skill} reports per-policy success rates.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Policy} & \textbf{Reach} & \textbf{Pick} \\
+\midrule
+\multicolumn{3}{l}{\emph{Low-level joint interface (no-abstraction ablation)}}\\
+PPO\_reach (multi-task, 300k) & 100\% & 20\% \\
+PPO\_pick (stoch.\ own-task)  &   0\% & 70\% \\
+DP\_reach (600 demos)         &  50\% &  0\% \\
+DP\_pick (200 demos)          &   0\% & 10\% \\
+\midrule
+\multicolumn{3}{l}{\emph{Same high-level API as the LLM ($N{=}3$ seeds, $n{=}30$)}}\\
+RL\_reach (one skill)         & \textbf{100\%} & 26\% \\
+RL\_pick (one skill)          &   0\% & \textbf{100\%} \\
+RL\_multi (both skills)       & \textbf{100\%} & \textbf{100\%} \\
+CaP (zero-shot)               & \textbf{100\%} & \textbf{100\%} \\
+\textbf{Auto-Adapter} (zero-shot) & \textbf{100\%} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\caption{SO-101 cross-skill (Reach, Pick). \emph{Top:} learned policies on
+the low-level joint interface (no-abstraction ablation). \emph{Bottom:}
+PPO on the \emph{same} high-level API the LLM uses, plus the two LLM methods
+(RL rows: $N{=}3$ seeds; CaP/Auto-Adapter zero-shot). PPO\_pick is the charitable
+\emph{stochastic} own-task rate (deterministic 0\%, an SB3 artifact).
+Top rows: \texttt{exp3\_cross\_skill}; same-API rows: \texttt{exp\_same\_api\_rl}
+(canonical results file).}
+\label{tab:cross-skill}
+\end{table}
+
+Both LLM methods reach 100\% on both skills zero-shot, and the
+same-API learned policies isolate why. A single-skill PPO masters its
+trained skill (100\%) but transfers poorly: run on Pick, the
+reach-trained policy succeeds on only $26\pm13\%$ (3-seed mean)
+versus 100\% for the pick-trained, and RL\_pick scores 0\% on
+Reach. A multi-task PPO reaches 100\%/100\%, so the limit is the
+training regime, not the API. RL matches the LLM only after training
+on every target skill; the LLM covers new skills at zero added
+training cost. The joint-interface policies (top) score lower still,
+showing how much the synthesized API's abstraction contributes.
+
+\subsection{Multi-task RL ablation}
+\label{sec:cap-rlsteelman}
+
+RL is not simply weak given the right data. Trained on 6 reach
+directions and tested on 6 in-distribution plus 4 held-out variants,
+multi-task PPO reaches 100\% / 75\% and our LLM agent 100\% / 75\%;
+both miss the same 10\,cm out-of-workspace variant. Multi-task DP
+reaches 60\% / 5\% (Appendix~\ref{app:multitask}). The cross-skill gap
+(\S\ref{sec:cap-cross}) is thus not that PPO is weak on its own task,
+but that it needs a new environment, reward, and training run per
+skill family.
+
+\subsection{Using vs.\ synthesizing the tool layer}
+\label{sec:cap-portability}
+
+We separate two questions:
+\emph{using} a \emph{fixed} reference driver (synthesized once,
+frozen for all models) vs.\
+\emph{synthesizing} one's own from the MJCF. The comparison
+spans seven LLMs across five vendors on the 13-task SO-101 suite
+($N{=}5$, trial-level; adapters in Appendix~\ref{app:models}).
+Table~\ref{tab:portability} reports both.
+
+\input{sections/table_synth_ablation}
+
+\noindent\textbf{Using.} On the \emph{same} fixed driver,
+Auto-Adapter tops zero-shot CaP on six of seven models (49--69\%
+vs.\ 9--72\%); the gap reflects the multi-turn planner, not the
+synthesis. Significance is at the task
+level, not per model: a Wilcoxon test over 91 model-task cells
+gives $p{<}0.01$; per-model tests are underpowered
+(Appendix~\ref{app:robustness}). Hand-written few-shot
+exemplars (CaP\textsubscript{fs}, extra human effort per API) only
+rescue weak models that cannot use the API zero-shot (DeepSeek
+$9{\to}60$) while \emph{hurting} strong ones (Sonnet~4.6 $57{\to}54$);
+against CaP\textsubscript{fs} Auto-Adapter still wins four of
+seven, trailing only on DeepSeek and Qwen.
+
+\noindent\textbf{Synthesizing.} Using a tool layer does not imply
+writing one. All seven operate the API ($\geq$49\%), but only three
+synthesize a driver that passes validation (build, IK, gripper,
+perception, grasp). Opus, Haiku, and DeepSeek pass; Sonnet and Qwen fail
+validation (grasp, IK); Nova and Ministral fail earlier ($0/3$).
+Qwen (best CaP user, 72\%) and Sonnet (best API user, 69\%)
+both fail to ship a driver. Operating their self-written drivers
+end-to-end (``Self''), the three reach 28--46\% --- below their own
+scores on the fixed reference (57--63\%), but with \emph{zero}
+human driver code.
+Figure~\ref{fig:cost-quality} plots the cost--quality plane
+(debugging-loop traces in Figure~\ref{fig:synth-traj}).
+
+\emph{Practitioner takeaway: capability is needed only at
+onboarding: synthesize once with a frontier model, then serve with
+a cheap one.}
+
+\subsection{Cross-robot scaling}
+\label{sec:cap-cross-robot}
+
+\noindent\textbf{Simple suite on Piper and UR5e.}
+On five short arm tasks ($\times$3 trials; three physics-graded,
+two behavioral, \S\ref{sec:protocol}), Auto-Adapter reaches 80\% and
+CaP 60\% on each robot. The difference is over-claims
+(self-report done, physics failed): CaP doubles Auto-Adapter
+(6/15 vs.\ 3/15). All three extra over-claims fall on
+\texttt{unreachable\_detect}, where CaP reports completion despite an
+\texttt{IKUnreachableError} that Auto-Adapter catches
+(filmstrips in Appendix~\ref{app:filmstrips}).
+
+\noindent\textbf{End-to-end Pick on Piper.}
+Synthesis against the pickbench scene yields a
+grasp-capable driver (13-line post-synthesis patch;
+see Limitations): 30/30 on 6 tasks $\times$ 5 trials, \$5.02 /
+18.9\,min end-to-end.
+
+\noindent\textbf{Quadruped locomotion.}
+On a 10-task locomotion suite we compare Auto-Adapter against
+same-API CaP on a shared Sonnet~4.5 driver with physics grading.
+The outcome is embodiment-dependent: ANYmal-C favors Auto-Adapter
+(68\% vs.\ 28\%), while Go2 reverses it (48\% vs.\ 54\%). CaP's
+open-loop gait clears only one short ANYmal-C walk; on Go2's coarser
+$\approx$0.15\,m step CaP's tuned walk transfers while Auto-Adapter
+overshoots. The split holds under a Sonnet~4.6 agent
+(Appendix~\ref{app:robustness}).

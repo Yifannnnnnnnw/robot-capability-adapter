@@ -1,0 +1,153 @@
+\section{Morphology breadth: aerial and humanoid}
+\label{app:morphology}
+
+The \S\ref{sec:onboarding} scoreboard covers serial arms and quadrupeds.
+To test whether the \emph{same} pipeline (unchanged except for a
+class-specific generation prompt and physics validator) generalizes to
+qualitatively different dynamics, we onboard two further morphologies from
+MuJoCo Menagerie: a free-flying quadrotor (Skydio~X2) and a bipedal humanoid
+(Unitree~H1). Both are floating-base and open-loop unstable, so the
+synthesized driver must contain a stabilizing feedback controller, not just
+kinematics. We keep these two outside AutoAdapter-Bench proper (the eight
+robots of \S\ref{sec:protocol}) and report them as breadth tests instead:
+on each we run driver synthesis and the same-API CaP comparison, but not
+the learned baselines (PPO, Diffusion Policy, OpenVLA) and seven-model
+leaderboard that anchor the benchmark, so folding them into the benchmark count
+would overstate how much head-to-head evidence backs them.
+
+\noindent\textbf{Aerial (Skydio~X2).} The agent synthesizes a driver exposing
+\texttt{takeoff}, \texttt{move\_to}, \texttt{hover}, \texttt{land}, and
+\texttt{get\_base\_pose}; internally it implements a cascaded
+position\,$\rightarrow$\,attitude\,$\rightarrow$\,rotor-thrust controller for
+the underactuated 4-rotor base. It passes the aerial validation suite
+($7/7$: build, \texttt{home}, \texttt{takeoff} to commanded altitude while upright, and
+\texttt{move\_to} to a world target without flipping) on a Sonnet~4.5 agent.
+On an 8-task aerial suite (4 simple + 4 hard; takeoff-to-altitude, hover,
+point-to-point, climb, round-trip, diagonal, square patrol, tight hover;
+physics-graded on post-step base pose with an upright constraint, and
+hardened so that a do-nothing agent scores $0/8$: round-trips require real
+movement, hovers require the commanded altitude, the patrol's waypoint
+tolerance is below the square's center-to-corner distance), Auto-Adapter and
+same-API CaP \emph{both} reach $100\%$ (Table~\ref{tab:aerial}, $N{=}5$;
+filmstrips in Figure~\ref{fig:filmstrips2}).
+Unlike contact-rich manipulation (\S\ref{sec:cap-portability}),
+where the multi-turn loop confers an advantage,
+point-to-point flight through the synthesized high-level API
+(\texttt{takeoff}, \texttt{move\_to}) is solvable by a single-shot program, so
+A-A and CaP tie. The aerial contribution is therefore the \emph{validated
+flight controller itself} (a cascaded thrust stabilizer synthesized zero-shot
+from the MJCF), not an agent-loop win.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Aerial task} & \textbf{A-A} & \textbf{CaP} \\
+\midrule
+takeoff to 0.5\,m        & \checkmark & \checkmark \\
+hover at 0.5\,m          & \checkmark & \checkmark \\
+go to (0.4,\,0,\,0.5)    & \checkmark & \checkmark \\
+climb to 1.0\,m          & \checkmark & \checkmark \\
+out-and-return           & \checkmark & \checkmark \\
+diagonal go-to           & \checkmark & \checkmark \\
+square patrol (4 wpts)   & \checkmark & \checkmark \\
+tight hover              & \checkmark & \checkmark \\
+\midrule
+\textbf{Physics \% ($N{=}5$)} & \textbf{100} & \textbf{100} \\
+\bottomrule
+\end{tabular}
+\caption{Skydio~X2 aerial suite on the agent-synthesized drone driver
+(Sonnet~4.5). \checkmark\ = $5/5$ trials pass. Both agent styles solve all
+eight on the hardened suite (a do-nothing controller scores $0/8$):
+point-to-point flight through the synthesized high-level API is single-shot
+solvable, so Auto-Adapter and CaP tie; the contribution is the validated flight
+driver, not the agent loop.}
+\label{tab:aerial}
+\end{table}
+
+\noindent\textbf{Humanoid (Unitree~H1).} The 19-DoF H1 is a tall inverted
+pendulum: open-loop it falls. The agent synthesizes a joint-space PD balance
+controller that passes onboarding validation $7/7$: it holds a \emph{stable
+stand} (torso $0.98$\,m, upright $1.00$ on the body-$z$ axis for the full
+hold) and \emph{squat-recovers} without falling over (torso dips then returns to
+$0.97$\,m at upright $0.99$). The result is reproducible under the benchmark
+protocol (home-initialized, as in validation and replay): stand $4/4$ and
+squat-recover $3/3$ across re-runs. Synthesizing a validated stand-and-squat
+balance controller for a 19-DoF biped zero-shot from the MJCF is, to our
+knowledge, the hardest morphology the pipeline handles. We report the headline H1 driver at the
+onboarding level (the orchestrator steps physics directly for stand
+and squat), since a pure \emph{stand} replay can be passed by doing
+nothing (a homed biped stays up if physics is not advanced); the
+cross-model sweep below instead grades H1 on \emph{active}
+stand-and-squat tasks, where a squat must lower the body and return,
+so a do-nothing controller fails. We also \emph{attempted} dynamic walking:
+the generator was prompted for a closed-loop micro-step gait, validator-certified
+for forward progress in the starting direction, staying upright, and
+bounded sideways/turning drift (so falling forward, standing still, and spinning cannot pass).
+It did not yield a stable validator-certified walk across attempts: adding the
+walking objective even broke the otherwise-reliable stand. Dynamic
+bipedal locomotion is thus the pipeline's hardest open case:
+static balance and
+squat are synthesizable zero-shot, dynamic gait is not (yet).
+
+\noindent\textbf{Cross-model self-synthesis across morphologies.} The
+\S\ref{sec:cap-portability} ``writes API'' result (only the three strongest
+models synthesize a working SO-101 grasp driver) raises a question: is
+self-synthesis difficulty a property of the \emph{model} or of the
+\emph{morphology}? We ran the from-scratch pipeline for all seven LLMs on three
+non-gripper morphologies (Go2 quadruped, Skydio~X2 quadrotor, Unitree~H1
+humanoid), two attempts each, scoring a cell as a pass only if the synthesized
+driver clears the class-specific validator and is not hardcoded (no skeleton
+import, no literal leg-name constants). Table~\ref{tab:xmorph-synth} reports
+reliability; Table~\ref{tab:xmorph-task} the task success of the passing
+drivers. Two patterns hold. \emph{(i)~Reliability is morphology-ordered}: more
+models clear aerial flight than locomotion than the humanoid biped, and only
+the two strongest models in this sweep (Opus, Sonnet) synthesize
+across more than one morphology while the open/small models (Nova, Ministral, Qwen) clear none.
+\emph{(ii)~Task success of the drivers that do validate is also
+morphology-ordered}: flight $0.82$--$1.00$ $\gtrsim$ locomotion $0.70$--$0.82$ $>$
+humanoid $0.50$ $>$ SO-101 grasp $0.28$--$0.46$ (\S\ref{sec:cap-portability}).
+Self-synthesis is thus jointly gated by model capability \emph{and}
+morphology: in task success, writing a correct low-level controller
+gets harder from smooth flight, through
+stepping locomotion and slow biped balance, to
+contact-heavy grasping; in synthesis reliability the biped is the
+rarest to validate (Table~\ref{tab:xmorph-synth}).
+
+\begin{table}[H]
+\centering\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lccccccc}
+\toprule
+ & \textbf{Op} & \textbf{So} & \textbf{Ha} & \textbf{No} & \textbf{DS} & \textbf{Mi} & \textbf{Qw} \\
+\midrule
+Skydio~X2 (fly)  & 2/2 & 2/2 & 1/2 & 0/2 & 1/2 & 0/2 & 0/2 \\
+Go2 (walk)       & 1/2 & 1/2 & 0/2 & 0/2 & 0/2 & 0/2 & 0/2 \\
+H1 (biped)       & 1/2 & 0/2 & 0/2 & 0/2 & 0/2 & 0/2 & 0/2 \\
+\bottomrule
+\end{tabular}
+\caption{Cross-model self-synthesis \textbf{reliability} (validated,
+non-hardcoded driver / 2 attempts). Op=Opus~4.8, So=Sonnet~4.6, Ha=Haiku~4.5,
+No=Nova~Pro, DS=DeepSeek~V3.2, Mi=Ministral~8B, Qw=Qwen3~32B.}
+\label{tab:xmorph-synth}
+\end{table}
+
+\begin{table}[H]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccc}
+\toprule
+ & \textbf{Opus} & \textbf{Sonnet} & \textbf{Haiku} & \textbf{DeepSeek} \\
+\midrule
+Skydio~X2 (fly)  & 1.00 & 0.95 & 1.00 & 0.82 \\
+Go2 (walk)       & 0.70 & 0.82 & --   & --   \\
+H1 (biped)       & 0.50 & --   & --   & --   \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Task success} (physics, $N{=}5$, simple+hard) of the
+self-synthesized drivers that passed validation; -- = no validated driver
+(synthesis failed). Models that validated on no morphology (Nova, Ministral,
+Qwen) are omitted.}
+\label{tab:xmorph-task}
+\end{table}

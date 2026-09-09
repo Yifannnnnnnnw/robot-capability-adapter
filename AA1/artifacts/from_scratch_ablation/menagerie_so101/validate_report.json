@@ -1,0 +1,64 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "ik_roundtrip",
+      "ok": true,
+      "detail": "target=[0.421445101707967, -0.0009793936265982265, 0.2759995813509998], reached=[0.42134808329143086, -0.0009791389675082775, 0.2754123007213565], err=0.0006m",
+      "metric": 0.00059524043541469
+    },
+    {
+      "test": "gripper_cycle",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "object_perception",
+      "ok": true,
+      "detail": "perception API present; get_object_names() -> []",
+      "metric": 1.0
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "str (len=674)",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 679,
+    "n_chars": 24445,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "damped_least_squares"
+  },
+  "structural_ok": true,
+  "n_passed": 8,
+  "n_total": 8,
+  "outer_attempts": 0
+}

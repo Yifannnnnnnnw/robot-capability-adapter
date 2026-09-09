@@ -1,0 +1,70 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "ik_roundtrip",
+      "ok": true,
+      "detail": "target=[0.42123924672379875, -0.00017758061310492373, 0.28434475952251026], reached=[0.4218017004047855, -0.00017699148027260282, 0.27940234302862543], err=0.0050m",
+      "metric": 0.004974317570215818
+    },
+    {
+      "test": "gripper_cycle",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "object_perception",
+      "ok": true,
+      "detail": "names=['banana', 'mug', 'bottle', 'screwdriver', 'duck', 'lego'] banana->[0.11, 0.12, 0.026]",
+      "metric": 1.0
+    },
+    {
+      "test": "grasp_lift",
+      "ok": true,
+      "detail": "closed on 'banana' and lifted: rose 20.0cm, object ended 0.3cm from the end-effector (a held object stays <10cm), 5 other objects moved 0.1cm total. OK \u2014 object held at the gripper.",
+      "metric": 0.0032268365874849885
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "str (len=421)",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 393,
+    "n_chars": 16919,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "damped_least_squares"
+  },
+  "structural_ok": true,
+  "n_passed": 9,
+  "n_total": 9,
+  "outer_attempts": 1
+}

@@ -1,0 +1,39 @@
+\section{Multi-task RL ablation detail}
+\label{app:multitask}
+
+\S\ref{sec:cap-rlsteelman} reports the in-distribution and
+held-out averages for multi-task RL, DP, and our LLM agent.
+Table~\ref{tab:multitask-detail} breaks the same numbers down by
+training condition and held-out variant.
+
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Setting} & \textbf{PPO} & \textbf{DP} & \textbf{Ours} \\
+\midrule
+\multicolumn{4}{l}{\emph{In-distribution (6 dirs $\times$ 5\,cm, 10 ep each)}} \\
+Average over the 6 directions & 100\% & 60\% & 100\% \\
+\midrule
+\multicolumn{4}{l}{\emph{Out-of-distribution (4 held-out, cm)}} \\
+\texttt{ood\_diag} $[3,3,3]$       & 100\% &  0\% & 100\% \\
+\texttt{ood\_mag} $[10,0,0]$       &   0\% &  0\% &   0\% \\
+\texttt{ood\_mixed} $[5,5,0]$      & 100\% &  0\% & 100\% \\
+\texttt{ood\_far\_diag} $[4,4,{-}2]$ & 100\% & 20\% & 100\% \\
+\textbf{OOD average}                    & \textbf{75\%} & \textbf{5\%} & \textbf{75\%} \\
+\midrule
+Train data       & 300k st. & 600 dem. & 0 \\
+Train wall (s)   & 1069     & 194      & N/A \\
+LLM inference (\$) & N/A      & N/A       & 0.34    \\
+\bottomrule
+\end{tabular}
+\caption{Multi-task RL ablation, per-variant. The single miss
+shared by PPO and our LLM agent, \texttt{ood\_mag} $[10,0,0]$,
+lies beyond the arm's reachable workspace from home, a structural
+constraint no policy can satisfy, not a learning failure. DP's
+separate failure mode is the classical multi-modal action
+ambiguity over six directions sharing a starting state.}
+\label{tab:multitask-detail}
+\end{table}

@@ -1,0 +1,15 @@
+{
+  "kind": "api_preflight",
+  "model": "us.anthropic.claude-sonnet-4-6",
+  "region": "us-east-1",
+  "ok": false,
+  "error": "Bedrock invoke failed after retries: PermissionDeniedError: Error code: 403 - {'message': 'Model access is denied due to INVALID_PAYMENT_INSTRUMENT:A valid payment instrument must be provided.. Your AWS Marketplace subscription for this model cannot be completed at this time. If you recently fixed this issue, try again after 2 minutes.'}",
+  "final_text": "",
+  "tokens": {
+    "in": 0,
+    "out": 0
+  },
+  "trace_path": "autoadapter_bench/diagnostics/capability_update_20260909/api_preflight_network.jsonl",
+  "driver_generated": false,
+  "task_evaluated": false
+}

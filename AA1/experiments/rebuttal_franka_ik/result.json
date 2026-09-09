@@ -1,0 +1,169 @@
+{
+  "methodology": "Deterministic oracle: scripted move_cartesian(exact target), fresh skel no home(), target = fresh EE + offset; identical variants, tolerance, and measurement as llm_franka_proper_reach_n10.json. No LLM involved. Each variant is deterministic (1 run == N runs; stock and stock5x produce bit-identical per-variant errors, which is the empirical determinism check).",
+  "arms": {
+    "stock": {
+      "per_variant": {
+        "reach_x+5": {
+          "success": true,
+          "err_m": 0.017619656804863205,
+          "crash": null
+        },
+        "reach_x-5": {
+          "success": false,
+          "err_m": 0.0394962423522242,
+          "crash": null
+        },
+        "reach_y+5": {
+          "success": false,
+          "err_m": 0.027341572733653747,
+          "crash": null
+        },
+        "reach_y-5": {
+          "success": false,
+          "err_m": 0.027396463510657134,
+          "crash": null
+        },
+        "reach_z+5": {
+          "success": true,
+          "err_m": 0.0012645533412879199,
+          "crash": null
+        },
+        "reach_z-5": {
+          "success": false,
+          "err_m": 0.11069407917888005,
+          "crash": "RuntimeError: IK failed to converge after 200 iterations. Final error: 110.7 mm. Target may be unreachable."
+        },
+        "reach_diag": {
+          "success": false,
+          "err_m": 0.020417461199113945,
+          "crash": null
+        }
+      },
+      "n_success": 2,
+      "n_total": 7
+    },
+    "stock5x": {
+      "per_variant": {
+        "reach_x+5": {
+          "success": true,
+          "err_m": 0.017619656804863205,
+          "crash": null
+        },
+        "reach_x-5": {
+          "success": false,
+          "err_m": 0.03949624235222578,
+          "crash": null
+        },
+        "reach_y+5": {
+          "success": false,
+          "err_m": 0.027341572733653747,
+          "crash": null
+        },
+        "reach_y-5": {
+          "success": false,
+          "err_m": 0.027396463510657134,
+          "crash": null
+        },
+        "reach_z+5": {
+          "success": true,
+          "err_m": 0.0012645533412879199,
+          "crash": null
+        },
+        "reach_z-5": {
+          "success": false,
+          "err_m": 0.11069407917888255,
+          "crash": "RuntimeError: IK failed to converge after 1000 iterations. Final error: 110.7 mm. Target may be unreachable."
+        },
+        "reach_diag": {
+          "success": false,
+          "err_m": 0.020417461199113945,
+          "crash": null
+        }
+      },
+      "n_success": 2,
+      "n_total": 7
+    },
+    "nullspace": {
+      "per_variant": {
+        "reach_x+5": {
+          "success": false,
+          "err_m": 0.02213992118171267,
+          "crash": null
+        },
+        "reach_x-5": {
+          "success": true,
+          "err_m": 0.0012883888448386495,
+          "crash": null
+        },
+        "reach_y+5": {
+          "success": false,
+          "err_m": 0.03200937820935591,
+          "crash": null
+        },
+        "reach_y-5": {
+          "success": false,
+          "err_m": 0.03206467968879335,
+          "crash": null
+        },
+        "reach_z+5": {
+          "success": true,
+          "err_m": 0.00046470565738063115,
+          "crash": null
+        },
+        "reach_z-5": {
+          "success": false,
+          "err_m": 0.09571659209675018,
+          "crash": "RuntimeError: IK failed: final error 95.7 mm"
+        },
+        "reach_diag": {
+          "success": false,
+          "err_m": 0.024980870147411145,
+          "crash": null
+        }
+      },
+      "n_success": 2,
+      "n_total": 7
+    },
+    "gravcomp": {
+      "per_variant": {
+        "reach_x+5": {
+          "success": true,
+          "err_m": 0.017086659753797608,
+          "crash": null
+        },
+        "reach_x-5": {
+          "success": false,
+          "err_m": 0.03956943077587031,
+          "crash": null
+        },
+        "reach_y+5": {
+          "success": false,
+          "err_m": 0.027128079265944842,
+          "crash": null
+        },
+        "reach_y-5": {
+          "success": false,
+          "err_m": 0.027128079265907757,
+          "crash": null
+        },
+        "reach_z+5": {
+          "success": true,
+          "err_m": 0.0009945324755064112,
+          "crash": null
+        },
+        "reach_z-5": {
+          "success": false,
+          "err_m": 0.11069407917888005,
+          "crash": "RuntimeError: IK failed to converge after 200 iterations. Final error: 110.7 mm. Target may be unreachable."
+        },
+        "reach_diag": {
+          "success": true,
+          "err_m": 0.019983489835791853,
+          "crash": null
+        }
+      },
+      "n_success": 3,
+      "n_total": 7
+    }
+  }
+}

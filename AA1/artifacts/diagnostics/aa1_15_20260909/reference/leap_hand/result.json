@@ -1,0 +1,43 @@
+{
+  "kind": "reference_positive_control",
+  "model_generated": false,
+  "ok": true,
+  "targets": {
+    "index": [
+      0.07335660802168197,
+      -0.00035632549311595194,
+      0.19640134016148583
+    ],
+    "middle": [
+      0.0816667783168793,
+      0.03052030123777584,
+      0.190066559632383
+    ],
+    "ring": [
+      0.08921244503978432,
+      0.0755951492628891,
+      0.18266184109195774
+    ],
+    "thumb": [
+      -0.04099581270947017,
+      -0.09376306126879147,
+      0.17724107124754265
+    ]
+  },
+  "errors_m": {
+    "index": 0.0029895597997787356,
+    "middle": 0.002601524009029181,
+    "ring": 0.002665225147991708,
+    "thumb": 0.0020408848926573853
+  },
+  "aggregate_error_m": 0.005193652972674715,
+  "displacements_m": {
+    "index": 0.0875509344788759,
+    "middle": 0.07841026636305419,
+    "ring": 0.06837676394082538,
+    "thumb": 0.07467487217433674
+  },
+  "frames": 87,
+  "mp4_path": "artifacts/diagnostics/aa1_15_20260909/reference/leap_hand/positive_control.mp4",
+  "trace_path": "artifacts/diagnostics/aa1_15_20260909/reference/leap_hand/physics_trace.json"
+}

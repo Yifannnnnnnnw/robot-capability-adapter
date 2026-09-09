@@ -1,0 +1,139 @@
+{
+  "benchmark": "AutoAdapter-Bench",
+  "robot": "SO-101",
+  "suite": "13-task (hard+contact_rich+contact_rich_l4)",
+  "n_trials": 5,
+  "metric": "trial_physics_pass_rate_pct",
+  "corrected": true,
+  "model_portability": {
+    "sonnet46": {
+      "vendor": "Anthropic",
+      "uses_api": {
+        "auto_adapter": 69,
+        "cap_zeroshot": 57,
+        "cap_fewshot": 54
+      },
+      "writes_api": {
+        "synthesis": "fail@validate",
+        "self": null
+      }
+    },
+    "opus48": {
+      "vendor": "Anthropic",
+      "uses_api": {
+        "auto_adapter": 63,
+        "cap_zeroshot": 51,
+        "cap_fewshot": 42
+      },
+      "writes_api": {
+        "synthesis": "pass",
+        "self": 46
+      }
+    },
+    "haiku45": {
+      "vendor": "Anthropic",
+      "uses_api": {
+        "auto_adapter": 62,
+        "cap_zeroshot": 54,
+        "cap_fewshot": 62
+      },
+      "writes_api": {
+        "synthesis": "pass",
+        "self": 46
+      }
+    },
+    "novapro": {
+      "vendor": "Amazon",
+      "uses_api": {
+        "auto_adapter": 60,
+        "cap_zeroshot": 57,
+        "cap_fewshot": 46
+      },
+      "writes_api": {
+        "synthesis": "fail@study",
+        "self": null
+      }
+    },
+    "deepseek": {
+      "vendor": "DeepSeek",
+      "uses_api": {
+        "auto_adapter": 57,
+        "cap_zeroshot": 9,
+        "cap_fewshot": 60
+      },
+      "writes_api": {
+        "synthesis": "pass",
+        "self": 28
+      }
+    },
+    "ministral8b": {
+      "vendor": "Mistral",
+      "uses_api": {
+        "auto_adapter": 54,
+        "cap_zeroshot": 23,
+        "cap_fewshot": 43
+      },
+      "writes_api": {
+        "synthesis": "fail@study",
+        "self": null
+      }
+    },
+    "qwen32": {
+      "vendor": "Alibaba",
+      "uses_api": {
+        "auto_adapter": 49,
+        "cap_zeroshot": 72,
+        "cap_fewshot": 57
+      },
+      "writes_api": {
+        "synthesis": "fail@validate",
+        "self": null
+      }
+    }
+  },
+  "robot_diversity_quadruped_v2": {
+    "agent_model": "sonnet45",
+    "go2": {
+      "auto_adapter": 48,
+      "cap": 54
+    },
+    "anymal": {
+      "auto_adapter": 68,
+      "cap": 28
+    },
+    "ablation_sonnet46": {
+      "go2": {
+        "auto_adapter": 44,
+        "cap": 54
+      },
+      "anymal": {
+        "auto_adapter": 62,
+        "cap": 50
+      }
+    }
+  },
+  "morphology_breadth": {
+    "aerial_skydio_x2": {
+      "class": "aerial",
+      "validate": "7/7",
+      "suite": "8-task aerial (hardened, inaction-proof)",
+      "auto_adapter": 100,
+      "cap": 100,
+      "note": "point-to-point flight via the synthesized high-level API is single-shot solvable; A-A and CaP tie. Contribution = the validated flight controller, not an agent-loop win."
+    },
+    "humanoid_h1": {
+      "class": "humanoid",
+      "validate": "7/7 (stand_balance + squat-recover), reproducible",
+      "downstream_eval": "onboarding-level only (replay stand/squat is inaction-gameable)",
+      "walking": "attempted, NOT achieved (frontier)",
+      "note": "validated stand + squat-recover for a 19-DoF biped zero-shot; dynamic walking is the pipeline frontier."
+    }
+  },
+  "summary": {
+    "auto_adapter_beats_cap_zeroshot": "6/7",
+    "auto_adapter_beats_cap_fewshot": "4/7",
+    "models_that_can_synthesize": "3/7",
+    "morphologies_validated": "arm, quadruped, aerial, humanoid (4)",
+    "source": "paper/results/canonical.yaml::exp10-exp13"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "robot_id": "abl_selfreport_s3",
+  "estimated_class": "arm",
+  "dof": 5,
+  "arm_joint_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll"
+  ],
+  "arm_actuator_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll"
+  ],
+  "joint_limits": {
+    "shoulder_pan": [
+      -1.91986,
+      1.91986
+    ],
+    "shoulder_lift": [
+      -1.7453293,
+      1.7453293
+    ],
+    "elbow_flex": [
+      -1.69,
+      1.69
+    ],
+    "wrist_flex": [
+      -1.658063,
+      1.658063
+    ],
+    "wrist_roll": [
+      -2.7438473,
+      2.7438473
+    ],
+    "gripper": [
+      -0.174533,
+      1.7453292
+    ]
+  },
+  "ee_site": "gripperframe",
+  "ee_body": "gripper",
+  "gripper_actuator_names": [
+    "gripper"
+  ],
+  "gripper_ctrlrange": [
+    -0.17453,
+    1.74533
+  ],
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "position",
+  "notes": "SO-101 5-DOF robotic arm with STS3215 servos, position-controlled actuators, and parallel jaw gripper"
+}

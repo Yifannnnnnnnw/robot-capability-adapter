@@ -1,0 +1,40 @@
+{
+  "workspace": "artifacts/auto_adapter_so101_v2_artifacts",
+  "train_targets": [
+    [
+      0.05,
+      0.0,
+      0.0
+    ],
+    [
+      -0.05,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.05,
+      0.0
+    ],
+    [
+      0.0,
+      -0.05,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.05
+    ],
+    [
+      0.0,
+      0.0,
+      -0.05
+    ]
+  ],
+  "total_timesteps": 300000,
+  "train_time_sec": 1616.5308380126953,
+  "n_episodes": 22592,
+  "final_succ_rate_100ep": 1.0,
+  "model_path": "autoadapter_bench/baselines/rl/trained/so101_reach_multi_taskcond.zip"
+}

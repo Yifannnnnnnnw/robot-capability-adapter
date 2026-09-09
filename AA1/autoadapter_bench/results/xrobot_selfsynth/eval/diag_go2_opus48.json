@@ -1,0 +1,1412 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "go2",
+    "robot_class": "quadruped",
+    "mjcf": "assets/mjcf/go2/go2_scene.xml",
+    "vendor": "Unitree",
+    "dof": 12,
+    "model": "us.anthropic.claude-opus-4-8",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-08T20:54:26.542456",
+    "suites_requested": [
+      "simple",
+      "hard"
+    ],
+    "completed_at": "2026-06-08T21:22:27.121439",
+    "wall_clock_sec": 1680.5783360004425
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "sit_down_from_home",
+          "prompt": "You are standing. Sit down to a folded/low pose.\n",
+          "success_spec": {
+            "type": "body_height_ratio",
+            "max_ratio": 0.75,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 254,
+              "duration_sec": 11.874128103256226,
+              "tokens": {
+                "in": 4898,
+                "out": 183,
+                "cache_read": 0
+              },
+              "summary": "I sat down successfully, lowering the torso from ~0.27 m (standing) to ~0.13 m in the folded sit pose.",
+              "error": null,
+              "physics_detail": "height ratio 0.48 (0.267->0.129 m)",
+              "physics_metrics": {
+                "height_ratio": 0.48193855448645445
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 254,
+              "duration_sec": 17.402087926864624,
+              "tokens": {
+                "in": 4893,
+                "out": 175,
+                "cache_read": 0
+              },
+              "summary": "I sat the robot down from its standing pose (height ~0.27 m) into the folded/low pose, now resting at ~0.13 m.",
+              "error": null,
+              "physics_detail": "height ratio 0.48 (0.267->0.129 m)",
+              "physics_metrics": {
+                "height_ratio": 0.48193855448645445
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 254,
+              "duration_sec": 22.947492122650146,
+              "tokens": {
+                "in": 4909,
+                "out": 190,
+                "cache_read": 0
+              },
+              "summary": "I sat down from the standing pose (~0.27 m) to a folded/low pose, with the torso now at ~0.13 m height.",
+              "error": null,
+              "physics_detail": "height ratio 0.48 (0.267->0.129 m)",
+              "physics_metrics": {
+                "height_ratio": 0.48193855448645445
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 254,
+              "duration_sec": 13.128205060958862,
+              "tokens": {
+                "in": 4887,
+                "out": 165,
+                "cache_read": 0
+              },
+              "summary": "I sat the robot down from a standing height of ~0.27 m to a folded/low pose at ~0.13 m.",
+              "error": null,
+              "physics_detail": "height ratio 0.48 (0.267->0.129 m)",
+              "physics_metrics": {
+                "height_ratio": 0.48193855448645445
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 254,
+              "duration_sec": 13.228647947311401,
+              "tokens": {
+                "in": 4908,
+                "out": 191,
+                "cache_read": 0
+              },
+              "summary": "I sat the robot down successfully, lowering the torso from ~0.27 m (standing) to ~0.13 m in the folded sit pose.",
+              "error": null,
+              "physics_detail": "height ratio 0.48 (0.267->0.129 m)",
+              "physics_metrics": {
+                "height_ratio": 0.48193855448645445
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.0,
+          "tokens": {
+            "in": 24495,
+            "out": 904
+          },
+          "cost_usd": 0.029015
+        },
+        {
+          "id": "sit_then_stand_to_nominal",
+          "prompt": "Sit down, then stand back up to approximately your starting\nstanding height.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "after:sit:1",
+                "max_height_ratio": 0.75
+              },
+              {
+                "at": "final",
+                "min_height_ratio": 0.9
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 9,
+              "frames": 760,
+              "duration_sec": 43.83588886260986,
+              "tokens": {
+                "in": 16047,
+                "out": 520,
+                "cache_read": 0
+              },
+              "summary": "The robot successfully sat down (lowering to ~0.127m) and then stood back up to a height of 0.263m, matching its standing home height of ~0.264m (within 1mm).",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.48,dx=+0.023; final:hr=0.99,dx=-0.005",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": 0.023384892244186738,
+                  "final": -0.005369357187337897
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 8,
+              "frames": 759,
+              "duration_sec": 41.96435213088989,
+              "tokens": {
+                "in": 13204,
+                "out": 451,
+                "cache_read": 0
+              },
+              "summary": "I sat down (lowering to ~0.127 m) and then stood back up to ~0.263 m, matching my starting standing height of ~0.264 m.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.48,dx=+0.023; final:hr=0.99,dx=-0.005",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": 0.023384892244186738,
+                  "final": -0.005369357187337897
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 8,
+              "frames": 759,
+              "duration_sec": 36.24116015434265,
+              "tokens": {
+                "in": 13075,
+                "out": 438,
+                "cache_read": 0
+              },
+              "summary": "I had the robot sit down (height dropped to ~0.127 m) and then stand back up to ~0.263 m, matching its starting standing height of ~0.264 m.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.48,dx=+0.023; final:hr=0.99,dx=-0.005",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": 0.023384892244186738,
+                  "final": -0.005369357187337897
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 758,
+              "duration_sec": 26.18152904510498,
+              "tokens": {
+                "in": 10839,
+                "out": 383,
+                "cache_read": 0
+              },
+              "summary": "I sat down (body lowered to ~0.127 m) and then stood back up to ~0.263 m, matching my starting standing height of ~0.264 m within ~1 mm.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.48,dx=+0.023; final:hr=0.99,dx=-0.005",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": 0.023384892244186738,
+                  "final": -0.005369357187337897
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 758,
+              "duration_sec": 33.68230700492859,
+              "tokens": {
+                "in": 10720,
+                "out": 355,
+                "cache_read": 0
+              },
+              "summary": "I sat the robot down (lowering to 0.127m) and then stood it back up to 0.263m, matching its starting standing height of ~0.264m.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.48,dx=+0.023; final:hr=0.99,dx=-0.005",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": 0.023384892244186738,
+                  "final": -0.005369357187337897
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 7.8,
+          "tokens": {
+            "in": 63885,
+            "out": 2147
+          },
+          "cost_usd": 0.07462
+        },
+        {
+          "id": "walk_forward_5cm",
+          "prompt": "Walk forward a short distance and remain upright. If you are not\nalready standing, stand up first.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.05,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 556,
+              "duration_sec": 39.21590995788574,
+              "tokens": {
+                "in": 8299,
+                "out": 577,
+                "cache_read": 0
+              },
+              "summary": "The robot is in good shape. From the pose:\n- **Position**: x\u22480.48m, y\u2248-0.05m, z\u22480.24m \u2014 it advanced ~0.48m forward.\n- **Rotation matrix**: nearly identity (diagonal \u2248 0.99), so the torso is still level and upright with only minor tilt.\n\nI successfully stood the robot up and walked it forward ~0.48m ",
+              "error": null,
+              "physics_detail": "dx=+0.508 m, |dy|=0.054, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.5083510111583444,
+                "dy_m": -0.05391002904935659,
+                "height_ratio": 0.8880256790836124
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 558,
+              "duration_sec": 37.74416470527649,
+              "tokens": {
+                "in": 10477,
+                "out": 610,
+                "cache_read": 0
+              },
+              "summary": "The robot moved forward and stayed upright.\n\nI stood the robot up from its low pose, then walked forward using conservative settings \u2014 advancing from x \u2248 -0.03 m to x \u2248 0.63 m (about 0.65 m forward) while remaining upright at ~0.24 m torso height with near-level orientation.",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 558,
+              "duration_sec": 35.30643272399902,
+              "tokens": {
+                "in": 10401,
+                "out": 655,
+                "cache_read": 0
+              },
+              "summary": "The robot moved forward from x \u2248 -0.031 to x \u2248 0.625, a forward displacement of about 0.66 m, while staying upright (the rotation matrix is still close to identity and torso height is ~0.24 m). The robot remains standing.\n\nI stood the robot up and walked it forward ~0.66 m (from x\u2248-0.03 to x\u22480.63), ",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 31.906842947006226,
+              "tokens": {
+                "in": 10360,
+                "out": 684,
+                "cache_read": 0
+              },
+              "summary": "The robot walked forward successfully. It moved from x=-0.031 to x=0.625 (about 0.66m forward), with a small lateral drift (y=-0.098). The torso height is 0.239m and the rotation matrix remains close to identity (only a small tilt of ~7\u00b0), confirming it stayed upright.\n\nI stood the robot up from its",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 558,
+              "duration_sec": 28.33512806892395,
+              "tokens": {
+                "in": 9508,
+                "out": 515,
+                "cache_read": 0
+              },
+              "summary": "I stood the robot up and walked it forward, advancing the torso from x\u2248-0.024 m to x\u22480.625 m (about 0.65 m of forward travel) while remaining upright at a torso height of ~0.24 m.",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.4,
+          "tokens": {
+            "in": 49045,
+            "out": 3041
+          },
+          "cost_usd": 0.06425
+        },
+        {
+          "id": "walk_forward_10cm",
+          "prompt": "Walk forward at least 10 cm from your starting pose and remain\nupright. Stand up first if needed.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.1,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 558,
+              "duration_sec": 30.439411878585815,
+              "tokens": {
+                "in": 9718,
+                "out": 588,
+                "cache_read": 0
+              },
+              "summary": "The robot moved from x = -0.0310 to x = 0.625, a forward displacement of ~0.656m. Including the small lateral drift (y = -0.098), total displacement is well over 10 cm. The body height is 0.239m and the rotation matrix shows it's still upright (Z-axis \u2248 vertical).\n\nThe displacement already far excee",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 30.892760038375854,
+              "tokens": {
+                "in": 7688,
+                "out": 543,
+                "cache_read": 0
+              },
+              "summary": "The robot moved from X\u2248-0.0237 to X\u22480.625, a forward displacement of about 0.65 m \u2014 well over the 10 cm requirement. Height is 0.239 m, still upright. The task is complete; no need to walk further.\n\nLet me verify the total displacement: \u0394X = 0.625 - (-0.0237) = 0.649 m, \u0394Y = -0.098 m, giving a horiz",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 8,
+              "frames": 559,
+              "duration_sec": 32.39511203765869,
+              "tokens": {
+                "in": 11994,
+                "out": 635,
+                "cache_read": 0
+              },
+              "summary": "The robot is upright at 0.239 m height, with the rotation matrix near-identity (only minor tilt), confirming it remained on its feet.\n\nI walked the robot forward from x = -0.031 m to x = 0.625 m \u2014 a displacement of about 0.66 m (far exceeding the 10 cm requirement) \u2014 while remaining upright at a tor",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 8,
+              "frames": 559,
+              "duration_sec": 30.262485027313232,
+              "tokens": {
+                "in": 10003,
+                "out": 647,
+                "cache_read": 0
+              },
+              "summary": "The robot moved forward significantly. Let me compute the displacement:\n- Start: x \u2248 -0.031, y \u2248 0\n- Now: x \u2248 0.625, y \u2248 -0.098\n\nForward (x) displacement \u2248 0.656 m, total horizontal displacement \u2248 0.663 m \u2014 well over 10 cm. Height is ~0.239 m, still upright (rotation matrix shows only mild tilt, ~6.",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 8,
+              "frames": 559,
+              "duration_sec": 39.67584419250488,
+              "tokens": {
+                "in": 10195,
+                "out": 732,
+                "cache_read": 0
+              },
+              "summary": "The robot moved from x\u2248-0.031 to x\u22480.625, a forward displacement of about 0.656m \u2014 well over 10 cm. Body height is 0.239m (still upright, not collapsed). The displacement vector is dx\u22480.656, dy\u2248-0.066.\n\nLet me confirm total displacement:\n- \u0394x = 0.625 - (-0.031) = 0.656m\n- \u0394y = -0.098 - 0 = -0.098m\n-",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 7.4,
+          "tokens": {
+            "in": 49598,
+            "out": 3145
+          },
+          "cost_usd": 0.065323
+        },
+        {
+          "id": "two_short_walks",
+          "prompt": "Take two short forward walks. Check your base pose between them.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "after:walk_forward:1",
+                "min_dx_m": 0.03
+              },
+              {
+                "at": "final",
+                "min_dx_m": 0.1,
+                "min_height_ratio": 0.6
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 857,
+              "duration_sec": 26.46124815940857,
+              "tokens": {
+                "in": 10819,
+                "out": 521,
+                "cache_read": 0
+              },
+              "summary": "I completed two short forward walks (2s at 0.2 speed each), checking the base pose in between: the robot advanced from x\u2248-0.02m to x\u22480.63m after the first walk, then to x\u22481.37m after the second, traveling ~1.39m total forward while staying upright at ~0.24m height.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.89,dx=+0.649; final:hr=0.89,dx=+1.394",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6487596375896125,
+                  "final": 1.3941970969106363
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 857,
+              "duration_sec": 26.11907196044922,
+              "tokens": {
+                "in": 10793,
+                "out": 501,
+                "cache_read": 0
+              },
+              "summary": "I completed two short forward walks: the robot advanced from x\u2248-0.02m to x\u22480.63m after the first walk (mid-point pose check), then to x\u22481.37m after the second, for a total forward travel of about 1.39m with only minor lateral drift (y\u2248-0.13m).",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.89,dx=+0.649; final:hr=0.89,dx=+1.394",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6487596375896125,
+                  "final": 1.3941970969106363
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 857,
+              "duration_sec": 27.562519073486328,
+              "tokens": {
+                "in": 10928,
+                "out": 571,
+                "cache_read": 0
+              },
+              "summary": "Done. I stood up, took two short forward walks (each 2s at speed 0.2), and checked the base pose between them: after walk 1 the torso was at x\u22480.63m, and after walk 2 at x\u22481.37m, for a total forward advance of about 1.37m with only minor lateral drift (y\u2248-0.13m).",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.89,dx=+0.649; final:hr=0.89,dx=+1.394",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6487596375896125,
+                  "final": 1.3941970969106363
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 1108,
+              "duration_sec": 35.44085693359375,
+              "tokens": {
+                "in": 12732,
+                "out": 576,
+                "cache_read": 0
+              },
+              "summary": "I completed two short forward walks (standing up before each); the base pose I checked between them was at X\u22480.625 m, and after the second walk the robot reached X\u22481.341 m, advancing roughly 0.72 m on the second leg for a total of ~1.34 m forward.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.89,dx=+0.649; final:hr=0.89,dx=+1.365",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6487596375896125,
+                  "final": 1.365007183471203
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 857,
+              "duration_sec": 25.88903021812439,
+              "tokens": {
+                "in": 10839,
+                "out": 517,
+                "cache_read": 0
+              },
+              "summary": "I completed both forward walks: after standing up I walked forward twice (2s at speed 0.2 each), checking the base pose between them at x\u22480.63m, with the robot ending at x\u22481.37m for a total advance of roughly 1.39m forward.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.89,dx=+0.649; final:hr=0.89,dx=+1.394",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6487596375896125,
+                  "final": 1.3941970969106363
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.2,
+          "tokens": {
+            "in": 56111,
+            "out": 2686
+          },
+          "cost_usd": 0.069541
+        }
+      ]
+    },
+    "hard": {
+      "tasks": [
+        {
+          "id": "target_x_band_10cm",
+          "prompt": "Advance roughly 10 cm in +X from your starting pose. Use repeated\nshort walks and base-pose checks, and stop once you are inside the\ntarget band (8-12 cm).\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.08,
+            "x_max_m": 0.12,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 37.81517314910889,
+              "tokens": {
+                "in": 11692,
+                "out": 788,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target: a single 2 s walk at speed 0.2 advanced ~0.656 m in +X (from X=-0.031 to X=+0.625), far beyond the 8-12 cm band, and since no reverse/backward motion is available I cannot bring the base back inside the target band \u2014 the task could not be completed within tolerance.\n\nNote for ",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 432,
+              "duration_sec": 25.97121286392212,
+              "tokens": {
+                "in": 11615,
+                "out": 769,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target band: a single 1.0 s walk at speed 0.2 advanced me ~24.8 cm in +X (from X\u2248\u22120.031 m to X\u22480.217 m), far past the 8\u201312 cm target, and with no backward-walk tool available I cannot correct it in this run \u2014 next time I'd use a much shorter walk (e.g. ~0.3 s) and re-check between eac",
+              "error": null,
+              "physics_detail": "dx=+0.241 m, |dy|=0.051, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.24063901882344416,
+                "dy_m": -0.0511583126311588,
+                "height_ratio": 0.892980519303174
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 40.91013789176941,
+              "tokens": {
+                "in": 11596,
+                "out": 715,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target: a single 2 s walk at speed 0.2 moved me ~0.66 m in +X (from X\u2248-0.031 m to X\u22480.625 m), far past the 8\u201312 cm band, and since no reverse/backward motion is available I cannot correct it \u2014 the gait is far more aggressive per call than the tool description suggested, so a much shor",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 494,
+              "duration_sec": 45.58046889305115,
+              "tokens": {
+                "in": 11807,
+                "out": 738,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target: a single short, slow walk (1.5 s @ 0.15) moved me ~32.7 cm in +X (from X\u2248-0.031 to X\u22480.296), well past the 8\u201312 cm band, and since no reverse motion is available I cannot recover within this run \u2014 the v1 trot advances far more per call than its parameters suggest, so a much br",
+              "error": null,
+              "physics_detail": "dx=+0.320 m, |dy|=0.036, height_ratio=0.90",
+              "physics_metrics": {
+                "dx_m": 0.32007551550194285,
+                "dy_m": -0.03575996097166384,
+                "height_ratio": 0.8958394502570655
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 39.6370689868927,
+              "tokens": {
+                "in": 11818,
+                "out": 779,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target: even a single minimum-duration (2 s), low-speed (0.2) `walk_forward` advanced me ~0.65 m in +X (from X\u2248-0.024 m to X\u22480.625 m), far past the 8\u201312 cm band, and with no backward/turn primitive available I cannot recover into the band \u2014 so the task could not be completed within th",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 58528,
+            "out": 3789
+          },
+          "cost_usd": 0.077473
+        },
+        {
+          "id": "target_x_band_20cm",
+          "prompt": "Advance roughly 20 cm in +X using at most three short walk\ncommands, checking base pose after each. Stop inside 16-24 cm.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.16,
+            "x_max_m": 0.24,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 43.69330716133118,
+              "tokens": {
+                "in": 11313,
+                "out": 550,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target: a single walk command (2 s @ 0.2 speed) advanced the base from X \u2248 -0.031 m to X \u2248 +0.625 m \u2014 about 66 cm in +X, well beyond the 16-24 cm window \u2014 so I stopped immediately rather than risk further error, but the goal was not met because the gait moves far more per command than",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 555,
+              "duration_sec": 34.12828302383423,
+              "tokens": {
+                "in": 7249,
+                "out": 544,
+                "cache_read": 0
+              },
+              "summary": "The robot moved much farther than expected \u2014 X went from -0.0237 to 0.625, a displacement of ~0.649 m, far past the 20 cm target. The trot is clearly more powerful than the conservative parameters suggested.\n\nI've already overshot the 16-24 cm window (I'm at ~65 cm displacement), so taking more walk",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 5,
+              "frames": 556,
+              "duration_sec": 31.857578992843628,
+              "tokens": {
+                "in": 9427,
+                "out": 628,
+                "cache_read": 0
+              },
+              "summary": "I executed a single short walk command, but the trot carried the robot from X = -0.024 m to X = 0.625 m \u2014 an advance of ~65 cm, overshooting the requested 16\u201324 cm window. Since walk_forward only moves +X and cannot back up, I stopped rather than worsening the error; the task target was not met (fin",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 5,
+              "frames": 556,
+              "duration_sec": 32.001380920410156,
+              "tokens": {
+                "in": 9257,
+                "out": 543,
+                "cache_read": 0
+              },
+              "summary": "A single short walk command (2 s @ 0.2 speed) carried the robot from X = -0.024 m to X = 0.625 m \u2014 an advance of ~0.65 m, which overshoots the 16-24 cm target band, so I stopped immediately rather than walking further (no reverse command exists), and the task could not be completed within tolerance ",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 305,
+              "duration_sec": 32.21208596229553,
+              "tokens": {
+                "in": 7687,
+                "out": 480,
+                "cache_read": 0
+              },
+              "summary": "I overshot the target: a single 2 s / 0.2 speed walk advanced the base from X = -0.024 m to X = 0.617 m (~64 cm), far beyond the 16\u201324 cm band, so I stopped rather than walk further (no reverse command exists and I cannot undo the displacement).",
+              "error": null,
+              "physics_detail": "dx=+0.641 m, |dy|=0.107, height_ratio=0.90",
+              "physics_metrics": {
+                "dx_m": 0.6407298703622165,
+                "dy_m": -0.10658227328251307,
+                "height_ratio": 0.8957194602255477
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 4.8,
+          "tokens": {
+            "in": 44933,
+            "out": 2745
+          },
+          "cost_usd": 0.058658
+        },
+        {
+          "id": "explore_then_correct_12cm",
+          "prompt": "First take one short exploratory walk (about 0.5 s). Read the x\ngain from your base pose. Then choose exactly one more walk so your\ntotal forward progress ends near 12 cm.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "after:walk_forward:1",
+                "min_dx_m": 0.01,
+                "max_dx_m": 0.08
+              },
+              {
+                "at": "final",
+                "min_dx_m": 0.1,
+                "max_dx_m": 0.14
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 595,
+              "duration_sec": 34.64405298233032,
+              "tokens": {
+                "in": 10517,
+                "out": 1057,
+                "cache_read": 0
+              },
+              "summary": "The walk overshot significantly. The final x = 0.49731 m, giving total progress of 0.49731 \u2212 (\u22120.030967) = **0.528 m**, far beyond the 12 cm target.\n\nThe robot's hand-tuned trot is clearly nonlinear \u2014 the longer 1.405 s walk produced ~0.497 m of progress (gain ~0.354 m/unit including momentum/accele",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.90,dx=+0.024; final:hr=0.90,dx=+0.521\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.024213522461845216,
+                  "final": 0.5210031329049002
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 594,
+              "duration_sec": 26.9972562789917,
+              "tokens": {
+                "in": 10378,
+                "out": 998,
+                "cache_read": 0
+              },
+              "summary": "The robot moved much farther than predicted. Let me check the actual progress:\n\n- Start x: -0.0310 m\n- Final x: 0.4956 m\n- **Total forward progress: 0.4956 \u2212 (\u22120.0310) = 0.527 m**\n\nThe second walk advanced ~0.495 m (0.0005 \u2192 0.496) in 1.4 s \u2014 far more than the linear extrapolation suggested, indicat",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.90,dx=+0.024; final:hr=0.89,dx=+0.519\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.024213522461845216,
+                  "final": 0.5192888672243507
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 594,
+              "duration_sec": 29.64189314842224,
+              "tokens": {
+                "in": 10592,
+                "out": 1143,
+                "cache_read": 0
+              },
+              "summary": "The robot overshot significantly. Let me compute the actual total progress.\n\n**Final analysis:**\n- Original start x: \u22120.030967 m\n- Final x: 0.495601 m\n- Total forward progress: 0.495601 \u2212 (\u22120.030967) = **0.526568 m** (\u224852.7 cm)\n\nThe second walk produced far more progress than predicted (0.495 m vs e",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.90,dx=+0.024; final:hr=0.89,dx=+0.519\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.024213522461845216,
+                  "final": 0.5192888672243507
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 594,
+              "duration_sec": 32.748668909072876,
+              "tokens": {
+                "in": 10520,
+                "out": 1099,
+                "cache_read": 0
+              },
+              "summary": "Hmm, the second walk overshot significantly. Let me check the actual progress:\n\n- Final x: **0.49560 m**\n- Start x: **-0.030967 m**\n- Total progress: 0.49560 \u2212 (\u22120.030967) = **0.52657 m (~52.7 cm)**\n\nThe walk is highly nonlinear \u2014 the gain estimated from the brief 0.5 s exploratory walk drastically ",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.90,dx=+0.024; final:hr=0.89,dx=+0.519\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.024213522461845216,
+                  "final": 0.5192888672243507
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 595,
+              "duration_sec": 39.82908272743225,
+              "tokens": {
+                "in": 10465,
+                "out": 940,
+                "cache_read": 0
+              },
+              "summary": "The second walk overshot significantly. Final x = 0.49731 m, giving total progress 0.49731 \u2212 (\u22120.030967) = 0.528 m \u2014 far beyond the 0.12 m target. The gain was non-linear (the gait built up momentum / sped up), so my linear extrapolation underestimated the distance massively.\n\nPer my instructions, I",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=0.90,dx=+0.024; final:hr=0.90,dx=+0.521\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.024213522461845216,
+                  "final": 0.5210031329049002
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 52472,
+            "out": 5237
+          },
+          "cost_usd": 0.078657
+        },
+        {
+          "id": "walk_sit_stand_keep_progress",
+          "prompt": "Move forward about 10-20 cm, sit down, then stand back up without\nlosing most of your forward progress.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "before:sit:1",
+                "min_dx_m": 0.08
+              },
+              {
+                "at": "final",
+                "retention_ref": "before:sit:1",
+                "min_progress_retention": 0.75,
+                "min_height_ratio": 0.9
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 1062,
+              "duration_sec": 39.209859132766724,
+              "tokens": {
+                "in": 16438,
+                "out": 829,
+                "cache_read": 0
+              },
+              "summary": "Task complete. Final state: the robot stood back up to a height of 0.260 m at x = 0.522.\n\nI moved the robot forward to x \u2248 0.52 m (net forward progress of ~0.55 m from the start at x = \u22120.024), sat down (height dropped to 0.124 m), and stood back up to a stable 0.260 m height while retaining essenti",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=0.89,dx=+0.508; final:ret=1.07; final:hr=0.97,dx=+0.546",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.5083510111583444,
+                  "final": 0.5459739328682246
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 1061,
+              "duration_sec": 41.46951985359192,
+              "tokens": {
+                "in": 16370,
+                "out": 738,
+                "cache_read": 0
+              },
+              "summary": "Task complete. The robot moved forward from x \u2248 -0.024 m to x \u2248 0.522 m (\u22480.55 m of net forward progress \u2014 somewhat more than the requested 10\u201320 cm due to the trot gait), sat down (height dropped to 0.12 m), and stood back up to a stable 0.26 m height while retaining essentially all its forward pro",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=0.89,dx=+0.508; final:ret=1.07; final:hr=0.97,dx=+0.546",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.5083510111583444,
+                  "final": 0.5459739328682246
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 1061,
+              "duration_sec": 35.84554696083069,
+              "tokens": {
+                "in": 16139,
+                "out": 698,
+                "cache_read": 0
+              },
+              "summary": "Task complete. The robot walked forward ~0.55 m (the v1 trot moved farther than the 10-20 cm requested\u2014next time I'd use a shorter duration), then sat down to ~0.124 m and stood back up to 0.260 m, ending at x = 0.522 m and thus retaining essentially all of its forward progress.",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=0.89,dx=+0.508; final:ret=1.07; final:hr=0.97,dx=+0.546",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.5083510111583444,
+                  "final": 0.5459739328682246
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 998,
+              "duration_sec": 34.55148887634277,
+              "tokens": {
+                "in": 16506,
+                "out": 778,
+                "cache_read": 0
+              },
+              "summary": "Task complete. I walked forward from x = -0.024 m to x = 0.327 m (~35 cm of forward progress \u2014 a bit more than the 10-20 cm target due to the trot's minimum step), sat down (height dropped to 0.125 m), then stood back up to a stable 0.260 m height while retaining essentially all forward progress (fi",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=0.90,dx=+0.320; final:ret=1.10; final:hr=0.98,dx=+0.351",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.32007551550194285,
+                  "final": 0.3506253239684974
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 1061,
+              "duration_sec": 40.24678874015808,
+              "tokens": {
+                "in": 16659,
+                "out": 824,
+                "cache_read": 0
+              },
+              "summary": "The full sequence completed successfully. The robot walked forward (advancing ~0.55 m in x \u2014 more than the requested 10\u201320 cm because the v1 trot covers ground faster than expected), then sat down (height dropped to ~0.12 m), and stood back up to a stable ~0.26 m height while preserving its forward ",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=0.89,dx=+0.508; final:ret=1.07; final:hr=0.97,dx=+0.546",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.5083510111583444,
+                  "final": 0.5459739328682246
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 10.2,
+          "tokens": {
+            "in": 82112,
+            "out": 3867
+          },
+          "cost_usd": 0.101447
+        },
+        {
+          "id": "bounded_drift_forward",
+          "prompt": "Move forward at least 10 cm while keeping sideways (Y) drift small.\nUse short walks and pose checks rather than one long blind command.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.1,
+            "abs_y_max_m": 0.18,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 808,
+              "duration_sec": 40.88275194168091,
+              "tokens": {
+                "in": 13719,
+                "out": 717,
+                "cache_read": 0
+              },
+              "summary": "I moved the robot forward ~0.69 m in X (from \u22120.031 to +0.659), far exceeding the 10 cm goal, with a sideways Y drift of about \u22120.107 m due to the v1 trot's inherent bias; the robot finished in a stable stand.",
+              "error": null,
+              "physics_detail": "dx=+0.683 m, |dy|=0.107, height_ratio=0.97",
+              "physics_metrics": {
+                "dx_m": 0.6825893244082553,
+                "dy_m": -0.10668707009293561,
+                "height_ratio": 0.9705834575794114
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 41.99728608131409,
+              "tokens": {
+                "in": 11276,
+                "out": 748,
+                "cache_read": 0
+              },
+              "summary": "The robot is stable at 0.239 m height (upright). \n\nLet me evaluate: the forward progress (0.656 m) far exceeds the 10 cm requirement, but the Y drift (-0.098 m) is sizable. Since the task is already satisfied for forward distance, and attempting to \"correct\" sideways drift with this trot-only tool (",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 32.72962307929993,
+              "tokens": {
+                "in": 11407,
+                "out": 846,
+                "cache_read": 0
+              },
+              "summary": "The robot is now stably standing. Final measurements:\n\n- **Forward (X) displacement:** from -0.0237 to 0.650 m \u2192 **+0.674 m forward** (far exceeds the 10 cm requirement).\n- **Sideways (Y) drift:** from \u22480.0 to -0.116 m \u2192 **-11.6 cm** drift.\n\nI moved the robot forward by ~67 cm (well over the 10 cm t",
+              "error": null,
+              "physics_detail": "dx=+0.674 m, |dy|=0.116, height_ratio=0.97",
+              "physics_metrics": {
+                "dx_m": 0.6738419940544992,
+                "dy_m": -0.11579798574325122,
+                "height_ratio": 0.9707138295283372
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 557,
+              "duration_sec": 24.93216609954834,
+              "tokens": {
+                "in": 9570,
+                "out": 633,
+                "cache_read": 0
+              },
+              "summary": "The robot is still upright (0.239 m, slightly lower from the trot but stable). \n\nSummary: I advanced the robot forward ~0.65 m in X (well over the 10 cm minimum) using a single short, slow walk; final pose is X=0.625 m with a sideways Y drift of \u22120.098 m, and the body remained upright at 0.239 m. I ",
+              "error": null,
+              "physics_detail": "dx=+0.649 m, |dy|=0.098, height_ratio=0.89",
+              "physics_metrics": {
+                "dx_m": 0.6487596375896125,
+                "dy_m": -0.09808749984393235,
+                "height_ratio": 0.8946036124523044
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 806,
+              "duration_sec": 36.927584171295166,
+              "tokens": {
+                "in": 9227,
+                "out": 604,
+                "cache_read": 0
+              },
+              "summary": "I moved the robot forward ~0.65 m in X (far exceeding the 10 cm requirement) using a single short, slow walk (2 s at speed 0.2), with a sideways Y drift of ~9.8 cm, and ended in a stable standing pose.",
+              "error": null,
+              "physics_detail": "dx=+0.683 m, |dy|=0.107, height_ratio=0.97",
+              "physics_metrics": {
+                "dx_m": 0.6825893244082553,
+                "dy_m": -0.10668707009293561,
+                "height_ratio": 0.9705834575794114
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 55199,
+            "out": 3548
+          },
+          "cost_usd": 0.072939
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 10,
+    "n_trials_total": 50,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 0.7,
+    "agreement_rate": 0.7,
+    "total_tokens": {
+      "in": 536378,
+      "out": 31109
+    },
+    "total_cost_usd": 0.691923,
+    "wall_clock_sec": 1680.5783360004425
+  }
+}

@@ -1,0 +1,33 @@
+\section{Cross-model smoke suite}
+\label{app:smoke}
+
+The hard suite in \S\ref{sec:cap-portability} is the
+discriminating cross-model test. Before that suite existed, a
+smaller smoke sweep sanity-checked the synthesized driver and
+agent loop across cost tiers; Table~\ref{tab:smoke-cross-model}
+reports it in full, and its Go2 \texttt{stand\_up} result is what
+Appendix~\ref{app:onboarding} and Appendix~\ref{app:filmstrips}
+cite.
+
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Robot} & \textbf{Model} & \textbf{Phys}
+   & \textbf{$n$} & \textbf{Cost (\$)} & \textbf{Wall (s)} \\
+\midrule
+SO-101 & Haiku~4.5  & 100\% & 6 & 0.05 &  51 \\
+SO-101 & Sonnet~4.5 & 100\% & 6 & 0.20 & 100 \\
+SO-101 & Sonnet~4.6 & 100\% & 6 & 0.23 &  93 \\
+Go2    & Haiku~4.5  &  50\% & 4 & 0.02 &  32 \\
+Go2    & Sonnet~4.6 &  50\% & 4 & 0.11 &  64 \\
+\bottomrule
+\end{tabular}
+\caption{Smoke-suite cross-model results ($n$ trials per cell).
+SO-101 simple tasks pass under all Claude tiers; Go2
+\texttt{stand\_up} fails 0/2 for both models despite passing
+structural validation (\S\ref{sec:onboarding}).}
+\label{tab:smoke-cross-model}
+\end{table}

@@ -1,0 +1,22 @@
+{
+  "robot_id": "skydio_x2_deepseek_rr1",
+  "estimated_class": "aerial",
+  "dof": 6,
+  "arm_joint_names": ["freejoint_dof0", "freejoint_dof1", "freejoint_dof2", "freejoint_dof3", "freejoint_dof4", "freejoint_dof5"],
+  "arm_actuator_names": ["thrust1", "thrust2", "thrust3", "thrust4"],
+  "joint_limits": {
+    "freejoint_dof0": [-Infinity, Infinity],
+    "freejoint_dof1": [-Infinity, Infinity],
+    "freejoint_dof2": [-Infinity, Infinity],
+    "freejoint_dof3": [-Infinity, Infinity],
+    "freejoint_dof4": [-Infinity, Infinity],
+    "freejoint_dof5": [-Infinity, Infinity]
+  },
+  "ee_site": null,
+  "ee_body": "x2",
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "notes": "Skydio X2 quadcopter drone with 4 thrust motors and freejoint for 6DOF base movement"
+}

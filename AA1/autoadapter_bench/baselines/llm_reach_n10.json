@@ -1,0 +1,273 @@
+{
+  "metadata": {
+    "n_episodes_per_task": 10,
+    "n_tasks": 4,
+    "agent_model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+  },
+  "per_task": {
+    "reach_x+5": {
+      "success_rate": 1.0,
+      "episodes": [
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.019938
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.019998000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.020493
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.020448
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.020804999999999997
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.019893
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.020463000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.019908000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.020043000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0016457278002215113,
+          "tool_calls": 2,
+          "cost": 0.019983
+        }
+      ],
+      "mean_err_m": 0.0016457278002215113
+    },
+    "reach_x-5": {
+      "success_rate": 1.0,
+      "episodes": [
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.019851
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.019842000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.019932000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.020913
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.019782
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.02055
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.019941
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.019851
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.020007
+        },
+        {
+          "success": true,
+          "err_m": 0.0002772745503918966,
+          "tool_calls": 2,
+          "cost": 0.020409
+        }
+      ],
+      "mean_err_m": 0.0002772745503918966
+    },
+    "reach_y+5": {
+      "success_rate": 1.0,
+      "episodes": [
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.020534999999999998
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.019659
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.020517
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.020337
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370068710095832,
+          "tool_calls": 2,
+          "cost": 0.02052
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.020531999999999998
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.019947
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.020559
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565441495,
+          "tool_calls": 2,
+          "cost": 0.020802
+        },
+        {
+          "success": true,
+          "err_m": 0.00017370512565437952,
+          "tool_calls": 2,
+          "cost": 0.019556999999999998
+        }
+      ],
+      "mean_err_m": 0.00017370468179904095
+    },
+    "reach_z+5": {
+      "success_rate": 1.0,
+      "episodes": [
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.019908
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.020132999999999998
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.019983
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.020724
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.019953000000000002
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.020679000000000003
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.020112
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.020544
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.021198
+        },
+        {
+          "success": true,
+          "err_m": 0.0006598974279445897,
+          "tool_calls": 2,
+          "cost": 0.019851
+        }
+      ],
+      "mean_err_m": 0.0006598974279445897
+    }
+  }
+}

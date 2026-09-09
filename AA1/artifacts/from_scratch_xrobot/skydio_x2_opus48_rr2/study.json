@@ -1,0 +1,15 @@
+{
+  "robot_id": "skydio_x2_opus48_rr2",
+  "estimated_class": "aerial",
+  "dof": 6,
+  "arm_joint_names": [],
+  "arm_actuator_names": ["thrust1", "thrust2", "thrust3", "thrust4"],
+  "joint_limits": {},
+  "ee_site": "imu",
+  "ee_body": "x2",
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "notes": "Skydio X2 quadrotor: free-floating base (1 freejoint, 6 DOF) actuated by 4 site thrust motors (ctrlrange 0-13, hover~3.25); no arm joints, no gripper, no welds."
+}

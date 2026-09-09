@@ -1,0 +1,64 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "stand_up",
+      "ok": true,
+      "detail": "body height 0.269 -> 0.268 (need >0.15, not collapse)",
+      "metric": 0.2682900643955523
+    },
+    {
+      "test": "sit",
+      "ok": true,
+      "detail": "stand 0.268 -> sit 0.110 (need < 0.215)",
+      "metric": 0.11003021832964288
+    },
+    {
+      "test": "walk_forward",
+      "ok": true,
+      "detail": "dx=+0.312 m (need >0.03, upright)",
+      "metric": 0.3122486713050868
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "dict keys=['class', 'model', 'n_joints', 'leg_order', 'joints_per_leg', 'base_height_m', 'base_xyz', 'upright_z']",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 305,
+    "n_chars": 12907,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "unknown"
+  },
+  "structural_ok": true,
+  "n_passed": 8,
+  "n_total": 8,
+  "outer_attempts": 0
+}

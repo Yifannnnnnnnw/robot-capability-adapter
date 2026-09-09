@@ -1,0 +1,21 @@
+\begin{abstract}
+Deploying a tool-using LLM agent on a new robot requires a tool
+API: a Python driver exposing motion and perception primitives.
+Today that driver is hand-authored, at days to weeks of effort per
+robot. Frameworks such as ReAct, Code-as-Policies, and CodeAct
+assume this layer already exists; we ask whether the same LLM can
+also synthesize it. Auto-Adapter is a five-phase LLM-agent pipeline. It reads an
+MJCF/URDF spec and writes a self-contained driver inside
+prompt-specified controller classes, revising against simulator
+state until a fixed test harness passes. Across eight robots it produces
+structurally validated, smoke-tested drivers at $\$2.98 \pm \$0.84$
+and $7.8 \pm 1.6$ minutes each. On SO-101 Reach-and-Pick our agent
+and a same-API Code-as-Policies baseline both reach 100\%, whereas a
+per-skill RL controller does not transfer across skill families without a
+new training run (\S\ref{sec:capability}). On the full 13-task suite Auto-Adapter leads the
+same-API baseline in aggregate, ahead on six of seven LLMs across five vendors. Yet tool
+\emph{use} does not imply tool \emph{synthesis}: all seven models operate a
+synthesized API, but only three write their own validated driver.
+We release ten driver artifacts, baselines, and a canonical results
+file: \url{https://anonymous.4open.science/r/auto-adapter-2521}.
+\end{abstract}

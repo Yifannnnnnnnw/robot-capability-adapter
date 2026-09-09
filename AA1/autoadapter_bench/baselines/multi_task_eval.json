@@ -1,0 +1,222 @@
+{
+  "in_dist_keys": [
+    "in_x+5",
+    "in_x-5",
+    "in_y+5",
+    "in_y-5",
+    "in_z+5",
+    "in_z-5"
+  ],
+  "ood_keys": [
+    "ood_diag",
+    "ood_mag",
+    "ood_mixed",
+    "ood_far_diag"
+  ],
+  "results": {
+    "ppo_multi": {
+      "in_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.017925372938896185,
+        "mean_steps": 11.0,
+        "target_offset": [
+          0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "in_x-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.019535243196006212,
+        "mean_steps": 10.0,
+        "target_offset": [
+          -0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "in_y+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.013452111246227434,
+        "mean_steps": 6.0,
+        "target_offset": [
+          0.0,
+          0.05,
+          0.0
+        ]
+      },
+      "in_y-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.01404111836091414,
+        "mean_steps": 6.0,
+        "target_offset": [
+          0.0,
+          -0.05,
+          0.0
+        ]
+      },
+      "in_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.014224413776930882,
+        "mean_steps": 5.0,
+        "target_offset": [
+          0.0,
+          0.0,
+          0.05
+        ]
+      },
+      "in_z-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.016470425384453313,
+        "mean_steps": 4.0,
+        "target_offset": [
+          0.0,
+          0.0,
+          -0.05
+        ]
+      },
+      "ood_diag": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.018728089300662765,
+        "mean_steps": 12.0,
+        "target_offset": [
+          0.03,
+          0.03,
+          0.03
+        ]
+      },
+      "ood_mag": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.07456854473178634,
+        "mean_steps": 100.0,
+        "target_offset": [
+          0.1,
+          0.0,
+          0.0
+        ]
+      },
+      "ood_mixed": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.019824558848800803,
+        "mean_steps": 12.0,
+        "target_offset": [
+          0.05,
+          0.05,
+          0.0
+        ]
+      },
+      "ood_far_diag": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.017362454859722563,
+        "mean_steps": 9.0,
+        "target_offset": [
+          0.04,
+          0.04,
+          -0.02
+        ]
+      }
+    },
+    "dp_multi": {
+      "in_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.01827207359529434,
+        "mean_steps": 13.0,
+        "target_offset": [
+          0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "in_x-5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.1530602357403968,
+        "mean_steps": 100.0,
+        "target_offset": [
+          -0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "in_y+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.3439070939515199,
+        "mean_steps": 100.0,
+        "target_offset": [
+          0.0,
+          0.05,
+          0.0
+        ]
+      },
+      "in_y-5": {
+        "success_rate": 0.6,
+        "mean_err_m": 0.04964056354890273,
+        "mean_steps": 49.2,
+        "target_offset": [
+          0.0,
+          -0.05,
+          0.0
+        ]
+      },
+      "in_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.018050819100754692,
+        "mean_steps": 13.0,
+        "target_offset": [
+          0.0,
+          0.0,
+          0.05
+        ]
+      },
+      "in_z-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.013671791226704966,
+        "mean_steps": 8.0,
+        "target_offset": [
+          0.0,
+          0.0,
+          -0.05
+        ]
+      },
+      "ood_diag": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.15766628329766064,
+        "mean_steps": 100.0,
+        "target_offset": [
+          0.03,
+          0.03,
+          0.03
+        ]
+      },
+      "ood_mag": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.192852224358826,
+        "mean_steps": 100.0,
+        "target_offset": [
+          0.1,
+          0.0,
+          0.0
+        ]
+      },
+      "ood_mixed": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.14183555037553583,
+        "mean_steps": 100.0,
+        "target_offset": [
+          0.05,
+          0.05,
+          0.0
+        ]
+      },
+      "ood_far_diag": {
+        "success_rate": 0.2,
+        "mean_err_m": 0.13836567665888347,
+        "mean_steps": 82.4,
+        "target_offset": [
+          0.04,
+          0.04,
+          -0.02
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "robot_id": "unitree_a1_onboard",
+  "estimated_class": "quadruped",
+  "dof": 12,
+  "arm_joint_names": [
+    "FR_hip_joint",
+    "FR_thigh_joint",
+    "FR_calf_joint",
+    "FL_hip_joint",
+    "FL_thigh_joint",
+    "FL_calf_joint",
+    "RR_hip_joint",
+    "RR_thigh_joint",
+    "RR_calf_joint",
+    "RL_hip_joint",
+    "RL_thigh_joint",
+    "RL_calf_joint"
+  ],
+  "arm_actuator_names": [
+    "FR_hip",
+    "FR_thigh",
+    "FR_calf",
+    "FL_hip",
+    "FL_thigh",
+    "FL_calf",
+    "RR_hip",
+    "RR_thigh",
+    "RR_calf",
+    "RL_hip",
+    "RL_thigh",
+    "RL_calf"
+  ],
+  "joint_limits": {
+    "FR_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "FR_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "FR_calf_joint": [
+      -2.69653,
+      -0.916298
+    ],
+    "FL_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "FL_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "FL_calf_joint": [
+      -2.69653,
+      -0.916298
+    ],
+    "RR_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "RR_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "RR_calf_joint": [
+      -2.69653,
+      -0.916298
+    ],
+    "RL_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "RL_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "RL_calf_joint": [
+      -2.69653,
+      -0.916298
+    ]
+  },
+  "ee_site": null,
+  "ee_body": null,
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "position",
+  "notes": "Unitree A1 quadruped with 4 legs (FR,FL,RR,RL), 3 joints per leg (hip abduction, thigh, calf), 12 DOF total, position-controlled actuators"
+}

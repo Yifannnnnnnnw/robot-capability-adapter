@@ -1,0 +1,57 @@
+\section{AutoAdapter-Bench: robot zoo and protocol}
+\label{sec:protocol}
+
+\noindent\textbf{Robot zoo.} We release \textbf{AutoAdapter-Bench}
+and evaluate Auto-Adapter on eight robots: five serial arms
+(5--7 joints) and three floating-base quadrupeds (12 joints). All
+come from public MJCF repositories (Table~\ref{tab:zoo}) and are
+used as published, with no robot-specific tuning or re-mounting.
+A Skydio~X2 quadrotor and Unitree~H1 humanoid are onboarded as
+breadth tests outside this benchmark (Appendix~\ref{app:morphology}).
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrll}
+\toprule
+\textbf{Robot} & \textbf{Joints} & \textbf{Class} & \textbf{MJCF source} \\
+\midrule
+SO-101       &  5 & arm+grip    & LeRobot SO-ARM101 \\
+Piper        &  6 & arm+grip    & piper\_mujoco \\
+UR5e         &  6 & arm         & universal\_robots\_ur5e \\
+Franka Panda &  7 & arm+grip    & franka\_panda \\
+KUKA iiwa14  &  7 & arm         & kuka\_iiwa\_14 \\
+Unitree Go2  & 12 & quadruped   & unitree\_go2 \\
+Unitree A1   & 12 & quadruped   & unitree\_a1 \\
+ANYmal-C     & 12 & quadruped   & anybotics\_anymal\_c \\
+\bottomrule
+\end{tabular}
+\caption{Robot zoo: six taken unmodified from MuJoCo Menagerie
+\citep{menagerie2022}, Piper from \texttt{piper\_mujoco}, and SO-101 from
+the LeRobot SO-ARM101 URDF. All specs are third-party.}
+\label{tab:zoo}
+\end{table}
+
+\noindent\textbf{Task suites.} All \S\ref{sec:capability}
+evaluations use the same MuJoCo simulator with a physics-grounded
+final-state check. The check reads post-step EE pose, body height,
+base pose/yaw, object pose, and contact. A reach succeeds within
+2\,cm of the target EE position; a pick requires a $\geq$2\,cm lift.
+Twelve of the 13 hard-suite tasks are graded this way. The exceptions
+are behavioral and labeled as such: \texttt{visit\_all\_objects} (EE
+coverage) and two simple-suite tasks (failure-detection, tool-liveness). The model ranking is
+unchanged on the 12-task physics subset (Appendix~\ref{app:robustness});
+the full grader taxonomy is in Appendix~\ref{app:graders}. For LLM
+agents we replay the tool calls in a fresh simulator before
+scoring; the learned baselines (PPO, Diffusion Policy, OpenVLA)
+instead run directly. Onboarding
+(\S\ref{sec:onboarding}) is structural validation, not a downstream
+task suite. The downstream suites are summarized in
+Table~\ref{tab:suites} (Appendix~\ref{app:graders}).
+
+\noindent\textbf{Agent model.} Claude Sonnet~4.5 is the default
+agent; the \S\ref{sec:cap-portability} leaderboard sweeps
+seven other models (Sonnet~4.6 among them) on
+the hard suite. Exact Bedrock model identifiers
+and per-token pricing are listed in Appendix~\ref{app:models}.

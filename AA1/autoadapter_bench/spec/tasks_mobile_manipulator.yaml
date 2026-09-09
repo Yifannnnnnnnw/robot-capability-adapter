@@ -1,0 +1,29 @@
+# AutoAdapter-Bench — bounded Stretch 2 mobile-manipulator task suite.
+version: "v1.0"
+robot_class: mobile_manipulator
+
+suites:
+  simple:
+    description: Drive the base into a target region, then reach with the arm.
+    tasks:
+      - id: base_then_ee_reach
+        prompt: |
+          First drive the mobile base forward 0.10 m at speed 0.10 m/s.
+          Once the base is in the target region around world XY [-0.09, 0.00],
+          move the end-effector to world XYZ [-0.02, -0.24, 0.67] m.
+          Keep the base still during the arm reach and report both results.
+        success:
+          type: mobile_manipulation_ordered
+          base_target_xy: [-0.09, 0.0]
+          base_tolerance_m: 0.025
+          min_base_motion_m: 0.05
+          arm_motion_threshold: 0.01
+          arm_base_drift_tolerance_m: 0.01
+          ee_target_xyz: [-0.02, -0.24, 0.67]
+          ee_tolerance_m: 0.025
+          n_trials: 1
+        reference_actions:
+          - tool: drive_forward
+            input: {distance_m: 0.10, speed: 0.10}
+          - tool: move_cartesian
+            input: {x: -0.02, y: -0.24, z: 0.67, duration: 2.0}

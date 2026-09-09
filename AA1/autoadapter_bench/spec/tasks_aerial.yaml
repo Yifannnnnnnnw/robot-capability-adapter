@@ -1,0 +1,93 @@
+# AutoAdapter-Bench — Aerial / multirotor task suite (Skydio X2 quadcopter).
+# Physics-graded free-flight for an underactuated, open-loop-unstable base.
+# Primitives: takeoff, move_to, hover, land, get_base_pose. The drone starts
+# (after home) near [0,0,0.3] and flies in ABSOLUTE world coordinates; targets
+# are absolute and calibrated to the controller's demonstrated range (takeoff
+# and move_to reach commanded altitudes up to ~1 m; horizontal moves ~0.4 m).
+# Every grader also requires the body to stay UPRIGHT (body z-axis .z >= 0.7).
+version: "v1.0"
+robot_class: aerial
+suites:
+  simple:
+    description: Single-skill takeoff / hover / point-to-point, graded on base pose.
+    tasks:
+      - id: takeoff_to_05m
+        prompt: |
+          Take off and climb to about 0.5 m altitude, then hold a stable
+          hover. Stay upright.
+        success: {type: takeoff_to_height, min_altitude_m: 0.45, min_upright: 0.7, n_trials: 5}
+      - id: hover_at_05m
+        prompt: |
+          Take off to about 0.5 m and hover in place at that altitude; keep
+          your horizontal position steady (do not drift away).
+        success:
+          type: hover_stability
+          target_xyz: [0.0, 0.0, 0.5]
+          tol_m: 0.15
+          max_drift_m: 0.60
+          min_upright: 0.7
+          n_trials: 5
+      - id: goto_forward_40cm
+        prompt: |
+          Take off, then fly to a point about 0.4 m forward (+X) of your launch
+          point while holding altitude near 0.5 m. Stay upright.
+        success:
+          type: reach_3d_target
+          target_xyz: [0.40, 0.0, 0.5]
+          tol_m: 0.20
+          min_upright: 0.7
+          n_trials: 5
+      - id: climb_to_1m
+        prompt: |
+          Take off and climb to about 1.0 m altitude, then hold. Stay upright.
+        success: {type: takeoff_to_height, min_altitude_m: 0.90, min_upright: 0.7, n_trials: 5}
+  hard:
+    description: Composed flight (round-trip, waypoints, diagonal) with thresholds.
+    tasks:
+      - id: goto_and_return
+        prompt: |
+          Take off to ~0.5 m, fly about 0.5 m forward in +X, then fly back and
+          stop above your launch point. Stay upright the whole time.
+        success:
+          type: returned_to_start_xy
+          tol_m: 0.25
+          min_excursion_m: 0.30   # must actually fly out before returning
+          min_upright: 0.7
+          n_trials: 5
+      - id: diagonal_goto
+        prompt: |
+          Take off and fly to the world point (0.4, 0.3, 0.8) m — forward,
+          left, and up from the origin. Stay upright.
+        success:
+          type: reach_3d_target
+          target_xyz: [0.40, 0.30, 0.80]
+          tol_m: 0.20
+          min_upright: 0.7
+          n_trials: 5
+      - id: box_patrol
+        prompt: |
+          Take off to ~0.6 m, then fly a square patrol at that altitude:
+          forward 0.4 m, left 0.4 m, back 0.4 m, right 0.4 m, visiting each
+          corner. Stay upright.
+        success:
+          type: waypoint_3d_trace
+          waypoints_relative: false
+          waypoints:
+            - [0.40, 0.00, 0.60]
+            - [0.40, 0.40, 0.60]
+            - [0.00, 0.40, 0.60]
+            - [0.00, 0.00, 0.60]
+          waypoint_tol_m: 0.18
+          min_upright: 0.7
+          n_trials: 5
+      - id: stable_hover_tight
+        prompt: |
+          Take off to about 0.5 m and hold a TIGHT hover at that altitude —
+          keep your position within a small radius. Stay upright.
+        success:
+          type: hover_stability
+          target_xyz: [0.0, 0.0, 0.5]
+          tol_m: 0.15
+          max_drift_m: 0.45
+          min_upright: 0.7
+          n_trials: 5

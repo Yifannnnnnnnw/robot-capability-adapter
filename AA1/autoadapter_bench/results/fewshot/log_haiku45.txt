@@ -1,0 +1,122 @@
+autoadapter_bench/eval_baseline.py:284: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "started_at": datetime.utcnow().isoformat(),
+Baseline: cap  (Code-as-Policies: LLM composes pre-built APIs)
+Robot: so101  class: arm  workspace: artifacts/auto_adapter_so101_v2_artifacts
+
+=== suite: contact_rich — 5 tasks ===
+  task: stack_lego_on_duck  (5 trials)
+    trial 1/5: llm=OK phys=FAIL ✗
+    trial 2/5: llm=OK phys=FAIL ✗
+    trial 3/5: llm=OK phys=FAIL ✗
+    trial 4/5: llm=OK phys=FAIL ✗
+    trial 5/5: llm=OK phys=FAIL ✗
+  task: place_duck_inside_mug  (5 trials)
+    trial 1/5: llm=OK phys=FAIL ✗
+    trial 2/5: llm=OK phys=FAIL ✗
+    trial 3/5: llm=OK phys=FAIL ✗
+    trial 4/5: llm=OK phys=FAIL ✗
+    trial 5/5: llm=OK phys=FAIL ✗
+  task: collision_avoid_bottle  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+  task: swap_banana_bottle  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+  task: stable_place_screwdriver  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+
+=== suite: contact_rich_l4 — 4 tasks ===
+  task: tower_3_objects  (5 trials)
+    trial 1/5: llm=OK phys=FAIL ✗
+    trial 2/5: llm=OK phys=FAIL ✗
+    trial 3/5: llm=OK phys=FAIL ✗
+    trial 4/5: llm=OK phys=FAIL ✗
+    trial 5/5: llm=OK phys=FAIL ✗
+  task: spatial_query_pick  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+  task: pair_swap_chain  (5 trials)
+    trial 1/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0134 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 2/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0134 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 3/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0134 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 4/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0134 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 5/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0134 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+  task: clear_then_reach  (5 trials)
+    trial 1/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 2/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 3/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 4/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 5/5:    replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+
+=== suite: hard — 4 tasks ===
+  task: conditional_pick  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+  task: visit_all_objects  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+  task: numeric_midpoint  (5 trials)
+    trial 1/5: llm=OK phys=OK ✓
+    trial 2/5: llm=OK phys=OK ✓
+    trial 3/5: llm=OK phys=OK ✓
+    trial 4/5: llm=OK phys=OK ✓
+    trial 5/5: llm=OK phys=OK ✓
+  task: draw_letter_L  (5 trials)
+    trial 1/5: Start: [ 3.91959783e-01 -1.77812590e-04  2.50115003e-01]
+Corner 1 (down): [ 3.91960573e-01 -1.77757708e-04  2.05930822e-01]
+Corner 2 (forward): [ 4.31830096e-01 -1.77753241e-04  2.00478677e-01]
+llm=OK phys=OK ✓
+    trial 2/5: Start: [ 3.91959783e-01 -1.77812590e-04  2.50115003e-01]
+Corner 1 (down): [ 3.91960573e-01 -1.77757708e-04  2.05930822e-01]
+Corner 2 (forward): [ 4.31830096e-01 -1.77753241e-04  2.00478677e-01]
+llm=OK phys=OK ✓
+    trial 3/5: Start: [ 3.91959783e-01 -1.77812590e-04  2.50115003e-01]
+Corner 1 (down): [ 3.91960573e-01 -1.77757708e-04  2.05930822e-01]
+Corner 2 (forward): [ 4.31830096e-01 -1.77753241e-04  2.00478677e-01]
+llm=OK phys=OK ✓
+    trial 4/5: Start: [ 3.91959783e-01 -1.77812590e-04  2.50115003e-01]
+Corner 1 (down): [ 3.91960573e-01 -1.77757708e-04  2.05930822e-01]
+Corner 2 (forward): [ 4.31830096e-01 -1.77753241e-04  2.00478677e-01]
+llm=OK phys=OK ✓
+    trial 5/5: autoadapter_bench/eval_baseline.py:384: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  result["meta"]["completed_at"] = datetime.utcnow().isoformat()
+Start: [ 3.91959783e-01 -1.77812590e-04  2.50115003e-01]
+Corner 1 (down): [ 3.91960573e-01 -1.77757708e-04  2.05930822e-01]
+Corner 2 (forward): [ 4.31830096e-01 -1.77753241e-04  2.00478677e-01]
+llm=OK phys=OK ✓
+
+Saved: autoadapter_bench/results/fewshot/cap_so101_haiku45.json
+  trials=65
+  llm_pass_rate=85%
+  physics_pass_rate=62%
+  cost=$0.54
+  wall=1408.2s

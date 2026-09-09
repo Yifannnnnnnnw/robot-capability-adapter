@@ -1,0 +1,15 @@
+{
+  "robot_id": "skydio_x2",
+  "estimated_class": "aerial",
+  "dof": 6,
+  "arm_joint_names": [],
+  "arm_actuator_names": [],
+  "joint_limits": {},
+  "ee_site": null,
+  "ee_body": null,
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "notes": "Skydio X2 quadcopter with freejoint (6 DOF) and 4 thrust motors (ctrlrange 0-13) for aerial control"
+}

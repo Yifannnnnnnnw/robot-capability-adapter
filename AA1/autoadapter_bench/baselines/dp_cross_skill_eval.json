@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "n_episodes_per_cell": 10,
+    "dp_reach_path": "autoadapter_bench/baselines/dp/trained/dp_so101_reach_taskcond.pt",
+    "dp_pick_path": "autoadapter_bench/baselines/dp/trained/dp_so101_pick_taskcond.pt",
+    "device": "mps",
+    "n_exec_per_chunk": 8
+  },
+  "dp_reach": {
+    "on_reach": {
+      "reach_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.017860949979826915
+      },
+      "reach_x-5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.23045199518648585
+      },
+      "reach_y+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.4996220055948787
+      },
+      "reach_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.01865531514892754
+      }
+    },
+    "on_pick": {
+      "success_rate": 0.0,
+      "mean_lift_m": -0.0014381466399492927
+    }
+  },
+  "dp_pick": {
+    "on_reach": {
+      "reach_x+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.4508068362864206
+      },
+      "reach_x-5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.36926011134759984
+      },
+      "reach_y+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.406875195253651
+      },
+      "reach_z+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.44573494904963773
+      }
+    },
+    "on_pick": {
+      "success_rate": 0.1,
+      "mean_lift_m": -0.0009451357901750941
+    }
+  }
+}

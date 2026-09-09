@@ -1,0 +1,9 @@
+{
+  "model": "us.anthropic.claude-opus-4-8",
+  "tokens_in": 9238,
+  "tokens_out": 7871,
+  "cost_usd_est": 0.728895,
+  "wall_sec": 77.45012092590332,
+  "prompt_chars": 19097,
+  "driver_size_bytes": 19871
+}

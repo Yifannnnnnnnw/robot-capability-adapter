@@ -1,0 +1,74 @@
+\section{Lessons from a physical-deployment attempt}
+\label{app:real-robot}
+
+To scope what separates the simulation results from a deployable
+system, we ran one bring-up session on a physical SO-ARM101
+(Feetech STS3215 servos, wrist-mounted RealSense D405, Claude
+Opus~4.8 as the perception VLM). The same Generate phase
+synthesized a real-robot driver from the SO-101 MJCF/URDF and a
+one-line spec. The arm reached a kinesthetically taught grasp pose
+within 2\,mm after a one-shot servo-bias correction, and the VLM
+localized the target cube in the eye-in-hand view; end-to-end
+autonomous grasping of a 4\,cm cube still failed. The
+failures break down into four independent gaps.
+
+\noindent\textbf{(1) Servo reproducibility.} Commanded vs.\ actual
+joint positions differ by 1--4$^\circ$ per joint under gravity
+load, propagating to 5--8\,mm of end-effector error. A
+feed-forward bias vector recovers 2\,mm accuracy but is
+pose-dependent: one compensation vector does not generalize across
+the workspace.
+
+\noindent\textbf{(2) Hand-eye calibration.} The wrist-mounted
+camera-to-base transform must be calibrated per arm. Our
+perturbation-based grid searches were ill-conditioned (13--17\,cm
+predicted-depth error); the working industry practice is a
+human-placed calibration target with a stored affine solve, which
+is automatic only \emph{after} the human places markers.
+
+\noindent\textbf{(3) Depth sensing at close range.} With the
+end-effector at 24\,cm, scene depths of 6--15\,cm sit at the lower
+edge of the D405's working range; the gripper fingers themselves
+read as invalid depth, and glare on metal surfaces corrupts
+detection boxes.
+
+\noindent\textbf{(4) Grasp verification.} The physical arm has no
+force, tactile, or slip sensing; grasp success must be inferred
+from a single gripper-encoder integer. That signal is too coarse
+to drive the outer verify-and-retry loop that every simulation
+result in this paper relies on.
+
+None of the four gaps is specific to LLM-written code; a
+hand-written driver would face the same per-arm bring-up. What
+simulation removes is precisely the feedback channel
+(\S\ref{sec:verifier}) that Auto-Adapter's validation depends on.
+The practical boundary is therefore: simulator-grounded synthesis
+automates the \emph{algorithmic} layer of onboarding (kinematics,
+control, primitive API), while calibration, bias compensation, and
+contact sensing remain a per-robot engineering layer that today
+takes a human a session of bring-up time.
+
+\paragraph{Safety requirements for any physical extension.}
+\label{app:safety}
+In this paper the write--execute--revise loop never touches
+hardware: all generation, execution, and revision happen in MuJoCo,
+and the exported driver is a static, auditable artifact. The
+bring-up session above used conservative manual operation with
+z-bounds and joint-limit checks in the bridge. Before generated
+code executes on hardware we consider the following minimally
+necessary: (i) non-overridable driver-level clamps on joint limits,
+velocity, and torque; (ii) a workspace bounding volume enforced
+outside the generated code; (iii) sim-first re-validation of any
+revised driver before hardware execution; (iv) collision and force
+monitoring with automatic stop; (v) a hardware e-stop; and (vi) a
+human approval gate with staged, slowed rollout for the first
+hardware run of any newly generated driver.
+
+\paragraph{Future work: scaling physical validation.}
+Our concrete next step is perception-grounded reach and place on
+this physical SO-ARM101 with the wrist-mounted RGB-D camera,
+executed under the safety requirements above (sim-first
+re-validation, driver-level clamps, human approval gate), taking
+the four gaps documented in this appendix as the work items; a
+controlled study of an engineer using LLM coding assistants for
+the same onboarding task is a second open comparison.

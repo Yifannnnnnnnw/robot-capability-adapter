@@ -1,0 +1,8 @@
+{
+  "task": "pick_banana",
+  "total_timesteps": 200000,
+  "train_time_sec": 1008.061646938324,
+  "n_episodes": 1672,
+  "final_succ_rate_50ep": 0.5,
+  "final_mean_lift_m": 0.006926646557517568
+}

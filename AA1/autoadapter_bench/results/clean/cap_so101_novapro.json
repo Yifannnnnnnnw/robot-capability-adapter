@@ -1,0 +1,1931 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "baseline": "cap",
+    "baseline_description": "Code-as-Policies: LLM composes pre-built APIs",
+    "robot": "so101",
+    "robot_class": "arm",
+    "mjcf": "assets/mjcf/so101_mujoco.xml",
+    "vendor": "LeRobot",
+    "dof": 5,
+    "model": "amazon.nova-pro-v1:0",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-04T11:25:41.847395",
+    "suites_requested": [
+      "hard",
+      "contact_rich",
+      "contact_rich_l4"
+    ],
+    "completed_at": "2026-06-04T11:48:41.299913",
+    "wall_clock_sec": 1379.4504969120026
+  },
+  "suites": {
+    "hard": {
+      "tasks": [
+        {
+          "id": "conditional_pick",
+          "prompt": "Look at the current positions of the banana and the mug.\nIf the banana's X-coordinate is LESS than the mug's\nX-coordinate (banana more to the left), pick the banana and\nlift it 10 cm. Otherwise pick the mug and lift it 10 cm.\nReport which one you picked and why.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug"
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 208,
+              "duration_sec": 5.721677780151367,
+              "tokens": {
+                "in": 712,
+                "out": 185
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 5.5 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.055379507821451096
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 208,
+              "duration_sec": 7.270587682723999,
+              "tokens": {
+                "in": 712,
+                "out": 185
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 5.5 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.055379507821451096
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 258,
+              "duration_sec": 7.042448043823242,
+              "tokens": {
+                "in": 712,
+                "out": 177
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 8.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.08103563661742509
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 408,
+              "duration_sec": 9.454154014587402,
+              "tokens": {
+                "in": 712,
+                "out": 159
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 8.2 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.08194033357302168
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 208,
+              "duration_sec": 6.142291784286499,
+              "tokens": {
+                "in": 712,
+                "out": 185
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 5.5 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.055379507821451096
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.4,
+          "tokens": {
+            "in": 3560,
+            "out": 891
+          },
+          "cost_usd": 0.024045
+        },
+        {
+          "id": "visit_all_objects",
+          "prompt": "Visit each of the 6 graspable objects in turn \u2014 banana, mug,\nbottle, screwdriver, duck, lego. For each, move the EE 5 cm\nabove the object, hover briefly, and report whether the\ngripper is holding anything. Return home at the end.\n",
+          "success_spec": {
+            "type": "ee_visited_n_positions",
+            "n_required": 6,
+            "tolerance_m": 0.06,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 44,
+              "frames": 2066,
+              "duration_sec": 51.767295122146606,
+              "tokens": {
+                "in": 700,
+                "out": 148
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 38,
+              "frames": 2066,
+              "duration_sec": 55.76179814338684,
+              "tokens": {
+                "in": 700,
+                "out": 154
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 38,
+              "frames": 2066,
+              "duration_sec": 57.835350036621094,
+              "tokens": {
+                "in": 700,
+                "out": 154
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 38,
+              "frames": 1166,
+              "duration_sec": 44.92431306838989,
+              "tokens": {
+                "in": 700,
+                "out": 196
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 44,
+              "frames": 1166,
+              "duration_sec": 41.91846179962158,
+              "tokens": {
+                "in": 700,
+                "out": 196
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 40.4,
+          "tokens": {
+            "in": 3500,
+            "out": 848
+          },
+          "cost_usd": 0.02322
+        },
+        {
+          "id": "numeric_midpoint",
+          "prompt": "Get the positions of the mug and the bottle. Compute the\nmidpoint (average X, Y; Z plus 5 cm). Move the EE to that\nmidpoint and report whether you reached it. Don't grasp.\n",
+          "success_spec": {
+            "type": "ee_at_midpoint",
+            "objects": [
+              "mug",
+              "bottle"
+            ],
+            "tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 3.45202898979187,
+              "tokens": {
+                "in": 688,
+                "out": 170
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.002157407722178514
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 200,
+              "duration_sec": 5.799049377441406,
+              "tokens": {
+                "in": 688,
+                "out": 215
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0021620755044187254
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 3.371385097503662,
+              "tokens": {
+                "in": 688,
+                "out": 157
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.002157407722178514
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 200,
+              "duration_sec": 4.9194560050964355,
+              "tokens": {
+                "in": 688,
+                "out": 136
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.002154833070535574
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 3.0016188621520996,
+              "tokens": {
+                "in": 688,
+                "out": 140
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.002157407722178514
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.4,
+          "tokens": {
+            "in": 3440,
+            "out": 818
+          },
+          "cost_usd": 0.02259
+        },
+        {
+          "id": "draw_letter_L",
+          "prompt": "Trace the letter L in the air with the end-effector. The\ntool moves to ABSOLUTE Cartesian targets, so first read your\ncurrent pose, then: (1) move down 4 cm (lower Z by 0.04 m),\n(2) from there move forward 4 cm (raise X by 0.04 m), then\n(3) return home. Both corners are within the workspace.\nReport the end-effector pose at each corner.\n",
+          "success_spec": {
+            "type": "ee_waypoint_trace",
+            "waypoints": [
+              [
+                0.0,
+                0.0,
+                -0.04
+              ],
+              [
+                0.04,
+                0.0,
+                -0.04
+              ]
+            ],
+            "waypoint_tol_m": 0.025,
+            "home_tol_m": 0.04,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 300,
+              "duration_sec": 6.728073835372925,
+              "tokens": {
+                "in": 742,
+                "out": 108
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.12987515448689e-05
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 400,
+              "duration_sec": 9.222626686096191,
+              "tokens": {
+                "in": 742,
+                "out": 158
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.334059067085856e-05
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 300,
+              "duration_sec": 6.697389841079712,
+              "tokens": {
+                "in": 742,
+                "out": 88
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.346760821102768e-05
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 300,
+              "duration_sec": 8.066398859024048,
+              "tokens": {
+                "in": 742,
+                "out": 172
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.12987515448689e-05
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 300,
+              "duration_sec": 7.356452941894531,
+              "tokens": {
+                "in": 742,
+                "out": 108
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.12987515448689e-05
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.2,
+          "tokens": {
+            "in": 3710,
+            "out": 634
+          },
+          "cost_usd": 0.020640000000000002
+        }
+      ]
+    },
+    "contact_rich": {
+      "tasks": [
+        {
+          "id": "stack_lego_on_duck",
+          "prompt": "Pick up the lego brick. Move it directly above the duck.\nLower it to about 3 cm above the duck's Z position. Release\nthe gripper. Return to home. The lego should rest on/near\nthe duck after physics settles.\n",
+          "success_spec": {
+            "type": "object_above_object",
+            "top": "lego",
+            "bottom": "duck",
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 10,
+              "frames": 511,
+              "duration_sec": 10.971939086914062,
+              "tokens": {
+                "in": 695,
+                "out": 131
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=4.2cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.042005442252176756
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 11,
+              "frames": 711,
+              "duration_sec": 15.70248794555664,
+              "tokens": {
+                "in": 695,
+                "out": 216
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=9.1cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.09107501155204635
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 10,
+              "frames": 511,
+              "duration_sec": 10.711194038391113,
+              "tokens": {
+                "in": 695,
+                "out": 106
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=8.7cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.08708126844293043
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 11,
+              "frames": 711,
+              "duration_sec": 14.809748888015747,
+              "tokens": {
+                "in": 695,
+                "out": 261
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=9.1cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.09107501155204635
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 511,
+              "duration_sec": 11.88601803779602,
+              "tokens": {
+                "in": 695,
+                "out": 167
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=8.3cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.08328956952302267
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 10.2,
+          "tokens": {
+            "in": 3475,
+            "out": 881
+          },
+          "cost_usd": 0.02364
+        },
+        {
+          "id": "place_duck_inside_mug",
+          "prompt": "Pick up the duck. Move it directly above the mug. Lower to\nabout 4 cm above the mug, then release. Duck should end up\ninside or on top of the mug.\n",
+          "success_spec": {
+            "type": "object_close_to_object_xy",
+            "obj_a": "duck",
+            "obj_b": "mug",
+            "xy_tolerance_m": 0.04,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 9,
+              "frames": 311,
+              "duration_sec": 8.371504783630371,
+              "tokens": {
+                "in": 680,
+                "out": 164
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy dist 1.0 cm",
+              "physics_metrics": {
+                "xy_m": 0.009606126791701333
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 611,
+              "duration_sec": 12.800493955612183,
+              "tokens": {
+                "in": 680,
+                "out": 221
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy dist 3.2 cm",
+              "physics_metrics": {
+                "xy_m": 0.0323938247336353
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 1,
+              "frames": 100,
+              "duration_sec": 4.395738840103149,
+              "tokens": {
+                "in": 680,
+                "out": 179
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy dist 16.6 cm",
+              "physics_metrics": {
+                "xy_m": 0.1657300128767338
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 511,
+              "duration_sec": 11.223044872283936,
+              "tokens": {
+                "in": 680,
+                "out": 203
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy dist 0.8 cm",
+              "physics_metrics": {
+                "xy_m": 0.007671064129208969
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 9,
+              "frames": 511,
+              "duration_sec": 12.25300931930542,
+              "tokens": {
+                "in": 680,
+                "out": 187
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy dist 0.8 cm",
+              "physics_metrics": {
+                "xy_m": 0.007671064129208969
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.8,
+          "agreement_rate": 0.8,
+          "mean_tool_calls": 7.8,
+          "tokens": {
+            "in": 3400,
+            "out": 954
+          },
+          "cost_usd": 0.02451
+        },
+        {
+          "id": "collision_avoid_bottle",
+          "prompt": "Move the end-effector to world position [0.20, 0.0, 0.20].\nDO NOT knock over the bottle. Plan a path that stays clear.\nDo NOT grasp anything.\n",
+          "success_spec": {
+            "type": "object_did_not_move",
+            "object": "bottle",
+            "max_displacement_m": 0.02,
+            "ee_target": [
+              0.2,
+              0.0,
+              0.2
+            ],
+            "ee_tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 4.560094833374023,
+              "tokens": {
+                "in": 687,
+                "out": 40
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.353122934383735e-12,
+                "ee_err_m": 0.0011801478229877523
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 5.031239032745361,
+              "tokens": {
+                "in": 687,
+                "out": 40
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.353122934383735e-12,
+                "ee_err_m": 0.0011801478229877523
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 4.7333080768585205,
+              "tokens": {
+                "in": 687,
+                "out": 40
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.353122934383735e-12,
+                "ee_err_m": 0.0011801478229877523
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 4.721704959869385,
+              "tokens": {
+                "in": 687,
+                "out": 40
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.353122934383735e-12,
+                "ee_err_m": 0.0011801478229877523
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 200,
+              "duration_sec": 5.271705150604248,
+              "tokens": {
+                "in": 687,
+                "out": 193
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.353122934383735e-12,
+                "ee_err_m": 0.0011801478229877523
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.2,
+          "tokens": {
+            "in": 3435,
+            "out": 353
+          },
+          "cost_usd": 0.0156
+        },
+        {
+          "id": "swap_banana_bottle",
+          "prompt": "Swap positions of banana and bottle. (1) Record both positions.\n(2) Pick banana, park at [0.10, 0.20, 0.10], release.\n(3) Pick bottle, move to banana's original XY, release.\n(4) Pick banana from park, move to bottle's original XY,\nrelease. (5) Return home.\n",
+          "success_spec": {
+            "type": "objects_swapped",
+            "obj_a": "banana",
+            "obj_b": "bottle",
+            "xy_tolerance_m": 0.08,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 875,
+              "duration_sec": 19.29288387298584,
+              "tokens": {
+                "in": 727,
+                "out": 405
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 20.8cm b_err 0.2cm",
+              "physics_metrics": {
+                "a_err_m": 0.20799349046297738,
+                "b_err_m": 0.002371852508672231
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 928,
+              "duration_sec": 21.7152738571167,
+              "tokens": {
+                "in": 727,
+                "out": 412
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 21.2cm b_err 1.2cm",
+              "physics_metrics": {
+                "a_err_m": 0.2116850492126347,
+                "b_err_m": 0.012278512547170686
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 24,
+              "frames": 1633,
+              "duration_sec": 34.35983109474182,
+              "tokens": {
+                "in": 727,
+                "out": 499
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 6.3cm b_err 0.4cm",
+              "physics_metrics": {
+                "a_err_m": 0.06304342137580468,
+                "b_err_m": 0.003623781300595538
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 18,
+              "frames": 1028,
+              "duration_sec": 410.560111284256,
+              "tokens": {
+                "in": 727,
+                "out": 522
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 21.9cm b_err 0.1cm",
+              "physics_metrics": {
+                "a_err_m": 0.2194001772021394,
+                "b_err_m": 0.0007877738814070632
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 16,
+              "frames": 828,
+              "duration_sec": 14.456682920455933,
+              "tokens": {
+                "in": 727,
+                "out": 269
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 22.3cm b_err 0.1cm",
+              "physics_metrics": {
+                "a_err_m": 0.22264463795114536,
+                "b_err_m": 0.0007269251064655155
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.2,
+          "agreement_rate": 0.2,
+          "mean_tool_calls": 18.4,
+          "tokens": {
+            "in": 3635,
+            "out": 2107
+          },
+          "cost_usd": 0.04251
+        },
+        {
+          "id": "stable_place_screwdriver",
+          "prompt": "Pick up the screwdriver. Place it at the target XY (0.15, 0.15).\nLower to 5 cm above the table, release, retract. Return home.\nScrewdriver must end up resting stably near (0.15, 0.15).\n",
+          "success_spec": {
+            "type": "object_placed_near_target",
+            "object": "screwdriver",
+            "target_xy": [
+              0.15,
+              0.15
+            ],
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 811,
+              "duration_sec": 88.92906999588013,
+              "tokens": {
+                "in": 703,
+                "out": 259
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy err to target 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0020015092697789503
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 711,
+              "duration_sec": 13.44059705734253,
+              "tokens": {
+                "in": 703,
+                "out": 264
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy err to target 0.3 cm",
+              "physics_metrics": {
+                "err_m": 0.0030876602997087885
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 0,
+              "frames": 0,
+              "duration_sec": 2.445488214492798,
+              "tokens": {
+                "in": 703,
+                "out": 244
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "xy err to target 29.2 cm",
+              "physics_metrics": {
+                "err_m": 0.2915373609511348
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 711,
+              "duration_sec": 12.966547966003418,
+              "tokens": {
+                "in": 703,
+                "out": 276
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy err to target 1.8 cm",
+              "physics_metrics": {
+                "err_m": 0.018213084246507177
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 611,
+              "duration_sec": 12.203135967254639,
+              "tokens": {
+                "in": 703,
+                "out": 250
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "xy err to target 10.7 cm",
+              "physics_metrics": {
+                "err_m": 0.10650611829125053
+              }
+            }
+          ],
+          "llm_pass_rate": 0.8,
+          "physics_pass_rate": 0.6,
+          "agreement_rate": 0.8,
+          "mean_tool_calls": 8.0,
+          "tokens": {
+            "in": 3515,
+            "out": 1293
+          },
+          "cost_usd": 0.02994
+        }
+      ]
+    },
+    "contact_rich_l4": {
+      "tasks": [
+        {
+          "id": "tower_3_objects",
+          "prompt": "Build a 3-object tower in the order (bottom-to-top):\nmug, lego, duck. Steps: (1) place lego on top of mug\n(use the mug's XY, just above mug's height), (2) place\nduck on top of the lego (same XY, slightly higher).\nUse the agent-written gripper_close for each grasp.\nReturn home after building.\n",
+          "success_spec": {
+            "type": "objects_in_tower",
+            "stack": [
+              "mug",
+              "lego",
+              "duck"
+            ],
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 20,
+              "frames": 833,
+              "duration_sec": 14.776747941970825,
+              "tokens": {
+                "in": 733,
+                "out": 302
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.7cm dz=4.0cm; duck>lego: dxy=14.8cm dz=-1.9cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.22756426819010991,
+                    0.051635194441277656,
+                    0.019963065421215412
+                  ],
+                  "lego": [
+                    0.22744463447295854,
+                    0.0585828272802699,
+                    0.060458710010144155
+                  ],
+                  "duck": [
+                    0.32286040669665256,
+                    0.1721248846917283,
+                    0.04170161883124839
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 822,
+              "duration_sec": 14.969675064086914,
+              "tokens": {
+                "in": 733,
+                "out": 409
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=2.7cm dz=0.6cm; duck>lego: dxy=13.4cm dz=1.3cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.21582178333893592,
+                    0.0582538817664162,
+                    0.019937044287802224
+                  ],
+                  "lego": [
+                    0.23486292184782742,
+                    0.03933760448552381,
+                    0.025964776487176724
+                  ],
+                  "duck": [
+                    0.21722422576631045,
+                    0.1725867233493814,
+                    0.03906586526503595
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 200,
+              "duration_sec": 6.154899835586548,
+              "tokens": {
+                "in": 733,
+                "out": 326
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_tower_3_objects_t2>\", line 18, in <module>\n  File \"<cap_tower_3_objects_t2>\", line 7, in gripper_close\nTypeError: gripper_close() missing 1 required positional argument: 'xyz'\n",
+              "physics_detail": "lego>mug: dxy=13.1cm dz=0.6cm; duck>lego: dxy=9.4cm dz=0.2cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.22006533299063288,
+                    0.04992358038086185,
+                    0.01991970324367529
+                  ],
+                  "lego": [
+                    0.24000000000958852,
+                    -0.0799999999969723,
+                    0.025964567171147687
+                  ],
+                  "duck": [
+                    0.14847709985423846,
+                    -0.09947405386173018,
+                    0.027693828384311215
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 20,
+              "frames": 833,
+              "duration_sec": 15.224278211593628,
+              "tokens": {
+                "in": 733,
+                "out": 376
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.9cm dz=4.0cm; duck>lego: dxy=11.4cm dz=-1.5cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.2309071195717314,
+                    0.05231490940646146,
+                    0.01995094404073838
+                  ],
+                  "lego": [
+                    0.22589436726013198,
+                    0.05970426392455636,
+                    0.05971605520761089
+                  ],
+                  "duck": [
+                    0.21778508153630427,
+                    0.17365500521177857,
+                    0.04438223511480833
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 20,
+              "frames": 533,
+              "duration_sec": 10.778408288955688,
+              "tokens": {
+                "in": 733,
+                "out": 364
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=2.3cm dz=0.6cm; duck>lego: dxy=3.0cm dz=0.2cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.20435590222940547,
+                    0.09988876853545098,
+                    0.019863390018086183
+                  ],
+                  "lego": [
+                    0.22197923852450088,
+                    0.08508775337402401,
+                    0.025966301393728703
+                  ],
+                  "duck": [
+                    0.23147694155370455,
+                    0.05613595814675748,
+                    0.02781648557632724
+                  ]
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 0.8,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.2,
+          "mean_tool_calls": 16.6,
+          "tokens": {
+            "in": 3665,
+            "out": 1777
+          },
+          "cost_usd": 0.03765
+        },
+        {
+          "id": "spatial_query_pick",
+          "prompt": "Observe the positions of all 6 graspable objects\n(banana, mug, bottle, screwdriver, duck, lego). Pick up\nthe one whose Y-coordinate is the LARGEST (most forward\nin the world frame). Lift it 10 cm. Report which object\nyou picked and its Y coordinate.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug",
+              "bottle",
+              "screwdriver",
+              "duck",
+              "lego"
+            ],
+            "require_correct_choice_y_argmax": true,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 20,
+              "frames": 408,
+              "duration_sec": 8.961655139923096,
+              "tokens": {
+                "in": 707,
+                "out": 448
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lifted bottle but correct y-argmax was banana",
+              "physics_metrics": {
+                "object": "bottle",
+                "expected": "banana"
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 13,
+              "frames": 408,
+              "duration_sec": 8.575711011886597,
+              "tokens": {
+                "in": 707,
+                "out": 361
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lifted bottle but correct y-argmax was banana",
+              "physics_metrics": {
+                "object": "bottle",
+                "expected": "banana"
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 14,
+              "frames": 408,
+              "duration_sec": 8.20604681968689,
+              "tokens": {
+                "in": 707,
+                "out": 247
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 8.5 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.08460567380364371
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 14,
+              "frames": 408,
+              "duration_sec": 8.2643461227417,
+              "tokens": {
+                "in": 707,
+                "out": 250
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 8.5 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.08460567380364371
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 14,
+              "frames": 408,
+              "duration_sec": 9.03812289237976,
+              "tokens": {
+                "in": 707,
+                "out": 355
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lifted bottle but correct y-argmax was banana",
+              "physics_metrics": {
+                "object": "bottle",
+                "expected": "banana"
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.4,
+          "agreement_rate": 0.4,
+          "mean_tool_calls": 15.0,
+          "tokens": {
+            "in": 3535,
+            "out": 1661
+          },
+          "cost_usd": 0.035519999999999996
+        },
+        {
+          "id": "pair_swap_chain",
+          "prompt": "Perform two object swaps in sequence:\n(1) swap banana and mug \u2014 banana goes to mug's XY,\n    mug goes to banana's original XY.\n(2) then swap bottle and screwdriver \u2014 bottle goes to\n    screwdriver's XY, screwdriver goes to bottle's\n    original XY.\nUse the parking position [0.0, 0.20, 0.10] for the\ntemporary hold. Return home at the end.\n",
+          "success_spec": {
+            "type": "two_swaps_completed",
+            "pair_a": [
+              "banana",
+              "mug"
+            ],
+            "pair_b": [
+              "bottle",
+              "screwdriver"
+            ],
+            "xy_tolerance_m": 0.08,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 19,
+              "frames": 925,
+              "duration_sec": 16.21031880378723,
+              "tokens": {
+                "in": 742,
+                "out": 421
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_pair_swap_chain_t0>\", line 27, in <module>\n  File \"<cap_pair_swap_chain_t0>\", line 14, in swap_objects\nauto_adapter.skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: |err|=0.0047 m > tol=0.0010 m\n",
+              "physics_detail": "banana\u2194mug: 1.7,13.2cm; bottle\u2194screwdriver: 42.5,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  1.6955794941915552,
+                  13.238568659913438,
+                  42.52084248499096,
+                  22.004997512679147
+                ]
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 100,
+              "duration_sec": 3.782443046569824,
+              "tokens": {
+                "in": 742,
+                "out": 315
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_pair_swap_chain_t1>\", line 26, in <module>\n  File \"<cap_pair_swap_chain_t1>\", line 9, in swap_objects\nValueError: move_to expects 3-vector, got (4,)\n",
+              "physics_detail": "banana\u2194mug: 13.0,13.0cm; bottle\u2194screwdriver: 22.0,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  13.01580290796876,
+                  13.021647920095237,
+                  22.000532324162496,
+                  22.00123357557722
+                ]
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 100,
+              "duration_sec": 3.6373260021209717,
+              "tokens": {
+                "in": 742,
+                "out": 329
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_pair_swap_chain_t2>\", line 27, in <module>\n  File \"<cap_pair_swap_chain_t2>\", line 9, in swap_objects\nValueError: move_to expects 3-vector, got (4,)\n",
+              "physics_detail": "banana\u2194mug: 13.0,13.0cm; bottle\u2194screwdriver: 22.0,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  13.01580290796876,
+                  13.021647920095237,
+                  22.000532324162496,
+                  22.00123357557722
+                ]
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 100,
+              "duration_sec": 4.150192022323608,
+              "tokens": {
+                "in": 742,
+                "out": 315
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_pair_swap_chain_t3>\", line 26, in <module>\n  File \"<cap_pair_swap_chain_t3>\", line 9, in swap_objects\nValueError: move_to expects 3-vector, got (4,)\n",
+              "physics_detail": "banana\u2194mug: 13.0,13.0cm; bottle\u2194screwdriver: 22.0,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  13.01580290796876,
+                  13.021647920095237,
+                  22.000532324162496,
+                  22.00123357557722
+                ]
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 36,
+              "frames": 1266,
+              "duration_sec": 22.624191999435425,
+              "tokens": {
+                "in": 742,
+                "out": 527
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana\u2194mug: 31.2,0.4cm; bottle\u2194screwdriver: 10.6,2.8cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  31.234756311328837,
+                  0.4095923384569097,
+                  10.572663358483265,
+                  2.8349751936643584
+                ]
+              }
+            }
+          ],
+          "llm_pass_rate": 0.2,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.8,
+          "mean_tool_calls": 13.4,
+          "tokens": {
+            "in": 3710,
+            "out": 1907
+          },
+          "cost_usd": 0.039735000000000006
+        },
+        {
+          "id": "clear_then_reach",
+          "prompt": "The bottle is in the way. (1) Pick up the bottle and\nmove it to the safe park at [-0.10, 0.20, 0.10],\nrelease. (2) Move the EE to where the bottle ORIGINALLY\nwas (its starting XY, Z + 5 cm). Do not knock over any\nother object. Return home.\n",
+          "success_spec": {
+            "type": "cleared_and_visited",
+            "clear_object": "bottle",
+            "stay_objects": [
+              "banana",
+              "mug",
+              "screwdriver",
+              "duck",
+              "lego"
+            ],
+            "max_displacement_m": 0.04,
+            "ee_visited_original_xyz_of": "bottle",
+            "ee_tolerance_m": 0.06,
+            "settle_steps": 300,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 7,
+              "frames": 308,
+              "duration_sec": 6.602236986160278,
+              "tokens": {
+                "in": 724,
+                "out": 265
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t0>\", line 22, in <module>\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 217, in _wrapped\n    result = fn(*args, **kwargs)\nauto_adapter.skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m\n",
+              "physics_detail": "max stay-disp 0.1cm (<4); EE-err 3.3cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0009007971923528748,
+                "ee_err_m": 0.03268559404212578
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 8,
+              "frames": 408,
+              "duration_sec": 8.256521940231323,
+              "tokens": {
+                "in": 724,
+                "out": 212
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t1>\", line 10, in <module>\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 217, in _wrapped\n    result = fn(*args, **kwargs)\nauto_adapter.skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m\n",
+              "physics_detail": "max stay-disp 0.0cm (<4); EE-err 23.5cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.00043673421940038874,
+                "ee_err_m": 0.23488031206298546
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 7,
+              "frames": 308,
+              "duration_sec": 6.215610027313232,
+              "tokens": {
+                "in": 724,
+                "out": 250
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 446, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t2>\", line 15, in <module>\n  File \"<cap_clear_then_reach_t2>\", line 10, in task\nauto_adapter.skeletons.arm_serial_dls.IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m\n",
+              "physics_detail": "max stay-disp 0.1cm (<4); EE-err 0.4cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0009007971923542529,
+                "ee_err_m": 0.003536772875586314
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 0,
+              "frames": 0,
+              "duration_sec": 1.8279297351837158,
+              "tokens": {
+                "in": 724,
+                "out": 270
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "max stay-disp 0.0cm (<4); EE-err 23.5cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0004965925622861729,
+                "ee_err_m": 0.23527443884910193
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 0,
+              "frames": 0,
+              "duration_sec": 1.6638929843902588,
+              "tokens": {
+                "in": 724,
+                "out": 212
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "max stay-disp 0.0cm (<4); EE-err 23.5cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0004965925622861729,
+                "ee_err_m": 0.23527443884910193
+              }
+            }
+          ],
+          "llm_pass_rate": 0.0,
+          "physics_pass_rate": 0.4,
+          "agreement_rate": 0.6,
+          "mean_tool_calls": 4.4,
+          "tokens": {
+            "in": 3620,
+            "out": 1209
+          },
+          "cost_usd": 0.028995
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 13,
+    "n_trials_total": 65,
+    "llm_pass_rate": 0.8307692307692308,
+    "physics_pass_rate": 0.5692307692307692,
+    "agreement_rate": 0.676923076923077,
+    "total_tokens": {
+      "in": 46200,
+      "out": 15333
+    },
+    "total_cost_usd": 0.368595,
+    "wall_clock_sec": 1379.4504969120026
+  }
+}

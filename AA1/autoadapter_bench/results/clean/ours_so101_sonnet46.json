@@ -1,0 +1,2007 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "so101",
+    "robot_class": "arm",
+    "mjcf": "assets/mjcf/so101_mujoco.xml",
+    "vendor": "LeRobot",
+    "dof": 5,
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-04T10:20:00.098713",
+    "suites_requested": [
+      "hard",
+      "contact_rich",
+      "contact_rich_l4"
+    ],
+    "completed_at": "2026-06-04T13:45:00.664780",
+    "wall_clock_sec": 2210.554189682007
+  },
+  "suites": {
+    "hard": {
+      "tasks": [
+        {
+          "id": "conditional_pick",
+          "prompt": "Look at the current positions of the banana and the mug.\nIf the banana's X-coordinate is LESS than the mug's\nX-coordinate (banana more to the left), pick the banana and\nlift it 10 cm. Otherwise pick the mug and lift it 10 cm.\nReport which one you picked and why.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug"
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 423,
+              "duration_sec": 38.55941891670227,
+              "tokens": {
+                "in": 25561,
+                "out": 952,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Summary\n\n**I picked the \ud83c\udf4c banana** and lifted it 10 cm.\n\n**Why?** The banana's X-coordinate (**0.1103 m**) was less than the mug's X-coordinate (**0.2200 m**), meaning the banana was positioned more to the left. Per the task condition, this triggered picking the banana. The grasp was conf",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10111047661446786
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 423,
+              "duration_sec": 38.44814491271973,
+              "tokens": {
+                "in": 25282,
+                "out": 963,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!**\n\n**I picked the \ud83c\udf4c banana** \u2014 here's why:\n\n| Object | X-coordinate |\n|--------|-------------|\n| Banana | 0.1103 m |\n| Mug | 0.2200 m |\n\nThe banana's X-coordinate (**0.1103**) is **less than** the mug's X-coordinate (**0.2200**), meaning the banana is further to the left. Per the ",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10111047661446786
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 423,
+              "duration_sec": 38.85184192657471,
+              "tokens": {
+                "in": 25558,
+                "out": 954,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Summary\n\n**I picked the \ud83c\udf4c banana** and lifted it 10 cm.\n\n**Why?** The banana's X-coordinate (**0.1103 m**) was less than the mug's X-coordinate (**0.2200 m**), meaning the banana was positioned more to the left in the world frame. Per the task condition, this triggered picking the banana.",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10111047661446786
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 423,
+              "duration_sec": 39.95819973945618,
+              "tokens": {
+                "in": 25558,
+                "out": 949,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Summary\n\n**I picked the \ud83c\udf4c banana** and lifted it 10 cm.\n\n**Why?** The banana's X-coordinate (**0.1103 m**) was less than the mug's X-coordinate (**0.2200 m**), meaning the banana was positioned more to the left. Per the task condition, this triggered picking the banana. The grasp was conf",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10111047661446786
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 423,
+              "duration_sec": 38.30761909484863,
+              "tokens": {
+                "in": 25567,
+                "out": 982,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Summary\n\n**I picked the \ud83c\udf4c banana** and lifted it 10 cm.\n\n**Why?** The banana's X-coordinate (**0.1103 m**) was less than the mug's X-coordinate (**0.2200 m**), meaning the banana was positioned more to the left in the world frame. Per the task condition, this triggered picking the banana.",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10111047661446786
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 11.0,
+          "tokens": {
+            "in": 127526,
+            "out": 4800
+          },
+          "cost_usd": 0.45457800000000004
+        },
+        {
+          "id": "visit_all_objects",
+          "prompt": "Visit each of the 6 graspable objects in turn \u2014 banana, mug,\nbottle, screwdriver, duck, lego. For each, move the EE 5 cm\nabove the object, hover briefly, and report whether the\ngripper is holding anything. Return home at the end.\n",
+          "success_spec": {
+            "type": "ee_visited_n_positions",
+            "n_required": 6,
+            "tolerance_m": 0.06,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 65.06494188308716,
+              "tokens": {
+                "in": 46451,
+                "out": 1838,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\uddc2\ufe0f Hover Tour \u2014 Summary Report\n\n| # | Object | Hover Position (x, y, z) | Holding? |\n|---|--------|--------------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.110, 0.120, **0.077**) | \u274c No |\n| 2 | \u2615 Mug | (0.220, 0.050, **0.070**) | \u274c No |\n| 3 | \ud83c\udf76 Bottle | (0.300, 0.120, **0.070**) | \u274c No |\n|",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 62.49655508995056,
+              "tokens": {
+                "in": 46451,
+                "out": 1838,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\uddc2\ufe0f Hover Tour \u2014 Summary Report\n\n| # | Object | Hover Position (x, y, z) | Holding? |\n|---|--------|--------------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.110, 0.120, **0.077**) | \u274c No |\n| 2 | \u2615 Mug | (0.220, 0.050, **0.070**) | \u274c No |\n| 3 | \ud83c\udf76 Bottle | (0.300, 0.120, **0.070**) | \u274c No |\n|",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 63.20307993888855,
+              "tokens": {
+                "in": 46059,
+                "out": 1808,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\uddc2\ufe0f Hover Tour \u2014 Summary Report\n\n| # | Object | World Position (x, y, z) | Hover Height (z) | Holding? |\n|---|--------|--------------------------|------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.110, 0.120, 0.027) | z = 0.077 | \u274c No |\n| 2 | \u2615 Mug | (0.220, 0.050, 0.020) | z = 0.070 | \u274c No |",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 64.40355610847473,
+              "tokens": {
+                "in": 46451,
+                "out": 1832,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\uddc2\ufe0f Hover Tour \u2014 Summary Report\n\n| # | Object | Hover Position (x, y, z) | Holding? |\n|---|--------|--------------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.110, 0.120, **0.077**) | \u274c No |\n| 2 | \u2615 Mug | (0.220, 0.050, **0.070**) | \u274c No |\n| 3 | \ud83c\udf76 Bottle | (0.300, 0.120, **0.070**) | \u274c No |\n|",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 65.19430708885193,
+              "tokens": {
+                "in": 46451,
+                "out": 1829,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\uddc2\ufe0f Hover Tour \u2014 Summary Report\n\n| # | Object | Hover Position (x, y, z) | Holding? |\n|---|--------|--------------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.110, 0.120, **0.077**) | \u274c No |\n| 2 | \u2615 Mug | (0.220, 0.050, **0.070**) | \u274c No |\n| 3 | \ud83c\udf76 Bottle | (0.300, 0.120, **0.070**) | \u274c No |\n|",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.11,
+                    0.12
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 20.0,
+          "tokens": {
+            "in": 231863,
+            "out": 9145
+          },
+          "cost_usd": 0.8327640000000001
+        },
+        {
+          "id": "numeric_midpoint",
+          "prompt": "Get the positions of the mug and the bottle. Compute the\nmidpoint (average X, Y; Z plus 5 cm). Move the EE to that\nmidpoint and report whether you reached it. Don't grasp.\n",
+          "success_spec": {
+            "type": "ee_at_midpoint",
+            "objects": [
+              "mug",
+              "bottle"
+            ],
+            "tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 21.120827674865723,
+              "tokens": {
+                "in": 10300,
+                "out": 704,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Successfully reached the midpoint!** Here's the full summary:\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0200 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0200 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.0700 |\n| **Actual EE pose** | 0.2590 | 0.0846 | 0.0681 |\n\nThe end-effector",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.00212948951764084
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 18.724623680114746,
+              "tokens": {
+                "in": 10300,
+                "out": 713,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Success! Here's the full summary:**\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0200 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0200 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.0700 |\n| **Actual EE position** | 0.2590 | 0.0846 | 0.0681 |\n\nThe end-effector reached the computed ",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.00212948951764084
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 18.335354804992676,
+              "tokens": {
+                "in": 10300,
+                "out": 704,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Successfully reached the midpoint!** Here's the full summary:\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0200 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0200 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.0700 |\n| **Actual EE pose** | 0.2590 | 0.0846 | 0.0681 |\n\nThe end-effector",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.00212948951764084
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 23.22850489616394,
+              "tokens": {
+                "in": 10300,
+                "out": 713,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Success! Here's the full summary:**\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0200 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0200 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.0700 |\n| **Actual EE position** | 0.2590 | 0.0846 | 0.0681 |\n\nThe end-effector reached the computed ",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.00212948951764084
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 21.504990816116333,
+              "tokens": {
+                "in": 10300,
+                "out": 704,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Successfully reached the midpoint!** Here's the full summary:\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0200 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0200 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.0700 |\n| **Actual EE pose** | 0.2590 | 0.0846 | 0.0681 |\n\nThe end-effector",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.00212948951764084
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 5.0,
+          "tokens": {
+            "in": 51500,
+            "out": 3538
+          },
+          "cost_usd": 0.20757
+        },
+        {
+          "id": "draw_letter_L",
+          "prompt": "Trace the letter L in the air with the end-effector. The\ntool moves to ABSOLUTE Cartesian targets, so first read your\ncurrent pose, then: (1) move down 4 cm (lower Z by 0.04 m),\n(2) from there move forward 4 cm (raise X by 0.04 m), then\n(3) return home. Both corners are within the workspace.\nReport the end-effector pose at each corner.\n",
+          "success_spec": {
+            "type": "ee_waypoint_trace",
+            "waypoints": [
+              [
+                0.0,
+                0.0,
+                -0.04
+              ],
+              [
+                0.04,
+                0.0,
+                -0.04
+              ]
+            ],
+            "waypoint_tol_m": 0.025,
+            "home_tol_m": 0.04,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 307,
+              "duration_sec": 22.785036087036133,
+              "tokens": {
+                "in": 16052,
+                "out": 884,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Letter \"L\" traced in the air!\n\nHere's a summary of the end-effector pose at each key point:\n\n| Point | Description | X (m) | Y (m) | Z (m) |\n|-------|-------------|--------|--------|--------|\n| **Start** | Top of the L (initial pose) | 0.3920 | \u22120.0002 | 0.2501 |\n| **Corner 1** | Bottom of",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 307,
+              "duration_sec": 25.513386964797974,
+              "tokens": {
+                "in": 16048,
+                "out": 921,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Letter \"L\" Traced in the Air!\n\nHere's a full report of the end-effector pose at each key point:\n\n| Point | Description | X (m) | Y (m) | Z (m) |\n|-------|-------------|--------|--------|--------|\n| **Start** | Top of the L (initial pose) | 0.3920 | \u22120.0002 | 0.2501 |\n| **Corner 1** | Botto",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.114875209817869e-05
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 307,
+              "duration_sec": 23.111912965774536,
+              "tokens": {
+                "in": 16052,
+                "out": 853,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Letter \"L\" traced in the air!\n\nHere's a summary of the end-effector pose at each key point:\n\n| Point | Description | X (m) | Y (m) | Z (m) |\n|-------|-------------|--------|--------|--------|\n| **Start** | Top of the L (initial pose) | 0.3920 | \u22120.0002 | 0.2501 |\n| **Corner 1** | Bottom of",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 307,
+              "duration_sec": 23.469674825668335,
+              "tokens": {
+                "in": 16052,
+                "out": 854,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Letter \"L\" traced in the air!\n\nHere's a summary of the end-effector pose at each key point:\n\n| Point | Description | X (m) | Y (m) | Z (m) |\n|-------|-------------|--------|--------|--------|\n| **Start** | Top of the L (initial pose) | 0.3920 | \u22120.0002 | 0.2501 |\n| **Corner 1** | Bottom of",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 307,
+              "duration_sec": 22.55038809776306,
+              "tokens": {
+                "in": 16052,
+                "out": 853,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Letter \"L\" traced in the air!\n\nHere's a summary of the end-effector pose at each key point:\n\n| Point | Description | X (m) | Y (m) | Z (m) |\n|-------|-------------|--------|--------|--------|\n| **Start** | Top of the L (initial pose) | 0.3920 | \u22120.0002 | 0.2501 |\n| **Corner 1** | Bottom of",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 80256,
+            "out": 4365
+          },
+          "cost_usd": 0.30624300000000004
+        }
+      ]
+    },
+    "contact_rich": {
+      "tasks": [
+        {
+          "id": "stack_lego_on_duck",
+          "prompt": "Pick up the lego brick. Move it directly above the duck.\nLower it to about 3 cm above the duck's Z position. Release\nthe gripper. Return to home. The lego should rest on/near\nthe duck after physics settles.\n",
+          "success_spec": {
+            "type": "object_above_object",
+            "top": "lego",
+            "bottom": "duck",
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 730,
+              "duration_sec": 67.0875141620636,
+              "tokens": {
+                "in": 41976,
+                "out": 1515,
+                "cache_read": 0
+              },
+              "summary": "All done! Here's a summary of what was accomplished:\n\n- \ud83e\uddf1 **Picked up** the lego brick from `(0.240, -0.080, 0.026)`\n- \ud83e\udd86 **Transported** it directly above the duck at `(0.149, -0.099)`\n- \u2b07\ufe0f **Lowered** it to `z = 0.058` \u2014 exactly **3 cm above** the duck's Z position (`0.028`)\n- \ud83d\udd90\ufe0f **Released** the g",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. lego.z>duck.z: False; xy=10.5cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.10485338890643078,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 20,
+              "frames": 733,
+              "duration_sec": 68.71084403991699,
+              "tokens": {
+                "in": 49731,
+                "out": 1601,
+                "cache_read": 0
+              },
+              "summary": "Task complete! \u2705 The lego brick was successfully picked up from `(0.240, -0.080, 0.026)`, transported directly above the duck, lowered to ~3 cm above the duck's Z position (`Z \u2248 0.058`), and released \u2014 after physics settled, the lego came to rest at `(0.118, -0.104, 0.030)`, right on the surface nea",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. lego.z>duck.z: False; xy=3.1cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.031127373807004435,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 730,
+              "duration_sec": 69.18273901939392,
+              "tokens": {
+                "in": 41976,
+                "out": 1508,
+                "cache_read": 0
+              },
+              "summary": "All done! Here's a summary of what was accomplished:\n\n- \ud83e\uddf1 **Picked up** the lego brick from `(0.240, -0.080, 0.026)`\n- \ud83e\udd86 **Moved it directly above** the duck at `(0.149, -0.099)`\n- \u2b07\ufe0f **Lowered it to ~3 cm above** the duck's Z position (`z \u2248 0.058 m`)\n- \ud83d\udd90\ufe0f **Released the gripper** \u2014 the lego dropped",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. lego.z>duck.z: False; xy=10.5cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.10485338890643078,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 730,
+              "duration_sec": 65.25261902809143,
+              "tokens": {
+                "in": 42004,
+                "out": 1509,
+                "cache_read": 0
+              },
+              "summary": "All done! Here's a summary of what was accomplished:\n\n- \ud83d\udfe1 **Lego** was found at `[0.240, -0.080, 0.026]` and **Duck** at `[0.149, -0.099, 0.028]`\n- The arm approached, descended, and successfully grasped the lego brick\n- The lego was lifted to a safe height (0.20 m), then translated directly above t",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. lego.z>duck.z: False; xy=10.5cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.10485338890643078,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 730,
+              "duration_sec": 67.99616003036499,
+              "tokens": {
+                "in": 41976,
+                "out": 1506,
+                "cache_read": 0
+              },
+              "summary": "All done! Here's a summary of what was accomplished:\n\n- \ud83e\uddf1 **Lego** was found at `(0.240, -0.080, 0.026)` and **duck** at `(0.149, -0.099, 0.028)`\n- The arm approached, descended, and successfully grasped the lego brick\n- The lego was lifted to a safe height (`z = 0.20 m`) and transported horizontall",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. lego.z>duck.z: False; xy=10.5cm",
+              "physics_metrics": {
+                "z_above": "False",
+                "xy_dist_m": 0.10485338890643078,
+                "replay_diverged": true
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 17.6,
+          "tokens": {
+            "in": 217663,
+            "out": 7639
+          },
+          "cost_usd": 0.7675740000000001
+        },
+        {
+          "id": "place_duck_inside_mug",
+          "prompt": "Pick up the duck. Move it directly above the mug. Lower to\nabout 4 cm above the mug, then release. Duck should end up\ninside or on top of the mug.\n",
+          "success_spec": {
+            "type": "object_close_to_object_xy",
+            "obj_a": "duck",
+            "obj_b": "mug",
+            "xy_tolerance_m": 0.04,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 14,
+              "frames": 629,
+              "duration_sec": 53.02240586280823,
+              "tokens": {
+                "in": 33072,
+                "out": 1308,
+                "cache_read": 0
+              },
+              "summary": "The duck is now at [0.224, 0.051, 0.094] \u2014 nearly the same X/Y as the mug [0.220, 0.050] and sitting at z\u22480.094, which places it right on top of / inside the mug. \ud83c\udf89\n\n**Summary:** I picked up the duck from [0.149, -0.099], lifted it, transported it directly above the mug at [0.220, 0.050], lowered it",
+              "error": null,
+              "physics_detail": "xy dist 0.5 cm",
+              "physics_metrics": {
+                "xy_m": 0.004507730311405209
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 14,
+              "frames": 629,
+              "duration_sec": 53.66048216819763,
+              "tokens": {
+                "in": 33229,
+                "out": 1287,
+                "cache_read": 0
+              },
+              "summary": "The duck is now at `[0.224, 0.051, 0.094]` \u2014 nearly the same X/Y as the mug `[0.220, 0.050]`, and sitting at z\u22480.094, which places it right on top of / inside the mug. \ud83c\udf89\n\n**Summary:** I successfully picked up the duck, transported it directly above the mug, lowered it to ~4 cm above the mug's rim, a",
+              "error": null,
+              "physics_detail": "xy dist 0.5 cm",
+              "physics_metrics": {
+                "xy_m": 0.004507730311405209
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 15,
+              "frames": 830,
+              "duration_sec": 65.16278100013733,
+              "tokens": {
+                "in": 36337,
+                "out": 1320,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!** I picked up the duck from [0.149, -0.099, 0.028], lifted it to a safe travel height, moved it directly above the mug at [0.220, 0.050], lowered it to ~4 cm above the mug's rim (z \u2248 0.13 m), and released it \u2014 the duck should now be sitting inside or on top of the mug.",
+              "error": null,
+              "physics_detail": "xy dist 10.8 cm",
+              "physics_metrics": {
+                "xy_m": 0.10757705950361723
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 630,
+              "duration_sec": 58.95893406867981,
+              "tokens": {
+                "in": 36137,
+                "out": 1326,
+                "cache_read": 0
+              },
+              "summary": "The duck's final position [0.228, 0.052, 0.055] is nearly identical in X/Y to the mug [0.220, 0.050], confirming it landed directly on/inside the mug. \ud83c\udf89\n\n**Summary:** I picked up the duck from [0.149, -0.099, 0.028], carried it to directly above the mug at [0.220, 0.050], lowered it to ~4 cm above t",
+              "error": null,
+              "physics_detail": "xy dist 0.9 cm",
+              "physics_metrics": {
+                "xy_m": 0.008526571116576632
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 630,
+              "duration_sec": 62.24225831031799,
+              "tokens": {
+                "in": 36137,
+                "out": 1326,
+                "cache_read": 0
+              },
+              "summary": "The duck's final position [0.228, 0.052, 0.055] is nearly identical in X/Y to the mug [0.220, 0.050], confirming it landed directly on/inside the mug. \ud83c\udf89\n\n**Summary:** I picked up the duck from [0.149, -0.099, 0.028], carried it to directly above the mug at [0.220, 0.050], lowered it to ~4 cm above t",
+              "error": null,
+              "physics_detail": "xy dist 0.9 cm",
+              "physics_metrics": {
+                "xy_m": 0.008526571116576632
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.8,
+          "agreement_rate": 0.8,
+          "mean_tool_calls": 14.6,
+          "tokens": {
+            "in": 174912,
+            "out": 6567
+          },
+          "cost_usd": 0.6232409999999999
+        },
+        {
+          "id": "collision_avoid_bottle",
+          "prompt": "Move the end-effector to world position [0.20, 0.0, 0.20].\nDO NOT knock over the bottle. Plan a path that stays clear.\nDo NOT grasp anything.\n",
+          "success_spec": {
+            "type": "object_did_not_move",
+            "object": "bottle",
+            "max_displacement_m": 0.02,
+            "ee_target": [
+              0.2,
+              0.0,
+              0.2
+            ],
+            "ee_tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 25.462037801742554,
+              "tokens": {
+                "in": 11232,
+                "out": 818,
+                "cache_read": 0
+              },
+              "summary": "The end-effector is now at **[0.200, -0.0001, 0.199]** \u2014 essentially exactly at the target [0.20, 0.0, 0.20]. The path routed via an intermediate waypoint at Y = \u22120.08, keeping the arm on the **opposite side** from the bottle (which sits at Y = +0.12), ensuring a safe clearance of ~20 cm from the bo",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.357618399368929e-12,
+                "ee_err_m": 0.0012334833614987344
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 27.273371934890747,
+              "tokens": {
+                "in": 11344,
+                "out": 891,
+                "cache_read": 0
+              },
+              "summary": "The end-effector is now at **[0.1998, -0.0005, 0.1987]** \u2014 essentially exactly at the target **[0.20, 0.0, 0.20]** \u2705\n\n**Summary:** I routed the arm safely via an intermediate waypoint at [0.25, \u22120.05, 0.25] to stay well clear of the bottle (located at [0.30, 0.12, 0.02]), then moved to the final tar",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.357618399368929e-12,
+                "ee_err_m": 0.0014657081161212335
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 29.369450092315674,
+              "tokens": {
+                "in": 11257,
+                "out": 819,
+                "cache_read": 0
+              },
+              "summary": "The end-effector is now at approximately **[0.200, -0.0001, 0.199]** \u2014 right on target. The path routed via an intermediate waypoint at [0.28, -0.05, 0.25], keeping the arm well clear of the bottle (which sits at [0.30, +0.12, 0.02]), with no contact or risk of tipping it over. No grasping was perfo",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.357618399368929e-12,
+                "ee_err_m": 0.001230268411662189
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 26.36788582801819,
+              "tokens": {
+                "in": 11185,
+                "out": 803,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!** The end-effector is now at approximately **[0.200, 0.000, 0.199]** \u2014 right on target. \n\nI routed the arm via a waypoint at [0.30, \u22120.08, 0.25], swinging it to the **negative-Y side** (away from the bottle at Y=+0.12), keeping a safe lateral clearance of ~20 cm from the bottle th",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.357618399368929e-12,
+                "ee_err_m": 0.0012638930182000616
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 27.606797218322754,
+              "tokens": {
+                "in": 11185,
+                "out": 799,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!** The end-effector is now at approximately **[0.200, 0.000, 0.199]** \u2014 right on target. \n\nI routed the arm via an intermediate waypoint at [0.30, \u22120.08, 0.25], swinging it to the **negative-Y side** (away from the bottle at Y=+0.12), ensuring a safe clearance of ~20 cm from the bo",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 5.357618399368929e-12,
+                "ee_err_m": 0.0012638930182000616
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 5.0,
+          "tokens": {
+            "in": 56203,
+            "out": 4130
+          },
+          "cost_usd": 0.23055900000000001
+        },
+        {
+          "id": "swap_banana_bottle",
+          "prompt": "Swap positions of banana and bottle. (1) Record both positions.\n(2) Pick banana, park at [0.10, 0.20, 0.10], release.\n(3) Pick bottle, move to banana's original XY, release.\n(4) Pick banana from park, move to bottle's original XY,\nrelease. (5) Return home.\n",
+          "success_spec": {
+            "type": "objects_swapped",
+            "obj_a": "banana",
+            "obj_b": "bottle",
+            "xy_tolerance_m": 0.08,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 28,
+              "frames": 1665,
+              "duration_sec": 126.81469011306763,
+              "tokens": {
+                "in": 87323,
+                "out": 2457,
+                "cache_read": 0
+              },
+              "summary": "---\n\n\u2705 **Swap complete!** Here's a summary of what was accomplished:\n\n| Object | Original Position (XY) | Final Position (XY) |\n|--------|------------------------|----------------------|\n| \ud83c\udf4c Banana | `[0.1103, 0.1200]` | `[0.3000, 0.1200]` \u2705 |\n| \ud83c\udf7e Bottle | `[0.3000, 0.1200]` | `[0.1103, 0.1200]` \u2705 |",
+              "error": null,
+              "physics_detail": "a_err 6.0cm b_err 0.5cm",
+              "physics_metrics": {
+                "a_err_m": 0.059954738479288935,
+                "b_err_m": 0.005306705456763758
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 29,
+              "frames": 1766,
+              "duration_sec": 123.1107828617096,
+              "tokens": {
+                "in": 91570,
+                "out": 2503,
+                "cache_read": 0
+              },
+              "summary": "---\n\n\u2705 **Swap complete!** Here's the summary:\n\n| Object | Original Position | Final Position |\n|--------|------------------|----------------|\n| \ud83c\udf4c Banana | `[0.1103, 0.1200]` | `[0.3000, 0.1200]` \u2190 bottle's spot |\n| \ud83c\udf7e Bottle | `[0.3000, 0.1200]` | `[0.1103, 0.1200]` \u2190 banana's spot |\n\nThe banana and ",
+              "error": null,
+              "physics_detail": "a_err 7.3cm b_err 0.2cm",
+              "physics_metrics": {
+                "a_err_m": 0.07342869935316416,
+                "b_err_m": 0.0023485150360272344
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 36,
+              "frames": 1985,
+              "duration_sec": 136.7407350540161,
+              "tokens": {
+                "in": 124847,
+                "out": 3052,
+                "cache_read": 0
+              },
+              "summary": "\ud83c\udfe0 **Arm returned home.**\n\n---\n\n### \u2705 Swap Complete \u2014 Summary\n\n| Object | Original Position | Final Position |\n|--------|------------------|----------------|\n| \ud83c\udf4c Banana | `[0.1103, 0.1200, 0.0268]` | `[0.3000, 0.1200]` *(bottle's spot)* |\n| \ud83c\udf7e Bottle | `[0.3000, 0.1200, 0.0200]` | `[0.1103, 0.1200]` *",
+              "error": null,
+              "physics_detail": "a_err 1.2cm b_err 0.4cm",
+              "physics_metrics": {
+                "a_err_m": 0.012246815815392258,
+                "b_err_m": 0.004290281109877074
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 31,
+              "frames": 1868,
+              "duration_sec": 122.590252161026,
+              "tokens": {
+                "in": 102097,
+                "out": 2715,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Swap Complete! Summary\n\n| Object | Original Position | Final Position |\n|--------|------------------|----------------|\n| \ud83c\udf4c Banana | `[0.1103, 0.1200]` | `[0.3000, 0.1200]` \u2190 bottle's spot |\n| \ud83c\udf7e Bottle | `[0.3000, 0.1200]` | `[0.1103, 0.1200]` \u2190 banana's spot |\n\nThe banana and bottle positi",
+              "error": null,
+              "physics_detail": "a_err 0.3cm b_err 0.1cm",
+              "physics_metrics": {
+                "a_err_m": 0.002888274563523754,
+                "b_err_m": 0.0008860754056990548
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 28,
+              "frames": 1665,
+              "duration_sec": 107.63922786712646,
+              "tokens": {
+                "in": 87323,
+                "out": 2436,
+                "cache_read": 0
+              },
+              "summary": "---\n\n\u2705 **Swap complete!** Here's a summary of what was accomplished:\n\n| Object | Original Position (XY) | Final Position (XY) |\n|--------|------------------------|----------------------|\n| \ud83c\udf4c Banana | `[0.1103, 0.1200]` | `[0.3000, 0.1200]` \u2190 bottle's spot |\n| \ud83c\udf7e Bottle | `[0.3000, 0.1200]` | `[0.1103",
+              "error": null,
+              "physics_detail": "a_err 6.0cm b_err 0.5cm",
+              "physics_metrics": {
+                "a_err_m": 0.059954738479288935,
+                "b_err_m": 0.005306705456763758
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 30.4,
+          "tokens": {
+            "in": 493160,
+            "out": 13163
+          },
+          "cost_usd": 1.6769250000000002
+        },
+        {
+          "id": "stable_place_screwdriver",
+          "prompt": "Pick up the screwdriver. Place it at the target XY (0.15, 0.15).\nLower to 5 cm above the table, release, retract. Return home.\nScrewdriver must end up resting stably near (0.15, 0.15).\n",
+          "success_spec": {
+            "type": "object_placed_near_target",
+            "object": "screwdriver",
+            "target_xy": [
+              0.15,
+              0.15
+            ],
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 830,
+              "duration_sec": 62.02254796028137,
+              "tokens": {
+                "in": 37417,
+                "out": 1183,
+                "cache_read": 0
+              },
+              "summary": "\u2705 Task complete! The screwdriver was successfully picked up from (0.30, -0.10) and placed stably at **(0.150, 0.151)** \u2014 right on target at the requested (0.15, 0.15) XY location, resting on the table at ~2.8 cm height. The arm has returned to its home configuration.",
+              "error": null,
+              "physics_detail": "xy err to target 0.1 cm",
+              "physics_metrics": {
+                "err_m": 0.0012308938719076026
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 830,
+              "duration_sec": 58.79719877243042,
+              "tokens": {
+                "in": 37411,
+                "out": 1186,
+                "cache_read": 0
+              },
+              "summary": "\u2705 Task complete! The screwdriver was successfully picked up from (0.30, -0.10) and placed at **(0.150, 0.151, ~0.028 m)** \u2014 resting stably on the table right at the target XY of (0.15, 0.15), within ~1 mm of the goal. The arm has returned to its home configuration.",
+              "error": null,
+              "physics_detail": "xy err to target 0.1 cm",
+              "physics_metrics": {
+                "err_m": 0.0012308938719076026
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 830,
+              "duration_sec": 59.40299081802368,
+              "tokens": {
+                "in": 37843,
+                "out": 1238,
+                "cache_read": 0
+              },
+              "summary": "\u2705 Task complete! The screwdriver was successfully picked up from (0.30, -0.10) and placed at **(0.151, 0.151, 0.028)** \u2014 resting stably on the table surface right at the target XY of (0.15, 0.15), within ~1.5 mm of the goal. The arm has returned to its home configuration.",
+              "error": null,
+              "physics_detail": "xy err to target 0.1 cm",
+              "physics_metrics": {
+                "err_m": 0.0014916560072870736
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 830,
+              "duration_sec": 57.44020986557007,
+              "tokens": {
+                "in": 37411,
+                "out": 1186,
+                "cache_read": 0
+              },
+              "summary": "\u2705 Task complete! The screwdriver was successfully picked up from (0.30, -0.10) and placed at **(0.150, 0.151, ~0.028 m)** \u2014 resting stably on the table right at the target XY of (0.15, 0.15), within ~1 mm of the goal. The arm has returned to its home configuration.",
+              "error": null,
+              "physics_detail": "xy err to target 0.1 cm",
+              "physics_metrics": {
+                "err_m": 0.0012308938719076026
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 830,
+              "duration_sec": 65.45630526542664,
+              "tokens": {
+                "in": 37843,
+                "out": 1238,
+                "cache_read": 0
+              },
+              "summary": "\u2705 Task complete! The screwdriver was successfully picked up from (0.30, -0.10) and placed at **(0.151, 0.151, 0.028)** \u2014 resting stably on the table surface right at the target XY of (0.15, 0.15), within ~1.5 mm of the goal. The arm has returned to its home configuration.",
+              "error": null,
+              "physics_detail": "xy err to target 0.1 cm",
+              "physics_metrics": {
+                "err_m": 0.0014916560072870736
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 15.0,
+          "tokens": {
+            "in": 187925,
+            "out": 6031
+          },
+          "cost_usd": 0.65424
+        }
+      ]
+    },
+    "contact_rich_l4": {
+      "tasks": [
+        {
+          "id": "tower_3_objects",
+          "prompt": "Build a 3-object tower in the order (bottom-to-top):\nmug, lego, duck. Steps: (1) place lego on top of mug\n(use the mug's XY, just above mug's height), (2) place\nduck on top of the lego (same XY, slightly higher).\nUse the agent-written gripper_close for each grasp.\nReturn home after building.\n",
+          "success_spec": {
+            "type": "objects_in_tower",
+            "stack": [
+              "mug",
+              "lego",
+              "duck"
+            ],
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 29,
+              "frames": 1358,
+              "duration_sec": 101.63906002044678,
+              "tokens": {
+                "in": 82985,
+                "out": 2381,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Tower successfully built!** The three-object tower is stacked bottom-to-top as **mug \u2192 lego \u2192 duck** at XY \u2248 (0.222, 0.051), with the mug at z=0.020, lego at z=0.060, and duck at z=0.090 \u2014 all vertically aligned \u2014 and the arm has returned to its home configuration.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=1.0cm dz=4.1cm; duck>lego: dxy=7.9cm dz=-2.6cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.21988620063981032,
+                    0.04926135819252268,
+                    0.019946267486198082
+                  ],
+                  "lego": [
+                    0.2291016612839668,
+                    0.051612187455455975,
+                    0.060681826594287974
+                  ],
+                  "duck": [
+                    0.2814881920848497,
+                    0.1108328333416948,
+                    0.034646241950112205
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 28,
+              "frames": 1354,
+              "duration_sec": 110.38825607299805,
+              "tokens": {
+                "in": 78470,
+                "out": 2291,
+                "cache_read": 0
+              },
+              "summary": "\ud83c\udfc6 **Tower successfully built!** Here's the final stack (bottom-to-top):\n\n| Object | Z position | Status |\n|--------|-----------|--------|\n| \ud83e\uded6 **Mug** | Z = 0.020 m | Base |\n| \ud83e\uddf1 **Lego** | Z = 0.059 m | Middle |\n| \ud83d\udc25 **Duck** | Z = 0.090 m | Top |\n\nAll three objects share the same XY footprint (~0.222",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.6cm dz=4.0cm; duck>lego: dxy=6.1cm dz=-1.8cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.22016583422694574,
+                    0.04943130132221995,
+                    0.019937777476394154
+                  ],
+                  "lego": [
+                    0.2261734511460059,
+                    0.05141547641680134,
+                    0.060200771294887157
+                  ],
+                  "duck": [
+                    0.22132005455615278,
+                    0.11212385603115815,
+                    0.04249394059058499
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 59,
+              "frames": 2816,
+              "duration_sec": 238.9608190059662,
+              "tokens": {
+                "in": 232879,
+                "out": 4287,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.1cm dz=4.5cm; duck>lego: dxy=24.8cm dz=-2.9cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.22040139387479987,
+                    0.04846001353303592,
+                    0.019965175187801727
+                  ],
+                  "lego": [
+                    0.22010969014551493,
+                    0.04922766594140927,
+                    0.06495775694641345
+                  ],
+                  "duck": [
+                    0.4671775306983656,
+                    0.06435355889965012,
+                    0.03637293558601163
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 60,
+              "frames": 2820,
+              "duration_sec": 223.23074197769165,
+              "tokens": {
+                "in": 232440,
+                "out": 4373,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.9cm dz=4.0cm; duck>lego: dxy=5.2cm dz=-2.3cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.2197120873383808,
+                    0.04881763111032593,
+                    0.01995469155807245
+                  ],
+                  "lego": [
+                    0.22823483770834427,
+                    0.04784199763944764,
+                    0.06037440797374933
+                  ],
+                  "duck": [
+                    0.2579990155880616,
+                    0.0050499742030533585,
+                    0.03713636784697591
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 28,
+              "frames": 1354,
+              "duration_sec": 113.85893821716309,
+              "tokens": {
+                "in": 78435,
+                "out": 2304,
+                "cache_read": 0
+              },
+              "summary": "The 3-object tower has been successfully built! Here's the final stack summary:\n\n| Layer | Object | Z position |\n|-------|--------|-----------|\n| \ud83d\udfe6 Bottom | **Mug** | Z \u2248 0.020 m |\n| \ud83d\udfe8 Middle | **Lego** | Z \u2248 0.059 m |\n| \ud83d\udc25 Top | **Duck** | Z \u2248 0.090 m |\n\nAll three objects share the same XY footprint",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.6cm dz=4.0cm; duck>lego: dxy=6.1cm dz=-1.8cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.22016583422694574,
+                    0.04943130132221995,
+                    0.019937777476394154
+                  ],
+                  "lego": [
+                    0.2261734511460059,
+                    0.05141547641680134,
+                    0.060200771294887157
+                  ],
+                  "duck": [
+                    0.22132005455615278,
+                    0.11212385603115815,
+                    0.04249394059058499
+                  ]
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 40.8,
+          "tokens": {
+            "in": 705209,
+            "out": 15636
+          },
+          "cost_usd": 2.350167
+        },
+        {
+          "id": "spatial_query_pick",
+          "prompt": "Observe the positions of all 6 graspable objects\n(banana, mug, bottle, screwdriver, duck, lego). Pick up\nthe one whose Y-coordinate is the LARGEST (most forward\nin the world frame). Lift it 10 cm. Report which object\nyou picked and its Y coordinate.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug",
+              "bottle",
+              "screwdriver",
+              "duck",
+              "lego"
+            ],
+            "require_correct_choice_y_argmax": true,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 427,
+              "duration_sec": 50.18156719207764,
+              "tokens": {
+                "in": 30386,
+                "out": 1184,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!**\n\n- **Object picked up: Banana**\n- **Y-coordinate: +0.1200** (the largest among all 6 objects \u2014 tied with the bottle at ~0.120, but banana measured at **0.12001**, making it the most forward in the world frame)\n- The banana was successfully grasped and lifted **10 cm** upward (fr",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.101359367720762
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 427,
+              "duration_sec": 52.39114427566528,
+              "tokens": {
+                "in": 30306,
+                "out": 1166,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!**\n\n- **Object picked up:** \ud83c\udf4c **Banana**\n- **Y-coordinate:** **+0.1200** (the largest Y among all 6 objects, tied with the bottle but banana's Y was marginally greater at 0.120007)\n- The banana has been successfully grasped and lifted **10 cm** above its original position, and the ",
+              "error": null,
+              "physics_detail": "banana lifted 10.0 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10020255719360317
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 427,
+              "duration_sec": 51.056153774261475,
+              "tokens": {
+                "in": 30728,
+                "out": 1268,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Task Complete!\n\n- **Object picked:** \ud83c\udf4c **Banana**\n- **Y-coordinate:** **+0.12001** (the largest among all 6 objects \u2014 tied closely with the bottle at +0.12000, but banana was marginally more forward)\n- **Action:** Successfully grasped the banana and lifted it **10 cm** (from Z \u2248 0.029 m t",
+              "error": null,
+              "physics_detail": "banana lifted 10.0 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10024127045695634
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 427,
+              "duration_sec": 48.327260971069336,
+              "tokens": {
+                "in": 30386,
+                "out": 1158,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!**\n\n- **Object picked up: Banana**\n- **Y-coordinate: +0.1200** (the largest among all 6 objects \u2014 tied with the bottle at ~0.120, but banana was marginally ahead at 0.12001)\n- Successfully lifted **10 cm** from its resting position and confirmed the grasp is held throughout the lif",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.101359367720762
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 15,
+              "frames": 427,
+              "duration_sec": 53.501118898391724,
+              "tokens": {
+                "in": 30306,
+                "out": 1172,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!**\n\n- **Object picked up:** \ud83c\udf4c **Banana**\n- **Y-coordinate:** **+0.1200** (the largest Y among all 6 objects, tied with the bottle at ~0.120, but banana's Y was marginally larger at 0.120007)\n- The banana has been successfully grasped and lifted **10 cm** above its original position",
+              "error": null,
+              "physics_detail": "banana lifted 10.0 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10020255719360317
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 15.0,
+          "tokens": {
+            "in": 152112,
+            "out": 5948
+          },
+          "cost_usd": 0.545556
+        },
+        {
+          "id": "pair_swap_chain",
+          "prompt": "Perform two object swaps in sequence:\n(1) swap banana and mug \u2014 banana goes to mug's XY,\n    mug goes to banana's original XY.\n(2) then swap bottle and screwdriver \u2014 bottle goes to\n    screwdriver's XY, screwdriver goes to bottle's\n    original XY.\nUse the parking position [0.0, 0.20, 0.10] for the\ntemporary hold. Return home at the end.\n",
+          "success_spec": {
+            "type": "two_swaps_completed",
+            "pair_a": [
+              "banana",
+              "mug"
+            ],
+            "pair_b": [
+              "bottle",
+              "screwdriver"
+            ],
+            "xy_tolerance_m": 0.08,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 53,
+              "frames": 2823,
+              "duration_sec": 203.50314807891846,
+              "tokens": {
+                "in": 215581,
+                "out": 4108,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 5.8,0.1cm; bottle\u2194screwdriver: 94.5,1.5cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  5.775551636297928,
+                  0.06750908819701779,
+                  94.50433860486018,
+                  1.5202499524766224
+                ],
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 53,
+              "frames": 2808,
+              "duration_sec": 222.5076060295105,
+              "tokens": {
+                "in": 226847,
+                "out": 4318,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 33.4,0.1cm; bottle\u2194screwdriver: 42.1,0.6cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  33.36696916406445,
+                  0.0744744126189037,
+                  42.09786226644716,
+                  0.5667268747875753
+                ],
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 53,
+              "frames": 3000,
+              "duration_sec": 236.24754524230957,
+              "tokens": {
+                "in": 223511,
+                "out": 4403,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": null,
+              "physics_detail": "banana\u2194mug: 33.8,0.1cm; bottle\u2194screwdriver: 1.9,3.6cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  33.77582896112149,
+                  0.10624267738660863,
+                  1.892630063525052,
+                  3.5711527709132573
+                ]
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 53,
+              "frames": 2707,
+              "duration_sec": 219.3490068912506,
+              "tokens": {
+                "in": 225296,
+                "out": 4320,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 33.7,0.1cm; bottle\u2194screwdriver: 35.9,0.6cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  33.74136960067801,
+                  0.07367828098491441,
+                  35.85555046369934,
+                  0.5646932469096184
+                ],
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 53,
+              "frames": 3000,
+              "duration_sec": 224.18538999557495,
+              "tokens": {
+                "in": 218520,
+                "out": 4193,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": null,
+              "physics_detail": "banana\u2194mug: 40.6,0.2cm; bottle\u2194screwdriver: 47.8,1.1cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  40.55803352823558,
+                  0.18296917054714568,
+                  47.81225656916309,
+                  1.0707007581033479
+                ]
+              }
+            }
+          ],
+          "llm_pass_rate": 0.4,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.6,
+          "mean_tool_calls": 53.0,
+          "tokens": {
+            "in": 1109755,
+            "out": 21342
+          },
+          "cost_usd": 3.649395
+        },
+        {
+          "id": "clear_then_reach",
+          "prompt": "The bottle is in the way. (1) Pick up the bottle and\nmove it to the safe park at [-0.10, 0.20, 0.10],\nrelease. (2) Move the EE to where the bottle ORIGINALLY\nwas (its starting XY, Z + 5 cm). Do not knock over any\nother object. Return home.\n",
+          "success_spec": {
+            "type": "cleared_and_visited",
+            "clear_object": "bottle",
+            "stay_objects": [
+              "banana",
+              "mug",
+              "screwdriver",
+              "duck",
+              "lego"
+            ],
+            "max_displacement_m": 0.04,
+            "ee_visited_original_xyz_of": "bottle",
+            "ee_tolerance_m": 0.06,
+            "settle_steps": 300,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 51,
+              "frames": 1836,
+              "duration_sec": 202.3504090309143,
+              "tokens": {
+                "in": 248029,
+                "out": 4706,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.2cm (<4); EE-err 39.5cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0017609100642178932,
+                "ee_err_m": 0.3945896961840351,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 51,
+              "frames": 1837,
+              "duration_sec": 246.84484910964966,
+              "tokens": {
+                "in": 253229,
+                "out": 4667,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.2cm (<4); EE-err 49.2cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0017609100642178932,
+                "ee_err_m": 0.4923195350651657,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 30,
+              "frames": 1237,
+              "duration_sec": 147.87490797042847,
+              "tokens": {
+                "in": 108659,
+                "out": 2867,
+                "cache_read": 0
+              },
+              "summary": "All done! Here's a summary of what was accomplished:\n\n1. **Bottle original position recorded**: [0.300, 0.120, 0.020]\n2. **Grasped the bottle** by approaching from above (z=0.07), descending to z=0.04, and closing the gripper \u2014 confirmed holding.\n3. **Lifted and transported** the bottle to the safe ",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.2cm (<4); EE-err 23.5cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0019166724738400233,
+                "ee_err_m": 0.23548994165731418,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 51,
+              "frames": 1836,
+              "duration_sec": 230.11888885498047,
+              "tokens": {
+                "in": 250185,
+                "out": 4724,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.2cm (<4); EE-err 42.4cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0017609100642178932,
+                "ee_err_m": 0.4238926102605472,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 51,
+              "frames": 1743,
+              "duration_sec": 225.38264083862305,
+              "tokens": {
+                "in": 253171,
+                "out": 4601,
+                "cache_read": 0
+              },
+              "summary": "",
+              "error": "max_iters=50 exhausted",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.2cm (<4); EE-err 0.3cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.001652843980158535,
+                "ee_err_m": 0.00318508738367126,
+                "replay_diverged": true
+              }
+            }
+          ],
+          "llm_pass_rate": 0.2,
+          "physics_pass_rate": 0.2,
+          "agreement_rate": 0.6,
+          "mean_tool_calls": 46.8,
+          "tokens": {
+            "in": 1113273,
+            "out": 21565
+          },
+          "cost_usd": 3.663294
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 13,
+    "n_trials_total": 65,
+    "llm_pass_rate": 0.8923076923076924,
+    "physics_pass_rate": 0.6923076923076923,
+    "agreement_rate": 0.7692307692307693,
+    "total_tokens": {
+      "in": 4701357,
+      "out": 123869
+    },
+    "total_cost_usd": 15.962106000000002,
+    "wall_clock_sec": 2210.554189682007
+  }
+}

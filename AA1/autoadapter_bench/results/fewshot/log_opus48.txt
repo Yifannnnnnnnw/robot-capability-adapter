@@ -1,0 +1,168 @@
+autoadapter_bench/eval_baseline.py:284: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "started_at": datetime.utcnow().isoformat(),
+Baseline: cap  (Code-as-Policies: LLM composes pre-built APIs)
+Robot: so101  class: arm  workspace: artifacts/auto_adapter_so101_v2_artifacts
+
+=== suite: contact_rich — 5 tasks ===
+  task: stack_lego_on_duck  (5 trials)
+    trial 1/5: llm=OK phys=FAIL ✗
+    trial 2/5: llm=OK phys=FAIL ✗
+    trial 3/5: llm=OK phys=FAIL ✗
+    trial 4/5: llm=OK phys=FAIL ✗
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_stack_lego_on_duck_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=OK ✗
+  task: place_duck_inside_mug  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_place_duck_inside_mug_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_place_duck_inside_mug_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_place_duck_inside_mug_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_place_duck_inside_mug_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_place_duck_inside_mug_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=OK ✗
+  task: collision_avoid_bottle  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_collision_avoid_bottle_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_collision_avoid_bottle_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_collision_avoid_bottle_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_collision_avoid_bottle_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_collision_avoid_bottle_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+  task: swap_banana_bottle  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_swap_banana_bottle_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_swap_banana_bottle_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_swap_banana_bottle_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_swap_banana_bottle_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_swap_banana_bottle_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+  task: stable_place_screwdriver  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_stable_place_screwdriver_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_stable_place_screwdriver_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_stable_place_screwdriver_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_stable_place_screwdriver_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_stable_place_screwdriver_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+
+=== suite: contact_rich_l4 — 4 tasks ===
+  task: tower_3_objects  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_tower_3_objects_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_tower_3_objects_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=FAIL ✗
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_tower_3_objects_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=FAIL ✗
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_tower_3_objects_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_tower_3_objects_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+  task: spatial_query_pick  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_spatial_query_pick_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_spatial_query_pick_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_spatial_query_pick_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_spatial_query_pick_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=FAIL ✗
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_spatial_query_pick_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+  task: pair_swap_chain  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_pair_swap_chain_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0317 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_pair_swap_chain_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0262 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_pair_swap_chain_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0131 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_pair_swap_chain_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_pair_swap_chain_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0611 m > tol=0.0010 m — continuing
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0185 m > tol=0.0010 m — continuing
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0183 m > tol=0.0010 m — continuing
+llm=FAIL phys=FAIL ✓
+  task: clear_then_reach  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_clear_then_reach_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=OK ✗
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_clear_then_reach_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=OK ✗
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_clear_then_reach_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=OK ✗
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_clear_then_reach_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=OK ✗
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_clear_then_reach_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+   replay caught move_cartesian: IKUnreachableError: IK did not converge: |err|=0.0622 m > tol=0.0010 m — continuing
+llm=FAIL phys=OK ✗
+
+=== suite: hard — 4 tasks ===
+  task: conditional_pick  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_conditional_pick_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_conditional_pick_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_conditional_pick_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_conditional_pick_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_conditional_pick_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+  task: visit_all_objects  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_visit_all_objects_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_visit_all_objects_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_visit_all_objects_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_visit_all_objects_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_visit_all_objects_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+  task: numeric_midpoint  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_numeric_midpoint_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_numeric_midpoint_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_numeric_midpoint_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_numeric_midpoint_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_numeric_midpoint_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+  task: draw_letter_L  (5 trials)
+    trial 1/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_draw_letter_L_t0.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 2/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_draw_letter_L_t1.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 3/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_draw_letter_L_t2.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=OK phys=OK ✓
+    trial 4/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_draw_letter_L_t3.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+llm=FAIL phys=FAIL ✓
+    trial 5/5: !! failed to save artifacts/auto_adapter_so101_v2_artifacts/recordings/cap_so101_opus48/cap_draw_letter_L_t4.mp4: 'NoneType' object is not callable (install imageio-ffmpeg)
+autoadapter_bench/eval_baseline.py:384: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  result["meta"]["completed_at"] = datetime.utcnow().isoformat()
+llm=FAIL phys=FAIL ✓
+
+Saved: autoadapter_bench/results/fewshot/cap_so101_opus48.json
+  trials=65
+  llm_pass_rate=42%
+  physics_pass_rate=42%
+  cost=$0.75
+  wall=1657.6s

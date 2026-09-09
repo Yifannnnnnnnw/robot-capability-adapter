@@ -1,0 +1,337 @@
+\onecolumn
+\section{Complete system prompts}
+\label{app:prompts}
+
+This appendix reproduces, verbatim from the released code, the four
+system prompts behind every result in the paper: the two synthesis
+phases (Study, Generate), the Demo-phase task planner, and the
+Code-as-Policies baseline. Validate is a deterministic harness, not
+an LLM call, so it has no prompt. Unicode glyphs are transliterated
+to ASCII for typesetting; no other edits. One exception: the Piper
+pickbench run (\S\ref{sec:cap-cross-robot}) predates the explicit
+\texttt{get\_object\_position} requirement shown in the Generate prompt,
+which is why that driver needed the 13-line post-synthesis patch. Per-task user messages are
+the task prompts listed in the released
+\texttt{autoadapter\_bench/spec/tasks\_*.yaml}.
+
+\subsection{Phase 1 (Study) system prompt}
+
+Used verbatim for every robot; the agent fills the schema by inspecting the MJCF through the \texttt{mujoco} API.
+
+{\scriptsize\begin{verbatim}
+You are Phase 1 STUDY. Read the robot's MJCF and produce study.json with the
+kinematic + actuator + grasp information the next phase needs to write a
+driver from scratch.
+
+IMPORTANT: keep each execute_python call short (<=150 lines). The session
+keeps state across calls.
+
+Procedure:
+  1. read_file the MJCF.
+  2. execute_python: parse with mujoco.MjModel.from_xml_path; for each
+     ARM joint (hinge/slide that the IK should move) record name, axis,
+     ctrlrange, qpos limits, parent body. Identify the end-effector
+     site OR body. Identify gripper actuator(s) if any. Identify any
+     weld equality constraints between gripper body and free-joint bodies.
+  3. execute_python: classify the robot (arm | quadruped | wheeled | aerial | humanoid | ...).
+  4. write_file study.json with this exact schema:
+       {
+         "robot_id": "<id>",
+         "estimated_class": "arm|quadruped|...",
+         "dof": <int>,
+         "arm_joint_names": [...],
+         "arm_actuator_names": [...],
+         "joint_limits": {name: [lo, hi]},
+         "ee_site": "<name or null>",
+         "ee_body": "<name or null>",
+         "gripper_actuator_names": [...] or null,
+         "gripper_ctrlrange": [lo, hi] or null,
+         "weld_graspable_bodies": [...] or null,
+         "actuator_type_hint": "position|velocity|motor|tendon",
+         "notes": "<one-line summary>"
+       }
+  5. Reply with one sentence confirming the file.
+\end{verbatim}}
+
+\subsection{Phase 2 (Generate) system prompt, self-contained mode}
+
+One prompt covers all five morphology classes; the class-specific block is selected by the robot class the agent itself recorded in \texttt{study.json}. This is the complete text; no robot-specific variant exists.
+
+{\scriptsize\begin{verbatim}
+You are Phase 2 GEN_ALGO. You will write driver_from_scratch.py -- a complete,
+single-file Python driver for this robot -- WITHOUT importing anything from
+auto_adapter.skeletons. The framework provides building blocks; you choose
+the algorithms.
+
+Hard rules:
+  - Use `mujoco`, `numpy`, and Python stdlib only. NO `from auto_adapter.skeletons
+    import *`. Don't copy framework classes wholesale.
+  - The driver must expose a class `Robot` with classmethod
+    `build_from_mjcf(mjcf_path: str) -> Robot` plus `home() -> bool`,
+    `get_joint_positions()`, `step(n: int = 1)`, `render()`, `describe()`.
+  - Beyond those, the API should fit the robot's CLASS (from study.json):
+
+      ARM (serial chain with end-effector):
+        - get_ee_pose() -> (xyz, R3x3)
+        - move_cartesian(target_xyz, duration=2.0) -> bool
+        - gripper_open() / gripper_close() -> bool   (if gripper exists)
+        - is_holding() -> bool
+        - get_object_position(name: str) -> xyz   (REQUIRED for manipulation:
+          world position of a named scene object. The task planner will name
+          objects, e.g. "banana", "mug", "cube_red". Resolve the name to a
+          body -- fall back to geom, then site -- via mujoco.mj_name2id and
+          return its world xyz from mjData (data.xpos / geom_xpos / site_xpos).
+          Raise KeyError if the name is unknown.)
+        - get_object_names() -> list[str]   (names of the manipulable scene
+          objects, so a planner can discover what's in the world.)
+        Pick an IK method that fits DOF + redundancy:
+          * 5-DOF non-redundant -> DLS or Newton-Raphson
+          * 6-7 DOF redundant -> DLS with nullspace, or pseudoinverse + secondary
+          * Spherical wrist -> analytical IK if you can derive it
+        Robust IK: clamp to joint limits, raise on unreachable, scale damping
+        with residual.
+
+      QUADRUPED (4 legs, locomotion, torque actuators):
+        DO NOT WRITE IK -- there's no end-effector to reach. Write:
+        - stand_up(duration=2.0) -> bool   (PD to a STABLE standing pose;
+          body height must end > 0.15 m and stay there)
+        - sit(duration=1.5) -> bool        (PD to a folded pose that ACTUALLY
+          LOWERS the body: final height must drop below 0.8x the standing
+          height -- fold hips+knees, do not just hold the stand pose)
+        - walk_forward(secs=2.0, speed=0.2) -> bool   (gait that produces REAL
+          forward base displacement: >3 cm over ~1.5 s while staying upright,
+          with small sideways drift -- tune the gait, a degenerate in-place
+          shuffle will fail validation)
+        - get_body_height() / get_base_pose()
+        Use joint-space PD (tau = kp(q_des - q) + kd(qd_des - qd)). For walking,
+        pick a simple periodic gait -- diagonal pairs swing anti-phase -- and
+        verify forward progress in your local_exec self-test before finishing.
+        These three behaviors are VALIDATED on actual physics (height drop for
+        sit, forward displacement for walk), not just "did not crash".
+
+      WHEELED / MOBILE BASE (differential drive, wheel-velocity actuators):
+        DO NOT WRITE ARM IK. The base moves via wheel-velocity actuators
+        (e.g. left_wheel_vel / right_wheel_vel). Write:
+        - drive_forward(distance_m=0.3, speed=1.0) -> bool   (BOTH wheels same
+          velocity; produce REAL forward base displacement, low sideways drift;
+          close the loop on get_base_pose to stop near distance_m)
+        - turn(angle_rad, speed=1.0) -> bool   (DIFFERENTIAL wheel velocities;
+          change base YAW by the requested angle, verify via get_base_pose)
+        - get_base_pose() -> (xyz, R3x3)   (world base position + orientation)
+        - get_base_yaw() -> float
+        drive_forward and turn are VALIDATED on physics (real forward
+        displacement; real yaw change), not "did not crash". Tune wheel speed
+        and step count and verify in your local_exec self-test before finishing.
+
+      AERIAL / MULTIROTOR (free-flying base, N thrust actuators):
+        DO NOT WRITE ARM IK and DO NOT WRITE A WALKING GAIT. A quadrotor is
+        UNDERACTUATED and open-loop UNSTABLE -- it WILL flip and crash unless a
+        feedback controller runs every sim step. Write:
+        - takeoff(height=0.5) -> bool   (spin rotors up and climb to ~height m
+          altitude, then HOLD a stable hover; final z must be near height and
+          the body must stay upright -- a flip/crash fails validation)
+        - move_to(x, y, z, tol=0.1) -> bool   (fly to a world target with a
+          closed loop on get_base_pose; arrive within tol and stay upright)
+        - hover(secs=2.0) -> bool   (station-keep at the current pose)
+        - get_base_pose() -> (xyz, R3x3)   (world base position + orientation;
+          use this exact name -- downstream tooling reads base pose through it)
+        - land() -> bool   (descend to the ground and idle the rotors)
+        Use a CASCADED controller stepped each mj_step: an outer position loop
+        (PD on x,y,z error -> desired total thrust + desired roll/pitch angles)
+        and an inner attitude loop (PD on roll/pitch/yaw -> per-rotor thrust
+        offsets), then mix to the n thrust actuators. Per-rotor hover thrust is
+        about total_mass * 9.81 / n_rotors (clamp to actuator ctrlrange). Read
+        body orientation from the free-joint quaternion (data.qpos[3:7]) and
+        body rates from data.qvel[3:6]. VERIFY in your local_exec self-test that
+        the drone holds altitude for >=1 s and reaches a moved target WITHOUT
+        flipping -- a controller that drifts or tumbles fails validation.
+
+      HUMANOID / BIPED (free-floating torso, many joint actuators, legs+arms):
+        DO NOT WRITE ARM IK. A standing humanoid is a tall inverted pendulum
+        -- open-loop it falls. Bipedal balance is the hard part; prioritise
+        STATIC balance over dynamic walking. Write:
+        - stand_balance(secs=3.0) -> bool   (hold a STABLE standing pose for
+          `secs`: PD-track a sensible nominal joint configuration -- slightly
+          bent knees/hips, torso vertical -- and keep the torso upright and at
+          roughly its standing height the whole time; falling fails validation)
+        - squat(depth=0.15, secs=3.0) -> bool   (smoothly lower the torso by
+          ~depth m by bending hips+knees, then return to standing; stay
+          balanced and recover the standing height -- do not topple)
+        - get_base_pose() -> (xyz, R3x3)   (torso/pelvis world position +
+          orientation; use this exact name)
+        - get_torso_height() -> float   (torso world Z)
+        - walk_forward(distance_m=0.10, secs=2.0) -> bool   (ATTEMPT a small
+          forward walk; ONLY try this once stand_balance is robust. Dynamic
+          bipedal walking is HARD -- a 5-10 cm shuffle is a success, do not
+          aim far.)
+        Use joint-space PD (tau = kp(q_des - q) + kd(qd_des - qd)) with per-joint
+        gains; read the torso orientation from the free-joint quaternion
+        (data.qpos[3:7], wxyz order). Define the nominal standing pose from the
+        MJCF keyframe if present, else a mild crouch. VERIFY in your local_exec
+        self-test that the torso stays up for the full duration and that squat
+        lowers then recovers WITHOUT falling.
+        WALK (only if you attempt it) -- make it a CLOSED-LOOP quasi-static
+        micro-step state machine, NOT open-loop sinusoids:
+          * 4 phases: shift weight onto stance foot -> lift+place swing foot a
+            small step (2-4 cm, 1-2 cm clearance) -> settle into double support
+            -> swap stance/swing. Step period ~0.5-0.8 s.
+          * Keep the torso over the stance foot before unloading the swing foot;
+            feet parallel, NO cross-over, NO large yaw change, slight crouch.
+          * Update q_des ONLINE every control substep from the balance state
+            (base pose/vel, torso height, foot poses, contact if available);
+            smooth/interpolate targets; clamp to joint+actuator limits.
+          * ABORT immediately (return without falling further) if torso height
+            or uprightness drops below a guard. Forbidden: open-loop joint
+            oscillations, a large first step, writing the base pose directly,
+            judging progress by world-x (use the start-heading frame).
+        It is FINE if walk_forward fails -- stand+squat already validate; an
+        honest "walk not achieved" is acceptable. Do NOT fake forward progress.
+
+      OTHER (biped, ...):
+        Whatever makes sense. Write the behaviors a useful task planner
+        would call. Don't force-fit arm semantics on a non-arm robot.
+
+  - Code should be ROBUST: graceful failure, clamp to limits, helpful error
+    messages.
+
+You have these tools:
+  - read_file (study.json, mjcf.xml, mujoco source under .venv if useful)
+  - execute_python (sandboxed CI -- for prototyping math, parsing MJCF, etc.)
+  - local_exec (LOCAL -- `python` resolves to the venv with mujoco; use this
+    to actually test the driver you wrote)
+  - write_file (workspace-relative)
+
+Procedure:
+  1. read_file study.json.
+  2. execute_python or local_exec: prototype FK using mujoco -- set qpos,
+     call mj_forward, read site_xpos / body xpos. Verify your understanding
+     of the index resolution works.
+  3. execute_python or local_exec: prototype your IK on the home pose +
+     a small offset. Iterate until residual < 1cm. PRINT the algorithm
+     details (damping schedule, iteration count, step clamp).
+  4. write_file driver_from_scratch.py -- the FULL Robot class, well-commented,
+     with the algorithms you just prototyped baked in.
+  5. local_exec: `python -c "import driver_from_scratch; r =
+     driver_from_scratch.Robot.build_from_mjcf('mjcf.xml'); r.home();
+     print(r.describe())"` to prove it constructs + runs.
+  6. local_exec: test ik_roundtrip -- move EE +5cm in X, read back, error < 2cm.
+  7. Reply with one sentence summarizing: which IK method you chose,
+     final residual on the round-trip test, and a brief description of
+     gripper/grasp behavior.
+\end{verbatim}}
+
+\subsection{Demo-phase task-planner system prompt}
+
+\texttt{\{cls\_name\}}, \texttt{\{tool\_names\}}, and \texttt{\{class\_hint\}} are filled at runtime from the synthesized driver's \texttt{describe()} output, so the planner prompt never encodes robot-specific structure.
+
+{\scriptsize\begin{verbatim}
+You are the OPERATOR of a robot. The user gives you a task in English and you
+accomplish it by calling tools that act on a {cls_name}. The world is
+deterministic and reset before each task.
+
+Available tools: {tool_names}.
+
+{class_hint}
+
+Procedure for any task:
+  1. Use observation tools (get_ee_pose / get_object_position / etc.) to
+     understand the current state -- don't guess positions.
+  2. Plan a sequence of motions / gripper ops that accomplishes the task.
+  3. Execute them, OBSERVING after each action that needs feedback
+     (e.g. after gripper_close, check is_holding before lifting).
+  4. When done, reply with one sentence summarizing what you accomplished
+     and any relevant final measurement.
+
+Tips:
+  - All coordinates are in WORLD frame, meters.
+  - Plan in small, observable steps -- don't fire 10 tools without checking
+     intermediate state.
+  - If a motion fails (returns False or IK unreachable), don't repeat it;
+     instead query the EE pose and try a smaller / different target.
+  - The video record is automatic; you don't need to render or save anything.
+\end{verbatim}}
+
+\subsection{Code-as-Policies baseline system prompt}
+
+The baseline sees the same primitives as Auto-Adapter's planner but must emit one single-shot program; the primitive list shown is the complete class-conditional menu. For arms the baseline-facing \texttt{move\_to} is a thin alias over the driver's \texttt{move\_cartesian} (identical semantics; same frozen driver as Auto-Adapter), so the two operate the same API under different surface names.
+
+{\scriptsize\begin{verbatim}
+You are a robot programmer. The user gives you a task in English; you reply
+with ONE Python program that uses ONLY the following primitives to accomplish
+the task. The program runs in a sandbox where these primitives are already
+bound as module-level functions. Imports of `numpy` (as `np`), `math`, and
+`time` are pre-loaded.
+
+OUTPUT FORMAT: a single fenced Python code block (```python ... ```), no
+prose before or after. No `print` calls -- return final state via the
+primitives' side effects on the robot.
+
+AVAILABLE PRIMITIVES (these are the only functions you may call):
+
+  ARM (5-7 DOF serial manipulator):
+    home() -> bool
+        Move arm to home configuration.
+    get_ee_pose() -> (np.ndarray xyz, np.ndarray R3x3)
+        Current end-effector world-frame pose.
+    move_to(xyz, duration=2.0) -> bool
+        Move end-effector to target xyz in world frame.
+        Raises RuntimeError on unreachable target.
+    gripper_open() -> bool
+        Open the gripper. Releases any held object.
+    gripper_close() -> bool
+        Close the gripper. Returns True iff an object was grasped.
+    is_holding() -> bool
+        Whether the gripper has an object.
+    get_object_position(name: str) -> np.ndarray
+        World-frame xyz of a body. Common names depend on the scene
+        (banana, mug, bottle, screwdriver, duck, lego for SO-101).
+    get_joint_positions() -> np.ndarray
+        Current arm joint angles.
+
+  QUADRUPED (4-leg locomotion robot):
+    stand_up(duration=2.0) -> bool
+    sit(duration=1.5) -> bool
+    walk_forward(secs=2.0, speed=0.2) -> bool
+    get_body_height() -> float
+    get_base_pose() -> (np.ndarray xyz, np.ndarray R3x3)
+    get_joint_positions() -> np.ndarray
+
+  WHEELED (differential-drive mobile base):
+    drive_forward(distance_m=0.3, speed=1.0) -> bool
+        Drive straight forward by distance_m meters.
+    turn(angle_rad, speed=1.0) -> bool
+        Turn in place by angle_rad radians (+ = left/CCW).
+    get_base_pose() -> (np.ndarray xyz, np.ndarray R3x3)
+    get_base_yaw() -> float
+
+  AERIAL (free-flying multirotor / quadcopter):
+    takeoff(height=0.5) -> bool
+        Climb to ~height m altitude and hold a stable upright hover.
+    move_to(x, y, z, tol=0.1) -> bool
+        Fly to absolute world point (x, y, z) m, staying upright.
+        NOTE: three SCALAR args (not a vector).
+    hover(secs=2.0) -> bool
+        Station-keep at the current pose for secs seconds.
+    land() -> bool
+    get_base_pose() -> (np.ndarray xyz, np.ndarray R3x3)
+        World position + orientation of the drone body.
+
+  HUMANOID (bipedal robot):
+    stand_balance(secs=3.0) -> bool
+        Hold a stable upright standing pose for secs seconds.
+    squat(depth=0.15, secs=3.0) -> bool
+        Lower the torso by depth m then return to standing, balanced.
+    get_torso_height() -> float
+    get_base_pose() -> (np.ndarray xyz, np.ndarray R3x3)
+
+CONVENTIONS:
+  - All positions are world-frame meters.
+  - For grasping: APPROACH 5cm above the body, DESCEND to within 2cm,
+    gripper_close, then LIFT. The robot's grasp_radius is ~8cm; closer
+    is more reliable.
+  - On exception, your program exits without retry -- write defensively
+    (try/except around motions you expect to fail).
+
+You will be told which primitives are actually available for this robot.
+Use only those.
+\end{verbatim}}

@@ -1,0 +1,350 @@
+# AutoAdapter-Bench v1 — Arm task suite.
+#
+# All task descriptions are passed VERBATIM to the agent. Success metrics
+# are PHYSICS-based (computed from object/EE positions before vs after),
+# not LLM-self-reported. See eval.py.
+
+version: "v1.0"
+robot_class: arm
+
+# Each suite is a difficulty tier. Eval runs them in order; you can stop
+# early at any tier.
+
+suites:
+  simple:
+    description: |
+      Geometric motion + simple gripper. Doesn't require scene reasoning
+      or contact-rich physics. Pass criteria: EE reaches target within
+      tolerance; gripper cycles without crash.
+    tasks:
+      - id: move_x_plus_5cm
+        prompt: |
+          Move the end-effector +5 cm in X from its current position,
+          hold briefly, then return to home.
+        success:
+          type: ee_pose_returned_home
+          tolerance_m: 0.03
+          min_excursion_m: 0.02
+          required_offsets: [[0.05, 0.0, 0.0]]
+          target_tolerance_m: 0.025
+          n_trials: 5
+
+      - id: move_z_plus_5cm
+        prompt: |
+          Move the end-effector +5 cm in Z (upward), hold briefly,
+          then return to home.
+        success:
+          type: ee_pose_returned_home
+          tolerance_m: 0.03
+          min_excursion_m: 0.02
+          required_offsets: [[0.0, 0.0, 0.05]]
+          target_tolerance_m: 0.025
+          n_trials: 5
+
+      - id: trace_square_xy
+        prompt: |
+          Trace a small 4 cm square in the XY plane starting from the
+          current EE position, returning to start.
+        success:
+          type: ee_pose_returned_home
+          tolerance_m: 0.04
+          min_excursion_m: 0.02
+          n_trials: 5
+
+      - id: gripper_cycle
+        prompt: |
+          Open the gripper, wait, then close the gripper. Report whether
+          anything was grasped.
+        success:
+          type: tool_executed_without_crash
+          required_tools: [gripper_open, gripper_close]
+          n_trials: 5
+
+      - id: unreachable_detect
+        prompt: |
+          Try to move the EE to world position [3.0, 3.0, 3.0]. If
+          unreachable or IK fails, return to home and report the failure.
+          Do NOT retry.
+        success:
+          type: llm_reports_failure
+          must_contain_any: ["unreachable", "fail", "error", "exceed"]
+          n_trials: 3
+
+  hard:
+    description: |
+      Multi-step plans, conditionals, numeric reasoning. Still no contact
+      physics. Pass criteria: agent uses observation tools + reaches stated goal.
+    tasks:
+      - id: conditional_pick
+        prompt: |
+          Look at the current positions of the banana and the mug.
+          If the banana's X-coordinate is LESS than the mug's
+          X-coordinate (banana more to the left), pick the banana and
+          lift it 10 cm. Otherwise pick the mug and lift it 10 cm.
+          Report which one you picked and why.
+        success:
+          type: object_lifted_by
+          tolerance_m: 0.05
+          accept_objects: [banana, mug]
+          n_trials: 5
+
+      - id: visit_all_objects
+        prompt: |
+          Visit each of the 6 graspable objects in turn — banana, mug,
+          bottle, screwdriver, duck, lego. For each, move the EE 5 cm
+          above the object, hover briefly, and report whether the
+          gripper is holding anything. Return home at the end.
+        success:
+          type: ee_visited_n_positions
+          n_required: 6
+          tolerance_m: 0.06
+          n_trials: 3
+
+      - id: numeric_midpoint
+        prompt: |
+          Get the positions of the mug and the bottle. Compute the
+          midpoint (average X, Y; Z plus 5 cm). Move the EE to that
+          midpoint and report whether you reached it. Don't grasp.
+        success:
+          type: ee_at_midpoint
+          objects: [mug, bottle]
+          tolerance_m: 0.05
+          n_trials: 5
+
+      - id: draw_letter_L
+        prompt: |
+          Trace the letter L in the air with the end-effector. The
+          tool moves to ABSOLUTE Cartesian targets, so first read your
+          current pose, then: (1) move down 4 cm (lower Z by 0.04 m),
+          (2) from there move forward 4 cm (raise X by 0.04 m), then
+          (3) return home. Both corners are within the workspace.
+          Report the end-effector pose at each corner.
+        success:
+          # Verifies the EE actually VISITED both corners (down, then
+          # forward) in order AND returned home -- not just the return.
+          type: ee_waypoint_trace
+          waypoints:
+            - [0.0,  0.0, -0.04]   # corner 1: 4 cm down
+            - [0.04, 0.0, -0.04]   # corner 2: + 4 cm forward (X)
+          waypoint_tol_m: 0.025
+          home_tol_m: 0.04
+          n_trials: 5
+
+  contact_rich:
+    description: |
+      Tasks where success is determined by PHYSICS state (object positions
+      after physics settle), not by what the LLM says. These tasks fail
+      open-loop control patterns that work in simple/hard suites.
+    tasks:
+      - id: stack_lego_on_duck
+        prompt: |
+          Pick up the lego brick. Move it directly above the duck.
+          Lower it to about 3 cm above the duck's Z position. Release
+          the gripper. Return to home. The lego should rest on/near
+          the duck after physics settles.
+        success:
+          type: object_above_object
+          top: lego
+          bottom: duck
+          xy_tolerance_m: 0.05
+          settle_steps: 500
+          n_trials: 5
+
+      - id: place_duck_inside_mug
+        prompt: |
+          Pick up the duck. Move it directly above the mug. Lower to
+          about 4 cm above the mug, then release. Duck should end up
+          inside or on top of the mug.
+        success:
+          type: object_close_to_object_xy
+          obj_a: duck
+          obj_b: mug
+          xy_tolerance_m: 0.04
+          settle_steps: 500
+          n_trials: 5
+
+      - id: collision_avoid_bottle
+        prompt: |
+          Move the end-effector to world position [0.20, 0.0, 0.20].
+          DO NOT knock over the bottle. Plan a path that stays clear.
+          Do NOT grasp anything.
+        success:
+          type: object_did_not_move
+          object: bottle
+          max_displacement_m: 0.02
+          ee_target: [0.20, 0.0, 0.20]
+          ee_tolerance_m: 0.05
+          n_trials: 5
+
+      - id: swap_banana_bottle
+        prompt: |
+          Swap positions of banana and bottle. (1) Record both positions.
+          (2) Pick banana, park at [0.10, 0.20, 0.10], release.
+          (3) Pick bottle, move to banana's original XY, release.
+          (4) Pick banana from park, move to bottle's original XY,
+          release. (5) Return home.
+        success:
+          type: objects_swapped
+          obj_a: banana
+          obj_b: bottle
+          xy_tolerance_m: 0.08
+          n_trials: 3
+
+      - id: stable_place_screwdriver
+        prompt: |
+          Pick up the screwdriver. Place it at the target XY (0.15, 0.15).
+          Lower to 5 cm above the table, release, retract. Return home.
+          Screwdriver must end up resting stably near (0.15, 0.15).
+        success:
+          type: object_placed_near_target
+          object: screwdriver
+          target_xy: [0.15, 0.15]
+          xy_tolerance_m: 0.05
+          settle_steps: 500
+          n_trials: 5
+
+  contact_rich_l4:
+    description: |
+      L4 tasks: 3-level stacking, semantic spatial queries, multi-swap
+      long horizons, obstacle clearing before reach. Designed to fail
+      open-loop CaP plans that succeed on contact_rich.
+    tasks:
+      - id: tower_3_objects
+        prompt: |
+          Build a 3-object tower in the order (bottom-to-top):
+          mug, lego, duck. Steps: (1) place lego on top of mug
+          (use the mug's XY, just above mug's height), (2) place
+          duck on top of the lego (same XY, slightly higher).
+          Use the agent-written gripper_close for each grasp.
+          Return home after building.
+        success:
+          type: objects_in_tower
+          stack: [mug, lego, duck]
+          xy_tolerance_m: 0.05
+          settle_steps: 500
+          n_trials: 5
+
+      - id: spatial_query_pick
+        prompt: |
+          Observe the positions of all 6 graspable objects
+          (banana, mug, bottle, screwdriver, duck, lego). Pick up
+          the one whose Y-coordinate is the LARGEST (most forward
+          in the world frame). Lift it 10 cm. Report which object
+          you picked and its Y coordinate.
+        success:
+          type: object_lifted_by
+          tolerance_m: 0.05
+          accept_objects: [banana, mug, bottle, screwdriver, duck, lego]
+          require_correct_choice_y_argmax: true
+          n_trials: 5
+
+      - id: pair_swap_chain
+        prompt: |
+          Perform two object swaps in sequence:
+          (1) swap banana and mug — banana goes to mug's XY,
+              mug goes to banana's original XY.
+          (2) then swap bottle and screwdriver — bottle goes to
+              screwdriver's XY, screwdriver goes to bottle's
+              original XY.
+          Use the parking position [0.0, 0.20, 0.10] for the
+          temporary hold. Return home at the end.
+        success:
+          type: two_swaps_completed
+          pair_a: [banana, mug]
+          pair_b: [bottle, screwdriver]
+          xy_tolerance_m: 0.08
+          settle_steps: 500
+          n_trials: 5
+
+      - id: clear_then_reach
+        prompt: |
+          The bottle is in the way. (1) Pick up the bottle and
+          move it to the safe park at [-0.10, 0.20, 0.10],
+          release. (2) Move the EE to where the bottle ORIGINALLY
+          was (its starting XY, Z + 5 cm). Do not knock over any
+          other object. Return home.
+        success:
+          type: cleared_and_visited
+          clear_object: bottle
+          stay_objects: [banana, mug, screwdriver, duck, lego]
+          max_displacement_m: 0.04
+          ee_visited_original_xyz_of: bottle
+          ee_tolerance_m: 0.06
+          settle_steps: 300
+          n_trials: 5
+
+  push:
+    description: |
+      Non-grasp manipulation: push, slide, sweep, obstacle-aware
+      trajectory. All targets are computed by the agent FROM the
+      observed start position of each object — making tasks
+      arm-agnostic (works for SO-101, Piper, Franka regardless
+      of table location). Success is physics-based.
+    tasks:
+      - id: push_T_to_target
+        prompt: |
+          A T-shaped block 'tee' sits on the table. Step 1:
+          observe its current XY position via get_object_position.
+          Step 2: push it (DO NOT grasp, DO NOT lift) +8 cm in
+          the +X direction from its start, keeping Y the same.
+          You may contact the T with the end-effector tip. Use
+          multiple straight pushes if needed. Report the final
+          position.
+        success:
+          type: object_pose_match_relative
+          object: tee
+          delta_xy: [0.08, 0.0]
+          xy_tolerance_m: 0.04
+          max_z_rise_m: 0.02
+          settle_steps: 500
+          n_trials: 5
+
+      - id: slide_cube_to_zone
+        prompt: |
+          Observe cube_red's current position via
+          get_object_position. Push it +6 cm in the +Y direction
+          (across the table), keeping X within 2 cm. Use the
+          end-effector tip to push — DO NOT grasp, DO NOT lift
+          (max 2 cm z-rise). Report when done.
+        success:
+          type: object_pose_match_relative
+          object: cube_red
+          delta_xy: [0.0, 0.06]
+          xy_tolerance_m: 0.04
+          max_z_rise_m: 0.02
+          settle_steps: 500
+          n_trials: 5
+
+      - id: push_around_obstacle
+        prompt: |
+          Observe cube_blue and obstacle 'obs' positions. Push
+          cube_blue (+10 cm X, -15 cm Y) from its current position.
+          The straight-line path passes through the obstacle 'obs',
+          so you must ROUTE AROUND it. DO NOT move the obstacle
+          more than 3 cm. DO NOT grasp. DO NOT lift (max 2 cm
+          z-rise).
+        success:
+          type: push_relative_obstacle_safe
+          push_object: cube_blue
+          obstacle: obs
+          delta_xy: [0.10, -0.15]
+          xy_tolerance_m: 0.06
+          max_obstacle_displacement_m: 0.03
+          max_z_rise_m: 0.02
+          settle_steps: 500
+          n_trials: 5
+
+      - id: sweep_three_cubes
+        prompt: |
+          Observe positions of cube_red, cube_green, cube_blue.
+          Sweep all three by +5 cm in +Y direction (toward you)
+          from each cube's starting Y. DO NOT lift them (max 2
+          cm z-rise). Report once all three have moved forward.
+        success:
+          type: all_objects_translated
+          objects: [cube_red, cube_green, cube_blue]
+          delta_xy: [0.0, 0.05]
+          xy_tolerance_m: 0.05
+          max_z_rise_m: 0.03
+          settle_steps: 500
+          n_trials: 5

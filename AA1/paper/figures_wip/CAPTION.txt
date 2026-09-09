@@ -1,0 +1,18 @@
+Figure X. Driver synthesis is an execution-grounded debugging loop.
+(a) Per-iteration trace of six synthesis runs; each cell is one inner
+Generate-phase iteration, coloured by action type: read/plan, a clean
+simulator execution, or an execution that raised an error. The vertical
+rule marks the study-to-generate phase boundary; the grey number at
+right is the total iteration count. Top three rows: SO-101 synthesised
+by three models (same task); bottom three: three distinct morphology classes (aerial
+Skydio X2, quadruped ANYmal-C, humanoid H1) synthesised by Sonnet
+4.5. With SO-101 (arm) on top, the panel spans all four morphology
+classes the pipeline targets. Across all 24 completed runs in the trace
+corpus, every run required at least one error-recovery step and 73% of
+iterations executed code in simulation -- synthesis is never one-shot.
+(b) On the controlled SO-101 task, synthesis effort (iterations; hard-
+error and output-token counts annotated) grows as model capability
+decreases. Caveat: the trace corpus contains only runs that completed
+synthesis; models that failed (Nova/Ministral at spec parsing, Qwen at
+IK, Sonnet at grasp) left no traces and are characterised separately
+(Appendix, write-API leaderboard).

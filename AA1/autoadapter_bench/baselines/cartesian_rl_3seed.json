@@ -1,0 +1,67 @@
+{
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "n_episodes": 30,
+  "reach_steps": 300000,
+  "pick_steps": 350000,
+  "mt_steps": 600000,
+  "cells": {
+    "cart_reach->reach(own)": {
+      "mean": 100.0,
+      "std": 0.0,
+      "per_seed": [
+        100.0,
+        100.0,
+        100.0
+      ]
+    },
+    "cart_pick->pick(own)": {
+      "mean": 100.0,
+      "std": 0.0,
+      "per_seed": [
+        100.0,
+        100.0,
+        100.0
+      ]
+    },
+    "cart_reach->pick(cross)": {
+      "mean": 25.555555555555554,
+      "std": 12.57078722109418,
+      "per_seed": [
+        16.666666666666664,
+        16.666666666666664,
+        43.333333333333336
+      ]
+    },
+    "cart_pick->reach(cross)": {
+      "mean": 0.0,
+      "std": 0.0,
+      "per_seed": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "multitask->reach": {
+      "mean": 100.0,
+      "std": 0.0,
+      "per_seed": [
+        100.0,
+        100.0,
+        100.0
+      ]
+    },
+    "multitask->pick": {
+      "mean": 100.0,
+      "std": 0.0,
+      "per_seed": [
+        100.0,
+        100.0,
+        100.0
+      ]
+    }
+  }
+}

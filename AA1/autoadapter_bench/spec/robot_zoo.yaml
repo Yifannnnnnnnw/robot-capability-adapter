@@ -1,0 +1,309 @@
+# AutoAdapter-Bench v1 — Robot Zoo specification.
+#
+# Lists the robots evaluated by the benchmark. Each entry must be a valid
+# MJCF accessible from the workspace, with a documented class + DOF + actuator
+# convention. The synthesis agent infers the class from the MJCF; the
+# framework and evaluator independently require the catalogued morphology.
+#
+# Conventions:
+#   id              — unique short identifier
+#   mjcf            — relative path from REPO_ROOT
+#   class           — {arm, quadruped, wheeled, aerial, humanoid,
+#                      dexterous_hand, mobile_manipulator, bimanual}
+#                     (used for evaluation grouping and expected morphology
+#                      during framework/task validation)
+#   dof             — number of actuated joints (informational, agent infers from MJCF)
+#   vendor          — manufacturer
+#   gripper         — type or `null`
+#   ee_ref          — {site, body, null}  — what the agent should reference as EE
+#   state_refs      — trusted MuJoCo names for framework/task validation
+#   notes           — anything unusual the agent must handle
+#   source          — where the MJCF came from (so reviewers can verify)
+
+version: "v1.0"
+created: "2026-05-30"
+
+robots:
+  - id: so101
+    mjcf: assets/mjcf/so101_mujoco.xml
+    state_refs: {ee_site: ee_site}
+    class: arm
+    dof: 5
+    vendor: LeRobot
+    gripper: hinge_jaw_with_weld
+    ee_ref: site
+    notes: |
+      Hinge-style 1-DOF jaw. Scene includes 6 weld-graspable bodies
+      (banana, mug, bottle, screwdriver, duck, lego). Position actuators.
+    source: vector-os-nano repo
+
+  - id: menagerie_so101
+    mjcf: assets/mjcf/robotstudio_so101/scene.xml
+    class: arm
+    dof: 6
+    vendor: TheRobotStudio
+    gripper: hinge_jaw
+    ee_ref: site
+    notes: |
+      Official MuJoCo Menagerie robotstudio_so101 (same physical arm as
+      `so101`, different MJCF provenance). Used for the MJCF-provenance
+      ablation: synthesis must work from a third-party-curated spec, not
+      only our URDF-compiled one.
+    source: MuJoCo Menagerie (robotstudio_so101)
+
+  - id: so101_push
+    mjcf: assets/mjcf/pushbench/so101_pushbench.xml
+    class: arm
+    dof: 5
+    vendor: LeRobot
+    gripper: hinge_jaw_with_weld
+    ee_ref: site
+    notes: |
+      Push scene variant. SAME SO-101 driver as `so101` but with a
+      different MJCF: tabletop holds a T-shape (`tee`), three cubes
+      (`cube_red`, `cube_green`, `cube_blue`), and one obstacle (`obs`).
+      For the `push` task suite.
+    source: this repo
+
+  - id: piper_push
+    mjcf: assets/mjcf/piper/pushbench.xml
+    class: arm
+    dof: 6
+    vendor: AgileX
+    gripper: parallel_jaw
+    ee_ref: site
+    notes: |
+      Push scene variant on Piper (6-DoF). Same objects as so101_push,
+      placed in Piper workspace at x in [0.35, 0.50].
+    source: this repo
+
+  - id: franka_push
+    mjcf: assets/mjcf/franka_panda/pushbench.xml
+    class: arm
+    dof: 7
+    vendor: Franka Emika
+    gripper: parallel_jaw
+    ee_ref: site
+    notes: |
+      Push scene variant on Franka Panda (7-DoF redundant). Same
+      objects as so101_push, placed in Franka workspace at x in
+      [0.45, 0.55] on a table at z=0.40.
+    source: this repo
+
+  - id: piper
+    mjcf: assets/mjcf/piper/scene.xml
+    state_refs: {ee_site: ee_site}
+    class: arm
+    dof: 6
+    vendor: AgileX
+    gripper: parallel_slide
+    ee_ref: site
+    notes: |
+      Parallel-slide finger gripper. No weld eq in scene → uses
+      ContactGraspBackend. Position actuators.
+    source: Unitree (mujoco_menagerie style)
+
+  - id: franka
+    mjcf: assets/mjcf/franka_panda/scene.xml
+    state_refs: {ee_body: hand}
+    class: arm
+    dof: 7
+    vendor: Franka Emika
+    gripper: tendon_split_parallel
+    ee_ref: body  # No <site> in panda.xml — agent must use body 'hand'
+    notes: |
+      Redundant 7-DOF. Tendon-driven gripper (actuator8 → tendon "split").
+      MJCF has no <site> — tests ee_body_name fallback path.
+    source: mujoco_menagerie
+
+  - id: ur5e
+    mjcf: assets/mjcf/universal_robots_ur5e/scene.xml
+    class: arm
+    dof: 6
+    vendor: Universal Robots
+    gripper: null
+    ee_ref: site
+    notes: |
+      No gripper in base scene — tests NoOpGraspBackend.
+    source: mujoco_menagerie
+
+  - id: kuka_iiwa14
+    mjcf: assets/mjcf/kuka_iiwa_14/scene.xml
+    state_refs: {ee_site: attachment_site}
+    class: arm
+    dof: 7
+    vendor: KUKA
+    gripper: null
+    ee_ref: site
+    notes: |
+      7-DOF redundant. No gripper. EE home pose at Z≈1.3m (very high).
+    source: mujoco_menagerie
+
+  - id: go2
+    mjcf: assets/mjcf/go2/go2_scene.xml
+    state_refs: {base_body: base_link}
+    class: quadruped
+    dof: 12
+    vendor: Unitree
+    gripper: null
+    ee_ref: null
+    notes: |
+      12-DOF, FL/FR/RL/RR naming. Torque-controlled. Tests stand/sit/walk.
+      We added a minimal scene wrapper (go2_scene.xml) that includes go2.xml
+      + a floor plane (the menagerie go2.xml ships without one).
+    source: mujoco_menagerie + custom scene wrapper
+
+  - id: unitree_a1
+    mjcf: assets/mjcf/unitree_a1/scene.xml
+    state_refs: {base_body: trunk}
+    class: quadruped
+    dof: 12
+    vendor: Unitree
+    gripper: null
+    ee_ref: null
+    notes: |
+      12-DOF, FL/FR/RL/RR naming. Smaller than Go2.
+    source: mujoco_menagerie
+
+  - id: anymal_c
+    mjcf: assets/mjcf/anybotics_anymal_c/scene.xml
+    state_refs: {base_body: base}
+    class: quadruped
+    dof: 12
+    vendor: ANYbotics
+    gripper: null
+    ee_ref: null
+    notes: |
+      12-DOF. **LF/LH/RF/RH** leg naming (different from Unitree's FL/FR/RL/RR)
+      — tests skeleton's robustness to leg-label convention.
+    source: mujoco_menagerie
+
+  - id: kinova_gen3_robotiq_2f85
+    mjcf: assets/mjcf/kinova_gen3_robotiq_2f85/scene.xml
+    state_refs: {ee_site: pinch_site}
+    class: arm
+    dof: 7
+    vendor: Kinova
+    gripper: Robotiq_2F-85
+    ee_ref: site
+    notes: |
+      Fixed-base 7-DoF serial arm with a tendon/equality-coupled Robotiq
+      2F-85 gripper. The public end-effector site is `pinch_site`.
+      Position actuators expose seven arm joints and one gripper command.
+    source: MuJoCo Menagerie (Kinova Gen3 + Robotiq 2F-85 composite)
+
+  - id: ufactory_xarm7
+    mjcf: assets/mjcf/ufactory_xarm7/scene.xml
+    state_refs: {ee_site: link_tcp}
+    class: arm
+    dof: 7
+    vendor: UFACTORY
+    gripper: parallel_jaw_tendon
+    ee_ref: site
+    notes: |
+      Fixed-base 7-DoF xArm7 with an integrated tendon-coupled parallel
+      gripper. The end-effector site is `link_tcp`; position actuators use
+      the xArm joint convention.
+    source: MuJoCo Menagerie (ufactory_xarm7)
+
+  - id: universal_robots_ur5e_robotiq_2f85
+    mjcf: assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml
+    state_refs: {ee_site: pinch_site}
+    class: arm
+    dof: 6
+    vendor: Universal Robots
+    gripper: Robotiq_2F-85
+    ee_ref: site
+    notes: |
+      Fixed-base 6-DoF UR5e with a tendon/equality-coupled Robotiq 2F-85
+      attachment. The public end-effector site is `pinch_site`; native
+      arm and gripper actuators remain directly addressable.
+    source: local AutoAdapter composite (UR5e + MuJoCo Menagerie Robotiq 2F-85)
+
+  - id: leap_hand
+    mjcf: assets/mjcf/leap_hand/scene_right.xml
+    class: dexterous_hand
+    dof: 16
+    vendor: LEAP Hand
+    gripper: null
+    ee_ref: body
+    state_refs:
+      fingertip_geoms:
+        index: if_tip
+        middle: mf_tip
+        ring: rf_tip
+        thumb: th_tip
+      base_body: palm
+    notes: |
+      Right-hand 16-DoF dexterous hand with direct joint-position actuators.
+      The palm body is the base; the selected entrypoint is the right-hand
+      scene (`scene_right.xml`).
+    source: MuJoCo Menagerie (leap_hand, right-hand configuration)
+
+  - id: hello_robot_stretch_2
+    mjcf: assets/mjcf/hello_robot_stretch_2/scene.xml
+    class: mobile_manipulator
+    dof: 11
+    vendor: Hello Robot
+    gripper: parallel_slide
+    ee_ref: body
+    state_refs:
+      base_body: base_link
+      ee_body: link_gripper_slider
+      arm_joints: [joint_lift, joint_arm_l3, joint_arm_l2, joint_arm_l1, joint_arm_l0, joint_wrist_yaw]
+    notes: |
+      Free-base Stretch 2 mobile manipulator with two wheel hinges, lift,
+      four telescoping arm joints, wrist yaw, gripper slide, and head
+      pan/tilt. Eight actuator channels drive the eleven non-floating joint
+      degrees of freedom; the end-effector body is `link_gripper_slider`.
+    source: MuJoCo Menagerie (hello_robot_stretch)
+
+  - id: aloha_2
+    mjcf: assets/mjcf/aloha_2/scene.xml
+    class: bimanual
+    dof: 12
+    vendor: Trossen Robotics
+    gripper: parallel_slide
+    ee_ref: site
+    state_refs:
+      ee_sites:
+        left: left/gripper
+        right: right/gripper
+    notes: |
+      Fixed-base bimanual platform with two 6-DoF VX300S arms and one
+      position-controlled gripper slide per side. Left and right gripper
+      sites are available; the scene includes the canonical worktable.
+    source: MuJoCo Menagerie (aloha)
+
+  - id: skydio_x2
+    mjcf: assets/mjcf/skydio_x2/scene.xml
+    state_refs: {base_body: x2}
+    class: aerial
+    dof: 6
+    vendor: Skydio
+    gripper: null
+    ee_ref: null
+    notes: |
+      Free-flying quadrotor: 6-DoF floating base (free joint), 4 thrust
+      actuators (0-13 N each), 1.325 kg. Underactuated + open-loop unstable
+      -> the synthesized driver must implement a cascaded feedback controller
+      (position -> attitude -> per-rotor thrust mix). Tests takeoff (gain
+      altitude, stay upright) + move_to (fly to target without flipping).
+    source: mujoco_menagerie (skydio_x2)
+
+  - id: h1
+    mjcf: assets/mjcf/h1/scene.xml
+    state_refs: {base_body: pelvis}
+    class: humanoid
+    dof: 19
+    vendor: Unitree
+    gripper: null
+    ee_ref: null
+    notes: |
+      Unitree H1 bipedal humanoid: 6-DoF floating torso + 19 joint actuators
+      (10 leg + torso + 8 arm), 51.4 kg. Tall inverted pendulum — open-loop it
+      falls. The synthesized driver must implement joint-space PD balance.
+      Tests stand_balance (hold upright at height for the duration) + squat
+      (lower torso then recover without toppling). Static balance prioritised
+      over dynamic walking.
+    source: mujoco_menagerie (unitree_h1)

@@ -1,0 +1,69 @@
+{
+  "model_path": "autoadapter_bench/baselines/dp/trained/dp_so101_reach.pt",
+  "n_episodes_per_task": 10,
+  "in_distribution_success_rate": 1.0,
+  "ood_avg_success_rate": 0.25,
+  "generalization_gap_pp": 75.0,
+  "per_task": {
+    "in_dist_x+5": {
+      "n_episodes": 10,
+      "success_rate": 1.0,
+      "mean_final_err_m": 0.0192019937131891,
+      "mean_steps_per_episode": 11.0,
+      "target_offset": [
+        0.05,
+        0.0,
+        0.0
+      ],
+      "eval_time_sec": 1.9266157150268555
+    },
+    "ood_y+5": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.09990070943512983,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        0.0,
+        0.05,
+        0.0
+      ],
+      "eval_time_sec": 7.6329569816589355
+    },
+    "ood_z+5": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.10241067490976426,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        0.0,
+        0.0,
+        0.05
+      ],
+      "eval_time_sec": 7.702824831008911
+    },
+    "ood_diag": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.12512255704135758,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        0.03,
+        0.03,
+        0.03
+      ],
+      "eval_time_sec": 7.6765429973602295
+    },
+    "ood_neg_x": {
+      "n_episodes": 10,
+      "success_rate": 1.0,
+      "mean_final_err_m": 0.014649396169012768,
+      "mean_steps_per_episode": 48.0,
+      "target_offset": [
+        -0.05,
+        0.0,
+        0.0
+      ],
+      "eval_time_sec": 3.8800036907196045
+    }
+  }
+}

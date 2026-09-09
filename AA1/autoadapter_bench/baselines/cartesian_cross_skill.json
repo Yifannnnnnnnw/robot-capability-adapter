@@ -1,0 +1,60 @@
+{
+  "metadata": {
+    "interface": "Cartesian EE delta + gripper (same as LLM/CaP tool layer)",
+    "obs": "[ee_xyz(3), gripper_open_frac(1), goal_xyz(3)]",
+    "n_episodes_per_reach_variant": 10,
+    "n_episodes_pick": 10,
+    "deterministic": true,
+    "workspace": "artifacts/auto_adapter_so101_v2_artifacts",
+    "reach_steps": 150000,
+    "pick_steps": 400000
+  },
+  "results": {
+    "cart_reach_on_reach": {
+      "reach_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.0014274384756357548
+      },
+      "reach_x-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.0028557719625301983
+      },
+      "reach_y+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.004635239843953128
+      },
+      "reach_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.012181947123923701
+      }
+    },
+    "cart_reach_on_reach_avg": 1.0,
+    "cart_reach_on_pick": {
+      "success_rate": 0.3,
+      "mean_lift_m": 0.0041286151320552335
+    },
+    "cart_pick_on_reach": {
+      "reach_x+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.2872063981066183
+      },
+      "reach_x-5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.2723924961423499
+      },
+      "reach_y+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.2726778408581138
+      },
+      "reach_z+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.32171614915260655
+      }
+    },
+    "cart_pick_on_reach_avg": 0.0,
+    "cart_pick_on_pick": {
+      "success_rate": 1.0,
+      "mean_lift_m": 0.05048607344306626
+    }
+  }
+}

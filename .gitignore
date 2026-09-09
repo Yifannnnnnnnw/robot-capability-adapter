@@ -39,8 +39,7 @@ dist/
 .DS_Store
 **/.DS_Store
 
-# Independent AA1 checkout for source comparison
-/AA1/
+# AA1 is tracked as a normal directory in this repository.
 
 # Raw experiment evidence stays local. Results documents retain run ids and
 # content hashes; large traces/videos and private run snapshots are not Git data.

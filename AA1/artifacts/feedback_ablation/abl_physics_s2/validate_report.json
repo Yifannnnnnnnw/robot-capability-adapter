@@ -1,0 +1,70 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "ik_roundtrip",
+      "ok": true,
+      "detail": "target=[0.4214446252220816, -0.000979396141629606, 0.2760019192514662], reached=[0.4208849929741416, -0.0009777041026628078, 0.2753015691115583], err=0.0009m",
+      "metric": 0.0008964828132202438
+    },
+    {
+      "test": "gripper_cycle",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "object_perception",
+      "ok": true,
+      "detail": "perception API present; scene has no movable objects",
+      "metric": 1.0
+    },
+    {
+      "test": "grasp_lift",
+      "ok": true,
+      "detail": "grasp API present; scene has no movable objects; skipped",
+      "metric": 1.0
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "str (len=447)",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 439,
+    "n_chars": 16021,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "damped_least_squares"
+  },
+  "structural_ok": true,
+  "n_passed": 9,
+  "n_total": 9,
+  "outer_attempts": 0
+}

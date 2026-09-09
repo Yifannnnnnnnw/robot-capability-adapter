@@ -1,0 +1,33 @@
+{
+  "robot_id": "so101_opus48_rr1",
+  "estimated_class": "arm",
+  "dof": 6,
+  "arm_joint_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll"
+  ],
+  "arm_actuator_names": [
+    "act_shoulder_pan",
+    "act_shoulder_lift",
+    "act_elbow_flex",
+    "act_wrist_flex",
+    "act_wrist_roll"
+  ],
+  "joint_limits": {
+    "shoulder_pan": [-1.92, 1.92],
+    "shoulder_lift": [-1.75, 1.75],
+    "elbow_flex": [-1.69, 1.69],
+    "wrist_flex": [-1.66, 1.66],
+    "wrist_roll": [-2.74, 2.84]
+  },
+  "ee_site": "ee_site",
+  "ee_body": "gripper_link",
+  "gripper_actuator_names": ["act_jaw_visual"],
+  "gripper_ctrlrange": [-0.175, 1.75],
+  "weld_graspable_bodies": ["banana", "mug", "bottle", "screwdriver", "duck", "lego"],
+  "actuator_type_hint": "position",
+  "notes": "SO-101 5-DOF serial arm (all hinge, axis 0 0 1) + visual jaw joint; position actuators (kp); grasping via weld equality between gripper_link and 6 free-joint objects; EE at site 'ee_site' on gripper_link (pos 0 0 -0.098)."
+}

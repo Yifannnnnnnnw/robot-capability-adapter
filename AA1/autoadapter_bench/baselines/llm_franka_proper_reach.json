@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "workspace": "artifacts/auto_adapter_from_scratch_franka_artifacts",
+    "n_episodes_per_variant": 1,
+    "methodology": "fresh skel (no home() call) for both agent and target computation",
+    "agent_model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "success_tol_m": 0.02,
+    "note": "replaces earlier llm_franka_cross_skill.json which had a methodology bug (home() called on target-computation skel but not on agent skel)"
+  },
+  "results": {
+    "reach_x+5": {
+      "success": true,
+      "err_m": 0.0176,
+      "cost_usd": 0.018
+    },
+    "reach_x-5": {
+      "success": false,
+      "err_m": 0.0395,
+      "cost_usd": 0.018
+    },
+    "reach_y+5": {
+      "success": false,
+      "err_m": 0.0273,
+      "cost_usd": 0.018
+    },
+    "reach_z+5": {
+      "success": true,
+      "err_m": 0.0013,
+      "cost_usd": 0.018
+    }
+  },
+  "summary": {
+    "n_success": 2,
+    "n_total": 4,
+    "success_rate": 0.5,
+    "mean_err_m": 0.0214,
+    "finding": "LLM agent correctly uses observed get_ee_pose; residual error from Franka driver IK precision (~1-2 mm IK residual \u2192 2-4 cm Cartesian)"
+  }
+}

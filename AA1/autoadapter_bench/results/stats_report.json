@@ -1,0 +1,213 @@
+{
+  "suite": "SO-101 13-task (12 physics + 1 coverage), N=5 trials/task",
+  "headline": {
+    "task_level_paired_A-A_vs_CaP": {
+      "n_cells": 91,
+      "mean_diff_pp": 12.967032967032969,
+      "sign_test": {
+        "wins": 23,
+        "losses": 11,
+        "ties": 57,
+        "n_effective": 34,
+        "p_two_sided": 0.05761267291381955
+      },
+      "wilcoxon": {
+        "W": 138.5,
+        "z": -2.709797647107959,
+        "p_two_sided": 0.006732426799731637,
+        "n": 34,
+        "w_plus": 456.5,
+        "w_minus": 138.5
+      }
+    },
+    "task_level_paired_A-A_vs_CaP_fs": {
+      "n_cells": 91,
+      "mean_diff_pp": 7.252747252747254,
+      "sign_test": {
+        "wins": 21,
+        "losses": 16,
+        "ties": 54,
+        "n_effective": 37,
+        "p_two_sided": 0.5113757815852296
+      },
+      "wilcoxon": {
+        "W": 250.0,
+        "z": -1.5237148585375229,
+        "p_two_sided": 0.12757995609876638,
+        "n": 37,
+        "w_plus": 453.0,
+        "w_minus": 250.0
+      }
+    },
+    "model_level_A-A_vs_CaP_n7": {
+      "mean_diff_pp": 13.0,
+      "sign_test": {
+        "wins": 6,
+        "losses": 1,
+        "ties": 0,
+        "n_effective": 7,
+        "p_two_sided": 0.125
+      },
+      "wilcoxon": {
+        "W": 5.0,
+        "z": -1.4367622330384782,
+        "p_two_sided": 0.15078556502797133,
+        "n": 7,
+        "w_plus": 23.0,
+        "w_minus": 5.0
+      }
+    },
+    "model_level_A-A_vs_CaP_fs": {
+      "sign_test": {
+        "wins": 4,
+        "losses": 2,
+        "ties": 1,
+        "n_effective": 6,
+        "p_two_sided": 0.6875
+      },
+      "wilcoxon": {
+        "W": 3.0,
+        "z": -1.4675987714106857,
+        "p_two_sided": 0.14221324193639256,
+        "n": 6,
+        "w_plus": 18.0,
+        "w_minus": 3.0
+      }
+    }
+  },
+  "pooled_trials": {
+    "aa": 269,
+    "cap": 210,
+    "n": 455,
+    "aa_rate": 0.591,
+    "cap_rate": 0.462
+  },
+  "per_cell_wilson_ci": {
+    "sonnet46": {
+      "aa": {
+        "rate": 0.692,
+        "n": 65,
+        "ci95": [
+          0.572,
+          0.791
+        ]
+      },
+      "cap": {
+        "rate": 0.569,
+        "n": 65,
+        "ci95": [
+          0.448,
+          0.682
+        ]
+      }
+    },
+    "opus48": {
+      "aa": {
+        "rate": 0.631,
+        "n": 65,
+        "ci95": [
+          0.509,
+          0.738
+        ]
+      },
+      "cap": {
+        "rate": 0.508,
+        "n": 65,
+        "ci95": [
+          0.389,
+          0.625
+        ]
+      }
+    },
+    "haiku45": {
+      "aa": {
+        "rate": 0.615,
+        "n": 65,
+        "ci95": [
+          0.494,
+          0.724
+        ]
+      },
+      "cap": {
+        "rate": 0.538,
+        "n": 65,
+        "ci95": [
+          0.419,
+          0.654
+        ]
+      }
+    },
+    "novapro": {
+      "aa": {
+        "rate": 0.6,
+        "n": 65,
+        "ci95": [
+          0.479,
+          0.71
+        ]
+      },
+      "cap": {
+        "rate": 0.569,
+        "n": 65,
+        "ci95": [
+          0.448,
+          0.682
+        ]
+      }
+    },
+    "deepseek": {
+      "aa": {
+        "rate": 0.569,
+        "n": 65,
+        "ci95": [
+          0.448,
+          0.682
+        ]
+      },
+      "cap": {
+        "rate": 0.092,
+        "n": 65,
+        "ci95": [
+          0.043,
+          0.187
+        ]
+      }
+    },
+    "ministral8b": {
+      "aa": {
+        "rate": 0.538,
+        "n": 65,
+        "ci95": [
+          0.419,
+          0.654
+        ]
+      },
+      "cap": {
+        "rate": 0.231,
+        "n": 65,
+        "ci95": [
+          0.145,
+          0.346
+        ]
+      }
+    },
+    "qwen32": {
+      "aa": {
+        "rate": 0.492,
+        "n": 65,
+        "ci95": [
+          0.375,
+          0.611
+        ]
+      },
+      "cap": {
+        "rate": 0.723,
+        "n": 65,
+        "ci95": [
+          0.604,
+          0.817
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "robot_id": "skydio_x2_sonnet46_rr1",
+  "estimated_class": "aerial",
+  "dof": 6,
+  "arm_joint_names": [],
+  "arm_actuator_names": [],
+  "joint_limits": {},
+  "ee_site": "imu",
+  "ee_body": "x2",
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "notes": "Skydio X2 quadrotor: single rigid body with a freejoint (6-DOF, no limits), four site-based motor actuators (thrust1-4, ctrlrange [0,13] N each, alternating yaw torque signs ±0.0201), IMU site at body centre, hover equilibrium ctrl=3.2495625 per rotor; no arm joints, no gripper, no weld constraints."
+}

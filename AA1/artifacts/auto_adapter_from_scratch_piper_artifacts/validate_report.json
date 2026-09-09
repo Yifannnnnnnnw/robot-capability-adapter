@@ -1,0 +1,57 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "ik_roundtrip",
+      "ok": true,
+      "detail": "target=[0.5289499513951784, 0.0014141646717092525, 0.39525045214103605], reached=[0.5287911976405193, 0.0014136798635299844, 0.3952033574953489], err=0.0002m",
+      "metric": 0.00016559255813513308
+    },
+    {
+      "test": "gripper_cycle",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "str (len=171)",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 377,
+    "n_chars": 14136,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "damped_least_squares"
+  },
+  "structural_ok": true,
+  "n_passed": 7,
+  "n_total": 7
+}

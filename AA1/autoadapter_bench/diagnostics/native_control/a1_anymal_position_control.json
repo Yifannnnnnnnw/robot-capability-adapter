@@ -1,0 +1,41 @@
+{
+  "model_generated": false,
+  "purpose": "Diagnostic reference for native MuJoCo position-actuator semantics; not formal experiment evidence.",
+  "baseline_commit": "064e8af",
+  "baseline_defect_reproduction": {
+    "input": "home posture plus [0.1, 0.2, 0.1] rad on the first leg",
+    "a1_baseline_ctrl_first_leg": [0.802851, 4.18879, -0.916298],
+    "a1_expected_position_target_first_leg": [0.1, 1.1, -1.7],
+    "anymal_baseline_ctrl_first_leg": [3.0, 6.0, 3.0],
+    "anymal_expected_position_target_first_leg": [0.1, 0.2, 0.1],
+    "interpretation": "Baseline _apply_pd computed torque and wrote it into position-actuator ctrl; the native target and torque command differ."
+  },
+  "fixed_real_short_step": {
+    "actuation": "joint_position",
+    "physics_path": "real MjModel/MjData, data.ctrl writes, mujoco.mj_step",
+    "a1": {
+      "scene": "assets/mjcf/unitree_a1/scene.xml",
+      "joint_home_source": "home keyframe",
+      "initial_body_height_m": 0.27,
+      "stand_requested_s": 0.15,
+      "physics_time_s_including_hold": 0.6500000000000005,
+      "stand_ok": true,
+      "final_body_height_m": 0.2512746387791989,
+      "final_home_l2_error_rad": 0.09564529545284699,
+      "state_finite": true,
+      "clipped_target_first_leg": [0.802851, -1.0472, -0.916298]
+    },
+    "anymal": {
+      "scene": "assets/mjcf/anybotics_anymal_c/scene.xml",
+      "joint_home_source": "model.qpos0 (scene has no keyframe)",
+      "initial_body_height_m": 0.62,
+      "stand_requested_s": 0.15,
+      "physics_time_s_including_hold": 0.6500000000000005,
+      "stand_ok": true,
+      "final_body_height_m": 0.6114069385244005,
+      "final_home_l2_error_rad": 0.0857308938101014,
+      "state_finite": true,
+      "clipped_target_first_leg": [0.49, -6.28, 6.28]
+    }
+  }
+}

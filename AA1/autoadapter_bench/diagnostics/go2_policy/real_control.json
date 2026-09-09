@@ -1,0 +1,83 @@
+{
+  "model_generated": false,
+  "scene": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/go2/go2_scene.xml",
+  "real_mujoco": true,
+  "requested_command": {
+    "vx_m_s": 0.25,
+    "vy_m_s": 0.0,
+    "yaw_rate_rad_s": 0.0
+  },
+  "requested_duration_s": 1.0,
+  "sim_time_s": 1.0000000000000007,
+  "physics_steps": 500,
+  "policy_inference_count": 50,
+  "base_position_before_m": [
+    0.0,
+    0.0,
+    0.445
+  ],
+  "base_position_after_m": [
+    0.13706131596567453,
+    -0.011289622972976728,
+    0.36419741804769296
+  ],
+  "base_displacement_m": [
+    0.13706131596567453,
+    -0.011289622972976728,
+    -0.08080258195230705
+  ],
+  "base_rotation_before": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "base_rotation_after": [
+    [
+      0.9997399302999749,
+      0.011460542536953847,
+      0.01971617936005497
+    ],
+    [
+      -0.011483266013582877,
+      0.9999335246054318,
+      0.0010396979452423748
+    ],
+    [
+      -0.019702953216725622,
+      -0.0012658336836726637,
+      0.9998050766522556
+    ]
+  ],
+  "base_twist_after": {
+    "linear_world_m_s": [
+      0.17958150888250596,
+      -0.018011642253153635,
+      -0.002504477943770764
+    ],
+    "linear_body_yaw_m_s": [
+      0.1797760966035014,
+      -0.015952826683120588
+    ],
+    "angular_world_rad_s": [
+      -0.03138078395000068,
+      -0.026453382029094696,
+      0.014392899043915951
+    ],
+    "yaw_rate_rad_s": 0.013782165641959861
+  },
+  "ctrl_changed_from_reset": true,
+  "state_finite": true,
+  "ok": true
+}

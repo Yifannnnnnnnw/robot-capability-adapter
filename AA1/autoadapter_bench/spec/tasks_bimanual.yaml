@@ -1,0 +1,30 @@
+# AutoAdapter-Bench — bounded ALOHA synchronized bimanual task suite.
+version: "v1.0"
+robot_class: bimanual
+
+suites:
+  simple:
+    description: Reach with both arms and hold the pair simultaneously.
+    tasks:
+      - id: synchronized_dual_reach_hold
+        prompt: |
+          Move the LEFT end-effector to world XYZ
+          [-0.178291, 0.004306, 0.326503] m and the RIGHT end-effector to
+          [0.178291, -0.042306, 0.326503] m. Both arms must move. Then hold
+          both positions together for 0.5 seconds while observing the result.
+        success:
+          type: bimanual_reach_hold
+          targets:
+            left: [-0.178291, 0.004306, 0.326503]
+            right: [0.178291, -0.042306, 0.326503]
+          tolerance_m: 0.025
+          min_ee_motion_m: 0.015
+          hold_s: 0.5
+          n_trials: 1
+        reference_actions:
+          - tool: move_cartesian
+            input: {arm: left, x: -0.178291, y: 0.004306, z: 0.326503, duration: 2.0}
+          - tool: move_cartesian
+            input: {arm: right, x: 0.178291, y: -0.042306, z: 0.326503, duration: 2.0}
+          - tool: hold
+            input: {duration: 0.5}

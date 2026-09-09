@@ -1,0 +1,1145 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "skydio_x2",
+    "robot_class": "aerial",
+    "mjcf": "assets/mjcf/skydio_x2/scene.xml",
+    "vendor": "Skydio",
+    "dof": 6,
+    "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-06T20:38:38.177277",
+    "suites_requested": [
+      "simple",
+      "hard"
+    ],
+    "completed_at": "2026-06-06T20:44:31.560265",
+    "wall_clock_sec": 353.3825237751007
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "takeoff_to_05m",
+          "prompt": "Take off and climb to about 0.5 m altitude, then hold a stable\nhover. Stay upright.\n",
+          "success_spec": {
+            "type": "takeoff_to_height",
+            "min_altitude_m": 0.45,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.6270720958709717,
+              "tokens": {
+                "in": 2441,
+                "out": 112,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 0.5 m altitude, and is holding a stable hover while remaining upright.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999998720449307,
+                "upright": 0.9999999989191464
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.5776619911193848,
+              "tokens": {
+                "in": 2441,
+                "out": 112,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 0.5 m altitude, and is holding a stable hover while remaining upright.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999998720449307,
+                "upright": 0.9999999989191464
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.640212059020996,
+              "tokens": {
+                "in": 2441,
+                "out": 112,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 0.5 m altitude, and is holding a stable hover while remaining upright.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999998720449307,
+                "upright": 0.9999999989191464
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.620180130004883,
+              "tokens": {
+                "in": 2441,
+                "out": 112,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 0.5 m altitude, and is holding a stable hover while remaining upright.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999998720449307,
+                "upright": 0.9999999989191464
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.567999839782715,
+              "tokens": {
+                "in": 2441,
+                "out": 112,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 0.5 m altitude, and is holding a stable hover while remaining upright.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999998720449307,
+                "upright": 0.9999999989191464
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 1.0,
+          "tokens": {
+            "in": 12205,
+            "out": 560
+          },
+          "cost_usd": 0.045015
+        },
+        {
+          "id": "hover_at_05m",
+          "prompt": "Take off to about 0.5 m and hover in place at that altitude; keep\nyour horizontal position steady (do not drift away).\n",
+          "success_spec": {
+            "type": "hover_stability",
+            "target_xyz": [
+              0.0,
+              0.0,
+              0.5
+            ],
+            "tol_m": 0.15,
+            "max_drift_m": 0.6,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.082854270935059,
+              "tokens": {
+                "in": 3884,
+                "out": 231,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off to 0.5 m altitude and is maintaining a stable hover with steady horizontal position without drifting.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.038222074508667,
+              "tokens": {
+                "in": 3884,
+                "out": 231,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off to 0.5 m altitude and is maintaining a stable hover with steady horizontal position without drifting.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.0675389766693115,
+              "tokens": {
+                "in": 3884,
+                "out": 231,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off to 0.5 m altitude and is maintaining a stable hover with steady horizontal position without drifting.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.0099897384643555,
+              "tokens": {
+                "in": 3884,
+                "out": 231,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off to 0.5 m altitude and is maintaining a stable hover with steady horizontal position without drifting.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.285341024398804,
+              "tokens": {
+                "in": 3884,
+                "out": 231,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off to 0.5 m altitude and is maintaining a stable hover with steady horizontal position without drifting.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.0,
+          "tokens": {
+            "in": 19420,
+            "out": 1155
+          },
+          "cost_usd": 0.075585
+        },
+        {
+          "id": "goto_forward_40cm",
+          "prompt": "Take off, then fly to a point about 0.4 m forward (+X) of your launch\npoint while holding altitude near 0.5 m. Stay upright.\n",
+          "success_spec": {
+            "type": "reach_3d_target",
+            "target_xyz": [
+              0.4,
+              0.0,
+              0.5
+            ],
+            "tol_m": 0.2,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.827415943145752,
+              "tokens": {
+                "in": 5662,
+                "out": 343,
+                "cache_read": 0
+              },
+              "summary": "Excellent! The drone successfully took off to 0.5 m altitude and flew 0.4 m forward in the +X direction while maintaining altitude and staying upright.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.073m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.072558979904778,
+                "upright": 0.9998633627438167
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.86881399154663,
+              "tokens": {
+                "in": 5662,
+                "out": 343,
+                "cache_read": 0
+              },
+              "summary": "Excellent! The drone successfully took off to 0.5 m altitude and flew 0.4 m forward in the +X direction while maintaining altitude and staying upright.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.073m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.072558979904778,
+                "upright": 0.9998633627438167
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.616907119750977,
+              "tokens": {
+                "in": 5662,
+                "out": 343,
+                "cache_read": 0
+              },
+              "summary": "Excellent! The drone successfully took off to 0.5 m altitude and flew 0.4 m forward in the +X direction while maintaining altitude and staying upright.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.073m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.072558979904778,
+                "upright": 0.9998633627438167
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.619683742523193,
+              "tokens": {
+                "in": 5662,
+                "out": 343,
+                "cache_read": 0
+              },
+              "summary": "Excellent! The drone successfully took off to 0.5 m altitude and flew 0.4 m forward in the +X direction while maintaining altitude and staying upright.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.073m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.072558979904778,
+                "upright": 0.9998633627438167
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.729887962341309,
+              "tokens": {
+                "in": 5662,
+                "out": 343,
+                "cache_read": 0
+              },
+              "summary": "Excellent! The drone successfully took off to 0.5 m altitude and flew 0.4 m forward in the +X direction while maintaining altitude and staying upright.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.073m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.072558979904778,
+                "upright": 0.9998633627438167
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.0,
+          "tokens": {
+            "in": 28310,
+            "out": 1715
+          },
+          "cost_usd": 0.110655
+        },
+        {
+          "id": "climb_to_1m",
+          "prompt": "Take off and climb to about 1.0 m altitude, then hold. Stay upright.\n",
+          "success_spec": {
+            "type": "takeoff_to_height",
+            "min_altitude_m": 0.9,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.8206100463867188,
+              "tokens": {
+                "in": 2437,
+                "out": 117,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 1.0 m altitude, and is holding a stable hover in an upright position.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999989796040185,
+                "upright": 0.9999985815142197
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 4.573497295379639,
+              "tokens": {
+                "in": 2437,
+                "out": 117,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 1.0 m altitude, and is holding a stable hover in an upright position.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999989796040185,
+                "upright": 0.9999985815142197
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.734757900238037,
+              "tokens": {
+                "in": 2437,
+                "out": 117,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 1.0 m altitude, and is holding a stable hover in an upright position.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999989796040185,
+                "upright": 0.9999985815142197
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.603254795074463,
+              "tokens": {
+                "in": 2437,
+                "out": 117,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 1.0 m altitude, and is holding a stable hover in an upright position.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999989796040185,
+                "upright": 0.9999985815142197
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 2,
+              "duration_sec": 3.8199222087860107,
+              "tokens": {
+                "in": 2437,
+                "out": 117,
+                "cache_read": 0
+              },
+              "summary": "Perfect! The drone has successfully taken off, climbed to 1.0 m altitude, and is holding a stable hover in an upright position.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999989796040185,
+                "upright": 0.9999985815142197
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 1.0,
+          "tokens": {
+            "in": 12185,
+            "out": 585
+          },
+          "cost_usd": 0.04533
+        }
+      ]
+    },
+    "hard": {
+      "tasks": [
+        {
+          "id": "goto_and_return",
+          "prompt": "Take off to ~0.5 m, fly about 0.5 m forward in +X, then fly back and\nstop above your launch point. Stay upright the whole time.\n",
+          "success_spec": {
+            "type": "returned_to_start_xy",
+            "tol_m": 0.25,
+            "min_excursion_m": 0.3,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 7,
+              "duration_sec": 14.824543952941895,
+              "tokens": {
+                "in": 11676,
+                "out": 647,
+                "cache_read": 0
+              },
+              "summary": "Task completed successfully! I took off to 0.5 m altitude, flew forward 0.5 m in the +X direction, returned to hover above the launch point at (0.063, 0, 0.5) m, and maintained upright orientation throughout the entire flight.",
+              "error": null,
+              "physics_detail": "peak excursion 41.6cm (need >=30), final drift 4.5cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.04466111478104522,
+                "peak_excursion_m": 0.41602262611502583,
+                "upright": 0.9999927785947881
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 7,
+              "duration_sec": 14.763520002365112,
+              "tokens": {
+                "in": 11676,
+                "out": 647,
+                "cache_read": 0
+              },
+              "summary": "Task completed successfully! I took off to 0.5 m altitude, flew forward 0.5 m in the +X direction, returned to hover above the launch point at (0.063, 0, 0.5) m, and maintained upright orientation throughout the entire flight.",
+              "error": null,
+              "physics_detail": "peak excursion 41.6cm (need >=30), final drift 4.5cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.04466111478104522,
+                "peak_excursion_m": 0.41602262611502583,
+                "upright": 0.9999927785947881
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 7,
+              "duration_sec": 14.382098913192749,
+              "tokens": {
+                "in": 11676,
+                "out": 647,
+                "cache_read": 0
+              },
+              "summary": "Task completed successfully! I took off to 0.5 m altitude, flew forward 0.5 m in the +X direction, returned to hover above the launch point at (0.063, 0, 0.5) m, and maintained upright orientation throughout the entire flight.",
+              "error": null,
+              "physics_detail": "peak excursion 41.6cm (need >=30), final drift 4.5cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.04466111478104522,
+                "peak_excursion_m": 0.41602262611502583,
+                "upright": 0.9999927785947881
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 7,
+              "duration_sec": 14.537621974945068,
+              "tokens": {
+                "in": 11676,
+                "out": 647,
+                "cache_read": 0
+              },
+              "summary": "Task completed successfully! I took off to 0.5 m altitude, flew forward 0.5 m in the +X direction, returned to hover above the launch point at (0.063, 0, 0.5) m, and maintained upright orientation throughout the entire flight.",
+              "error": null,
+              "physics_detail": "peak excursion 41.6cm (need >=30), final drift 4.5cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.04466111478104522,
+                "peak_excursion_m": 0.41602262611502583,
+                "upright": 0.9999927785947881
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 7,
+              "duration_sec": 14.5588219165802,
+              "tokens": {
+                "in": 11676,
+                "out": 647,
+                "cache_read": 0
+              },
+              "summary": "Task completed successfully! I took off to 0.5 m altitude, flew forward 0.5 m in the +X direction, returned to hover above the launch point at (0.063, 0, 0.5) m, and maintained upright orientation throughout the entire flight.",
+              "error": null,
+              "physics_detail": "peak excursion 41.6cm (need >=30), final drift 4.5cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.04466111478104522,
+                "peak_excursion_m": 0.41602262611502583,
+                "upright": 0.9999927785947881
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 58380,
+            "out": 3235
+          },
+          "cost_usd": 0.223665
+        },
+        {
+          "id": "diagonal_goto",
+          "prompt": "Take off and fly to the world point (0.4, 0.3, 0.8) m \u2014 forward,\nleft, and up from the origin. Stay upright.\n",
+          "success_spec": {
+            "type": "reach_3d_target",
+            "target_xyz": [
+              0.4,
+              0.3,
+              0.8
+            ],
+            "tol_m": 0.2,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 9.245151996612549,
+              "tokens": {
+                "in": 5647,
+                "out": 401,
+                "cache_read": 0
+              },
+              "summary": "Excellent! I have successfully taken off and flown the drone to the target world point (0.4, 0.3, 0.8) m. The drone is now hovering at position (0.32, 0.23, 0.80) m, which is within the default tolerance of 0.1 m from the target, and is maintaining an upright orientation as confirmed by the rotation",
+              "error": null,
+              "physics_detail": "pos=[0.32, 0.23, 0.8] target=[0.4, 0.3, 0.8] err=0.105m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.10451492684751644,
+                "upright": 0.9995537119415192
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.689339876174927,
+              "tokens": {
+                "in": 5647,
+                "out": 401,
+                "cache_read": 0
+              },
+              "summary": "Excellent! I have successfully taken off and flown the drone to the target world point (0.4, 0.3, 0.8) m. The drone is now hovering at position (0.32, 0.23, 0.80) m, which is within the default tolerance of 0.1 m from the target, and is maintaining an upright orientation as confirmed by the rotation",
+              "error": null,
+              "physics_detail": "pos=[0.32, 0.23, 0.8] target=[0.4, 0.3, 0.8] err=0.105m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.10451492684751644,
+                "upright": 0.9995537119415192
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 9.002301931381226,
+              "tokens": {
+                "in": 5647,
+                "out": 401,
+                "cache_read": 0
+              },
+              "summary": "Excellent! I have successfully taken off and flown the drone to the target world point (0.4, 0.3, 0.8) m. The drone is now hovering at position (0.32, 0.23, 0.80) m, which is within the default tolerance of 0.1 m from the target, and is maintaining an upright orientation as confirmed by the rotation",
+              "error": null,
+              "physics_detail": "pos=[0.32, 0.23, 0.8] target=[0.4, 0.3, 0.8] err=0.105m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.10451492684751644,
+                "upright": 0.9995537119415192
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 9.0187349319458,
+              "tokens": {
+                "in": 5647,
+                "out": 401,
+                "cache_read": 0
+              },
+              "summary": "Excellent! I have successfully taken off and flown the drone to the target world point (0.4, 0.3, 0.8) m. The drone is now hovering at position (0.32, 0.23, 0.80) m, which is within the default tolerance of 0.1 m from the target, and is maintaining an upright orientation as confirmed by the rotation",
+              "error": null,
+              "physics_detail": "pos=[0.32, 0.23, 0.8] target=[0.4, 0.3, 0.8] err=0.105m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.10451492684751644,
+                "upright": 0.9995537119415192
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 9.99562692642212,
+              "tokens": {
+                "in": 5647,
+                "out": 401,
+                "cache_read": 0
+              },
+              "summary": "Excellent! I have successfully taken off and flown the drone to the target world point (0.4, 0.3, 0.8) m. The drone is now hovering at position (0.32, 0.23, 0.80) m, which is within the default tolerance of 0.1 m from the target, and is maintaining an upright orientation as confirmed by the rotation",
+              "error": null,
+              "physics_detail": "pos=[0.32, 0.23, 0.8] target=[0.4, 0.3, 0.8] err=0.105m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.10451492684751644,
+                "upright": 0.9995537119415192
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.0,
+          "tokens": {
+            "in": 28235,
+            "out": 2005
+          },
+          "cost_usd": 0.11478000000000001
+        },
+        {
+          "id": "box_patrol",
+          "prompt": "Take off to ~0.6 m, then fly a square patrol at that altitude:\nforward 0.4 m, left 0.4 m, back 0.4 m, right 0.4 m, visiting each\ncorner. Stay upright.\n",
+          "success_spec": {
+            "type": "waypoint_3d_trace",
+            "waypoints_relative": false,
+            "waypoints": [
+              [
+                0.4,
+                0.0,
+                0.6
+              ],
+              [
+                0.4,
+                0.4,
+                0.6
+              ],
+              [
+                0.0,
+                0.4,
+                0.6
+              ],
+              [
+                0.0,
+                0.0,
+                0.6
+              ]
+            ],
+            "waypoint_tol_m": 0.18,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 8,
+              "duration_sec": 16.623777866363525,
+              "tokens": {
+                "in": 13460,
+                "out": 759,
+                "cache_read": 0
+              },
+              "summary": "Mission accomplished! I successfully flew a 0.4 m \u00d7 0.4 m square patrol pattern at 0.6 m altitude, visiting all four corners (forward, left, back, right) and returning to the starting position before landing.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271973031
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 8,
+              "duration_sec": 16.239729166030884,
+              "tokens": {
+                "in": 13460,
+                "out": 759,
+                "cache_read": 0
+              },
+              "summary": "Mission accomplished! I successfully flew a 0.4 m \u00d7 0.4 m square patrol pattern at 0.6 m altitude, visiting all four corners (forward, left, back, right) and returning to the starting position before landing.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271973031
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 8,
+              "duration_sec": 16.025584936141968,
+              "tokens": {
+                "in": 13460,
+                "out": 759,
+                "cache_read": 0
+              },
+              "summary": "Mission accomplished! I successfully flew a 0.4 m \u00d7 0.4 m square patrol pattern at 0.6 m altitude, visiting all four corners (forward, left, back, right) and returning to the starting position before landing.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271973031
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 8,
+              "duration_sec": 16.38432288169861,
+              "tokens": {
+                "in": 13460,
+                "out": 759,
+                "cache_read": 0
+              },
+              "summary": "Mission accomplished! I successfully flew a 0.4 m \u00d7 0.4 m square patrol pattern at 0.6 m altitude, visiting all four corners (forward, left, back, right) and returning to the starting position before landing.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271973031
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 8,
+              "duration_sec": 17.0995991230011,
+              "tokens": {
+                "in": 13460,
+                "out": 759,
+                "cache_read": 0
+              },
+              "summary": "Mission accomplished! I successfully flew a 0.4 m \u00d7 0.4 m square patrol pattern at 0.6 m altitude, visiting all four corners (forward, left, back, right) and returning to the starting position before landing.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271973031
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 7.0,
+          "tokens": {
+            "in": 67300,
+            "out": 3795
+          },
+          "cost_usd": 0.25882499999999997
+        },
+        {
+          "id": "stable_hover_tight",
+          "prompt": "Take off to about 0.5 m and hold a TIGHT hover at that altitude \u2014\nkeep your position within a small radius. Stay upright.\n",
+          "success_spec": {
+            "type": "hover_stability",
+            "target_xyz": [
+              0.0,
+              0.0,
+              0.5
+            ],
+            "tol_m": 0.15,
+            "max_drift_m": 0.45,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 4,
+              "duration_sec": 8.619755029678345,
+              "tokens": {
+                "in": 5599,
+                "out": 318,
+                "cache_read": 0
+              },
+              "summary": "Excellent! I have successfully taken off to 0.5 m altitude and maintained a tight, stable hover for 10 seconds while staying upright and keeping position within a very small radius (essentially at the origin with negligible drift).",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0004049600760484599,
+                "max_drift_m": 0.0004049600760484599,
+                "upright": 0.9999999345278207
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.246852159500122,
+              "tokens": {
+                "in": 3850,
+                "out": 218,
+                "cache_read": 0
+              },
+              "summary": "Perfect! I have successfully taken off to 0.5 m altitude and maintained a tight, stable hover for 10 seconds while staying upright and keeping position within a small radius.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0004049600760484599,
+                "max_drift_m": 0.0004049600760484599,
+                "upright": 0.9999999345278207
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.493639945983887,
+              "tokens": {
+                "in": 3856,
+                "out": 221,
+                "cache_read": 0
+              },
+              "summary": "Perfect! I have successfully taken off to 0.5 m altitude and maintained a tight, stable hover for 10 seconds while staying upright and keeping position within a small radius.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0004049600760484599,
+                "max_drift_m": 0.0004049600760484599,
+                "upright": 0.9999999345278207
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 6.03231406211853,
+              "tokens": {
+                "in": 3856,
+                "out": 221,
+                "cache_read": 0
+              },
+              "summary": "Perfect! I have successfully taken off to 0.5 m altitude and maintained a tight, stable hover for 10 seconds while staying upright and keeping position within a small radius.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0004049600760484599,
+                "max_drift_m": 0.0004049600760484599,
+                "upright": 0.9999999345278207
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 3,
+              "duration_sec": 5.7193520069122314,
+              "tokens": {
+                "in": 3856,
+                "out": 221,
+                "cache_read": 0
+              },
+              "summary": "Perfect! I have successfully taken off to 0.5 m altitude and maintained a tight, stable hover for 10 seconds while staying upright and keeping position within a small radius.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0004049600760484599,
+                "max_drift_m": 0.0004049600760484599,
+                "upright": 0.9999999345278207
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.2,
+          "tokens": {
+            "in": 21017,
+            "out": 1199
+          },
+          "cost_usd": 0.081036
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 8,
+    "n_trials_total": 40,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 247052,
+      "out": 14249
+    },
+    "total_cost_usd": 0.954891,
+    "wall_clock_sec": 353.3825237751007
+  }
+}

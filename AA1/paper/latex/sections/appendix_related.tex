@@ -1,0 +1,76 @@
+\section{Extended related work}
+\label{app:related}
+
+The main text folds related work into five threads; we expand each
+here and state the distinction from Auto-Adapter precisely.
+
+\noindent\textbf{LLM tool use vs.\ tool creation.} Two lines treat
+the LLM's relationship to its tools. In tool \emph{use}, the model
+calls a \emph{fixed} external API: Toolformer
+\citep{schick2023toolformer} self-supervises \emph{when} to insert
+calls to a calculator, search, question-answering, and translation
+API, and Gorilla \citep{patil2023gorilla} selects and invokes the
+correct call from a large pool of existing APIs. In tool
+\emph{creation}, the model \emph{writes} the tool: LATM
+\citep{cai2023latm} has a strong model author a reusable Python
+function that a cheaper model then calls, and CREATOR
+\citep{qian2023creator} writes task-specific tools to separate
+abstract planning from concrete computation. All four produce or
+consume \emph{software} utilities, graded by unit tests or answer
+accuracy. Auto-Adapter instead creates a \emph{physical-robot}
+driver (a stateful object exposing motion and perception
+primitives) and grades it against post-step simulator physics, not
+text output, which is why a model that ``reports'' success can still
+fail validation (\S\ref{sec:verifier}).
+
+\noindent\textbf{LLM as code-author for robots.} Code-as-Policies
+\citep{liang2023codeaspolicies} writes per-task control code over an
+existing perception/action API; Voyager \citep{wang2023voyager}
+grows a skill library of action code in Minecraft; CodeAct
+\citep{wang2024codeact} returns executable Python as the agent's
+action; Eureka \citep{ma2024eureka} writes reward functions for
+reinforcement learning. All assume the low-level API already exists.
+We synthesize that API, then let any of these consume it.
+
+\noindent\textbf{Test-driven controller synthesis.} Concurrent with
+this work, \citet{tripathi2026testdriven} pair LLM generation with a
+PyTest repair loop to write a per-task controller for one
+differential-drive robot in Webots. We share the
+generate--test--repair shape but target eight robots spanning arms,
+quadrupeds, a quadrotor, and a humanoid; emit a \emph{reusable}
+driver rather than a per-task script; read MJCF/URDF; and verify
+against simulator-internal physical state rather than test return
+values.
+
+\noindent\textbf{Robot foundation models.} RT-1/2/X
+\citep{brohan2022rt1, brohan2023rt2, openxembodiment2024}, Octo
+\citep{octo2024}, OpenVLA \citep{kim2024openvla}, and $\pi_0$
+\citep{black2024pi0} learn sensorimotor policies from large
+demonstration sets and typically need per-robot finetuning to work
+outside their training data (Appendix~\ref{app:openvla-sweep} probes
+OpenVLA zero-shot on SO-101). Auto-Adapter uses zero demonstrations and
+emits a readable symbolic driver rather than a learned policy;
+the two are complementary: a synthesized driver could expose a
+learned policy as one primitive.
+
+\noindent\textbf{Protocol bridges.} RoboNeuron \citep{roboneuron2025}
+and the Robot Context Protocol \citep{rcp2025} standardize how an LLM
+agent addresses an existing robot stack, specifying the message layer
+above the driver. They assume a driver exists; we synthesize the
+driver itself, which such a protocol could then expose.
+
+\noindent\textbf{Concurrent agentic robotics on the tool layer.}
+Two concurrent lines study the same tool/API layer from the opposite
+side. ENPIRE \citep{enpire2026} places coding agents in a real-robot
+reset--execute--verify loop and has them self-improve \emph{policies}
+on top of a given control stack; its agents call a fixed motion
+interface (e.g.\ \texttt{move\_with\_curobo}) rather than writing it.
+CaP-X \citep{capx2026} benchmarks coding agents for manipulation across
+twelve models and \emph{ablates} the human-crafted abstraction layer
+tier by tier, reporting that performance ``improves with human-crafted
+abstractions but degrades as these priors are removed, exposing a
+dependence on designer scaffolding.'' Both assume or probe the layer
+Auto-Adapter synthesizes: we write that driver/API layer from an
+MJCF/URDF spec and verify it against physics, which is complementary
+to improving policies on it (ENPIRE) or measuring dependence on it
+(CaP-X).

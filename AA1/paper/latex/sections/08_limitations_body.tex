@@ -1,0 +1,83 @@
+\begin{itemize}
+\item \textbf{Feedback-channel ablation is partial.}
+  \S\ref{sec:verifier} argues physics-state verification is the key
+  difference from text-verified code agents. We support this
+  mechanistically and empirically: in the \S\ref{sec:cap-portability}
+  Self track, some models self-report drivers that the independent
+  physics validator rejects. A fully physics-free text-only agent
+  remains an unrun control. On SO-101 the agent's first-pass driver
+  already passes physics validation, so the outer repair loop rarely
+  fires and cannot isolate the channel.
+\item \textbf{Sim only.} All experiments are in MuJoCo; this
+  paper does not claim sim-to-real transfer. A physical bring-up
+  session on a real SO-ARM101 identified four concrete gaps
+  (servo reproducibility, hand-eye calibration, close-range
+  depth, grasp sensing); Appendix~\ref{app:real-robot} reports
+  these as deployment lessons, together with the safety
+  requirements we consider minimally necessary before any
+  write--execute--revise loop touches hardware.
+\item \textbf{Algorithm-class prior.} The controller class per
+  morphology is human-prescribed in the Generate prompt (DLS-IK
+  arms and PD-gait quadrupeds in the main benchmark; aerial and
+  humanoid classes in Appendix~\ref{app:morphology}). In
+  self-contained mode the agent writes the implementation from
+  scratch; in spec mode a 600-line skeleton implements it. The
+  pipeline does not propose new controller classes. Models also
+  draw on pretrained IK/PD idioms; that priors alone are
+  insufficient is suggested by the 3/7 synthesis split under
+  identical prompts and by every successful run needing at least
+  one physics-feedback error recovery (\S\ref{sec:verifier}).
+\item \textbf{7-joint redundant-arm IK precision.} Franka
+  achieves 20/70 (28.6\%) at 2\,cm tolerance. The agent's
+  behavior is consistent across trials, and the gap is driver
+  quality (\S\ref{sec:scoping-franka}).
+\item \textbf{Cross-skill primarily on SO-101.} Full Reach + Pick
+  is on SO-101; cross-robot evidence is the 5-task simple suite
+  on Piper + UR5e (\S\ref{sec:cap-cross-robot}) and end-to-end
+  Pick on Piper using a three-cube pick scene
+  (\S\ref{sec:cap-cross-robot}). Cross-skill on quadrupeds is
+  not evaluated.
+\item \textbf{Privileged observation.} All agents read privileged
+  simulator state (object poses, EE pose) via the synthesized
+  driver rather than raw RGB. The cross-model study spans seven
+  LLMs over five vendors (\S\ref{sec:cap-portability}), but an
+  RGB-input tool-using agent baseline remains open work; a
+  perception-grounded variant on physical hardware (wrist-mounted
+  RGB-D) is our concrete next step.
+\item \textbf{No human-in-the-loop baseline.} We compare against
+  hand-authoring practice and automated baselines; a controlled
+  study of an engineer using LLM coding assistants for the same
+  onboarding task is open work, and we do not claim to beat such
+  workflows.
+\item \textbf{Synthesis prompt does not yet surface every
+  primitive.} Piper Pick (\S\ref{sec:cap-cross-robot}) needed
+  13 lines of simulator bookkeeping patched in post-synthesis;
+  tightening the spec so the agent writes them is open work.
+\item \textbf{Lenient behavioral validation in the main
+  onboarding runs.} The Validate harness is deterministic
+  framework code (no LLM). But the version used for the 8/8 runs
+  graded quadruped \texttt{walk\_forward} only by whether it ran
+  without error, and accepted one \texttt{sit} that did not lower
+  the body. The released harness grades both on physics
+  (Appendix~\ref{app:onboarding}). The 8/8 scoreboard is therefore
+  structural plus smoke-level behavioral, not certified locomotion.
+  Under the released strict harness all eight keep every structural
+  test, but 0/8 \emph{fully} pass: the five arms miss only a
+  scene-perception check added after synthesis, and the three
+  quadrupeds fail one to two locomotion tests (e.g.\ Go2 \texttt{sit}
+  leaves body height 0.28\,m against a 0.22\,m threshold). Downstream
+  \S\ref{sec:capability} numbers use independent physics grading and
+  are unaffected.
+\item \textbf{RL baselines are standard, not fully tuned.} The
+  learned baselines (\S\ref{sec:cap-cross}) are standard SB3 PPO with
+  hand-shaped dense rewards and Diffusion Policy trained from
+  demonstrations. They are not
+  hyperparameter-tuned or built on stronger algorithms (e.g.\
+  SAC/HER), so a better-tuned RL method might transfer further. We
+  therefore frame the result as \emph{cost asymmetry} (RL needs a
+  training run per skill set; the LLM does not), not as LLM control
+  superiority. The same-API comparison is also single-robot (SO-101
+  reach/pick); training on multiple tasks and testing on a held-out
+  skill is open work.
+
+\end{itemize}

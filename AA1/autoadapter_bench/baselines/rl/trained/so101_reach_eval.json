@@ -1,0 +1,70 @@
+{
+  "model_path": "autoadapter_bench/baselines/rl/trained/so101_reach.zip",
+  "workspace": "artifacts/auto_adapter_so101_v2_artifacts",
+  "n_episodes_per_task": 10,
+  "in_distribution_success_rate": 1.0,
+  "ood_avg_success_rate": 0.0,
+  "generalization_gap_pp": 100.0,
+  "per_task": {
+    "in_dist_x+5": {
+      "n_episodes": 10,
+      "success_rate": 1.0,
+      "mean_final_err_m": 0.01877803841424122,
+      "mean_steps_per_episode": 18.0,
+      "target_offset": [
+        0.05,
+        0.0,
+        0.0
+      ],
+      "eval_time_sec": 0.9359548091888428
+    },
+    "ood_y+5": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.08165031636591681,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        0.0,
+        0.05,
+        0.0
+      ],
+      "eval_time_sec": 0.9332780838012695
+    },
+    "ood_z+5": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.0490826583536285,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        0.0,
+        0.0,
+        0.05
+      ],
+      "eval_time_sec": 0.9322829246520996
+    },
+    "ood_diag": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.03931286693775019,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        0.03,
+        0.03,
+        0.03
+      ],
+      "eval_time_sec": 0.9414920806884766
+    },
+    "ood_neg_x": {
+      "n_episodes": 10,
+      "success_rate": 0.0,
+      "mean_final_err_m": 0.114478037855435,
+      "mean_steps_per_episode": 100.0,
+      "target_offset": [
+        -0.05,
+        0.0,
+        0.0
+      ],
+      "eval_time_sec": 0.9642460346221924
+    }
+  }
+}

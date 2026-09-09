@@ -1,0 +1,42 @@
+# AutoAdapter-Bench — bounded LEAP four-fingertip task suite.
+# adapted_task: LEAP four-fingertip HandReach adaptation (not the official
+# Shadow HandReach environment). Targets are FK points from a fixed safe pose.
+version: "v1.0"
+robot_class: dexterous_hand
+adapted_task: "LEAP four-fingertip HandReach adaptation"
+
+suites:
+  simple:
+    description: Move all four fingertips to fixed world-frame goals.
+    tasks:
+      - id: four_fingertip_reach
+        prompt: |
+          Move all four fingertips to these fixed WORLD-frame positions in
+          meters, using one bounded fingertip motion and duration 2 seconds:
+          index [0.07335661, -0.00035633, 0.19640134],
+          middle [0.08166678, 0.03052030, 0.19006656],
+          ring [0.08921245, 0.07559515, 0.18266184],
+          thumb [-0.04099581, -0.09376306, 0.17724107].
+          Verify the measured position of every finger after the motion.
+        success:
+          type: fingertip_targets_reached
+          target_fingertips:
+            index: [0.07335661, -0.00035633, 0.19640134]
+            middle: [0.08166678, 0.03052030, 0.19006656]
+            ring: [0.08921245, 0.07559515, 0.18266184]
+            thumb: [-0.04099581, -0.09376306, 0.17724107]
+          per_finger_tolerance_m: 0.00894427191
+          aggregate_tolerance_m: 0.00894427191
+          min_finger_motion_m: 0.01
+          # 0.00894427191 m is the HandReach 12/15-dimensional aggregate
+          # threshold applied to four 3-D fingertips.
+          n_trials: 1
+        reference_actions:
+          - tool: move_fingertips
+            input:
+              targets:
+                index: [0.07335661, -0.00035633, 0.19640134]
+                middle: [0.08166678, 0.03052030, 0.19006656]
+                ring: [0.08921245, 0.07559515, 0.18266184]
+                thumb: [-0.04099581, -0.09376306, 0.17724107]
+              duration: 2.0

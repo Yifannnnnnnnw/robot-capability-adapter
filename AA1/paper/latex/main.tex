@@ -1,0 +1,69 @@
+\documentclass[11pt]{article}
+
+% Industry Track is double-blind for review
+\usepackage[review]{acl}
+
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Compact run-in subsection headings: collapse each heading into the
+% following paragraph to save vertical space. Keeps numbering + \ref.
+\usepackage{float} % [H] to pin appendix tables/figures exactly in place
+
+\title{Auto-Adapter: Physics-in-the-Loop Robot Driver\\
+       Synthesis for Embodied LLM Agents}
+
+% Anonymous for review
+\author{Anonymous Submission}
+
+\begin{document}
+\maketitle
+
+\input{sections/00_abstract}
+\input{sections/01_intro}
+\input{sections/02_pipeline}
+\input{sections/03_protocol}
+\input{sections/04_onboarding}
+\input{sections/05_capability}
+\input{sections/06_scoping}
+\input{sections/07_summary}
+
+\section*{Limitations}
+\input{sections/08_limitations_body}
+
+\bibliography{references}
+
+\clearpage
+\appendix
+\input{sections/appendix_related}
+\input{sections/appendix_a_onboarding}
+\input{sections/appendix_b_smoke}
+\input{sections/appendix_c_multitask}
+\input{sections/appendix_d_traces}
+\input{sections/appendix_e_reliability}
+\input{sections/appendix_f_models}
+\input{sections/appendix_g_filmstrips}
+\input{sections/appendix_h_gallery}
+\input{sections/appendix_i_robustness}
+\input{sections/appendix_j_morphology}
+\input{sections/appendix_k_real_robot}
+\input{sections/appendix_l_prompts}
+
+\end{document}

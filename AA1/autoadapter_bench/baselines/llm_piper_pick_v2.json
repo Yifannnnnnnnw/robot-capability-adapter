@@ -1,0 +1,820 @@
+{
+  "metadata": {
+    "workspace": "artifacts/from_scratch_piper_pickbench",
+    "n_trials_per_task": 5,
+    "agent_model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "success_tol_m": 0.04,
+    "tasks": [
+      "reach_red",
+      "reach_green",
+      "reach_blue",
+      "pick_red",
+      "pick_green",
+      "pick_blue"
+    ],
+    "driver_synthesis_note": "Driver synthesized from-scratch against pickbench MJCF (test_from_scratch_piper_pickbench.py); grasp logic + weld activation written by agent. Post-synthesis patches: (1) get_object_position helper (5 lines), (2) eq_data relpose update on weld activation (8 lines)."
+  },
+  "results": {
+    "reach_red": {
+      "n_success": 5,
+      "n_total": 5,
+      "success_rate": 1.0,
+      "trials": [
+        {
+          "trial": 0,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.40091446849762025,
+              -0.08013661229637227,
+              0.2649307907254717
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              -0.0800000000001795,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 11.225085973739624,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4914,
+            "out": 259
+          },
+          "cost_usd": 0.018627,
+          "summary": "Done! The end-effector is now positioned at (0.4, -0.08, 0.265), which is 5 cm directly above the red cube."
+        },
+        {
+          "trial": 1,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.40091446849762025,
+              -0.08013661229637227,
+              0.2649307907254717
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              -0.0800000000001795,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 9.185145854949951,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4918,
+            "out": 258
+          },
+          "cost_usd": 0.018624,
+          "summary": "Done! The end-effector is now positioned 5 cm directly above the red cube at position (0.4, -0.08, 0.265)."
+        },
+        {
+          "trial": 2,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.40091446849762025,
+              -0.08013661229637227,
+              0.2649307907254717
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              -0.0800000000001795,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 9.127524137496948,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4909,
+            "out": 255
+          },
+          "cost_usd": 0.018552,
+          "summary": "The end-effector has been successfully moved to 5 cm directly above the red cube at position (0.4, -0.08, 0.265)."
+        },
+        {
+          "trial": 3,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.40091446849762025,
+              -0.08013661229637227,
+              0.2649307907254717
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              -0.0800000000001795,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 9.922935962677002,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4915,
+            "out": 260
+          },
+          "cost_usd": 0.018645000000000002,
+          "summary": "Done! The end-effector is now positioned at (0.4, -0.08, 0.265), which is 5 cm directly above the red cube."
+        },
+        {
+          "trial": 4,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.40091446849762025,
+              -0.08013661229637227,
+              0.2649307907254717
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              -0.0800000000001795,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 9.659128665924072,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4908,
+            "out": 256
+          },
+          "cost_usd": 0.018564,
+          "summary": "Done! The end-effector has been successfully moved to 5 cm directly above the red cube at position (0.4, -0.08, 0.265)."
+        }
+      ]
+    },
+    "reach_green": {
+      "n_success": 5,
+      "n_total": 5,
+      "success_rate": 1.0,
+      "trials": [
+        {
+          "trial": 0,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4005846751147007,
+              9.011831937307847e-07,
+              0.264952393253869
+            ],
+            "cube_pos": [
+              0.39999999999848934,
+              -1.797310367545127e-13,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 12.30076003074646,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4912,
+            "out": 255
+          },
+          "cost_usd": 0.018561,
+          "summary": "The end-effector has been successfully moved to 5 cm directly above the green cube at position (0.4, 0.0, 0.265)."
+        },
+        {
+          "trial": 1,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4005846751147007,
+              9.011831937307847e-07,
+              0.264952393253869
+            ],
+            "cube_pos": [
+              0.39999999999848934,
+              -1.797310367545127e-13,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 13.264721870422363,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4911,
+            "out": 272
+          },
+          "cost_usd": 0.018813,
+          "summary": "Done! The end-effector is now positioned at (0.4, 0.0, 0.265), which is 5 cm directly above the green cube at (0.4, 0.0, 0.215)."
+        },
+        {
+          "trial": 2,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4005846751147007,
+              9.011831937307847e-07,
+              0.264952393253869
+            ],
+            "cube_pos": [
+              0.39999999999848934,
+              -1.797310367545127e-13,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 10.835004091262817,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4913,
+            "out": 256
+          },
+          "cost_usd": 0.018579000000000002,
+          "summary": "The end-effector has been successfully moved to 5 cm directly above the green cube at position (0.4, 0.0, 0.265)."
+        },
+        {
+          "trial": 3,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4005846751147007,
+              9.011831937307847e-07,
+              0.264952393253869
+            ],
+            "cube_pos": [
+              0.39999999999848934,
+              -1.797310367545127e-13,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 8.57135796546936,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4912,
+            "out": 253
+          },
+          "cost_usd": 0.018531000000000002,
+          "summary": "The end-effector is now positioned 5 cm directly above the green cube at coordinates (0.4, 0.0, 0.265)."
+        },
+        {
+          "trial": 4,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4005846751147007,
+              9.011831937307847e-07,
+              0.264952393253869
+            ],
+            "cube_pos": [
+              0.39999999999848934,
+              -1.797310367545127e-13,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 8.531836032867432,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4911,
+            "out": 256
+          },
+          "cost_usd": 0.018573,
+          "summary": "Done! The end-effector is now positioned at (0.4, 0.0, 0.265), which is 5 cm directly above the green cube."
+        }
+      ]
+    },
+    "reach_blue": {
+      "n_success": 5,
+      "n_total": 5,
+      "success_rate": 1.0,
+      "trials": [
+        {
+          "trial": 0,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4009071017561213,
+              0.080138767167004,
+              0.2649312178320953
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              0.07999999999982049,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 17.55123496055603,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4903,
+            "out": 251
+          },
+          "cost_usd": 0.018474,
+          "summary": "The end-effector has been successfully moved to 5 cm directly above the blue cube at position (0.4, 0.08, 0.265)."
+        },
+        {
+          "trial": 1,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4009071017561213,
+              0.080138767167004,
+              0.2649312178320953
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              0.07999999999982049,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 8.02928614616394,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4912,
+            "out": 258
+          },
+          "cost_usd": 0.018606,
+          "summary": "Done! The end-effector is now positioned at (0.4, 0.08, 0.265), which is 5 cm directly above the blue cube."
+        },
+        {
+          "trial": 2,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4009071017561213,
+              0.080138767167004,
+              0.2649312178320953
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              0.07999999999982049,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 8.66758918762207,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4905,
+            "out": 253
+          },
+          "cost_usd": 0.018510000000000002,
+          "summary": "Done! The end-effector is now positioned at (0.4, 0.08, 0.265), which is 5 cm directly above the blue cube."
+        },
+        {
+          "trial": 3,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4009071017561213,
+              0.080138767167004,
+              0.2649312178320953
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              0.07999999999982049,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 8.628785133361816,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4908,
+            "out": 254
+          },
+          "cost_usd": 0.018534000000000002,
+          "summary": "The end-effector has been successfully moved to 5 cm directly above the blue cube at position (0.4, 0.08, 0.265)."
+        },
+        {
+          "trial": 4,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.4009071017561213,
+              0.080138767167004,
+              0.2649312178320953
+            ],
+            "cube_pos": [
+              0.39999999999848923,
+              0.07999999999982049,
+              0.20489224457978367
+            ],
+            "is_holding": false
+          },
+          "duration_sec": 9.810481786727905,
+          "n_tool_calls": 2,
+          "tokens": {
+            "in": 4914,
+            "out": 257
+          },
+          "cost_usd": 0.018597,
+          "summary": "The end-effector has been successfully moved to 5 cm directly above the blue cube at position (0.4, 0.08, 0.265)."
+        }
+      ]
+    },
+    "pick_red": {
+      "n_success": 5,
+      "n_total": 5,
+      "success_rate": 1.0,
+      "trials": [
+        {
+          "trial": 0,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999998300085954,
+              -0.07999963344456368,
+              0.314977728680774
+            ],
+            "cube_pos": [
+              0.4002323569671243,
+              -0.0844421461683162,
+              0.28682661689231476
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 31.416584968566895,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 23455,
+            "out": 999
+          },
+          "cost_usd": 0.08535,
+          "summary": "**Task completed successfully!** I picked up the red cube from its original position at z = 0.215 m and lifted it to z = 0.315 m (10 cm high"
+        },
+        {
+          "trial": 1,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999998300085954,
+              -0.07999963344456368,
+              0.314977728680774
+            ],
+            "cube_pos": [
+              0.4002323569671243,
+              -0.0844421461683162,
+              0.28682661689231476
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 32.080843687057495,
+          "n_tool_calls": 11,
+          "tokens": {
+            "in": 24261,
+            "out": 1018
+          },
+          "cost_usd": 0.088053,
+          "summary": "**Task completed successfully!** I picked up the red cube from position [0.4, -0.08, 0.215] and lifted it 10 cm to height 0.315 meters, and "
+        },
+        {
+          "trial": 2,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999998300085954,
+              -0.07999963344456368,
+              0.314977728680774
+            ],
+            "cube_pos": [
+              0.4002323569671243,
+              -0.0844421461683162,
+              0.28682661689231476
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 27.91575813293457,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 20939,
+            "out": 910
+          },
+          "cost_usd": 0.076467,
+          "summary": "**Task completed successfully!** I picked up the red cube from position [0.4, -0.08, 0.215] and lifted it 10 cm to height 0.315 m, and the g"
+        },
+        {
+          "trial": 3,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999998300085954,
+              -0.07999963344456368,
+              0.314977728680774
+            ],
+            "cube_pos": [
+              0.4002323569671243,
+              -0.0844421461683162,
+              0.28682661689231476
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 32.81349301338196,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 22946,
+            "out": 901
+          },
+          "cost_usd": 0.082353,
+          "summary": "**Task completed successfully!** I picked up the red cube from its position at z=0.215 m and lifted it to z=0.315 m (10 cm above its origina"
+        },
+        {
+          "trial": 4,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.399999958782686,
+              -0.07999963714218415,
+              0.3149777965965209
+            ],
+            "cube_pos": [
+              0.3999312001092212,
+              -0.08360862349875901,
+              0.28565358468188357
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 30.537475109100342,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 22961,
+            "out": 892
+          },
+          "cost_usd": 0.082263,
+          "summary": "**Task completed successfully!** I picked up the red cube from its original position at z=0.215m and lifted it to z=0.315m (10 cm higher), a"
+        }
+      ]
+    },
+    "pick_green": {
+      "n_success": 5,
+      "n_total": 5,
+      "success_rate": 1.0,
+      "trials": [
+        {
+          "trial": 0,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.3999987353542724,
+              2.194504855957454e-07,
+              0.31497555481025363
+            ],
+            "cube_pos": [
+              0.4048438328332886,
+              0.0015181998658708416,
+              0.28767006236352327
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 30.18873906135559,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 23467,
+            "out": 1009
+          },
+          "cost_usd": 0.085536,
+          "summary": "**Task completed successfully!** I picked up the green cube from its original position at z=0.215 m and lifted it to z=0.315 m, which is exa"
+        },
+        {
+          "trial": 1,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999875627183,
+              2.1405046451283957e-07,
+              0.31497563807857726
+            ],
+            "cube_pos": [
+              0.4037271777200252,
+              0.0007947061119153394,
+              0.2970458088135079
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 30.868114948272705,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 23027,
+            "out": 910
+          },
+          "cost_usd": 0.082731,
+          "summary": "**Task completed successfully!** I picked up the green cube from its original position at z=0.215 m and lifted it to z=0.315 m, which is exa"
+        },
+        {
+          "trial": 2,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.3999987353542724,
+              2.194504855957454e-07,
+              0.31497555481025363
+            ],
+            "cube_pos": [
+              0.4048438328332886,
+              0.0015181998658708416,
+              0.28767006236352327
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 32.947715044021606,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 22927,
+            "out": 902
+          },
+          "cost_usd": 0.082311,
+          "summary": "**Task completed successfully!** I picked up the green cube from its original position at z=0.215 m and lifted it to z=0.315 m, exactly 10 c"
+        },
+        {
+          "trial": 3,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.3999987353542724,
+              2.194504855957454e-07,
+              0.31497555481025363
+            ],
+            "cube_pos": [
+              0.4048438328332886,
+              0.0015181998658708416,
+              0.28767006236352327
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 30.93179702758789,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 23385,
+            "out": 982
+          },
+          "cost_usd": 0.08488499999999999,
+          "summary": "**Task completed successfully!** I picked up the green cube from its original position at z=0.215 m and lifted it to z=0.315 m (10 cm higher"
+        },
+        {
+          "trial": 4,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999876326950107,
+              2.3740066290518823e-07,
+              0.3149758061492414
+            ],
+            "cube_pos": [
+              0.4037772730899853,
+              0.0008342666120993851,
+              0.2965551300906364
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 27.503660917282104,
+          "n_tool_calls": 9,
+          "tokens": {
+            "in": 20431,
+            "out": 839
+          },
+          "cost_usd": 0.073878,
+          "summary": "**Task completed successfully!** I picked up the green cube from position [0.4, 0.0, 0.215] and lifted it 10 cm to height 0.315 meters, and "
+        }
+      ]
+    },
+    "pick_blue": {
+      "n_success": 5,
+      "n_total": 5,
+      "success_rate": 1.0,
+      "trials": [
+        {
+          "trial": 0,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999975881104793,
+              0.08000002210244647,
+              0.31497738278099624
+            ],
+            "cube_pos": [
+              0.4021676019941821,
+              0.08207962646036134,
+              0.2918099533326481
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 33.683919191360474,
+          "n_tool_calls": 11,
+          "tokens": {
+            "in": 25394,
+            "out": 916
+          },
+          "cost_usd": 0.089922,
+          "summary": "**Task completed successfully!** I picked up the blue cube from position [0.4, 0.08, 0.215] and lifted it 10 cm higher to z=0.315, and the g"
+        },
+        {
+          "trial": 1,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999982259509503,
+              0.0799999797473517,
+              0.31497772423461967
+            ],
+            "cube_pos": [
+              0.4002170085492506,
+              0.08392488644944227,
+              0.28567829758303853
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 28.758130073547363,
+          "n_tool_calls": 9,
+          "tokens": {
+            "in": 20390,
+            "out": 832
+          },
+          "cost_usd": 0.07365000000000001,
+          "summary": "**Task completed successfully!** I picked up the blue cube from its original position at z=0.215m and lifted it to z=0.315m (10 cm higher), "
+        },
+        {
+          "trial": 2,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999982259509503,
+              0.0799999797473517,
+              0.31497772423461967
+            ],
+            "cube_pos": [
+              0.4002170085492506,
+              0.08392488644944227,
+              0.28567829758303853
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 30.444805145263672,
+          "n_tool_calls": 9,
+          "tokens": {
+            "in": 20434,
+            "out": 835
+          },
+          "cost_usd": 0.073827,
+          "summary": "**Task completed successfully!** I picked up the blue cube from its original position at z=0.215 m and lifted it to z=0.315 m (10 cm higher)"
+        },
+        {
+          "trial": 3,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999988947032306,
+              0.08000006439254391,
+              0.3149777444654466
+            ],
+            "cube_pos": [
+              0.4001214649600979,
+              0.0841080691417109,
+              0.2859444553716595
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 31.625282764434814,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 20809,
+            "out": 877
+          },
+          "cost_usd": 0.07558200000000001,
+          "summary": "Perfect! I successfully picked up the blue cube from its original position at z=0.215 m and lifted it to z=0.315 m (10 cm higher), and the g"
+        },
+        {
+          "trial": 4,
+          "success": true,
+          "phys": {
+            "ee_pos": [
+              0.39999988947032306,
+              0.08000006439254391,
+              0.3149777444654466
+            ],
+            "cube_pos": [
+              0.4001214649600979,
+              0.0841080691417109,
+              0.2859444553716595
+            ],
+            "is_holding": true
+          },
+          "duration_sec": 36.12873601913452,
+          "n_tool_calls": 10,
+          "tokens": {
+            "in": 23475,
+            "out": 1013
+          },
+          "cost_usd": 0.08562,
+          "summary": "Perfect! I successfully picked up the blue cube from position [0.4, 0.08, 0.215] and lifted it 10 cm above its original position to [0.4, 0."
+        }
+      ]
+    }
+  },
+  "summary": {
+    "n_tasks": 6,
+    "n_trials_per_task": 5,
+    "n_trials_total": 30,
+    "n_success_total": 30,
+    "overall_success_rate": 1.0,
+    "total_cost_usd": 1.5012180000000002,
+    "wall_clock_sec": 627.0625178813934
+  }
+}

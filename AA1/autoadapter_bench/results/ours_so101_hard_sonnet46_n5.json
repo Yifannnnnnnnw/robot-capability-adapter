@@ -1,0 +1,663 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "baseline": "ours",
+    "baseline_description": "ours: agent bootstraps driver from MJCF",
+    "robot": "so101",
+    "robot_class": "arm",
+    "mjcf": "assets/mjcf/so101_mujoco.xml",
+    "vendor": "LeRobot",
+    "dof": 5,
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-02T10:09:23.242935",
+    "suites_requested": [
+      "hard"
+    ],
+    "completed_at": "2026-06-02T10:24:19.657545",
+    "wall_clock_sec": 896.4141108989716
+  },
+  "suites": {
+    "hard": {
+      "tasks": [
+        {
+          "id": "conditional_pick",
+          "prompt": "Look at the current positions of the banana and the mug.\nIf the banana's X-coordinate is LESS than the mug's\nX-coordinate (banana more to the left), pick the banana and\nlift it 10 cm. Otherwise pick the mug and lift it 10 cm.\nReport which one you picked and why.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug"
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 422,
+              "duration_sec": 36.30479979515076,
+              "tokens": {
+                "in": 22247,
+                "out": 894,
+                "cache_read": 0
+              },
+              "summary": "The arm is holding the banana at approximately Z = 0.178 m, which is ~10 cm above where it was grasped. \u2705\n\n---\n\n### Summary\n\n**I picked the \ud83c\udf4c banana** because its X-coordinate (**0.12 m**) was **less than** the mug's X-coordinate (**0.22 m**), meaning the banana was further to the left. The banana w",
+              "error": null,
+              "physics_detail": "banana lifted 10.4 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10392754528152943
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 423,
+              "duration_sec": 38.609086990356445,
+              "tokens": {
+                "in": 24894,
+                "out": 894,
+                "cache_read": 0
+              },
+              "summary": "---\n\n\u2705 **Summary:** I picked the **banana** and lifted it 10 cm. The reason: the banana's X-coordinate (**0.12 m**) was less than the mug's X-coordinate (**0.22 m**), meaning the banana was further to the left \u2014 satisfying the condition for picking it. The grasp was confirmed successful and the bana",
+              "error": null,
+              "physics_detail": "banana lifted 10.2 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10214097092702536
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 422,
+              "duration_sec": 33.40469002723694,
+              "tokens": {
+                "in": 22246,
+                "out": 871,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task complete!**\n\n**I picked the \ud83c\udf4c banana** and lifted it 10 cm (from Z = 0.06 to Z \u2248 0.16 m).\n\n**Why the banana?** Because its X-coordinate (0.12 m) was **less than** the mug's X-coordinate (0.22 m), meaning the banana was positioned further to the left \u2014 satisfying the condition to pick it. Th",
+              "error": null,
+              "physics_detail": "banana lifted 10.1 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10141333720156064
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 422,
+              "duration_sec": 36.38924694061279,
+              "tokens": {
+                "in": 22333,
+                "out": 951,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Task Complete!**\n\n**I picked the \ud83c\udf4c banana** and lifted it 10 cm \u2014 here's why:\n\n| Object | X-coordinate |\n|--------|-------------|\n| Banana | **0.12 m** |\n| Mug    | 0.22 m |\n\nThe banana's X-coordinate (0.12) was **less than** the mug's X-coordinate (0.22), meaning the banana was further to the l",
+              "error": null,
+              "physics_detail": "banana lifted 10.4 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10392754528152943
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 9,
+              "frames": 421,
+              "duration_sec": 35.0566828250885,
+              "tokens": {
+                "in": 19564,
+                "out": 844,
+                "cache_read": 0
+              },
+              "summary": "---\n\n**Summary:** I picked the **banana** and lifted it 10 cm. The reason: the banana's X-coordinate (**0.12 m**) was less than the mug's X-coordinate (**0.22 m**), meaning the banana was further to the left \u2014 satisfying the condition for picking it. The grasp was confirmed successful and the banana",
+              "error": null,
+              "physics_detail": "banana lifted 10.4 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.10382568128654175
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 10.0,
+          "tokens": {
+            "in": 111284,
+            "out": 4454
+          },
+          "cost_usd": 0.40066199999999996
+        },
+        {
+          "id": "visit_all_objects",
+          "prompt": "Visit each of the 6 graspable objects in turn \u2014 banana, mug,\nbottle, screwdriver, duck, lego. For each, move the EE 5 cm\nabove the object, hover briefly, and report whether the\ngripper is holding anything. Return home at the end.\n",
+          "success_spec": {
+            "type": "ee_visited_n_positions",
+            "n_required": 6,
+            "tolerance_m": 0.06,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 58.555201053619385,
+              "tokens": {
+                "in": 45259,
+                "out": 1795,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Hover Tour Complete \u2014 Summary Report\n\n| # | Object | Hover Position (x, y, z) | Gripper Holding? |\n|---|--------|--------------------------|-----------------|\n| 1 | \ud83c\udf4c Banana | (0.12, 0.12, **0.11**) | **No** |\n| 2 | \u2615 Mug | (0.22, 0.05, **0.11**) | **No** |\n| 3 | \ud83c\udf76 Bottle | (0.30, 0.12, **",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.12,
+                    0.12
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 65.65442276000977,
+              "tokens": {
+                "in": 45874,
+                "out": 1926,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\udccb Summary Report\n\n| # | Object | Hover Position (x, y, z) | Holding? |\n|---|--------|--------------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.12, 0.12, **0.11**) | \u274c No |\n| 2 | \u2615 Mug | (0.22, 0.05, **0.11**) | \u274c No |\n| 3 | \ud83c\udf7e Bottle | (0.30, 0.12, **0.13**) | \u274c No |\n| 4 | \ud83d\udd27 Screwdriver | (0",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.12,
+                    0.12
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 66.66413187980652,
+              "tokens": {
+                "in": 45682,
+                "out": 1918,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\udccb Hover Tour \u2014 Summary Report\n\n| # | Object | World Position (x, y, z) | Hover Height (z) | Holding? |\n|---|--------|--------------------------|------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.12, 0.12, 0.06) | 0.11 m | \u274c No |\n| 2 | \u2615 Mug | (0.22, 0.05, 0.06) | 0.11 m | \u274c No |\n| 3 | \ud83c\udf7c Bott",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.12,
+                    0.12
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 62.60665774345398,
+              "tokens": {
+                "in": 45975,
+                "out": 1925,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 Tour Complete \u2014 Summary Report\n\n| # | Object | Hover Position (x, y, z) | Holding? |\n|---|--------|--------------------------|----------|\n| 1 | \ud83c\udf4c Banana | (0.12, 0.12, 0.11) | **No** |\n| 2 | \u2615 Mug | (0.22, 0.05, 0.11) | **No** |\n| 3 | \ud83c\udf76 Bottle | (0.30, 0.12, 0.13) | **No** |\n| 4 | \ud83d\udd27 Screwd",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.12,
+                    0.12
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 20,
+              "frames": 821,
+              "duration_sec": 65.98773503303528,
+              "tokens": {
+                "in": 46064,
+                "out": 1990,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \ud83d\udccb Hover Survey \u2014 Results Summary\n\n| # | Object | World Position (x, y, z) | Hover Height (Z) | Gripper Holding? |\n|---|--------|--------------------------|------------------|-----------------|\n| 1 | \ud83c\udf4c Banana | (0.12, 0.12, 0.06) | 0.11 m | \u274c No |\n| 2 | \u2615 Mug | (0.22, 0.05, 0.06) | 0.11 m | \u274c",
+              "error": null,
+              "physics_detail": "unique targets=6",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.15,
+                    -0.1
+                  ],
+                  [
+                    0.24,
+                    -0.08
+                  ],
+                  [
+                    0.12,
+                    0.12
+                  ],
+                  [
+                    0.3,
+                    0.12
+                  ],
+                  [
+                    0.22,
+                    0.05
+                  ],
+                  [
+                    0.3,
+                    -0.1
+                  ]
+                ]
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 20.0,
+          "tokens": {
+            "in": 228854,
+            "out": 9554
+          },
+          "cost_usd": 0.8298719999999999
+        },
+        {
+          "id": "numeric_midpoint",
+          "prompt": "Get the positions of the mug and the bottle. Compute the\nmidpoint (average X, Y; Z plus 5 cm). Move the EE to that\nmidpoint and report whether you reached it. Don't grasp.\n",
+          "success_spec": {
+            "type": "ee_at_midpoint",
+            "objects": [
+              "mug",
+              "bottle"
+            ],
+            "tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 22.623504877090454,
+              "tokens": {
+                "in": 10162,
+                "out": 711,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Summary\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.220 | 0.050 | 0.060 |\n| **Bottle** | 0.300 | 0.120 | 0.080 |\n| **Target midpoint** | 0.260 | 0.085 | 0.120 |\n| **Actual EE position** | 0.2589 | 0.0841 | 0.1183 |\n\n**The arm successfully reached the midpoint.** The actual EE positio",
+              "error": null,
+              "physics_detail": "EE to midpoint err 4.8 cm",
+              "physics_metrics": {
+                "err_m": 0.048401908226691444
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 105,
+              "duration_sec": 15.614646196365356,
+              "tokens": {
+                "in": 7911,
+                "out": 680,
+                "cache_read": 0
+              },
+              "summary": "Here's the full summary:\n\n---\n\n### \u2705 Results\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0600 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0800 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.1200 |\n| **Actual EE position** | 0.2588 | 0.0840 | 0.1184 |\n\n**Did we reach it?** \u2705 **Yes** \u2014 ",
+              "error": null,
+              "physics_detail": "EE to midpoint err 4.8 cm",
+              "physics_metrics": {
+                "err_m": 0.04840187215454979
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 20.398621082305908,
+              "tokens": {
+                "in": 10199,
+                "out": 731,
+                "cache_read": 0
+              },
+              "summary": "\u2705 **Target reached successfully!** Here's the full summary:\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.220 | 0.050 | 0.060 |\n| **Bottle** | 0.300 | 0.120 | 0.080 |\n| **Computed Midpoint** | 0.260 | 0.085 | 0.120 |\n| **Actual EE Position** | 0.2589 | 0.0841 | 0.1183 |\n\nThe end-effector reached ",
+              "error": null,
+              "physics_detail": "EE to midpoint err 4.8 cm",
+              "physics_metrics": {
+                "err_m": 0.048401908226691444
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 206,
+              "duration_sec": 21.576191902160645,
+              "tokens": {
+                "in": 10153,
+                "out": 698,
+                "cache_read": 0
+              },
+              "summary": "**\u2705 Target reached successfully!** Here's the full summary:\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.2200 | 0.0500 | 0.0600 |\n| **Bottle** | 0.3000 | 0.1200 | 0.0800 |\n| **Target midpoint** | 0.2600 | 0.0850 | 0.1200 |\n| **Actual EE pose** | 0.2589 | 0.0841 | 0.1183 |\n\nThe end-effector reach",
+              "error": null,
+              "physics_detail": "EE to midpoint err 4.8 cm",
+              "physics_metrics": {
+                "err_m": 0.048401908226691444
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 105,
+              "duration_sec": 15.149259805679321,
+              "tokens": {
+                "in": 7971,
+                "out": 666,
+                "cache_read": 0
+              },
+              "summary": "---\n\n### \u2705 Summary\n\n| | X | Y | Z |\n|---|---|---|---|\n| **Mug** | 0.220 | 0.050 | 0.060 |\n| **Bottle** | 0.300 | 0.120 | 0.080 |\n| **Target midpoint** | 0.260 | 0.085 | 0.120 |\n| **Actual EE pose** | 0.2588 | 0.0840 | 0.1184 |\n\n**The motion succeeded (`True`).** The EE reached the target midpoint wi",
+              "error": null,
+              "physics_detail": "EE to midpoint err 4.8 cm",
+              "physics_metrics": {
+                "err_m": 0.04840187215454979
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 4.6,
+          "tokens": {
+            "in": 46396,
+            "out": 3486
+          },
+          "cost_usd": 0.191478
+        },
+        {
+          "id": "draw_letter_L",
+          "prompt": "Draw an L in the air: from start, move 15 cm down, hold,\nthen 10 cm in X, hold, then return home. Report EE pose at\neach corner.\n",
+          "success_spec": {
+            "type": "ee_pose_returned_home",
+            "tolerance_m": 0.04,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 12,
+              "frames": 510,
+              "duration_sec": 49.86329102516174,
+              "tokens": {
+                "in": 33390,
+                "out": 1396,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 L-Shape Air-Draw Complete \u2014 Corner Report\n\n| Corner | Description | X (m) | Y (m) | Z (m) |\n|--------|-------------|--------|--------|--------|\n| **Corner 1** | Start (top of L) | 0.3920 | \u22120.0002 | 0.2501 |\n| **Corner 2** | Bottom-left elbow (\u219315 cm) | 0.3903 | \u22120.0002 | 0.0958 |\n| **Corn",
+              "error": null,
+              "physics_detail": "EE err to home: 15.43 cm",
+              "physics_metrics": {
+                "err_m": 0.154338985734968
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 14,
+              "frames": 462,
+              "duration_sec": 56.01805901527405,
+              "tokens": {
+                "in": 42852,
+                "out": 1694,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 L-Shape in Air \u2014 Complete!\n\nHere's a summary of the EE pose at each **corner of the L**:\n\n| Corner | Description | X (m) | Y (m) | Z (m) |\n|--------|-------------|--------|--------|--------|\n| **1 \u2014 Start (top of L)** | Home position | 0.3920 | \u22120.0002 | 0.2501 |\n| **2 \u2014 Bottom-left corner",
+              "error": null,
+              "physics_detail": "EE err to home: 15.43 cm",
+              "physics_metrics": {
+                "err_m": 0.154338985734968
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 12,
+              "frames": 510,
+              "duration_sec": 52.74462389945984,
+              "tokens": {
+                "in": 34477,
+                "out": 1652,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 L-Shape Air Draw \u2014 Complete!\n\nHere's a full report of the EE pose at each corner of the **L**:\n\n---\n\n### \ud83d\udccd Corner 1 \u2014 Top of vertical stroke (Start / Home)\n| Axis | Value |\n|------|-------|\n| X | 0.3920 m |\n| Y | \u22120.0002 m |\n| **Z** | **0.2501 m** |\n\n---\n\n### \ud83d\udccd Corner 2 \u2014 Bottom of vertica",
+              "error": null,
+              "physics_detail": "EE err to home: 15.43 cm",
+              "physics_metrics": {
+                "err_m": 0.154338985734968
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 14,
+              "frames": 511,
+              "duration_sec": 55.1102249622345,
+              "tokens": {
+                "in": 40614,
+                "out": 1541,
+                "cache_read": 0
+              },
+              "summary": "---\n\n## \u2705 L-Shape Complete \u2014 Corner Report\n\n| Corner | Description | X (m) | Y (m) | Z (m) |\n|--------|-------------|--------|--------|--------|\n| **1 \u2014 Start (top of L)** | Home position | 0.3920 | \u22120.0002 | 0.2501 |\n| **2 \u2014 Bottom of L** | \u221215 cm in Z | 0.3903 | \u22120.0002 | 0.0958 |\n| **3 \u2014 End of f",
+              "error": null,
+              "physics_detail": "EE err to home: 15.43 cm",
+              "physics_metrics": {
+                "err_m": 0.154338985734968
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 17,
+              "frames": 614,
+              "duration_sec": 67.79134798049927,
+              "tokens": {
+                "in": 54652,
+                "out": 1926,
+                "cache_read": 0
+              },
+              "summary": "\u2705 The **L** has been drawn in the air. Here's the full report:\n\n---\n\n## \u270f\ufe0f Air \"L\" \u2014 Corner Report\n\n| Corner | Description | X (m) | Y (m) | Z (m) |\n|--------|-------------|--------|--------|--------|\n| **1 \u2014 Start (top of vertical stroke)** | Home position | 0.3920 | \u22120.0002 | 0.2501 |\n| **2 \u2014 Bott",
+              "error": null,
+              "physics_detail": "EE err to home: 15.43 cm",
+              "physics_metrics": {
+                "err_m": 0.154338985734968
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 13.8,
+          "tokens": {
+            "in": 205985,
+            "out": 8209
+          },
+          "cost_usd": 0.74109
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 4,
+    "n_trials_total": 20,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 0.75,
+    "agreement_rate": 0.75,
+    "total_tokens": {
+      "in": 592519,
+      "out": 25703
+    },
+    "total_cost_usd": 2.1631020000000003,
+    "wall_clock_sec": 896.4141108989716
+  }
+}

@@ -1,0 +1,1108 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "baseline": "cap",
+    "baseline_description": "Code-as-Policies: LLM composes pre-built APIs",
+    "few_shot": false,
+    "robot": "skydio_x2",
+    "robot_class": "aerial",
+    "mjcf": "assets/mjcf/skydio_x2/scene.xml",
+    "vendor": "Skydio",
+    "dof": 6,
+    "model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-06T20:44:31.876048",
+    "suites_requested": [
+      "simple",
+      "hard"
+    ],
+    "completed_at": "2026-06-06T20:46:49.495609",
+    "wall_clock_sec": 137.61924505233765
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "takeoff_to_05m",
+          "prompt": "Take off and climb to about 0.5 m altitude, then hold a stable\nhover. Stay upright.\n",
+          "success_spec": {
+            "type": "takeoff_to_height",
+            "min_altitude_m": 0.45,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.8993840217590332,
+              "tokens": {
+                "in": 1097,
+                "out": 44
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999997442461924,
+                "upright": 0.9999999969310838
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.826676845550537,
+              "tokens": {
+                "in": 1097,
+                "out": 44
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999997442461924,
+                "upright": 0.9999999969310838
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.9013290405273438,
+              "tokens": {
+                "in": 1097,
+                "out": 44
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999997442461924,
+                "upright": 0.9999999969310838
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.9556381702423096,
+              "tokens": {
+                "in": 1097,
+                "out": 44
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999997442461924,
+                "upright": 0.9999999969310838
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.9419808387756348,
+              "tokens": {
+                "in": 1097,
+                "out": 44
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=0.500 m (need >=0.45), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.49999997442461924,
+                "upright": 0.9999999969310838
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.0,
+          "tokens": {
+            "in": 5485,
+            "out": 220
+          },
+          "cost_usd": 0.019755
+        },
+        {
+          "id": "hover_at_05m",
+          "prompt": "Take off to about 0.5 m and hover in place at that altitude; keep\nyour horizontal position steady (do not drift away).\n",
+          "success_spec": {
+            "type": "hover_stability",
+            "target_xyz": [
+              0.0,
+              0.0,
+              0.5
+            ],
+            "tol_m": 0.15,
+            "max_drift_m": 0.6,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 2.010053873062134,
+              "tokens": {
+                "in": 1102,
+                "out": 50
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 2.008347988128662,
+              "tokens": {
+                "in": 1102,
+                "out": 50
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.9366488456726074,
+              "tokens": {
+                "in": 1102,
+                "out": 50
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.939532995223999,
+              "tokens": {
+                "in": 1102,
+                "out": 50
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.9170951843261719,
+              "tokens": {
+                "in": 1102,
+                "out": 50
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.000m max_drift=0.000m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.00012298121531937123,
+                "max_drift_m": 0.00012298121531937123,
+                "upright": 0.9999999889205282
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.0,
+          "tokens": {
+            "in": 5510,
+            "out": 250
+          },
+          "cost_usd": 0.02028
+        },
+        {
+          "id": "goto_forward_40cm",
+          "prompt": "Take off, then fly to a point about 0.4 m forward (+X) of your launch\npoint while holding altitude near 0.5 m. Stay upright.\n",
+          "success_spec": {
+            "type": "reach_3d_target",
+            "target_xyz": [
+              0.4,
+              0.0,
+              0.5
+            ],
+            "tol_m": 0.2,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.085675001144409,
+              "tokens": {
+                "in": 1111,
+                "out": 153
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.36, -0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.036m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.03595938459162059,
+                "upright": 0.9999385899899607
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.3301620483398438,
+              "tokens": {
+                "in": 1111,
+                "out": 153
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.36, -0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.036m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.03595938459162059,
+                "upright": 0.9999385899899607
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.2791237831115723,
+              "tokens": {
+                "in": 1111,
+                "out": 153
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.36, -0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.036m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.03595938459162059,
+                "upright": 0.9999385899899607
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.146066904067993,
+              "tokens": {
+                "in": 1111,
+                "out": 153
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.36, -0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.036m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.03595938459162059,
+                "upright": 0.9999385899899607
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.3407158851623535,
+              "tokens": {
+                "in": 1111,
+                "out": 153
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.36, -0.0, 0.5] target=[0.4, 0.0, 0.5] err=0.036m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.03595938459162059,
+                "upright": 0.9999385899899607
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 4.0,
+          "tokens": {
+            "in": 5555,
+            "out": 765
+          },
+          "cost_usd": 0.02814
+        },
+        {
+          "id": "climb_to_1m",
+          "prompt": "Take off and climb to about 1.0 m altitude, then hold. Stay upright.\n",
+          "success_spec": {
+            "type": "takeoff_to_height",
+            "min_altitude_m": 0.9,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.8668169975280762,
+              "tokens": {
+                "in": 1093,
+                "out": 42
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999973347044563,
+                "upright": 0.9999976101040453
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 2.01359486579895,
+              "tokens": {
+                "in": 1093,
+                "out": 42
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999973347044563,
+                "upright": 0.9999976101040453
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.8368771076202393,
+              "tokens": {
+                "in": 1093,
+                "out": 42
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999973347044563,
+                "upright": 0.9999976101040453
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.981212854385376,
+              "tokens": {
+                "in": 1093,
+                "out": 42
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999973347044563,
+                "upright": 0.9999976101040453
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 1.9707989692687988,
+              "tokens": {
+                "in": 1093,
+                "out": 42
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "altitude z=1.000 m (need >=0.9), up=1.00",
+              "physics_metrics": {
+                "altitude_m": 0.9999973347044563,
+                "upright": 0.9999976101040453
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.0,
+          "tokens": {
+            "in": 5465,
+            "out": 210
+          },
+          "cost_usd": 0.019545
+        }
+      ]
+    },
+    "hard": {
+      "tasks": [
+        {
+          "id": "goto_and_return",
+          "prompt": "Take off to ~0.5 m, fly about 0.5 m forward in +X, then fly back and\nstop above your launch point. Stay upright the whole time.\n",
+          "success_spec": {
+            "type": "returned_to_start_xy",
+            "tol_m": 0.25,
+            "min_excursion_m": 0.3,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 0,
+              "duration_sec": 3.304502010345459,
+              "tokens": {
+                "in": 1113,
+                "out": 165
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "peak excursion 46.8cm (need >=30), final drift 3.7cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.03732341197218676,
+                "peak_excursion_m": 0.4682738431082406,
+                "upright": 0.9999749184903487
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 0,
+              "duration_sec": 3.5744850635528564,
+              "tokens": {
+                "in": 1113,
+                "out": 165
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "peak excursion 46.8cm (need >=30), final drift 3.7cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.03732341197218676,
+                "peak_excursion_m": 0.4682738431082406,
+                "upright": 0.9999749184903487
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 0,
+              "duration_sec": 4.338795185089111,
+              "tokens": {
+                "in": 1113,
+                "out": 165
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "peak excursion 46.8cm (need >=30), final drift 3.7cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.03732341197218676,
+                "peak_excursion_m": 0.4682738431082406,
+                "upright": 0.9999749184903487
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 0,
+              "duration_sec": 3.3018438816070557,
+              "tokens": {
+                "in": 1113,
+                "out": 165
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "peak excursion 46.8cm (need >=30), final drift 3.7cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.03732341197218676,
+                "peak_excursion_m": 0.4682738431082406,
+                "upright": 0.9999749184903487
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 0,
+              "duration_sec": 3.3806679248809814,
+              "tokens": {
+                "in": 1113,
+                "out": 165
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "peak excursion 46.8cm (need >=30), final drift 3.7cm (need <25), up=1.00",
+              "physics_metrics": {
+                "xy_err_m": 0.03732341197218676,
+                "peak_excursion_m": 0.4682738431082406,
+                "upright": 0.9999749184903487
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 5565,
+            "out": 825
+          },
+          "cost_usd": 0.029070000000000002
+        },
+        {
+          "id": "diagonal_goto",
+          "prompt": "Take off and fly to the world point (0.4, 0.3, 0.8) m \u2014 forward,\nleft, and up from the origin. Stay upright.\n",
+          "success_spec": {
+            "type": "reach_3d_target",
+            "target_xyz": [
+              0.4,
+              0.3,
+              0.8
+            ],
+            "tol_m": 0.2,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 0,
+              "duration_sec": 2.874659776687622,
+              "tokens": {
+                "in": 1112,
+                "out": 106
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.25, 0.8] target=[0.4, 0.3, 0.8] err=0.086m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.08570249476222506,
+                "upright": 0.9999656571090925
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 0,
+              "duration_sec": 3.0279548168182373,
+              "tokens": {
+                "in": 1112,
+                "out": 106
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.25, 0.8] target=[0.4, 0.3, 0.8] err=0.086m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.08570249476222506,
+                "upright": 0.9999656571090925
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 0,
+              "duration_sec": 2.889993906021118,
+              "tokens": {
+                "in": 1112,
+                "out": 106
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.25, 0.8] target=[0.4, 0.3, 0.8] err=0.086m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.08570249476222506,
+                "upright": 0.9999656571090925
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 0,
+              "duration_sec": 2.990540027618408,
+              "tokens": {
+                "in": 1112,
+                "out": 106
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.25, 0.8] target=[0.4, 0.3, 0.8] err=0.086m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.08570249476222506,
+                "upright": 0.9999656571090925
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 0,
+              "duration_sec": 2.806471347808838,
+              "tokens": {
+                "in": 1112,
+                "out": 106
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "pos=[0.33, 0.25, 0.8] target=[0.4, 0.3, 0.8] err=0.086m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.08570249476222506,
+                "upright": 0.9999656571090925
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.0,
+          "tokens": {
+            "in": 5560,
+            "out": 530
+          },
+          "cost_usd": 0.02463
+        },
+        {
+          "id": "box_patrol",
+          "prompt": "Take off to ~0.6 m, then fly a square patrol at that altitude:\nforward 0.4 m, left 0.4 m, back 0.4 m, right 0.4 m, visiting each\ncorner. Stay upright.\n",
+          "success_spec": {
+            "type": "waypoint_3d_trace",
+            "waypoints_relative": false,
+            "waypoints": [
+              [
+                0.4,
+                0.0,
+                0.6
+              ],
+              [
+                0.4,
+                0.4,
+                0.6
+              ],
+              [
+                0.0,
+                0.4,
+                0.6
+              ],
+              [
+                0.0,
+                0.0,
+                0.6
+              ]
+            ],
+            "waypoint_tol_m": 0.18,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 0,
+              "duration_sec": 4.202737808227539,
+              "tokens": {
+                "in": 1133,
+                "out": 232
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271422732
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 0,
+              "duration_sec": 4.431341886520386,
+              "tokens": {
+                "in": 1133,
+                "out": 248
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271422732
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 0,
+              "duration_sec": 4.149528980255127,
+              "tokens": {
+                "in": 1133,
+                "out": 232
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271422732
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 0,
+              "duration_sec": 4.167427062988281,
+              "tokens": {
+                "in": 1133,
+                "out": 232
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271422732
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 0,
+              "duration_sec": 4.491588115692139,
+              "tokens": {
+                "in": 1133,
+                "out": 248
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints reached 4/4 in order, up=1.00",
+              "physics_metrics": {
+                "reached": [
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "upright": 0.9999993271422732
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 7.0,
+          "tokens": {
+            "in": 5665,
+            "out": 1192
+          },
+          "cost_usd": 0.034875
+        },
+        {
+          "id": "stable_hover_tight",
+          "prompt": "Take off to about 0.5 m and hold a TIGHT hover at that altitude \u2014\nkeep your position within a small radius. Stay upright.\n",
+          "success_spec": {
+            "type": "hover_stability",
+            "target_xyz": [
+              0.0,
+              0.0,
+              0.5
+            ],
+            "tol_m": 0.15,
+            "max_drift_m": 0.45,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.864847183227539,
+              "tokens": {
+                "in": 1105,
+                "out": 138
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.001m max_drift=0.001m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0008218092958222408,
+                "max_drift_m": 0.0008218092958222408,
+                "upright": 0.9999997755058426
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.952788829803467,
+              "tokens": {
+                "in": 1105,
+                "out": 138
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.001m max_drift=0.001m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0008218092958222408,
+                "max_drift_m": 0.0008218092958222408,
+                "upright": 0.9999997755058426
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.991603136062622,
+              "tokens": {
+                "in": 1105,
+                "out": 138
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.001m max_drift=0.001m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0008218092958222408,
+                "max_drift_m": 0.0008218092958222408,
+                "upright": 0.9999997755058426
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 22,
+              "frames": 0,
+              "duration_sec": 15.701840877532959,
+              "tokens": {
+                "in": 1105,
+                "out": 243
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.017m max_drift=0.033m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.016752342032406397,
+                "max_drift_m": 0.03335101052821482,
+                "upright": 0.9999059208764828
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.033837795257568,
+              "tokens": {
+                "in": 1105,
+                "out": 138
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "final err=0.001m max_drift=0.001m up=1.00",
+              "physics_metrics": {
+                "err_m": 0.0008218092958222408,
+                "max_drift_m": 0.0008218092958222408,
+                "upright": 0.9999997755058426
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 7.6,
+          "tokens": {
+            "in": 5525,
+            "out": 795
+          },
+          "cost_usd": 0.028499999999999998
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 8,
+    "n_trials_total": 40,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 44330,
+      "out": 4787
+    },
+    "total_cost_usd": 0.204795,
+    "wall_clock_sec": 137.61924505233765
+  }
+}

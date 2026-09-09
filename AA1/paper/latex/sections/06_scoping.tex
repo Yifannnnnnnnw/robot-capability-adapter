@@ -1,0 +1,16 @@
+\section{Deployment scoping}
+\label{sec:scoping}
+\label{sec:scoping-franka}
+
+Of the eight validated robots (\S\ref{sec:onboarding}),
+SO-101 runs the full \S\ref{sec:capability} suite; Piper/UR5e the
+cross-robot arm tasks, Go2/ANYmal-C locomotion; KUKA/A1 are not
+further exercised. The pipeline also covers a Skydio~X2 quadrotor
+and 19-DoF H1 humanoid (Appendix~\ref{app:morphology}). The current manipulation ceiling is
+the 7-joint redundant arm, where the prescribed control template
+breaks down. On 7 Franka reach offsets $\times$ 10 trials it
+passes 20/70 (28.6\%): 2--4\,cm error in four directions, 11\,cm
+at the \texttt{z-5} workspace boundary. An LLM-free oracle ablation reproduces the same
+failures, so the gap is the template, not the LLM
+(Appendix~\ref{app:franka}).
+

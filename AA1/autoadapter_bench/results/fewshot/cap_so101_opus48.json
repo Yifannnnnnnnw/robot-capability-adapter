@@ -1,0 +1,1822 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "baseline": "cap",
+    "baseline_description": "Code-as-Policies: LLM composes pre-built APIs",
+    "few_shot": true,
+    "robot": "so101",
+    "robot_class": "arm",
+    "mjcf": "assets/mjcf/so101_mujoco.xml",
+    "vendor": "LeRobot",
+    "dof": 5,
+    "model": "us.anthropic.claude-opus-4-8",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-05T23:14:54.069671",
+    "suites_requested": [
+      "contact_rich",
+      "contact_rich_l4",
+      "hard"
+    ],
+    "completed_at": "2026-06-05T23:42:31.631327",
+    "wall_clock_sec": 1657.5606927871704
+  },
+  "suites": {
+    "contact_rich": {
+      "tasks": [
+        {
+          "id": "stack_lego_on_duck",
+          "prompt": "Pick up the lego brick. Move it directly above the duck.\nLower it to about 3 cm above the duck's Z position. Release\nthe gripper. Return to home. The lego should rest on/near\nthe duck after physics settles.\n",
+          "success_spec": {
+            "type": "object_above_object",
+            "top": "lego",
+            "bottom": "duck",
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 15,
+              "frames": 717,
+              "duration_sec": 20.087969064712524,
+              "tokens": {
+                "in": 1337,
+                "out": 533
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=11.4cm",
+              "physics_metrics": {
+                "z_above": false,
+                "xy_dist_m": 0.11435240237289228
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 13,
+              "frames": 714,
+              "duration_sec": 21.032803058624268,
+              "tokens": {
+                "in": 1337,
+                "out": 513
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=3.0cm",
+              "physics_metrics": {
+                "z_above": false,
+                "xy_dist_m": 0.029876095433174876
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 14,
+              "frames": 664,
+              "duration_sec": 19.539968967437744,
+              "tokens": {
+                "in": 1337,
+                "out": 450
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=9.6cm",
+              "physics_metrics": {
+                "z_above": false,
+                "xy_dist_m": 0.09578158951079314
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 14,
+              "frames": 614,
+              "duration_sec": 19.73522114753723,
+              "tokens": {
+                "in": 1337,
+                "out": 502
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego.z>duck.z: False; xy=9.2cm",
+              "physics_metrics": {
+                "z_above": false,
+                "xy_dist_m": 0.09192900949557091
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 11,
+              "frames": 439,
+              "duration_sec": 16.7866849899292,
+              "tokens": {
+                "in": 1337,
+                "out": 470
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_stack_lego_on_duck_t4>\", line 35, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "lego.z>duck.z: True; xy=1.3cm",
+              "physics_metrics": {
+                "z_above": true,
+                "xy_dist_m": 0.012764418147505946
+              }
+            }
+          ],
+          "llm_pass_rate": 0.8,
+          "physics_pass_rate": 0.2,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 13.4,
+          "tokens": {
+            "in": 6685,
+            "out": 2468
+          },
+          "cost_usd": 0.019025
+        },
+        {
+          "id": "place_duck_inside_mug",
+          "prompt": "Pick up the duck. Move it directly above the mug. Lower to\nabout 4 cm above the mug, then release. Duck should end up\ninside or on top of the mug.\n",
+          "success_spec": {
+            "type": "object_close_to_object_xy",
+            "obj_a": "duck",
+            "obj_b": "mug",
+            "xy_tolerance_m": 0.04,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 286,
+              "duration_sec": 13.299218893051147,
+              "tokens": {
+                "in": 1318,
+                "out": 527
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_place_duck_inside_mug_t0>\", line 19, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy dist 16.5 cm",
+              "physics_metrics": {
+                "xy_m": 0.16518902755142575
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 278,
+              "duration_sec": 12.470144987106323,
+              "tokens": {
+                "in": 1318,
+                "out": 534
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_place_duck_inside_mug_t1>\", line 15, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy dist 16.6 cm",
+              "physics_metrics": {
+                "xy_m": 0.16566769911055784
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 3,
+              "duration_sec": 8.036030054092407,
+              "tokens": {
+                "in": 1318,
+                "out": 563
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_place_duck_inside_mug_t2>\", line 19, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy dist 16.6 cm",
+              "physics_metrics": {
+                "xy_m": 0.16586975308967744
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 286,
+              "duration_sec": 15.634756803512573,
+              "tokens": {
+                "in": 1318,
+                "out": 519
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_place_duck_inside_mug_t3>\", line 21, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy dist 16.5 cm",
+              "physics_metrics": {
+                "xy_m": 0.16522477266719404
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 12,
+              "frames": 539,
+              "duration_sec": 15.69755220413208,
+              "tokens": {
+                "in": 1318,
+                "out": 427
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_place_duck_inside_mug_t4>\", line 39, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy dist 0.7 cm",
+              "physics_metrics": {
+                "xy_m": 0.00682381266929945
+              }
+            }
+          ],
+          "llm_pass_rate": 0.0,
+          "physics_pass_rate": 0.2,
+          "agreement_rate": 0.8,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 6590,
+            "out": 2570
+          },
+          "cost_usd": 0.01944
+        },
+        {
+          "id": "collision_avoid_bottle",
+          "prompt": "Move the end-effector to world position [0.20, 0.0, 0.20].\nDO NOT knock over the bottle. Plan a path that stays clear.\nDo NOT grasp anything.\n",
+          "success_spec": {
+            "type": "object_did_not_move",
+            "object": "bottle",
+            "max_displacement_m": 0.02,
+            "ee_target": [
+              0.2,
+              0.0,
+              0.2
+            ],
+            "ee_tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 500,
+              "duration_sec": 22.64629101753235,
+              "tokens": {
+                "in": 1326,
+                "out": 793
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 4.1233581780745726e-11,
+                "ee_err_m": 0.0014954966351589732
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 400,
+              "duration_sec": 22.22034192085266,
+              "tokens": {
+                "in": 1326,
+                "out": 710
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 2.217902732530142e-11,
+                "ee_err_m": 0.0012812594528114952
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 300,
+              "duration_sec": 20.19997811317444,
+              "tokens": {
+                "in": 1326,
+                "out": 675
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 1.1425956126093858e-11,
+                "ee_err_m": 0.0012790786175664892
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 300,
+              "duration_sec": 17.152408838272095,
+              "tokens": {
+                "in": 1326,
+                "out": 440
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 1.1425956126093858e-11,
+                "ee_err_m": 0.0013571822347020206
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 403,
+              "duration_sec": 23.563056230545044,
+              "tokens": {
+                "in": 1326,
+                "out": 686
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "obj moved 0.0cm; EE err 0.1cm",
+              "physics_metrics": {
+                "obj_moved_m": 2.26062979284357e-11,
+                "ee_err_m": 0.0012352502483306603
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 6.0,
+          "tokens": {
+            "in": 6630,
+            "out": 3304
+          },
+          "cost_usd": 0.02315
+        },
+        {
+          "id": "swap_banana_bottle",
+          "prompt": "Swap positions of banana and bottle. (1) Record both positions.\n(2) Pick banana, park at [0.10, 0.20, 0.10], release.\n(3) Pick bottle, move to banana's original XY, release.\n(4) Pick banana from park, move to bottle's original XY,\nrelease. (5) Return home.\n",
+          "success_spec": {
+            "type": "objects_swapped",
+            "obj_a": "banana",
+            "obj_b": "bottle",
+            "xy_tolerance_m": 0.08,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 33,
+              "frames": 1642,
+              "duration_sec": 74.38649392127991,
+              "tokens": {
+                "in": 1369,
+                "out": 730
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 1.6cm b_err 0.5cm",
+              "physics_metrics": {
+                "a_err_m": 0.015557471011820536,
+                "b_err_m": 0.005430757261704515
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 30,
+              "frames": 1636,
+              "duration_sec": 85.36398530006409,
+              "tokens": {
+                "in": 1369,
+                "out": 665
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 1.1cm b_err 0.8cm",
+              "physics_metrics": {
+                "a_err_m": 0.011458814257163885,
+                "b_err_m": 0.008215443482086257
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 439,
+              "duration_sec": 28.73390793800354,
+              "tokens": {
+                "in": 1369,
+                "out": 716
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_swap_banana_bottle_t2>\", line 41, in <module>\n  File \"<cap_swap_banana_bottle_t2>\", line 28, in place\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "a_err 21.6cm b_err 19.0cm",
+              "physics_metrics": {
+                "a_err_m": 0.21606464332965605,
+                "b_err_m": 0.1897182308717207
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 30,
+              "frames": 1642,
+              "duration_sec": 87.38591313362122,
+              "tokens": {
+                "in": 1369,
+                "out": 669
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "a_err 2.3cm b_err 0.8cm",
+              "physics_metrics": {
+                "a_err_m": 0.02256897519739826,
+                "b_err_m": 0.008214130089798535
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 439,
+              "duration_sec": 29.949159860610962,
+              "tokens": {
+                "in": 1369,
+                "out": 770
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_swap_banana_bottle_t4>\", line 56, in <module>\n  File \"<cap_swap_banana_bottle_t4>\", line 39, in place\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "a_err 21.6cm b_err 19.0cm",
+              "physics_metrics": {
+                "a_err_m": 0.21618397280393742,
+                "b_err_m": 0.1897182308717207
+              }
+            }
+          ],
+          "llm_pass_rate": 0.6,
+          "physics_pass_rate": 0.6,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 22.6,
+          "tokens": {
+            "in": 6845,
+            "out": 3550
+          },
+          "cost_usd": 0.024595
+        },
+        {
+          "id": "stable_place_screwdriver",
+          "prompt": "Pick up the screwdriver. Place it at the target XY (0.15, 0.15).\nLower to 5 cm above the table, release, retract. Return home.\nScrewdriver must end up resting stably near (0.15, 0.15).\n",
+          "success_spec": {
+            "type": "object_placed_near_target",
+            "object": "screwdriver",
+            "target_xy": [
+              0.15,
+              0.15
+            ],
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 278,
+              "duration_sec": 25.914274215698242,
+              "tokens": {
+                "in": 1341,
+                "out": 645
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_stable_place_screwdriver_t0>\", line 76, in <module>\n  File \"<cap_stable_place_screwdriver_t0>\", line 30, in pick_and_place\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy err to target 29.2 cm",
+              "physics_metrics": {
+                "err_m": 0.2915180271211363
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 286,
+              "duration_sec": 18.587764978408813,
+              "tokens": {
+                "in": 1341,
+                "out": 428
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_stable_place_screwdriver_t1>\", line 18, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy err to target 29.1 cm",
+              "physics_metrics": {
+                "err_m": 0.2911258810979001
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 306,
+              "duration_sec": 21.557640075683594,
+              "tokens": {
+                "in": 1341,
+                "out": 639
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_stable_place_screwdriver_t2>\", line 24, in <module>\n  File \"<cap_stable_place_screwdriver_t2>\", line 12, in attempt_pick\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy err to target 29.2 cm",
+              "physics_metrics": {
+                "err_m": 0.2915155967773908
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 303,
+              "duration_sec": 16.291073083877563,
+              "tokens": {
+                "in": 1341,
+                "out": 443
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_stable_place_screwdriver_t3>\", line 18, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy err to target 29.2 cm",
+              "physics_metrics": {
+                "err_m": 0.2915162673786111
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 278,
+              "duration_sec": 19.93902587890625,
+              "tokens": {
+                "in": 1341,
+                "out": 499
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_stable_place_screwdriver_t4>\", line 19, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "xy err to target 29.2 cm",
+              "physics_metrics": {
+                "err_m": 0.2915180271211363
+              }
+            }
+          ],
+          "llm_pass_rate": 0.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 5.4,
+          "tokens": {
+            "in": 6705,
+            "out": 2654
+          },
+          "cost_usd": 0.019975
+        }
+      ]
+    },
+    "contact_rich_l4": {
+      "tasks": [
+        {
+          "id": "tower_3_objects",
+          "prompt": "Build a 3-object tower in the order (bottom-to-top):\nmug, lego, duck. Steps: (1) place lego on top of mug\n(use the mug's XY, just above mug's height), (2) place\nduck on top of the lego (same XY, slightly higher).\nUse the agent-written gripper_close for each grasp.\nReturn home after building.\n",
+          "success_spec": {
+            "type": "objects_in_tower",
+            "stack": [
+              "mug",
+              "lego",
+              "duck"
+            ],
+            "xy_tolerance_m": 0.05,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 439,
+              "duration_sec": 26.412274837493896,
+              "tokens": {
+                "in": 1377,
+                "out": 615
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_tower_3_objects_t0>\", line 38, in <module>\n  File \"<cap_tower_3_objects_t0>\", line 25, in place\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "lego>mug: dxy=0.5cm dz=4.0cm; duck>lego: dxy=16.7cm dz=-3.3cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.2174975559226609,
+                    0.04777884727892704,
+                    0.019959488986761604
+                  ],
+                  "lego": [
+                    0.22142764909531346,
+                    0.05059494722129088,
+                    0.06032396378046383
+                  ],
+                  "duck": [
+                    0.14825782938113818,
+                    -0.09940713943619951,
+                    0.027665656737016125
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 23,
+              "frames": 1228,
+              "duration_sec": 57.10328507423401,
+              "tokens": {
+                "in": 1377,
+                "out": 633
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=2.7cm dz=1.6cm; duck>lego: dxy=14.7cm dz=1.0cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.20132785085743343,
+                    0.03481896449183006,
+                    0.01989505179781775
+                  ],
+                  "lego": [
+                    0.22220308754525547,
+                    0.052246745704303224,
+                    0.035964564041630905
+                  ],
+                  "duck": [
+                    0.33405293027480787,
+                    0.14774164280022123,
+                    0.04563310060131695
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 21,
+              "frames": 1125,
+              "duration_sec": 47.84835886955261,
+              "tokens": {
+                "in": 1377,
+                "out": 585
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lego>mug: dxy=0.1cm dz=4.0cm; duck>lego: dxy=16.2cm dz=-2.7cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.21972170250852555,
+                    0.049046165434877734,
+                    0.019880954263318987
+                  ],
+                  "lego": [
+                    0.21955901952118592,
+                    0.048292004930636664,
+                    0.05988147275278104
+                  ],
+                  "duck": [
+                    0.23196747655984792,
+                    0.21026103760671686,
+                    0.03289163681329577
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 439,
+              "duration_sec": 25.16373920440674,
+              "tokens": {
+                "in": 1377,
+                "out": 675
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_tower_3_objects_t3>\", line 55, in <module>\n  File \"<cap_tower_3_objects_t3>\", line 39, in place\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "lego>mug: dxy=0.2cm dz=4.0cm; duck>lego: dxy=16.7cm dz=-3.2cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.21897396940986527,
+                    0.04951356753166742,
+                    0.019970411690216048
+                  ],
+                  "lego": [
+                    0.22096000657016499,
+                    0.05051695470226538,
+                    0.05995080341918353
+                  ],
+                  "duck": [
+                    0.14825776778726402,
+                    -0.09940846317191343,
+                    0.027665404277744565
+                  ]
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 439,
+              "duration_sec": 23.381113052368164,
+              "tokens": {
+                "in": 1377,
+                "out": 698
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_tower_3_objects_t4>\", line 58, in <module>\n  File \"<cap_tower_3_objects_t4>\", line 39, in place_at\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "lego>mug: dxy=0.0cm dz=4.0cm; duck>lego: dxy=16.6cm dz=-3.2cm",
+              "physics_metrics": {
+                "stack": [
+                  "mug",
+                  "lego",
+                  "duck"
+                ],
+                "positions": {
+                  "mug": [
+                    0.22008846193997414,
+                    0.04986650737996776,
+                    0.0199609067282261
+                  ],
+                  "lego": [
+                    0.22050760876789066,
+                    0.04989731393200582,
+                    0.05960866900583897
+                  ],
+                  "duck": [
+                    0.14825776723647785,
+                    -0.09940847500899173,
+                    0.027665402019223767
+                  ]
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 0.4,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.6,
+          "mean_tool_calls": 15.0,
+          "tokens": {
+            "in": 6885,
+            "out": 3206
+          },
+          "cost_usd": 0.022915
+        },
+        {
+          "id": "spatial_query_pick",
+          "prompt": "Observe the positions of all 6 graspable objects\n(banana, mug, bottle, screwdriver, duck, lego). Pick up\nthe one whose Y-coordinate is the LARGEST (most forward\nin the world frame). Lift it 10 cm. Report which object\nyou picked and its Y coordinate.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug",
+              "bottle",
+              "screwdriver",
+              "duck",
+              "lego"
+            ],
+            "require_correct_choice_y_argmax": true,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 286,
+              "duration_sec": 17.81887412071228,
+              "tokens": {
+                "in": 1365,
+                "out": 456
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 10.0 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.09992301387680115
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 286,
+              "duration_sec": 15.640526056289673,
+              "tokens": {
+                "in": 1365,
+                "out": 471
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_spatial_query_pick_t1>\", line 40, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "no accepted object was lifted",
+              "physics_metrics": {}
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 12,
+              "frames": 386,
+              "duration_sec": 21.762115955352783,
+              "tokens": {
+                "in": 1365,
+                "out": 480
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 10.0 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.09987919608062616
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 13,
+              "frames": 386,
+              "duration_sec": 18.606850624084473,
+              "tokens": {
+                "in": 1365,
+                "out": 421
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "lifted bottle but correct y-argmax was banana",
+              "physics_metrics": {
+                "object": "bottle",
+                "expected": "banana"
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 11,
+              "frames": 286,
+              "duration_sec": 14.119558095932007,
+              "tokens": {
+                "in": 1365,
+                "out": 366
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_spatial_query_pick_t4>\", line 34, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "no accepted object was lifted",
+              "physics_metrics": {}
+            }
+          ],
+          "llm_pass_rate": 0.6,
+          "physics_pass_rate": 0.4,
+          "agreement_rate": 0.8,
+          "mean_tool_calls": 11.6,
+          "tokens": {
+            "in": 6825,
+            "out": 2194
+          },
+          "cost_usd": 0.017795
+        },
+        {
+          "id": "pair_swap_chain",
+          "prompt": "Perform two object swaps in sequence:\n(1) swap banana and mug \u2014 banana goes to mug's XY,\n    mug goes to banana's original XY.\n(2) then swap bottle and screwdriver \u2014 bottle goes to\n    screwdriver's XY, screwdriver goes to bottle's\n    original XY.\nUse the parking position [0.0, 0.20, 0.10] for the\ntemporary hold. Return home at the end.\n",
+          "success_spec": {
+            "type": "two_swaps_completed",
+            "pair_a": [
+              "banana",
+              "mug"
+            ],
+            "pair_b": [
+              "bottle",
+              "screwdriver"
+            ],
+            "xy_tolerance_m": 0.08,
+            "settle_steps": 500,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 52,
+              "frames": 2270,
+              "duration_sec": 90.2410261631012,
+              "tokens": {
+                "in": 1404,
+                "out": 906
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 0.3,0.1cm; bottle\u2194screwdriver: 42.7,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  0.31824899607338714,
+                  0.1348837492110912,
+                  42.69038048228708,
+                  22.01116919997767
+                ],
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 60,
+              "frames": 2916,
+              "duration_sec": 89.2392029762268,
+              "tokens": {
+                "in": 1404,
+                "out": 792
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 26.8,0.1cm; bottle\u2194screwdriver: 35.0,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  26.76911053878567,
+                  0.1398372562095876,
+                  34.984354334087676,
+                  22.01430441400851
+                ],
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 65,
+              "frames": 2656,
+              "duration_sec": 66.15210223197937,
+              "tokens": {
+                "in": 1404,
+                "out": 871
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 6.2,0.3cm; bottle\u2194screwdriver: 14.4,0.5cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  6.20573225344057,
+                  0.28070596000795467,
+                  14.35358328695876,
+                  0.5032731279406961
+                ],
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 67,
+              "frames": 3000,
+              "duration_sec": 55.45132613182068,
+              "tokens": {
+                "in": 1404,
+                "out": 802
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana\u2194mug: 0.5,0.1cm; bottle\u2194screwdriver: 0.1,0.7cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  0.5415843514551996,
+                  0.1460709441085707,
+                  0.12513496921264086,
+                  0.7049017290783282
+                ]
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 62,
+              "frames": 2323,
+              "duration_sec": 45.895164012908936,
+              "tokens": {
+                "in": 1404,
+                "out": 692
+              },
+              "summary": "Program failed: no tool calls made",
+              "error": null,
+              "physics_detail": "REPLAY DIVERGED. banana\u2194mug: 0.4,0.8cm; bottle\u2194screwdriver: 43.5,22.0cm",
+              "physics_metrics": {
+                "errs_cm": [
+                  0.4459328799998503,
+                  0.7808661626168262,
+                  43.471788024020405,
+                  22.011440173803916
+                ],
+                "replay_diverged": true
+              }
+            }
+          ],
+          "llm_pass_rate": 0.2,
+          "physics_pass_rate": 0.2,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 61.2,
+          "tokens": {
+            "in": 7020,
+            "out": 4063
+          },
+          "cost_usd": 0.027335
+        },
+        {
+          "id": "clear_then_reach",
+          "prompt": "The bottle is in the way. (1) Pick up the bottle and\nmove it to the safe park at [-0.10, 0.20, 0.10],\nrelease. (2) Move the EE to where the bottle ORIGINALLY\nwas (its starting XY, Z + 5 cm). Do not knock over any\nother object. Return home.\n",
+          "success_spec": {
+            "type": "cleared_and_visited",
+            "clear_object": "bottle",
+            "stay_objects": [
+              "banana",
+              "mug",
+              "screwdriver",
+              "duck",
+              "lego"
+            ],
+            "max_displacement_m": 0.04,
+            "ee_visited_original_xyz_of": "bottle",
+            "ee_tolerance_m": 0.06,
+            "settle_steps": 300,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 461,
+              "duration_sec": 12.553717136383057,
+              "tokens": {
+                "in": 1368,
+                "out": 499
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t0>\", line 50, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.1cm (<4); EE-err 0.4cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0005020557065625317,
+                "ee_err_m": 0.0037098073474773684,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 311,
+              "duration_sec": 11.988913774490356,
+              "tokens": {
+                "in": 1368,
+                "out": 549
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t1>\", line 16, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "max stay-disp 0.2cm (<4); EE-err 4.2cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0018810678634465653,
+                "ee_err_m": 0.04231930366240258
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 11,
+              "frames": 539,
+              "duration_sec": 20.096475839614868,
+              "tokens": {
+                "in": 1368,
+                "out": 535
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t2>\", line 49, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.1cm (<4); EE-err 0.3cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0005316969009030756,
+                "ee_err_m": 0.003301873210568483,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 11,
+              "frames": 539,
+              "duration_sec": 14.01863694190979,
+              "tokens": {
+                "in": 1368,
+                "out": 617
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t3>\", line 55, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.1cm (<4); EE-err 0.3cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0005316969009030756,
+                "ee_err_m": 0.003303212267062822,
+                "replay_diverged": true
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": true,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 461,
+              "duration_sec": 13.066610336303711,
+              "tokens": {
+                "in": 1368,
+                "out": 531
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_clear_then_reach_t4>\", line 50, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "REPLAY DIVERGED. max stay-disp 0.1cm (<4); EE-err 0.4cm (<6, target z+5cm)",
+              "physics_metrics": {
+                "max_stay_disp_m": 0.0005020557065625317,
+                "ee_err_m": 0.003689573057859313,
+                "replay_diverged": true
+              }
+            }
+          ],
+          "llm_pass_rate": 0.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 9.2,
+          "tokens": {
+            "in": 6840,
+            "out": 2731
+          },
+          "cost_usd": 0.020495
+        }
+      ]
+    },
+    "hard": {
+      "tasks": [
+        {
+          "id": "conditional_pick",
+          "prompt": "Look at the current positions of the banana and the mug.\nIf the banana's X-coordinate is LESS than the mug's\nX-coordinate (banana more to the left), pick the banana and\nlift it 10 cm. Otherwise pick the mug and lift it 10 cm.\nReport which one you picked and why.\n",
+          "success_spec": {
+            "type": "object_lifted_by",
+            "tolerance_m": 0.05,
+            "accept_objects": [
+              "banana",
+              "mug"
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 178,
+              "duration_sec": 12.746376276016235,
+              "tokens": {
+                "in": 1363,
+                "out": 545
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_conditional_pick_t0>\", line 40, in <module>\n  File \"<cap_conditional_pick_t0>\", line 16, in pick_and_lift\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "no accepted object was lifted",
+              "physics_metrics": {}
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 286,
+              "duration_sec": 9.501646995544434,
+              "tokens": {
+                "in": 1363,
+                "out": 438
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_conditional_pick_t1>\", line 29, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "no accepted object was lifted",
+              "physics_metrics": {}
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 203,
+              "duration_sec": 10.49653673171997,
+              "tokens": {
+                "in": 1363,
+                "out": 554
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_conditional_pick_t2>\", line 52, in <module>\n  File \"<cap_conditional_pick_t2>\", line 14, in pick_and_lift\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "no accepted object was lifted",
+              "physics_metrics": {}
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 10,
+              "frames": 386,
+              "duration_sec": 10.284729957580566,
+              "tokens": {
+                "in": 1363,
+                "out": 360
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "banana lifted 10.0 cm",
+              "physics_metrics": {
+                "object": "banana",
+                "dz_m": 0.09985553530781997
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 7,
+              "frames": 286,
+              "duration_sec": 9.18607783317566,
+              "tokens": {
+                "in": 1363,
+                "out": 441
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_conditional_pick_t4>\", line 29, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "no accepted object was lifted",
+              "physics_metrics": {}
+            }
+          ],
+          "llm_pass_rate": 0.2,
+          "physics_pass_rate": 0.2,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 7.2,
+          "tokens": {
+            "in": 6815,
+            "out": 2338
+          },
+          "cost_usd": 0.018505
+        },
+        {
+          "id": "visit_all_objects",
+          "prompt": "Visit each of the 6 graspable objects in turn \u2014 banana, mug,\nbottle, screwdriver, duck, lego. For each, move the EE 5 cm\nabove the object, hover briefly, and report whether the\ngripper is holding anything. Return home at the end.\n",
+          "success_spec": {
+            "type": "ee_visited_n_positions",
+            "n_required": 6,
+            "tolerance_m": 0.06,
+            "n_trials": 3
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 6.753791093826294,
+              "tokens": {
+                "in": 1350,
+                "out": 211
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_visit_all_objects_t0>\", line 14, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "unique targets=1",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.11,
+                    0.12
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 100,
+              "duration_sec": 4.5125792026519775,
+              "tokens": {
+                "in": 1350,
+                "out": 188
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_visit_all_objects_t1>\", line 12, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "unique targets=1",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.11,
+                    0.12
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 5.99541974067688,
+              "tokens": {
+                "in": 1350,
+                "out": 204
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_visit_all_objects_t2>\", line 16, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "unique targets=1",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.11,
+                    0.12
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 5.837281942367554,
+              "tokens": {
+                "in": 1350,
+                "out": 190
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_visit_all_objects_t3>\", line 14, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "unique targets=1",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.11,
+                    0.12
+                  ]
+                ]
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 200,
+              "duration_sec": 7.737261056900024,
+              "tokens": {
+                "in": 1350,
+                "out": 189
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_visit_all_objects_t4>\", line 14, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "unique targets=1",
+              "physics_metrics": {
+                "unique_targets": [
+                  [
+                    0.11,
+                    0.12
+                  ]
+                ]
+              }
+            }
+          ],
+          "llm_pass_rate": 0.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.8,
+          "tokens": {
+            "in": 6750,
+            "out": 982
+          },
+          "cost_usd": 0.01166
+        },
+        {
+          "id": "numeric_midpoint",
+          "prompt": "Get the positions of the mug and the bottle. Compute the\nmidpoint (average X, Y; Z plus 5 cm). Move the EE to that\nmidpoint and report whether you reached it. Don't grasp.\n",
+          "success_spec": {
+            "type": "ee_at_midpoint",
+            "objects": [
+              "mug",
+              "bottle"
+            ],
+            "tolerance_m": 0.05,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 4.1534528732299805,
+              "tokens": {
+                "in": 1333,
+                "out": 139
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0021636377595167892
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 4.37954568862915,
+              "tokens": {
+                "in": 1333,
+                "out": 142
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0021636377595167892
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 4.339637041091919,
+              "tokens": {
+                "in": 1333,
+                "out": 137
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0021636377595167892
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 3.9870331287384033,
+              "tokens": {
+                "in": 1333,
+                "out": 127
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0021636377595167892
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 100,
+              "duration_sec": 4.6583240032196045,
+              "tokens": {
+                "in": 1333,
+                "out": 218
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "EE to midpoint err 0.2 cm",
+              "physics_metrics": {
+                "err_m": 0.0021636377595167892
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.2,
+          "tokens": {
+            "in": 6665,
+            "out": 763
+          },
+          "cost_usd": 0.01048
+        },
+        {
+          "id": "draw_letter_L",
+          "prompt": "Trace the letter L in the air with the end-effector. The\ntool moves to ABSOLUTE Cartesian targets, so first read your\ncurrent pose, then: (1) move down 4 cm (lower Z by 0.04 m),\n(2) from there move forward 4 cm (raise X by 0.04 m), then\n(3) return home. Both corners are within the workspace.\nReport the end-effector pose at each corner.\n",
+          "success_spec": {
+            "type": "ee_waypoint_trace",
+            "waypoints": [
+              [
+                0.0,
+                0.0,
+                -0.04
+              ],
+              [
+                0.04,
+                0.0,
+                -0.04
+              ]
+            ],
+            "waypoint_tol_m": 0.025,
+            "home_tol_m": 0.04,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 300,
+              "duration_sec": 6.801574945449829,
+              "tokens": {
+                "in": 1398,
+                "out": 211
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 300,
+              "duration_sec": 7.209687948226929,
+              "tokens": {
+                "in": 1398,
+                "out": 209
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 6,
+              "frames": 300,
+              "duration_sec": 9.127926111221313,
+              "tokens": {
+                "in": 1398,
+                "out": 289
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "waypoints 2/2 reached in order; home_err=0.0cm (home)",
+              "physics_metrics": {
+                "waypoints_reached": 2,
+                "n_waypoints": 2,
+                "home_err_m": 7.333981117095102e-05
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 100,
+              "duration_sec": 4.823458909988403,
+              "tokens": {
+                "in": 1398,
+                "out": 280
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_draw_letter_L_t3>\", line 8, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "waypoints 1/2 reached in order; home_err=4.4cm (NOT home)",
+              "physics_metrics": {
+                "waypoints_reached": 1,
+                "n_waypoints": 2,
+                "home_err_m": 0.04418418118350922
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": false,
+              "physics_ok": false,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 100,
+              "duration_sec": 5.0672242641448975,
+              "tokens": {
+                "in": 1398,
+                "out": 285
+              },
+              "summary": "Program failed: Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<",
+              "error": "Traceback (most recent call last):\n  File \"autoadapter_bench/baselines/code_as_policies/runner.py\", line 517, in execute_task\n    exec(compile(program, f\"<cap_{task_id}>\", \"exec\"), sandbox)\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<cap_draw_letter_L_t4>\", line 12, in <module>\nTypeError: 'NoneType' object is not callable\n",
+              "physics_detail": "waypoints 1/2 reached in order; home_err=4.4cm (NOT home)",
+              "physics_metrics": {
+                "waypoints_reached": 1,
+                "n_waypoints": 2,
+                "home_err_m": 0.04418418118350922
+              }
+            }
+          ],
+          "llm_pass_rate": 0.6,
+          "physics_pass_rate": 0.6,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 4.6,
+          "tokens": {
+            "in": 6990,
+            "out": 1274
+          },
+          "cost_usd": 0.01336
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 13,
+    "n_trials_total": 65,
+    "llm_pass_rate": 0.4153846153846154,
+    "physics_pass_rate": 0.4153846153846154,
+    "agreement_rate": 0.7846153846153846,
+    "total_tokens": {
+      "in": 88245,
+      "out": 32097
+    },
+    "total_cost_usd": 0.24873,
+    "wall_clock_sec": 1657.5606927871704
+  }
+}

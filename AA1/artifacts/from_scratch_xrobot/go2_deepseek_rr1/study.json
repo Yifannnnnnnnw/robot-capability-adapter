@@ -1,0 +1,64 @@
+{
+  "robot_id": "go2_deepseek_rr1",
+  "estimated_class": "quadruped",
+  "dof": 12,
+  "arm_joint_names": [],
+  "arm_actuator_names": [],
+  "joint_limits": {
+    "FL_hip_joint": [
+      -1.0472,
+      1.0472
+    ],
+    "FL_thigh_joint": [
+      -1.5708,
+      3.4907
+    ],
+    "FL_calf_joint": [
+      -2.7227,
+      -0.83776
+    ],
+    "FR_hip_joint": [
+      -1.0472,
+      1.0472
+    ],
+    "FR_thigh_joint": [
+      -1.5708,
+      3.4907
+    ],
+    "FR_calf_joint": [
+      -2.7227,
+      -0.83776
+    ],
+    "RL_hip_joint": [
+      -1.0472,
+      1.0472
+    ],
+    "RL_thigh_joint": [
+      -0.5236,
+      4.5379
+    ],
+    "RL_calf_joint": [
+      -2.7227,
+      -0.83776
+    ],
+    "RR_hip_joint": [
+      -1.0472,
+      1.0472
+    ],
+    "RR_thigh_joint": [
+      -0.5236,
+      4.5379
+    ],
+    "RR_calf_joint": [
+      -2.7227,
+      -0.83776
+    ]
+  },
+  "ee_site": null,
+  "ee_body": "FL_foot",
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "notes": "Unitree Go2 quadruped robot with 12 leg joints (4 legs × 3 joints each: abduction, hip, knee), no arm or gripper, includes sensors (IMU, joint pos/vel/torque)"
+}

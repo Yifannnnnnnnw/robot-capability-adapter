@@ -1,0 +1,60 @@
+{
+  "robot_id": "leap_hand",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/artifacts/diagnostics/aa1_15_20260909/generated_attempt_1/leap_hand",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": false,
+      "duration_sec": 4.00543212890625e-05,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/artifacts/diagnostics/aa1_15_20260909/generated_attempt_1/leap_hand/traces/01_study.jsonl",
+      "artifacts": [],
+      "error": "Bedrock invoke failed after retries: TypeError: Messages.create() got an unexpected keyword argument 'temperature'",
+      "token_usage": {
+        "in": 0,
+        "out": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "generate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "skipped \u2014 upstream `study` failed: Bedrock invoke failed after retries: TypeError: Messages.create() got an unexpected keyword argument 'temperature'",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "validate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "skipped \u2014 upstream `study` failed: Bedrock invoke failed after retries: TypeError: Messages.create() got an unexpected keyword argument 'temperature'",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}

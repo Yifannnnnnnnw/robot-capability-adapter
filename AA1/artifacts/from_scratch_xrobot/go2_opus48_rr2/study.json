@@ -1,0 +1,38 @@
+{
+  "robot_id": "go2_opus48_rr2",
+  "estimated_class": "quadruped",
+  "dof": 12,
+  "arm_joint_names": [
+    "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+    "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+    "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
+    "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"
+  ],
+  "arm_actuator_names": [
+    "FR_hip", "FR_thigh", "FR_calf",
+    "FL_hip", "FL_thigh", "FL_calf",
+    "RR_hip", "RR_thigh", "RR_calf",
+    "RL_hip", "RL_thigh", "RL_calf"
+  ],
+  "joint_limits": {
+    "FR_hip_joint": [-1.0472, 1.0472],
+    "FR_thigh_joint": [-1.5708, 3.4907],
+    "FR_calf_joint": [-2.7227, -0.83776],
+    "FL_hip_joint": [-1.0472, 1.0472],
+    "FL_thigh_joint": [-1.5708, 3.4907],
+    "FL_calf_joint": [-2.7227, -0.83776],
+    "RR_hip_joint": [-1.0472, 1.0472],
+    "RR_thigh_joint": [-0.5236, 4.5379],
+    "RR_calf_joint": [-2.7227, -0.83776],
+    "RL_hip_joint": [-1.0472, 1.0472],
+    "RL_thigh_joint": [-0.5236, 4.5379],
+    "RL_calf_joint": [-2.7227, -0.83776]
+  },
+  "ee_site": "imu",
+  "ee_body": "base_link",
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "notes": "Unitree Go2 quadruped: floating base (freejoint on base_link) + 4 legs x 3 joints (hip abduction axis 1 0 0, thigh/calf hinge axis 0 1 0); 12 torque motors (legs +-23.7 Nm, knees +-45.43 Nm); no gripper/weld; home keyframe ctrl=[0,0.9,-1.8]x4."
+}

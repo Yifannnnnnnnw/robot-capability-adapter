@@ -1,0 +1,1364 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "baseline": "cap",
+    "baseline_description": "Code-as-Policies: LLM composes pre-built APIs",
+    "robot": "anymal_c",
+    "robot_class": "quadruped",
+    "mjcf": "assets/mjcf/anybotics_anymal_c/scene.xml",
+    "vendor": "ANYbotics",
+    "dof": 12,
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "region": "us-east-1",
+    "git_sha": "71401bfcc4de",
+    "started_at": "2026-06-05T17:30:34.623992",
+    "suites_requested": [
+      "simple",
+      "hard"
+    ],
+    "completed_at": "2026-06-05T17:36:37.909645",
+    "wall_clock_sec": 363.284517288208
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "sit_down_from_home",
+          "prompt": "You are standing. Sit down to a folded/low pose.\n",
+          "success_spec": {
+            "type": "body_height_ratio",
+            "max_ratio": 0.75,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 0,
+              "duration_sec": 1.4227440357208252,
+              "tokens": {
+                "in": 697,
+                "out": 16
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "height ratio 0.24 (0.496->0.121 m)",
+              "physics_metrics": {
+                "height_ratio": 0.24409935993084947
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 0,
+              "duration_sec": 1.3505239486694336,
+              "tokens": {
+                "in": 697,
+                "out": 16
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "height ratio 0.24 (0.496->0.121 m)",
+              "physics_metrics": {
+                "height_ratio": 0.24409935993084947
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 0,
+              "duration_sec": 1.3256709575653076,
+              "tokens": {
+                "in": 697,
+                "out": 16
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "height ratio 0.24 (0.496->0.121 m)",
+              "physics_metrics": {
+                "height_ratio": 0.24409935993084947
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 0,
+              "duration_sec": 1.5159318447113037,
+              "tokens": {
+                "in": 697,
+                "out": 16
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "height ratio 0.24 (0.496->0.121 m)",
+              "physics_metrics": {
+                "height_ratio": 0.24409935993084947
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 1,
+              "frames": 0,
+              "duration_sec": 1.4122428894042969,
+              "tokens": {
+                "in": 697,
+                "out": 16
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "height ratio 0.24 (0.496->0.121 m)",
+              "physics_metrics": {
+                "height_ratio": 0.24409935993084947
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 1.0,
+          "tokens": {
+            "in": 3485,
+            "out": 80
+          },
+          "cost_usd": 0.011655
+        },
+        {
+          "id": "sit_then_stand_to_nominal",
+          "prompt": "Sit down, then stand back up to approximately your starting\nstanding height.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "after:sit:1",
+                "max_height_ratio": 0.75
+              },
+              {
+                "at": "final",
+                "min_height_ratio": 0.9
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.446950912475586,
+              "tokens": {
+                "in": 698,
+                "out": 110
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.24,dx=-0.004; final:hr=0.96,dx=-0.003",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": -0.004310023306605488,
+                  "final": -0.003247943692507654
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.3787479400634766,
+              "tokens": {
+                "in": 698,
+                "out": 110
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.24,dx=-0.004; final:hr=0.96,dx=-0.003",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": -0.004310023306605488,
+                  "final": -0.003247943692507654
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.3957390785217285,
+              "tokens": {
+                "in": 698,
+                "out": 110
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.24,dx=-0.004; final:hr=0.96,dx=-0.003",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": -0.004310023306605488,
+                  "final": -0.003247943692507654
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.4886422157287598,
+              "tokens": {
+                "in": 698,
+                "out": 111
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.24,dx=-0.004; final:hr=0.96,dx=-0.003",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": -0.004310023306605488,
+                  "final": -0.003247943692507654
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.556583881378174,
+              "tokens": {
+                "in": 698,
+                "out": 110
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:sit:1:hr=0.24,dx=-0.004; final:hr=0.96,dx=-0.003",
+              "physics_metrics": {
+                "phases": {
+                  "after:sit:1": -0.004310023306605488,
+                  "final": -0.003247943692507654
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 4.0,
+          "tokens": {
+            "in": 3490,
+            "out": 551
+          },
+          "cost_usd": 0.018735
+        },
+        {
+          "id": "walk_forward_5cm",
+          "prompt": "Walk forward a short distance and remain upright. If you are not\nalready standing, stand up first.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.05,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.913599252700806,
+              "tokens": {
+                "in": 704,
+                "out": 244
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+1.331 m, |dy|=0.100, height_ratio=1.05",
+              "physics_metrics": {
+                "dx_m": 1.330831851308187,
+                "dy_m": 0.09961803157076209,
+                "height_ratio": 1.0502555495183925
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.82855486869812,
+              "tokens": {
+                "in": 704,
+                "out": 244
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+1.331 m, |dy|=0.100, height_ratio=1.05",
+              "physics_metrics": {
+                "dx_m": 1.330831851308187,
+                "dy_m": 0.09961803157076209,
+                "height_ratio": 1.0502555495183925
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 2.9562649726867676,
+              "tokens": {
+                "in": 704,
+                "out": 127
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.639 m, |dy|=0.058, height_ratio=1.19",
+              "physics_metrics": {
+                "dx_m": 0.6392284733144405,
+                "dy_m": -0.05823008949981667,
+                "height_ratio": 1.1939144865659492
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 3.0764219760894775,
+              "tokens": {
+                "in": 704,
+                "out": 127
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.639 m, |dy|=0.058, height_ratio=1.19",
+              "physics_metrics": {
+                "dx_m": 0.6392284733144405,
+                "dy_m": -0.05823008949981667,
+                "height_ratio": 1.1939144865659492
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 2,
+              "frames": 0,
+              "duration_sec": 3.2150228023529053,
+              "tokens": {
+                "in": 704,
+                "out": 127
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.639 m, |dy|=0.058, height_ratio=1.19",
+              "physics_metrics": {
+                "dx_m": 0.6392284733144405,
+                "dy_m": -0.05823008949981667,
+                "height_ratio": 1.1939144865659492
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.8,
+          "tokens": {
+            "in": 3520,
+            "out": 869
+          },
+          "cost_usd": 0.023594999999999998
+        },
+        {
+          "id": "walk_forward_10cm",
+          "prompt": "Walk forward at least 10 cm from your starting pose and remain\nupright. Stand up first if needed.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.1,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.404407024383545,
+              "tokens": {
+                "in": 706,
+                "out": 251
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.307 m, |dy|=0.060, height_ratio=0.96",
+              "physics_metrics": {
+                "dx_m": 0.30708852873787373,
+                "dy_m": -0.06013909355112442,
+                "height_ratio": 0.9567833197402987
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.252692937850952,
+              "tokens": {
+                "in": 706,
+                "out": 251
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.307 m, |dy|=0.060, height_ratio=0.96",
+              "physics_metrics": {
+                "dx_m": 0.30708852873787373,
+                "dy_m": -0.06013909355112442,
+                "height_ratio": 0.9567833197402987
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.124389171600342,
+              "tokens": {
+                "in": 706,
+                "out": 249
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.307 m, |dy|=0.060, height_ratio=0.96",
+              "physics_metrics": {
+                "dx_m": 0.30708852873787373,
+                "dy_m": -0.06013909355112442,
+                "height_ratio": 0.9567833197402987
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.346224069595337,
+              "tokens": {
+                "in": 706,
+                "out": 249
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.307 m, |dy|=0.060, height_ratio=0.96",
+              "physics_metrics": {
+                "dx_m": 0.30708852873787373,
+                "dy_m": -0.06013909355112442,
+                "height_ratio": 0.9567833197402987
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 4.277970314025879,
+              "tokens": {
+                "in": 706,
+                "out": 249
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.307 m, |dy|=0.060, height_ratio=0.96",
+              "physics_metrics": {
+                "dx_m": 0.30708852873787373,
+                "dy_m": -0.06013909355112442,
+                "height_ratio": 0.9567833197402987
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 4.0,
+          "tokens": {
+            "in": 3530,
+            "out": 1249
+          },
+          "cost_usd": 0.029325000000000004
+        },
+        {
+          "id": "two_short_walks",
+          "prompt": "Take two short forward walks. Check your base pose between them.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "after:walk_forward:1",
+                "min_dx_m": 0.03
+              },
+              {
+                "at": "final",
+                "min_dx_m": 0.1,
+                "min_height_ratio": 0.6
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.424433708190918,
+              "tokens": {
+                "in": 695,
+                "out": 104
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.19,dx=+0.639; final:hr=1.19,dx=+0.639",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6392284733144405,
+                  "final": 0.6392284733144405
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.5427420139312744,
+              "tokens": {
+                "in": 695,
+                "out": 104
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.19,dx=+0.639; final:hr=1.19,dx=+0.639",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6392284733144405,
+                  "final": 0.6392284733144405
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.874951124191284,
+              "tokens": {
+                "in": 695,
+                "out": 104
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.19,dx=+0.639; final:hr=1.19,dx=+0.639",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6392284733144405,
+                  "final": 0.6392284733144405
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.7167282104492188,
+              "tokens": {
+                "in": 695,
+                "out": 104
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.19,dx=+0.639; final:hr=1.19,dx=+0.639",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6392284733144405,
+                  "final": 0.6392284733144405
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.5000479221343994,
+              "tokens": {
+                "in": 695,
+                "out": 104
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.19,dx=+0.639; final:hr=1.19,dx=+0.639",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.6392284733144405,
+                  "final": 0.6392284733144405
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 4.0,
+          "tokens": {
+            "in": 3475,
+            "out": 520
+          },
+          "cost_usd": 0.018225
+        }
+      ]
+    },
+    "hard": {
+      "tasks": [
+        {
+          "id": "target_x_band_10cm",
+          "prompt": "Advance roughly 10 cm in +X from your starting pose. Use repeated\nshort walks and base-pose checks, and stop once you are inside the\ntarget band (8-12 cm).\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.08,
+            "x_max_m": 0.12,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 43,
+              "frames": 0,
+              "duration_sec": 13.682734966278076,
+              "tokens": {
+                "in": 725,
+                "out": 354
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.000 m, |dy|=0.000, height_ratio=1.07",
+              "physics_metrics": {
+                "dx_m": 0.00042249796596318485,
+                "dy_m": 3.674517684066029e-05,
+                "height_ratio": 1.0667453758454455
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 43,
+              "frames": 0,
+              "duration_sec": 13.590340852737427,
+              "tokens": {
+                "in": 725,
+                "out": 354
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.000 m, |dy|=0.000, height_ratio=1.07",
+              "physics_metrics": {
+                "dx_m": 0.00042249796596318485,
+                "dy_m": 3.674517684066029e-05,
+                "height_ratio": 1.0667453758454455
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 43,
+              "frames": 0,
+              "duration_sec": 13.807446956634521,
+              "tokens": {
+                "in": 725,
+                "out": 371
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.000 m, |dy|=0.000, height_ratio=1.07",
+              "physics_metrics": {
+                "dx_m": 0.00042249796596318485,
+                "dy_m": 3.674517684066029e-05,
+                "height_ratio": 1.0667453758454455
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 43,
+              "frames": 0,
+              "duration_sec": 13.418186902999878,
+              "tokens": {
+                "in": 725,
+                "out": 392
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=-0.000 m, |dy|=0.000, height_ratio=0.96",
+              "physics_metrics": {
+                "dx_m": -4.310061077809695e-05,
+                "dy_m": -5.066642958147352e-05,
+                "height_ratio": 0.9563226905366959
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 43,
+              "frames": 0,
+              "duration_sec": 13.642806053161621,
+              "tokens": {
+                "in": 725,
+                "out": 354
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.000 m, |dy|=0.000, height_ratio=1.07",
+              "physics_metrics": {
+                "dx_m": 0.00042249796596318485,
+                "dy_m": 3.674517684066029e-05,
+                "height_ratio": 1.0667453758454455
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 43.0,
+          "tokens": {
+            "in": 3625,
+            "out": 1825
+          },
+          "cost_usd": 0.03825
+        },
+        {
+          "id": "target_x_band_20cm",
+          "prompt": "Advance roughly 20 cm in +X using at most three short walk\ncommands, checking base pose after each. Stop inside 16-24 cm.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.16,
+            "x_max_m": 0.24,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 0,
+              "duration_sec": 6.6834492683410645,
+              "tokens": {
+                "in": 716,
+                "out": 409
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.037 m, |dy|=0.042, height_ratio=0.92",
+              "physics_metrics": {
+                "dx_m": 0.0365340712998569,
+                "dy_m": -0.04152324428337769,
+                "height_ratio": 0.9153875986846386
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 0,
+              "duration_sec": 5.8489930629730225,
+              "tokens": {
+                "in": 716,
+                "out": 381
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.037 m, |dy|=0.042, height_ratio=0.92",
+              "physics_metrics": {
+                "dx_m": 0.0365340712998569,
+                "dy_m": -0.04152324428337769,
+                "height_ratio": 0.9153875986846386
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 10,
+              "frames": 0,
+              "duration_sec": 7.318558931350708,
+              "tokens": {
+                "in": 716,
+                "out": 462
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=-0.000 m, |dy|=0.001, height_ratio=1.08",
+              "physics_metrics": {
+                "dx_m": -1.9740256216659187e-05,
+                "dy_m": 0.0007239741088787305,
+                "height_ratio": 1.075372635136815
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 12,
+              "frames": 0,
+              "duration_sec": 6.618967771530151,
+              "tokens": {
+                "in": 716,
+                "out": 454
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.011 m, |dy|=0.011, height_ratio=0.85",
+              "physics_metrics": {
+                "dx_m": 0.010869550759169339,
+                "dy_m": -0.010607987562377996,
+                "height_ratio": 0.8476968574075078
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 9,
+              "frames": 0,
+              "duration_sec": 5.881151437759399,
+              "tokens": {
+                "in": 716,
+                "out": 381
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.037 m, |dy|=0.042, height_ratio=0.92",
+              "physics_metrics": {
+                "dx_m": 0.0365340712998569,
+                "dy_m": -0.04152324428337769,
+                "height_ratio": 0.9153875986846386
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 9.8,
+          "tokens": {
+            "in": 3580,
+            "out": 2087
+          },
+          "cost_usd": 0.042045
+        },
+        {
+          "id": "explore_then_correct_12cm",
+          "prompt": "First take one short exploratory walk (about 0.5 s). Read the x\ngain from your base pose. Then choose exactly one more walk so your\ntotal forward progress ends near 12 cm.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "after:walk_forward:1",
+                "min_dx_m": 0.01,
+                "max_dx_m": 0.08
+              },
+              {
+                "at": "final",
+                "min_dx_m": 0.1,
+                "max_dx_m": 0.14
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 5,
+              "frames": 0,
+              "duration_sec": 11.495776176452637,
+              "tokens": {
+                "in": 727,
+                "out": 623
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.07,dx=+0.000\u2717; final:hr=0.26,dx=+0.011\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.0004218230672872294,
+                  "final": 0.011256205032002317
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 5,
+              "frames": 0,
+              "duration_sec": 13.32419729232788,
+              "tokens": {
+                "in": 727,
+                "out": 749
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.07,dx=+0.000\u2717; final:hr=0.25,dx=+0.007\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.0004218230672872294,
+                  "final": 0.007211688453165601
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 5,
+              "frames": 0,
+              "duration_sec": 6.257900953292847,
+              "tokens": {
+                "in": 727,
+                "out": 360
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.07,dx=+0.000\u2717; final:hr=0.31,dx=+3.300\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.0004218230672872294,
+                  "final": 3.3004411961501012
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 5,
+              "frames": 0,
+              "duration_sec": 10.706423044204712,
+              "tokens": {
+                "in": 727,
+                "out": 585
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.07,dx=+0.000\u2717; final:hr=0.32,dx=+3.303\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.0004218230672872294,
+                  "final": 3.3028522385465187
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 6,
+              "frames": 0,
+              "duration_sec": 10.273047924041748,
+              "tokens": {
+                "in": 727,
+                "out": 567
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "after:walk_forward:1:hr=1.07,dx=+0.000\u2717; final:hr=0.32,dx=+3.303\u2717",
+              "physics_metrics": {
+                "phases": {
+                  "after:walk_forward:1": 0.0004218230672872294,
+                  "final": 3.3028522385465187
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 5.2,
+          "tokens": {
+            "in": 3635,
+            "out": 2884
+          },
+          "cost_usd": 0.054165
+        },
+        {
+          "id": "walk_sit_stand_keep_progress",
+          "prompt": "Move forward about 10-20 cm, sit down, then stand back up without\nlosing most of your forward progress.\n",
+          "success_spec": {
+            "type": "phase_trajectory",
+            "phases": [
+              {
+                "at": "before:sit:1",
+                "min_dx_m": 0.08
+              },
+              {
+                "at": "final",
+                "retention_ref": "before:sit:1",
+                "min_progress_retention": 0.75,
+                "min_height_ratio": 0.9
+              }
+            ],
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.734307050704956,
+              "tokens": {
+                "in": 708,
+                "out": 135
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=1.02,dx=+0.000\u2717; final:ret=209.36; final:hr=0.96,dx=+0.066",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.0003148748077126673,
+                  "final": 0.06592077044954389
+                }
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.0899930000305176,
+              "tokens": {
+                "in": 708,
+                "out": 128
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=1.02,dx=+0.000\u2717; final:ret=209.36; final:hr=0.96,dx=+0.066",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.0003148748077126673,
+                  "final": 0.06592077044954389
+                }
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.155017852783203,
+              "tokens": {
+                "in": 708,
+                "out": 125
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=1.02,dx=+0.000\u2717; final:ret=209.36; final:hr=0.96,dx=+0.066",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.0003148748077126673,
+                  "final": 0.06592077044954389
+                }
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 3.6700611114501953,
+              "tokens": {
+                "in": 708,
+                "out": 135
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=1.02,dx=+0.000\u2717; final:ret=209.36; final:hr=0.96,dx=+0.066",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.0003148748077126673,
+                  "final": 0.06592077044954389
+                }
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 4,
+              "frames": 0,
+              "duration_sec": 2.951106071472168,
+              "tokens": {
+                "in": 708,
+                "out": 122
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "before:sit:1:hr=1.02,dx=+0.000\u2717; final:ret=209.36; final:hr=0.96,dx=+0.066",
+              "physics_metrics": {
+                "phases": {
+                  "before:sit:1": 0.0003148748077126673,
+                  "final": 0.06592077044954389
+                }
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 4.0,
+          "tokens": {
+            "in": 3540,
+            "out": 645
+          },
+          "cost_usd": 0.020295
+        },
+        {
+          "id": "bounded_drift_forward",
+          "prompt": "Move forward at least 10 cm while keeping sideways (Y) drift small.\nUse short walks and pose checks rather than one long blind command.\n",
+          "success_spec": {
+            "type": "forward_progress",
+            "x_min_m": 0.1,
+            "abs_y_max_m": 0.18,
+            "height_ratio_min": 0.6,
+            "n_trials": 5
+          },
+          "n_trials": 5,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 25,
+              "frames": 0,
+              "duration_sec": 13.642029047012329,
+              "tokens": {
+                "in": 714,
+                "out": 493
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.107 m, |dy|=0.023, height_ratio=0.22",
+              "physics_metrics": {
+                "dx_m": 0.10665954525605549,
+                "dy_m": -0.023021625690673942,
+                "height_ratio": 0.22085954016214684
+              }
+            },
+            {
+              "trial": 1,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 34,
+              "frames": 0,
+              "duration_sec": 15.519605159759521,
+              "tokens": {
+                "in": 714,
+                "out": 576
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.002 m, |dy|=0.002, height_ratio=0.24",
+              "physics_metrics": {
+                "dx_m": 0.001661667791727995,
+                "dy_m": -0.001892943729127817,
+                "height_ratio": 0.24417538925719248
+              }
+            },
+            {
+              "trial": 2,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 25,
+              "frames": 0,
+              "duration_sec": 12.749665021896362,
+              "tokens": {
+                "in": 714,
+                "out": 492
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.107 m, |dy|=0.023, height_ratio=0.22",
+              "physics_metrics": {
+                "dx_m": 0.10665954525605549,
+                "dy_m": -0.023021625690673942,
+                "height_ratio": 0.22085954016214684
+              }
+            },
+            {
+              "trial": 3,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 34,
+              "frames": 0,
+              "duration_sec": 14.882930040359497,
+              "tokens": {
+                "in": 714,
+                "out": 593
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=-0.006 m, |dy|=0.010, height_ratio=0.25",
+              "physics_metrics": {
+                "dx_m": -0.005529153997551589,
+                "dy_m": 0.010474690090285324,
+                "height_ratio": 0.25194198839610976
+              }
+            },
+            {
+              "trial": 4,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "n_tool_calls": 25,
+              "frames": 0,
+              "duration_sec": 13.01681113243103,
+              "tokens": {
+                "in": 714,
+                "out": 551
+              },
+              "summary": "Program executed successfully.",
+              "error": null,
+              "physics_detail": "dx=+0.000 m, |dy|=0.000, height_ratio=1.03",
+              "physics_metrics": {
+                "dx_m": 0.00017332458664945393,
+                "dy_m": 0.0002644357814702906,
+                "height_ratio": 1.027681114335228
+              }
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 28.6,
+          "tokens": {
+            "in": 3570,
+            "out": 2705
+          },
+          "cost_usd": 0.051285
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 10,
+    "n_trials_total": 50,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 0.5,
+    "agreement_rate": 0.5,
+    "total_tokens": {
+      "in": 35450,
+      "out": 13415
+    },
+    "total_cost_usd": 0.30757500000000004,
+    "wall_clock_sec": 363.284517288208
+  }
+}

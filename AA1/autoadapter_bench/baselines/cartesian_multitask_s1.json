@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "interface": "Cartesian+gripper (same API)",
+    "policy": "single multi-task (reach+pick)",
+    "seed": 1,
+    "n_episodes": 30,
+    "mt_steps": 500000,
+    "workspace": "artifacts/auto_adapter_so101_v2_artifacts"
+  },
+  "results": {
+    "multitask_on_reach": {
+      "reach_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.011619203017033574
+      },
+      "reach_x-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.007730362532898753
+      },
+      "reach_y+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.005952766198764944
+      },
+      "reach_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.01027696733465733
+      }
+    },
+    "multitask_on_reach_avg": 1.0,
+    "multitask_on_pick": {
+      "success_rate": 1.0,
+      "mean_lift_m": 0.05406768606391134
+    }
+  }
+}

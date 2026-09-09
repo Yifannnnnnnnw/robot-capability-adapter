@@ -1,0 +1,54 @@
+\section{Bedrock model identifiers and pricing}
+\label{app:models}
+
+All LLM-agent experiments run against AWS Bedrock. Anthropic
+models use the native tool-use API; the other four vendors use the
+unified Bedrock Converse API through a thin adapter, so the agent
+loop is identical across vendors. Table~\ref{tab:bedrock} lists
+exact identifiers and per-token pricing used for all cost figures.
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Label} & \textbf{Vendor} & \textbf{Bedrock identifier} & \textbf{Pricing (per 1M tok, in/out)} \\
+\midrule
+Haiku~4.5     & Anthropic & \texttt{us.anthropic.claude-haiku-4-5-20251001-v1:0}  & \$1.00 / \$5.00 \\
+Sonnet~4.5    & Anthropic & \texttt{us.anthropic.claude-sonnet-4-5-20250929-v1:0} & \$3.00 / \$15.00 \\
+Sonnet~4.6    & Anthropic & \texttt{us.anthropic.claude-sonnet-4-6}               & \$3.00 / \$15.00 \\
+Opus~4.8      & Anthropic & \texttt{us.anthropic.claude-opus-4-8}                 & \$5.00 / \$25.00 \\
+Nova~Pro      & Amazon    & \texttt{amazon.nova-pro-v1:0}                         & \$0.80 / \$3.20 \\
+DeepSeek~V3.2 & DeepSeek  & \texttt{deepseek.v3.2}                                & \$0.27 / \$1.10 \\
+Ministral~8B  & Mistral   & \texttt{mistral.ministral-3-8b-instruct}             & \$0.10 / \$0.10 \\
+Qwen3~32B     & Alibaba   & \texttt{qwen.qwen3-32b-v1:0}                          & \$0.15 / \$0.60 \\
+\bottomrule
+\end{tabular}
+\caption{The eight Bedrock models (five vendors) and their
+per-token list pricing as of May 2026, used for all cost figures in
+the paper.}
+\label{tab:bedrock}
+\end{table*}
+
+Across the leaderboard runs of
+\S\ref{sec:cap-portability} (seven models, using and synthesizing
+conditions), the agents consumed 25.4M input and 882k output tokens in total;
+per-configuration token counts are stored in each result JSON.
+The synthesis pipeline (\S\ref{sec:onboarding}) uses Sonnet~4.5 as
+its default agent. The cross-model capability study
+(\S\ref{sec:cap-portability}) sweeps all seven of the other models
+above on the full 13-task SO-101 suite; smaller open-weight models
+(Ministral~8B, Qwen3~32B) and a strong open model (DeepSeek~V3.2)
+are included to test whether synthesis is restricted to the
+strongest closed models.
+Gemma-3 and Llama-3/4 were excluded after a tool-use smoke test:
+Gemma-3-27B does not emit Converse tool calls, and the Llama
+endpoints required an inference profile not available in our
+account.
+
+Figure~\ref{fig:cost-quality} combines this pricing with the
+\S\ref{sec:cap-portability} leaderboard into a single cost--quality
+plane: each point is one model $\times$ method configuration over
+the full 13-task suite at $N{=}5$.
+
+\input{sections/figure_cost_quality}

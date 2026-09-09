@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "n_episodes_per_task": 1,
+    "deterministic_llm": true,
+    "agent_model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "note": "LLM agent eval on the 5 reach variants used for single-task PPO comparison. Sim-replayed final EE error vs target (same metric as PPO eval)."
+  },
+  "per_task": {
+    "in_dist_x+5": {
+      "plan_ok": true,
+      "sim_succ": true,
+      "sim_err_m": 0.0016457278002215113,
+      "tool_calls": 2,
+      "cost_usd": 0.020013,
+      "target": [
+        0.4419597828963682,
+        -0.00017781258955599767,
+        0.25011500347127646
+      ],
+      "ee_final": [
+        0.4417263394643508,
+        -0.0001778036692705298,
+        0.24848591656248667
+      ]
+    },
+    "ood_y+5": {
+      "plan_ok": true,
+      "sim_succ": true,
+      "sim_err_m": 0.00017370068710095832,
+      "tool_calls": 2,
+      "cost_usd": 0.020529,
+      "target": [
+        0.39195978289636824,
+        0.049822187410444,
+        0.25011500347127646
+      ],
+      "ee_final": [
+        0.39185773502857646,
+        0.049832211557286774,
+        0.24997479763024774
+      ]
+    },
+    "ood_z+5": {
+      "plan_ok": true,
+      "sim_succ": true,
+      "sim_err_m": 0.0006598974279445897,
+      "tool_calls": 2,
+      "cost_usd": 0.019977,
+      "target": [
+        0.39195978289636824,
+        -0.00017781258955599767,
+        0.30011500347127645
+      ],
+      "ee_final": [
+        0.392570452889313,
+        -0.00017776722538678316,
+        0.2998649099426381
+      ]
+    },
+    "ood_diag": {
+      "plan_ok": true,
+      "sim_succ": true,
+      "sim_err_m": 0.0012577626492839382,
+      "tool_calls": 2,
+      "cost_usd": 0.020856,
+      "target": [
+        0.42195978289636826,
+        0.029822187410444,
+        0.2801150034712765
+      ],
+      "ee_final": [
+        0.4220028284183296,
+        0.029939121941255604,
+        0.27886342835148675
+      ]
+    },
+    "ood_neg_x": {
+      "plan_ok": true,
+      "sim_succ": true,
+      "sim_err_m": 0.0002772745503918966,
+      "tool_calls": 2,
+      "cost_usd": 0.020106,
+      "target": [
+        0.34195978289636825,
+        -0.00017781258955599767,
+        0.25011500347127646
+      ],
+      "ee_final": [
+        0.3416874439945873,
+        -0.00017782082899900071,
+        0.2501670870464598
+      ]
+    }
+  }
+}

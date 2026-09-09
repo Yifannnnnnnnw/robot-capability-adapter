@@ -1,0 +1,9 @@
+{
+  "workspace": "artifacts/auto_adapter_so101_v2_artifacts",
+  "total_timesteps": 50000,
+  "train_time_sec": 66.38574886322021,
+  "n_episodes": 641,
+  "final_succ_rate": 0.84,
+  "final_mean_reward": 6.5115652399999995,
+  "model_path": "autoadapter_bench/baselines/rl/trained/so101_reach.zip"
+}

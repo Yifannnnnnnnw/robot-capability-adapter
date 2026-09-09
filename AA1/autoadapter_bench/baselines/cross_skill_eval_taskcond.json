@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "n_episodes_per_reach_variant": 10,
+    "n_episodes_per_pick": 10,
+    "deterministic": true,
+    "reach_variants_count": 4,
+    "pick_ctrl_scale": 0.1,
+    "ppo_reach_model": "autoadapter_bench/baselines/rl/trained/so101_reach_multi_taskcond.zip",
+    "ppo_pick_model": "autoadapter_bench/baselines/rl/trained/so101_pick_taskcond.zip",
+    "workspace": "artifacts/auto_adapter_so101_v2_artifacts"
+  },
+  "results": {
+    "ppo_reach_on_reach": {
+      "reach_x+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.019206597085514233
+      },
+      "reach_x-5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.015649464842209547
+      },
+      "reach_y+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.012796031202640015
+      },
+      "reach_z+5": {
+        "success_rate": 1.0,
+        "mean_err_m": 0.014921997985118774
+      }
+    },
+    "ppo_reach_on_pick": {
+      "success_rate": 0.2,
+      "mean_lift_m": 0.00586598219872694
+    },
+    "ppo_pick_on_reach": {
+      "reach_x+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.3429301889315038
+      },
+      "reach_x-5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.3098833998769715
+      },
+      "reach_y+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.3050710021805064
+      },
+      "reach_z+5": {
+        "success_rate": 0.0,
+        "mean_err_m": 0.3562401214927652
+      }
+    },
+    "ppo_pick_on_pick": {
+      "success_rate": 0.0,
+      "mean_lift_m": -0.016911763902133014
+    },
+    "ppo_pick_on_pick_stochastic": {
+      "success_rate": 0.7,
+      "mean_lift_m": 0.017050235506090878,
+      "n_episodes": 10,
+      "deterministic": false
+    }
+  }
+}

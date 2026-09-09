@@ -1,0 +1,35 @@
+{
+  "robot_id": "skydio_x2_haiku45_rr2",
+  "estimated_class": "aerial",
+  "dof": 6,
+  "arm_joint_names": [],
+  "arm_actuator_names": [],
+  "joint_limits": {},
+  "ee_site": null,
+  "ee_body": null,
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "motor",
+  "thrust_actuator_names": [
+    "thrust1",
+    "thrust2",
+    "thrust3",
+    "thrust4"
+  ],
+  "thrust_ctrlrange": [
+    0,
+    13
+  ],
+  "body_name": "x2",
+  "body_has_freejoint": true,
+  "num_thrust_motors": 4,
+  "rotor_positions": {
+    "thrust1": [-0.14, -0.18, 0.05],
+    "thrust2": [-0.14, 0.18, 0.05],
+    "thrust3": [0.14, 0.18, 0.08],
+    "thrust4": [0.14, -0.18, 0.08]
+  },
+  "imu_site": "imu",
+  "notes": "Skydio X2 quadrotor drone with 6-DOF freejoint and 4 thrust motors; no arm or gripper"
+}

@@ -1,0 +1,147 @@
+# AutoAdapter-Bench v2 — Quadruped task suite.
+#
+# Physics-grounded locomotion tasks with reasoning + multi-turn feedback,
+# designed to be "spirit-comparable" to the arm suite (no manipulation, but
+# real thresholds, band-stops, and state-dependent decisions). All tasks use
+# ONLY the existing quadruped primitives (stand_up, sit, walk_forward,
+# get_base_pose, get_body_height) — zero driver extension. Grading is
+# trajectory-based (per-call snapshots), not call-counting.
+#
+# Success types (see autoadapter_bench/eval.py):
+#   body_height_ratio   — final/start body height vs min/max ratio
+#   forward_progress    — base-x displacement (+ optional band, y-drift, upright)
+#   phase_trajectory    — per-phase checks at snapshot selectors
+#                         (final | after:<tool>:<k> | before:<tool>:<k>)
+
+version: "v2.0"
+robot_class: quadruped
+
+suites:
+  simple:
+    description: |
+      Single-skill and short-composition locomotion with physics-only scoring.
+      Robot starts from its nominal standing pose; tasks needing a stand say so.
+    tasks:
+      - id: sit_down_from_home
+        prompt: |
+          You are standing. Sit down to a folded/low pose.
+        success:
+          type: body_height_ratio
+          max_ratio: 0.75
+          n_trials: 5
+
+      - id: sit_then_stand_to_nominal
+        prompt: |
+          Sit down, then stand back up to approximately your starting
+          standing height.
+        success:
+          type: phase_trajectory
+          phases:
+            - at: "after:sit:1"
+              max_height_ratio: 0.75
+            - at: "final"
+              min_height_ratio: 0.90
+          n_trials: 5
+
+      - id: walk_forward_5cm
+        prompt: |
+          Walk forward a short distance and remain upright. If you are not
+          already standing, stand up first.
+        success:
+          type: forward_progress
+          x_min_m: 0.05
+          height_ratio_min: 0.60
+          n_trials: 5
+
+      - id: walk_forward_10cm
+        prompt: |
+          Walk forward at least 10 cm from your starting pose and remain
+          upright. Stand up first if needed.
+        success:
+          type: forward_progress
+          x_min_m: 0.10
+          height_ratio_min: 0.60
+          n_trials: 5
+
+      - id: two_short_walks
+        prompt: |
+          Take two short forward walks. Check your base pose between them.
+        success:
+          type: phase_trajectory
+          phases:
+            - at: "after:walk_forward:1"
+              min_dx_m: 0.03
+            - at: "final"
+              min_dx_m: 0.10
+              min_height_ratio: 0.60
+          n_trials: 5
+
+  hard:
+    description: |
+      Reasoning, thresholding, and iterative correction from repeated pose
+      observations — the locomotion analogue of the arm hard suite.
+    tasks:
+      - id: target_x_band_10cm
+        prompt: |
+          Advance roughly 10 cm in +X from your starting pose. Use repeated
+          short walks and base-pose checks, and stop once you are inside the
+          target band (8-12 cm).
+        success:
+          type: forward_progress
+          x_min_m: 0.08
+          x_max_m: 0.12
+          height_ratio_min: 0.60
+          n_trials: 5
+
+      - id: target_x_band_20cm
+        prompt: |
+          Advance roughly 20 cm in +X using at most three short walk
+          commands, checking base pose after each. Stop inside 16-24 cm.
+        success:
+          type: forward_progress
+          x_min_m: 0.16
+          x_max_m: 0.24
+          height_ratio_min: 0.60
+          n_trials: 5
+
+      - id: explore_then_correct_12cm
+        prompt: |
+          First take one short exploratory walk (about 0.5 s). Read the x
+          gain from your base pose. Then choose exactly one more walk so your
+          total forward progress ends near 12 cm.
+        success:
+          type: phase_trajectory
+          phases:
+            - at: "after:walk_forward:1"
+              min_dx_m: 0.01
+              max_dx_m: 0.08
+            - at: "final"
+              min_dx_m: 0.10
+              max_dx_m: 0.14
+          n_trials: 5
+
+      - id: walk_sit_stand_keep_progress
+        prompt: |
+          Move forward about 10-20 cm, sit down, then stand back up without
+          losing most of your forward progress.
+        success:
+          type: phase_trajectory
+          phases:
+            - at: "before:sit:1"
+              min_dx_m: 0.08
+            - at: "final"
+              retention_ref: "before:sit:1"
+              min_progress_retention: 0.75
+              min_height_ratio: 0.90
+          n_trials: 5
+
+      - id: bounded_drift_forward
+        prompt: |
+          Move forward at least 10 cm while keeping sideways (Y) drift small.
+          Use short walks and pose checks rather than one long blind command.
+        success:
+          type: forward_progress
+          x_min_m: 0.10
+          abs_y_max_m: 0.18
+          height_ratio_min: 0.60
+          n_trials: 5

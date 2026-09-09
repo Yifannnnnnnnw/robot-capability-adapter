@@ -1,0 +1,17 @@
+{
+  "model_generated": false,
+  "scene": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/go2/go2_scene.xml",
+  "real_mujoco": true,
+  "sim_time_s": 0.002,
+  "physics_steps": 1,
+  "frame_shape": [
+    64,
+    64,
+    3
+  ],
+  "frame_dtype": "uint8",
+  "frame_finite": true,
+  "frame_min": 14,
+  "frame_max": 255,
+  "ok": true
+}

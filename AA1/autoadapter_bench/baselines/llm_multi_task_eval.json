@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "n_episodes_per_task": 1,
+    "deterministic_llm": true,
+    "agent_model": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "tasks_count": 10,
+    "note": "LLM agent eval on multi-task reach 10-variant grid."
+  },
+  "per_task": {
+    "in_x+5": {
+      "sim_succ": true,
+      "sim_err_m": 0.0016457278002215113,
+      "tool_calls": 2,
+      "cost_usd": 0.019908
+    },
+    "in_x-5": {
+      "sim_succ": true,
+      "sim_err_m": 0.0002772745503918966,
+      "tool_calls": 2,
+      "cost_usd": 0.020391
+    },
+    "in_y+5": {
+      "sim_succ": true,
+      "sim_err_m": 0.00017370512565437952,
+      "tool_calls": 2,
+      "cost_usd": 0.020531999999999998
+    },
+    "in_y-5": {
+      "sim_succ": true,
+      "sim_err_m": 0.00017438041390954514,
+      "tool_calls": 2,
+      "cost_usd": 0.020838000000000002
+    },
+    "in_z+5": {
+      "sim_succ": true,
+      "sim_err_m": 0.0006598974279445897,
+      "tool_calls": 2,
+      "cost_usd": 0.020748
+    },
+    "in_z-5": {
+      "sim_succ": true,
+      "sim_err_m": 0.0007881721119950409,
+      "tool_calls": 2,
+      "cost_usd": 0.019908
+    },
+    "ood_diag": {
+      "sim_succ": true,
+      "sim_err_m": 0.0012577626492838291,
+      "tool_calls": 2,
+      "cost_usd": 0.019935
+    },
+    "ood_mag": {
+      "sim_succ": false,
+      "sim_err_m": 0.09999999999999998,
+      "tool_calls": 15,
+      "cost_usd": 0.156678
+    },
+    "ood_mixed": {
+      "sim_succ": true,
+      "sim_err_m": 0.0013324869302785017,
+      "tool_calls": 2,
+      "cost_usd": 0.020262
+    },
+    "ood_far_diag": {
+      "sim_succ": true,
+      "sim_err_m": 0.0014910671294494483,
+      "tool_calls": 2,
+      "cost_usd": 0.021702
+    }
+  }
+}

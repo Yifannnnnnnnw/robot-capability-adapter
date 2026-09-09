@@ -1,0 +1,58 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "takeoff",
+      "ok": true,
+      "detail": "dz=+0.223 m (need >0.15), up=1.00 (need >0.7)",
+      "metric": 0.22258644748040896
+    },
+    {
+      "test": "move_to",
+      "ok": true,
+      "detail": "target=[0.3, -0.0, 0.52], reached=[0.21, -0.0, 0.55], err=0.091m, up=1.00",
+      "metric": 0.09094750362061228
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "str (len=372)",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": true,
+  "source_metrics": {
+    "n_lines": 518,
+    "n_chars": 17783,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "unknown"
+  },
+  "structural_ok": true,
+  "n_passed": 7,
+  "n_total": 7,
+  "outer_attempts": 2
+}

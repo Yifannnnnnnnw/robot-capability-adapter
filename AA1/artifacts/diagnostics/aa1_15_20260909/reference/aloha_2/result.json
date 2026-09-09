@@ -1,0 +1,37 @@
+{
+  "kind": "reference_positive_control",
+  "model_generated": false,
+  "ok": true,
+  "targets": {
+    "left": [
+      -0.178291,
+      0.004306,
+      0.326503
+    ],
+    "right": [
+      0.178291,
+      -0.042306,
+      0.326503
+    ]
+  },
+  "errors_m": {
+    "left": 0.016552267777128104,
+    "right": 0.0169078968190308
+  },
+  "max_ee_displacements_m": {
+    "left": 0.024590260852448073,
+    "right": 0.024266004953272816
+  },
+  "hold_max_errors_m": {
+    "left": 0.016594019585189385,
+    "right": 0.017106779297416056
+  },
+  "hold_duration_s": 0.49999999999994493,
+  "initial_goal_distance_m": {
+    "left": 0.03021619657634378,
+    "right": 0.030216196576343782
+  },
+  "frames": 71,
+  "mp4_path": "artifacts/diagnostics/aa1_15_20260909/reference/aloha_2/positive_control.mp4",
+  "trace_path": "artifacts/diagnostics/aa1_15_20260909/reference/aloha_2/physics_trace.json"
+}

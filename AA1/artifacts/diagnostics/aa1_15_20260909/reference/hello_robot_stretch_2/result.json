@@ -1,0 +1,22 @@
+{
+  "kind": "reference_positive_control",
+  "model_generated": false,
+  "ok": true,
+  "base_target_xy": [
+    -0.09,
+    0
+  ],
+  "ee_target_xyz": [
+    -0.02,
+    -0.24,
+    0.67
+  ],
+  "base_travel_m": 0.09233756040848937,
+  "ee_error_m": 0.001482849072142994,
+  "base_drift_during_reach_m": 0.0012937993831180386,
+  "arm_qpos_drift_during_drive": 0.0022532031994635985,
+  "upright": 0.9999938992775804,
+  "frames": 200,
+  "mp4_path": "artifacts/diagnostics/aa1_15_20260909/reference/hello_robot_stretch_2/positive_control.mp4",
+  "trace_path": "artifacts/diagnostics/aa1_15_20260909/reference/hello_robot_stretch_2/physics_trace.json"
+}

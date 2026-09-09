@@ -1,0 +1,109 @@
+\section{Per-robot onboarding detail}
+\label{app:onboarding}
+
+Table~\ref{tab:onboarding-detail} reports the per-robot
+breakdown behind the $7.8 \pm 1.6$ minute aggregate in
+\S\ref{sec:onboarding}; the $\$2.98 \pm \$0.84$ cost figure is
+recorded per run rather than per robot, so it appears in
+aggregate only.
+The robot lineup is in main paper Figure~\ref{fig:hero} (top).
+
+\noindent\textbf{Behavioral-test strictness.} The Validate
+harness is deterministic framework code, not an LLM call
+(Appendix~\ref{app:prompts}); however, the harness version used
+for these headline onboarding runs graded the quadruped
+behavioral tests leniently: \texttt{walk\_forward} was scored
+ran-without-exception rather than by displacement, and Go2's
+\texttt{sit} passes despite leaving body height at 0.28\,m
+(A1 and ANYmal-C genuinely lower to 0.11\,m and 0.09\,m). The
+released harness grades both on physics (\texttt{sit} must drop
+below 0.8$\times$ standing height, \texttt{walk\_forward} must
+displace the base $>$3\,cm while upright); we report the runs
+under the harness they were validated with. The structural tests
+(no-skeleton import, build, \texttt{home}) are unaffected, and
+every downstream task number in \S\ref{sec:capability} is graded
+by the benchmark's independent physics harness, never by the
+onboarding harness; the Go2 smoke result in
+Appendix~\ref{app:smoke} (\texttt{stand\_up} 0/2) shows the
+leniency does not propagate to task grading.
+
+\noindent\textbf{Strict re-validation.} Re-running the released
+physics-graded harness on the same eight drivers quantifies the
+gap. All eight keep every structural test. The five arms pass all
+behavioral tests but fail the scene-perception API check, a
+requirement added to the harness after these drivers were
+synthesized (the \S\ref{sec:cap-portability} synthesis runs do
+require and pass it). The three quadrupeds each fail one to two
+behavioral tests: Go2 \texttt{sit} leaves body height at 0.28\,m
+(threshold 0.22\,m), A1 \texttt{walk\_forward} moves $-2.7$\,cm,
+and ANYmal-C drops from 0.61\,m to 0.47\,m during
+\texttt{stand\_up} and does not displace on
+\texttt{walk\_forward}. The headline 8/8 therefore reads as
+structural plus smoke-level behavioral validation, exactly as
+stated; under the released harness it is 0/8 fully passing: the
+arms miss only the later-added scene-perception check, and the
+quadrupeds fail locomotion.
+
+Table~\ref{tab:provenance} maps every headline result block in the paper
+to the driver it ran on, the delivery mode (\S\ref{sec:modes}),
+and any human code involved after synthesis, so that no headline
+number has ambiguous provenance.
+
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llll}
+\toprule
+\textbf{Result block} & \textbf{Robot(s)} & \textbf{Driver provenance} & \textbf{Post-synthesis code} \\
+\midrule
+\S\ref{sec:onboarding} onboarding scoreboard & 8 robots & self-contained, one per robot (Sonnet~4.5) & none \\
+\S\ref{sec:cap-cross} cross-skill, \S\ref{sec:cap-rlsteelman} multi-task & SO-101 & spec mode (skeleton + agent spec, Sonnet~4.5) & none \\
+\S\ref{sec:cap-portability} ``uses API'' (A-A, CaP, CaP\textsubscript{fs}) & SO-101 & the \S\ref{sec:cap-cross} spec-mode driver, frozen & none \\
+\S\ref{sec:cap-portability} ``writes API'' / Self & SO-101 & self-contained, one per evaluated model & none \\
+App.\,\ref{app:openvla-sweep} OpenVLA & SO-101 & n/a (policy); translation via the frozen driver & n/a \\
+\S\ref{sec:cap-cross-robot} simple suite & Piper, UR5e & self-contained (Sonnet~4.5) & none \\
+\S\ref{sec:cap-cross-robot} end-to-end Pick & Piper & self-contained vs.\ pickbench scene & 13-line patch (\S\ref{sec:cap-cross-robot}) \\
+\S\ref{sec:cap-cross-robot} locomotion v2 & Go2, ANYmal-C & shared self-contained (Sonnet~4.5) & none \\
+\S\ref{sec:scoping-franka} reach drill-down & Franka & self-contained (Sonnet~4.5) & none \\
+Appendix~\ref{app:morphology} aerial, humanoid & Skydio~X2, H1 & self-contained, class-specific prompt & none \\
+\bottomrule
+\end{tabular}
+\caption{Driver provenance for every result block. ``Spec mode''
+= the agent writes a JSON spec consumed by a 600-line skeleton
+template; ``self-contained'' = the agent writes the entire driver
+file (\S\ref{sec:modes}). The frozen spec-mode reference driver
+is what all seven models operate in the
+\S\ref{sec:cap-portability} ``uses API'' comparison.}
+\label{tab:provenance}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Robot} & \textbf{Joints} & \textbf{Class}
+   & \textbf{Driver LOC} & \textbf{Validate tests}
+   & \textbf{Wall (min)} \\
+\midrule
+SO-101       &  5 & arm + gripper   & 546 & 7/7 &  5.1 \\
+Piper        &  6 & arm + gripper   & 377 & 7/7 &  6.4 \\
+UR5e         &  6 & arm             & 423 & 7/7 &  6.8 \\
+Franka Panda &  7 & arm + gripper   & 527 & 7/7 &  8.4 \\
+KUKA iiwa14  &  7 & arm             & 510 & 7/7 &  8.0 \\
+Unitree Go2  & 12 & quadruped       & 546 & 8/8 &  9.1 \\
+Unitree A1   & 12 & quadruped       & 458 & 8/8 &  8.6 \\
+ANYmal-C     & 12 & quadruped       & 427 & 8/8 & 10.0 \\
+\midrule
+\textbf{Mean} &    &                & 477 & all pass & \textbf{7.8} \\
+\bottomrule
+\end{tabular}
+\caption{Per-robot synthesis and validation. LOC is the
+agent-written \texttt{driver\_from\_scratch.py}; arms run a 7-test
+harness, quadrupeds an 8-test harness (locomotion in place of IK and
+gripper). Mean wall-clock matches the $7.8 \pm 1.6$\,min headline
+(\S\ref{sec:onboarding}).}
+\label{tab:onboarding-detail}
+\end{table*}
+

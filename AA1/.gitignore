@@ -1,0 +1,120 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.pytest_cache/
+*.so
+.env
+.venv/
+.venv-openvla/
+.venv-rl/
+.mypy_cache/
+.ruff_cache/
+*.log
+.coverage
+MUJOCO_LOG.TXT
+.DS_Store
+
+# Local cleanup history (kept locally, do not commit)
+archive/
+
+# Eval byproducts that get regenerated
+artifacts/*/recordings/
+artifacts/*/_raw_state/
+artifacts/*/__pycache__/
+
+# Tests scratch
+test_run.py
+test_hardware.py
+
+# ── Added for GitHub release (2026-06) ──
+# Bulk media + traces (regenerable via scripts/run/rerender_*.py); KEEP the
+# curated showcase videos under autoadapter_bench/results/*/videos/.
+**/recordings/
+**/task_traces/
+**/traces/
+*.mp4
+# Keep ONLY curated showcase/verified demos in git (a few dozen); the ~1090
+# per-task eval videos (model_axis/, self_axis/) go to the HuggingFace dataset.
+!autoadapter_bench/results/**/videos/**/*showcase*.mp4
+!autoadapter_bench/results/**/videos/**/DEMO*.mp4
+!autoadapter_bench/results/**/videos/**/*_verified.mp4
+!autoadapter_bench/results/**/videos/**/driver_demo_*.mp4
+# Backups / archived synth attempts
+**/_*_backup*/
+**/_ARCHIVED_*/
+**/*_v1_*backup*/
+# Superseded/stale results (kept locally for provenance, not in release)
+**/_superseded/
+# Defensive: never commit credentials (none currently in repo — verified)
+credentials
+*.pem
+*.key
+.aws/
+.env.*
+# LaTeX build byproducts (keep .tex/.bib/main.pdf)
+paper/latex/*.aux
+paper/latex/*.out
+paper/latex/*.blg
+paper/latex/*.bbl
+paper/latex/main_pass3.log
+
+# ── Handoff cleanup (2026-06-09): prevent GitHub bloat / stale data ──
+# (gitignore does NOT support inline comments — keep comments on their own line)
+# nohup runtime outputs
+*.out
+# OLD inflated Self results (superseded by leaderboard_b_graspverified)
+autoadapter_bench/results/leaderboard_b/
+# run-progress text logs + completion markers
+autoadapter_bench/results/**/log_*.txt
+autoadapter_bench/results/**/DONE
+# runtime-generated leaderboard snapshot
+autoadapter_bench/LEADERBOARD*.md
+# assets/scratch wrongly duplicated into artifact workspaces (canonical lives in assets/)
+artifacts/**/assets/
+artifacts/**/vision_views/
+artifacts/**/_proto*.py
+artifacts/**/test_*.py
+artifacts/**/debug_*.py
+artifacts/**/_tmp_*.xml
+artifacts/**/_mjcf_copy.xml
+artifacts/**/minimal_*.xml
+artifacts/**/temp_model.xml
+artifacts/**/*_fixed.py
+artifacts/**/h1.xml
+artifacts/**/prototype*.py
+artifacts/**/demo.py
+artifacts/**/*_controller_test.py
+artifacts/**/inspect_*.py
+artifacts/**/driver_from_scratch_v[0-9].py
+artifacts/**/driver_from_scratch_final.py
+artifacts/**/DRIVER_SUMMARY.md
+
+# Large unused robot (wheeled not claimed in paper; on HF dataset)
+assets/mjcf/hello_robot_stretch_3/
+
+# Not-in-paper / unreferenced (kept local, off GitHub)
+# push suite — not cited by canonical.yaml
+autoadapter_bench/results/clean/*push*.json
+# MJX variants — unused (no MJX path in benchmark)
+assets/mjcf/**/mjx_*.xml
+assets/mjcf/**/*_mjx.xml
+# dev scratch in workspaces
+artifacts/**/mcp_server.py
+artifacts/**/narrative.md
+artifacts/**/probe_gripper.py
+artifacts/**/mjcf_simple.xml
+supplementary.zip
+
+# agent-scratch one-offs in artifact workspaces (not the released driver)
+artifacts/**/demo_*.py
+artifacts/**/verify_*.py
+artifacts/**/final_validation.py
+artifacts/**/final_roundtrip_test.py
+artifacts/**/validate_driver.py
+artifacts/**/demo_driver.py
+artifacts/**/demo_complete.py

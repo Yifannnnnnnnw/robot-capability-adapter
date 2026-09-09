@@ -1,0 +1,281 @@
+\section{Grader taxonomy}
+\label{app:graders}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{1.5pt}
+\begin{tabular}{@{}lcll@{}}
+\toprule
+\textbf{Suite} & \textbf{Loc.} & \textbf{Robot} & \textbf{Tasks} \\
+\midrule
+Cross-skill       & 5.1 & SO-101       & 4 reach, 10 pick \\
+Multi-task         & 5.2 & SO-101       & 6 dirs + 4 held-out \\
+Hard suite        & 5.3 & SO-101       & 12 phys + 1 cov \\
+Simple suite      & 5.4 & Piper, UR5e  & 5 short tasks \\
+Piper Pick        & 5.4 & Piper        & 3 reach + 3 pick \\
+OpenVLA reach     & \ref{app:openvla-sweep} & SO-101 & 5 reach (RGB) \\
+Locomotion v2     & 5.4 & Go2, ANYmal-C & 10 loco tasks \\
+\bottomrule
+\end{tabular}
+\caption{Downstream task suites (\S\ref{sec:capability}). Reach suites
+run 10 trials per offset; the hard suite is 12 physics-graded plus 1
+coverage task.}
+\label{tab:suites}
+\end{table}
+
+\noindent\textbf{Grader taxonomy.} AutoAdapter-Bench implements 42
+grader types in \texttt{eval.py}; 31 are exercised by the released
+task suites. Twenty-eight of those 31 read \emph{post-step simulator
+state}: end-effector pose (\texttt{ee\_at\_midpoint},
+\texttt{ee\_waypoint\_trace}), object pose and contact
+(\texttt{object\_above\_object}, \texttt{object\_lifted\_by},
+\texttt{objects\_swapped}, \texttt{object\_pose\_match\_relative}),
+body height (\texttt{body\_height\_ratio}), and base pose/yaw for
+locomotion (\texttt{forward\_progress}, \texttt{turn\_to\_heading},
+\texttt{drive\_and\_turn}). The remaining three are deliberately
+\emph{behavioral}, and we label them as such rather than fold them
+into the physics count: failure-detection
+(\texttt{llm\_reports\_failure}, used by \texttt{unreachable\_detect},
+where the correct behavior is to \emph{report} an
+\texttt{IKUnreachableError} rather than move), tool-liveness
+(\texttt{tool\_executed\_without\_crash}, used by
+\texttt{gripper\_cycle}), and end-effector coverage
+(\texttt{ee\_visited\_n\_positions}, used by
+\texttt{visit\_all\_objects}). The first two sit in the simple suite
+(\S\ref{sec:cap-cross-robot}); only the third,
+\texttt{visit\_all\_objects}, sits in the 13-task hard suite. In the
+released code \texttt{ee\_visited\_n\_positions} now verifies that the
+end-effector physically came within tolerance of each object's true
+world position (falling back to commanded-target coverage only when
+the per-call trajectory is unavailable).
+
+\noindent\textbf{Grasp grading.} For grasp tasks,
+\texttt{object\_lifted\_by} requires the target to be both lifted
+\emph{and} still held within 12\,cm of the end-effector at the final
+step, rejecting an object flung by a faulty weld constraint that would
+pass a height-only check. The self-contained validation suite includes
+a matching \texttt{grasp\_lift} test, so a driver that cannot truly
+grasp fails synthesis rather than inflating its Self score.
+
+\section{12-task robustness and statistical tests}
+\label{app:robustness}
+
+\noindent\textbf{12-task physics-only robustness.} The single
+behavioral task in the hard suite is \texttt{visit\_all\_objects}.
+Table~\ref{tab:robustness} reports the SO-101 portability comparison
+on the 12 physics-graded tasks alone (dropping that one task), using
+the same trials. The model ranking is unchanged: Auto-Adapter beats
+zero-shot CaP on six of seven models and beats few-shot CaP on four
+(tying Haiku), exactly as on the full 13-task suite
+(Table~\ref{tab:portability}). The headline therefore does not depend
+on the behavioral task or on how it is graded.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Model} & \textbf{A-A} & \textbf{CaP} & \textbf{CaP\textsubscript{fs}} & \textbf{Self} \\
+\midrule
+Sonnet~4.6    & \textbf{67} & 53 & 50 & -- \\
+Opus~4.8      & \textbf{60} & 47 & 45 & 42 \\
+Haiku~4.5     & \textbf{58} & 50 & \textbf{58} & 42 \\
+Nova~Pro      & \textbf{57} & 53 & 42 & -- \\
+DeepSeek~V3.2 & 53          & 10 & \textbf{57} & 22 \\
+Ministral~8B  & \textbf{50} & 25 & 38 & -- \\
+Qwen3~32B     & 45          & \textbf{70} & 53 & -- \\
+\bottomrule
+\end{tabular}
+\caption{SO-101 portability on the \textbf{12 physics-graded} hard-suite
+tasks (\texttt{visit\_all\_objects} excluded), \%, $N{=}5$ trial-level.
+Bold = best of A-A/CaP/CaP\textsubscript{fs}. Ranking matches the
+13-task Table~\ref{tab:portability}: A-A $>$ CaP on 6/7; A-A $>$
+CaP\textsubscript{fs} on 4/7 (Haiku tie).}
+\label{tab:robustness}
+\end{table}
+
+\noindent\textbf{Statistical significance.} \textbf{In brief: the
+Auto-Adapter advantage over zero-shot CaP is significant at the
+task level, but individual per-model cells are not separately
+resolvable at $N{=}5$.} We test Auto-Adapter vs.\
+zero-shot CaP with the (model, task) cell as the paired unit (seven
+models $\times$ 13 tasks, $n{=}91$ cells; $N{=}5$ trials each), computed
+by \texttt{autoadapter\_bench/stats.py}. Auto-Adapter leads by a mean
+$+13.0$ points per cell, and a Wilcoxon signed-rank test over the paired
+cells is significant ($W{=}138$, $p{<}0.01$; pooled trial rate $0.59$
+vs.\ $0.46$). The coarser model-level comparison over the seven
+aggregate rates is only suggestive ($+13$ pp mean; sign test $p{=}0.13$,
+Wilcoxon $p{=}0.15$; $n{=}7$ is underpowered), so we rest the claim on
+the task-level test rather than on the 6/7 win count. Against few-shot
+CaP the aggregate effect is \emph{not} significant ($p{=}0.13$), so we
+report that comparison descriptively only. Per cell, only the two
+largest gaps clear non-overlapping 95\% Wilson intervals (DeepSeek A-A
+$0.57\,[0.45,0.68]$ vs.\ CaP $0.09\,[0.04,0.19]$; Ministral A-A
+$0.54\,[0.42,0.65]$ vs.\ CaP $0.23\,[0.15,0.35]$); for the four closely matched Anthropic/Nova cells the per-model
+intervals overlap. The effect is therefore robust in aggregate but, at
+$N{=}5$, individual cell differences below ${\sim}15$ points are not
+separately resolvable, so we do not claim per-model significance.
+
+\noindent\textbf{Quadruped agent-model ablation.} The
+\S\ref{sec:cap-cross-robot} quadruped numbers use a Sonnet~4.5 agent
+on a shared Sonnet~4.5 driver. Re-running the same 10-task suite with
+a Sonnet~4.6 agent gives the same qualitative split (ANYmal-C
+favors Auto-Adapter, Go2 reverses), consistent with an
+embodiment-driven rather than agent-version-driven effect
+(Table~\ref{tab:quad-ablation}).
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{llrr}
+\toprule
+\textbf{Robot} & \textbf{Agent} & \textbf{A-A} & \textbf{CaP} \\
+\midrule
+ANYmal-C & Sonnet~4.5 & \textbf{68} & 28 \\
+ANYmal-C & Sonnet~4.6 & \textbf{62} & 50 \\
+Go2      & Sonnet~4.5 & 48 & \textbf{54} \\
+Go2      & Sonnet~4.6 & 44 & \textbf{54} \\
+\bottomrule
+\end{tabular}
+\caption{Quadruped locomotion (10-task v2 suite, physics \%, $N{=}5$):
+Sonnet~4.5 (main, \S\ref{sec:cap-cross-robot}) vs.\ Sonnet~4.6
+(ablation). The ANYmal-favors-A-A / Go2-reverses split holds under
+both agent versions.}
+\label{tab:quad-ablation}
+\end{table}
+
+\subsection{Pretrained-VLA probe: OpenVLA-7B zero-shot on SO-101}
+\label{app:openvla-sweep}
+
+As an auxiliary check we ran a pretrained vision-language-action model,
+OpenVLA-7B, zero-shot on the five SO-101 reach variants
+(50 episodes). This is a cross-embodiment \emph{probe}, not a
+like-for-like baseline: OpenVLA reads RGB rather than the privileged
+state our agent and the RL/CaP baselines use, SO-101 is not in its
+Open-X training mixture, and its camera frame differs from training; we
+therefore keep it out of the main comparison. It scores \textbf{0/50}
+(mean EE error 23\,cm, deltas in inconsistent directions), consistent
+with the per-embodiment finetuning OpenVLA requires
+\citep[\S 3]{kim2024openvla}. Because a zero invites the objection that
+the action adapter, not the model, failed, we validate the harness and
+sweep the two configuration knobs a reviewer would question. \emph{Harness validation:} an oracle that feeds
+the ground-truth direction (target $-$ current EE) through the identical
+\texttt{move\_cartesian} path reaches all five reach targets (5/5, mean
+final error 1.3\,cm) at the per-step control budget used for OpenVLA
+(\texttt{duration}{=}0.5\,s); the same path with a shorter
+\texttt{duration} (0.1\,s) reaches 0/5. A capable
+controller therefore passes on this harness, so a model score of 0 is a
+model result. \emph{Robustness:} Table~\ref{tab:openvla-sweep} sweeps
+six action scales (0.25--10$\times$) and eight \texttt{unnorm}
+de-normalization keys OpenVLA-7B ships (\texttt{bridge\_orig} plus
+seven others, the manipulation datasets closest to SO-101). Every cell is $\leq$6.7\% (one chance episode of
+15), so the failure is not an artifact of one de-normalization or scale
+choice.
+
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrr}
+\toprule
+\textbf{unnorm key} & \textbf{scale} & \textbf{success} & \textbf{err (cm)} \\
+\midrule
+bridge\_orig & 0.25 & 0.0\% & 10.3 \\
+bridge\_orig & 0.50 & 0.0\% & 13.1 \\
+bridge\_orig & 1.00 & 6.7\% & 15.3 \\
+bridge\_orig & 2.00 & 0.0\% & 23.8 \\
+bridge\_orig & 5.00 & 0.0\% & 33.7 \\
+bridge\_orig & 10.0 & 0.0\% & 47.0 \\
+\midrule
+fractal20220817\_data & 2.00 & 0.0\% & 58.4 \\
+berkeley\_autolab\_ur5 & 2.00 & 0.0\% & 18.7 \\
+taco\_play & 2.00 & 0.0\% & 50.2 \\
+jaco\_play & 2.00 & 0.0\% & 54.2 \\
+viola & 2.00 & 0.0\% & 58.2 \\
+toto & 2.00 & 0.0\% & 16.7 \\
+austin\_buds & 2.00 & 0.0\% & 57.6 \\
+\bottomrule
+\end{tabular}
+\caption{OpenVLA-7B config-robustness sweep on SO-101 (3 episodes
+$\times$ 5 reach variants per cell; success = mean per-variant rate).
+Top: action-scale sweep at the canonical key. Bottom: \texttt{unnorm}-key
+sweep at the canonical scale. Harness oracle-validated above.}
+\label{tab:openvla-sweep}
+\end{table}
+
+\subsection{Franka reach per-variant breakdown}
+\label{app:franka}
+
+Table~\ref{tab:franka} gives the per-variant Franka reach results
+behind \S\ref{sec:scoping-franka} (20/70 overall).
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.9}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Variant}  & \textbf{Pass} & \textbf{Mean err (cm)} \\
+\midrule
+reach\_x+5  & 10/10 & 1.76 \\
+reach\_z+5  & 10/10 & 0.13 \\
+reach\_x-5,~y$\pm$5,~diag &  0/40 & 2.86 \\
+reach\_z-5  &  0/10 & 11.07 \\
+\textbf{Total} & \textbf{20/70 (28.6\%)} & \textbf{3.49} \\
+\bottomrule
+\end{tabular}
+\caption{Franka reach: 7 variants $\times$ 10 trials;
+\texttt{x-5}/\texttt{y$\pm$5}/\texttt{diag} aggregated,
+\texttt{z-5} (workspace boundary) separate.}
+\label{tab:franka}
+\end{table}
+
+\noindent\textbf{Oracle ablation: solver or synthesis?}
+\label{app:franka-oracle}
+To separate the agent from the control template, a deterministic
+scripted oracle issues the \emph{exact} Cartesian target for the same
+seven variants under the same methodology and 2\,cm tolerance --- no
+LLM anywhere. The oracle reproduces the published failure signature
+exactly (2/7; 2--4\,cm on the same four directions; 11.1\,cm on
+\texttt{z-5}), so the failures are deterministic template behavior,
+not agent errors or synthesis noise (determinism check: the stock and
+$5\times$-iteration arms produce bit-identical per-variant errors).
+Neither a $5\times$ IK iteration
+budget nor a nullspace-regularized DLS variant repairs it (both 2/7),
+so a stronger solver configuration alone is not the fix
+(Table~\ref{tab:franka-oracle}). A per-variant decomposition shows two
+mechanisms: \texttt{z-5} is a true IK failure at the
+workspace/joint-limit boundary, while three of the four 2--4\,cm cases
+have sub-millimeter IK residuals (\texttt{x-5} is mixed, 1.1\,cm) and
+lose accuracy in the execution layer
+(in these reaches, which stay near the arm's default configuration,
+the wrist joint settles ${\approx}11^\circ$ from its commanded value).
+Consistent with an execution-layer component, gravity-compensated
+execution of the same stock IK solutions recovers one variant (3/7).
+This does not change the reported failure pattern or the ceiling
+claim; it narrows the cause from solver choice alone to the broader
+prescribed arm-control template.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.9}
+\begin{tabular}{lrl}
+\toprule
+\textbf{Arm (deterministic, no LLM)} & \textbf{Pass} & \textbf{Note} \\
+\midrule
+Stock DLS driver          & 2/7 & same signature as Table~\ref{tab:franka} \\
+Stock, $5\times$ iterations & 2/7 & bit-identical errors \\
+Nullspace-regularized DLS & 2/7 & fixes \texttt{x-5}, loses \texttt{x+5} \\
+Stock + gravity-comp.\ execution & 3/7 & recovers \texttt{diag} \\
+\bottomrule
+\end{tabular}
+\caption{Franka oracle ablation: a scripted oracle replays the exact
+targets. The published failures persist with no LLM in the loop and
+are not repaired by solver changes alone.}
+\label{tab:franka-oracle}
+\end{table}
+
