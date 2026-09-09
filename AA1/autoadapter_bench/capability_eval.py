@@ -1361,6 +1361,12 @@ def run_capability_case(
             "score": result["score"],
             "parameters": parameters,
         }
+        try:
+            measurements = capability_metrics.describe_contract_measurements(
+                parameters, evidence=evidence, request=request)
+            result["metrics"]["measurements"] = measurements
+        except Exception as exc:
+            result["metrics"]["measurement_summary_error"] = str(exc)
         result["metric"] = result["score"]
         _write_json(case_dir / "metrics.json", result["metrics"])
         result["ok"] = (
@@ -1385,11 +1391,11 @@ def run_capability_case(
                 result["errors"].append(f"video finalization failed: {video_exc}")
     finally:
         result["error"] = result["errors"][0] if result["errors"] else None
-        result["detail"] = (
-            "; ".join(result["errors"])
-            if result["errors"]
-            else result.get("detail", "")
-        )
+        if result["errors"]:
+            result["detail"] = "; ".join(result["errors"])
+            measurements = result.get("metrics", {}).get("measurements")
+            if measurements:
+                result["detail"] += "; observed=" + json.dumps(measurements, sort_keys=True)
         try:
             _write_json(case_dir / "result.json", result)
         except Exception as exc:  # noqa: BLE001

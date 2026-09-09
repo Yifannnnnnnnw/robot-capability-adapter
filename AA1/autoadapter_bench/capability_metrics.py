@@ -637,3 +637,112 @@ def evaluate_b1_contract(parameters: Mapping[str, Any], *, evidence: Mapping[str
     elif contract_id == 'G5':
         passed = _go_stance(ctx)
     return 1.0 if passed and _side_effects_pass(ctx, contract_id) else 0.0
+
+
+def describe_contract_measurements(parameters, *, evidence, request):
+    """Report observed values for repair feedback without changing the scorer."""
+    ctx = _Context.build(parameters, evidence, request)
+    contract = parameters['contract_id']
+    result = {'sim_elapsed_s': ctx.times[-1] - ctx.times[0],
+              'side_effects_ok': _side_effects_pass(ctx, contract)}
+    if contract in ('G1', 'G5'):
+        result['requested_duration_s'] = request['duration_s']
+        result['duration_matches_request'] = _requested_duration_context(ctx) is not None
+
+    def longest_hold(flags):
+        start = None
+        longest = 0.0
+        for index, active in enumerate(flags):
+            if active:
+                start = index if start is None else start
+                longest = max(longest, ctx.times[index] - ctx.times[start])
+            else:
+                start = None
+        return longest
+
+    if contract.startswith('A') and contract != 'A3':
+        positions = [ctx.point(i, parameters['site_name']) for i in range(len(ctx.samples))]
+        result['site_max_displacement_m'] = max(_distance(p, positions[0]) for p in positions)
+        if contract == 'A1':
+            errors = [_distance(p, request['target_position_m']) for p in positions]
+            result.update(final_error_m=errors[-1], best_error_m=min(errors),
+                          longest_target_hold_s=longest_hold([e <= .015 for e in errors]))
+        elif contract == 'A2':
+            targets = request['waypoints_m']
+            entries = _ordered_entries(ctx, positions, targets, .02)
+            result.update(ordered_waypoints_reached=entries is not None,
+                          final_error_m=_distance(positions[-1], targets[-1]),
+                          max_cross_track_error_m=max(min(_point_segment_distance(p, a, b)
+                              for a, b in zip([positions[0], *targets], targets)) for p in positions))
+        elif contract == 'A4':
+            tools, targets = set(parameters['tool_geom_names']), set(parameters['target_geom_names'])
+            active = [_pair_contact(ctx, i, tools, targets) for i in range(len(ctx.samples))]
+            first = next((i for i, present in enumerate(active) if present), None)
+            result.update(best_precontact_error_m=min(_distance(p, request['precontact_position_m']) for p in positions),
+                          longest_target_contact_s=longest_hold(active),
+                          first_target_contact_s=None if first is None else ctx.times[first] - ctx.times[0],
+                          minimum_contact_distance_m=evidence.get('minimum_contact_distance_m'),
+                          maximum_speed_after_contact_m_s=None if first is None else
+                              max(_sample_speed(ctx, positions, i) for i in range(first, len(positions))))
+        elif contract == 'A5':
+            offset = request['offset_robot_base_m']
+            if parameters.get('base_body_name'):
+                offset = _rotate(ctx.quaternion(0, parameters['base_body_name']), offset)
+            target = _add(positions[0], offset)
+            result.update(best_outbound_error_m=min(_distance(p, target) for p in positions),
+                          final_return_error_m=_distance(positions[-1], positions[0]),
+                          maximum_displacement_fraction=result['site_max_displacement_m'] / max(_norm(offset), 1e-12))
+    elif contract == 'A3':
+        closed, opened = parameters.get('closed_position', 0.), parameters.get('open_position', 1.)
+        values = [(_aperture(ctx, i) - closed) / (opened - closed) for i in range(len(ctx.samples))]
+        errors = [abs(v - request['opening_fraction']) for v in values]
+        result.update(final_opening_fraction=values[-1], final_opening_error=errors[-1],
+                      maximum_opening_change=max(abs(v - values[0]) for v in values),
+                      longest_opening_hold_s=longest_hold([e <= .1 for e in errors]))
+    elif contract.startswith('G'):
+        body = parameters['body_name']
+        positions = [ctx.body(i, body) for i in range(len(ctx.samples))]
+        yaws = [_yaw(ctx.quaternion(i, body)) for i in range(len(ctx.samples))]
+        tilts = [_roll_pitch(ctx.quaternion(i, body)) for i in range(len(ctx.samples))]
+        result.update(final_height_m=positions[-1][2],
+                      max_planar_displacement_m=max(_distance(p[:2], positions[0][:2]) for p in positions),
+                      max_abs_roll_pitch_rad=max(abs(v) for tilt in tilts for v in tilt))
+        if contract == 'G1':
+            bounded = _requested_duration_context(ctx)
+            if bounded is not None:
+                linear_errors, yaw_errors, direction_errors = [], [], []
+                requested_speed = _norm(request['linear_velocity_body_m_s'])
+                start = ctx.times[0] + request['duration_s'] - 1.
+                for i in range(1, len(bounded.samples)):
+                    dt = ctx.times[i] - ctx.times[i-1]
+                    if ctx.times[i] < start or dt <= 0:
+                        continue
+                    dx, dy = _sub(positions[i][:2], positions[i-1][:2])
+                    yaw = yaws[i-1]
+                    velocity = ((math.cos(yaw)*dx + math.sin(yaw)*dy)/dt,
+                                (-math.sin(yaw)*dx + math.cos(yaw)*dy)/dt)
+                    linear_errors.append(_distance(velocity, request['linear_velocity_body_m_s']))
+                    yaw_errors.append(abs(_wrapped(yaws[i]-yaw)/dt - request['yaw_rate_rad_s']))
+                    if requested_speed >= .2 and _norm(velocity) > 1e-9:
+                        cosine = _dot(velocity, request['linear_velocity_body_m_s']) / (_norm(velocity) * requested_speed)
+                        direction_errors.append(math.acos(max(-1., min(1., cosine))))
+                if linear_errors:
+                    result.update(mean_velocity_error_m_s=math.fsum(linear_errors)/len(linear_errors),
+                                  mean_yaw_rate_error_rad_s=math.fsum(yaw_errors)/len(yaw_errors))
+                if direction_errors:
+                    result['mean_direction_error_rad'] = math.fsum(direction_errors)/len(direction_errors)
+        elif contract == 'G2':
+            target = _target_in_initial_yaw_frame(ctx, body, request['translation_initial_yaw_m'])
+            result.update(final_planar_error_m=_distance(positions[-1][:2], target),
+                          final_yaw_error_rad=abs(_wrapped(yaws[-1]-yaws[0]-request['yaw_delta_rad'])))
+        elif contract == 'G3':
+            targets = [_target_in_initial_yaw_frame(ctx, body, p) for p in request['waypoints_initial_yaw_m']]
+            result.update(ordered_waypoints_reached=_ordered_entries(ctx, [p[:2] for p in positions], targets, .1) is not None,
+                          final_planar_error_m=_distance(positions[-1][:2], targets[-1]))
+        elif contract == 'G4':
+            result['final_height_error_m'] = abs(positions[-1][2]-request['target_height_m'])
+        elif contract == 'G5':
+            recovery = next((i for i, tilt in enumerate(tilts) if all(abs(v) <= .0524 for v in tilt)), None)
+            result.update(recovery_time_s=None if recovery is None else ctx.times[recovery]-ctx.times[0],
+                          max_height_drift_m=max(abs(p[2]-positions[0][2]) for p in positions))
+    return result
