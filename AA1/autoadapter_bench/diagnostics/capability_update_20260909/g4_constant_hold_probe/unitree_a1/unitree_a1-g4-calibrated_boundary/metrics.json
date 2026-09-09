@@ -1,0 +1,16 @@
+{
+  "contract_id": "G4",
+  "measurements": {
+    "final_height_error_m": 0.03060452002801578,
+    "final_height_m": 0.2510625859176544,
+    "max_abs_roll_pitch_rad": 0.008940880652207805,
+    "max_planar_displacement_m": 0.004846709171775121,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.7000000000000005
+  },
+  "parameters": {
+    "body_name": "trunk",
+    "contract_id": "G4"
+  },
+  "score": 0.0
+}

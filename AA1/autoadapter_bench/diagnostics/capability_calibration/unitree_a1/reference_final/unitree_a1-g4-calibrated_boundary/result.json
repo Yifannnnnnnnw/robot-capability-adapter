@@ -1,0 +1,223 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "G4",
+  "case_id": "unitree_a1-g4-calibrated_boundary",
+  "detail": "G4 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2001,
+    "body_max_displacement_from_reset": {
+      "FL_calf": 0.0555830479976639,
+      "FL_hip": 0.05985906897905823,
+      "FL_thigh": 0.05959101721112273,
+      "FR_calf": 0.05582106274275079,
+      "FR_hip": 0.05991535345269328,
+      "FR_thigh": 0.059783678648345995,
+      "RL_calf": 0.05512578408334459,
+      "RL_hip": 0.0547674071966986,
+      "RL_thigh": 0.054680719704906136,
+      "RR_calf": 0.055373141322363706,
+      "RR_hip": 0.05485044994889178,
+      "RR_thigh": 0.05492641668203975,
+      "trunk": 0.05324607341314625,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_18"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_19"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_29"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_30"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_39"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_40"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_49"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_50"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_18",
+        "minimum_distance_m": -0.003108779722968453
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_19",
+        "minimum_distance_m": -0.01310877972296846
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_29",
+        "minimum_distance_m": -0.0028378998046490033
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_30",
+        "minimum_distance_m": -0.01283789980464901
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_39",
+        "minimum_distance_m": -9.564688417352217e-05
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_40",
+        "minimum_distance_m": -0.010095646884173522
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_49",
+        "minimum_distance_m": -0.00011709102594485189
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_50",
+        "minimum_distance_m": -0.010117091025944863
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_18",
+        "step_count": 1927
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_19",
+        "step_count": 1958
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_29",
+        "step_count": 1929
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_30",
+        "step_count": 1960
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_39",
+        "step_count": 2001
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_40",
+        "step_count": 2001
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_49",
+        "step_count": 2001
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_50",
+        "step_count": 2001
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "FL_calf_joint": 0.2470142859692197,
+      "FL_hip_joint": 0.0035719339411983573,
+      "FL_thigh_joint": 0.04961965625169651,
+      "FR_calf_joint": 0.2458754133558061,
+      "FR_hip_joint": 0.0030662177322102655,
+      "FR_thigh_joint": 0.04942717394490659,
+      "RL_calf_joint": 0.23905271506976922,
+      "RL_hip_joint": 0.0006905351494759238,
+      "RL_thigh_joint": 0.028583623473817044,
+      "RR_calf_joint": 0.23940272914470628,
+      "RR_hip_joint": 0.000894593566788078,
+      "RR_thigh_joint": 0.028832493400732462
+    },
+    "minimum_contact_distance_m": -0.01310877972296846,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {},
+    "step_count": 2001
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "unitree_a1-g4-calibrated_boundary",
+  "method_name": "set_body_height",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "G4",
+    "measurements": {
+      "final_height_error_m": 0.0003981283087104437,
+      "final_height_m": 0.2820652342543806,
+      "max_abs_roll_pitch_rad": 0.060209662334028864,
+      "max_planar_displacement_m": 0.04218909148541949,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 4.00199999999956
+    },
+    "parameters": {
+      "body_name": "trunk",
+      "contract_id": "G4"
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 42,
+  "ok": true,
+  "physics_steps": 2001,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 4.00199999999956,
+  "test": "unitree_a1-g4-calibrated_boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/unitree_a1/reference_final/unitree_a1-g4-calibrated_boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 42,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/unitree_a1/reference_final/unitree_a1-g4-calibrated_boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/unitree_a1/reference_final/unitree_a1-g4-calibrated_boundary/video.mp4"
+}

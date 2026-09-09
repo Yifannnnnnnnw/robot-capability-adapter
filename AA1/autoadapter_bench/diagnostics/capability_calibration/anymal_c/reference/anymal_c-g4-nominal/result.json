@@ -1,0 +1,163 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "G4",
+  "case_id": "anymal_c-g4-nominal",
+  "detail": "G4 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 1501,
+    "body_max_displacement_from_reset": {
+      "LF_HIP": 0.02822619090117685,
+      "LF_SHANK": 0.021265031201383636,
+      "LF_THIGH": 0.027242386294261584,
+      "LH_HIP": 0.028238130412615484,
+      "LH_SHANK": 0.021268096744969846,
+      "LH_THIGH": 0.027252551801849958,
+      "RF_HIP": 0.028226185094413894,
+      "RF_SHANK": 0.02126314129420911,
+      "RF_THIGH": 0.02724238379363348,
+      "RH_HIP": 0.02823812460607382,
+      "RH_SHANK": 0.021269982177013178,
+      "RH_THIGH": 0.027252545944142916,
+      "base": 0.02823215774218202,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_52"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_66"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_80"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_94"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_52",
+        "minimum_distance_m": -0.0201171139715684
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_66",
+        "minimum_distance_m": -0.02011745083234434
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_80",
+        "minimum_distance_m": -0.020051077780346344
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_94",
+        "minimum_distance_m": -0.02005075148787086
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_52",
+        "step_count": 1501
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_66",
+        "step_count": 1501
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_80",
+        "step_count": 1501
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_94",
+        "step_count": 1501
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "LF_HAA": 0.01924479777245565,
+      "LF_HFE": 0.027975348501881436,
+      "LF_KFE": 0.06887119041230005,
+      "LH_HAA": 0.019287886193205497,
+      "LH_HFE": 0.027785121437291616,
+      "LH_KFE": 0.06873928286575914,
+      "RF_HAA": 0.019244196843556872,
+      "RF_HFE": 0.027984193826552817,
+      "RF_KFE": 0.0688702140894426,
+      "RH_HAA": 0.01928841784207178,
+      "RH_HFE": 0.02777627576673314,
+      "RH_KFE": 0.06874026053034288
+    },
+    "minimum_contact_distance_m": -0.02011745083234434,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {},
+    "step_count": 1501
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "anymal_c-g4-nominal",
+  "method_name": "set_body_height",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "G4",
+    "measurements": {
+      "final_height_error_m": 0.0003528432361040723,
+      "final_height_m": 0.3516753816234057,
+      "max_abs_roll_pitch_rad": 0.0011560441416287458,
+      "max_planar_displacement_m": 0.00019812242999073568,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 3.001999999999891
+    },
+    "parameters": {
+      "body_name": "base",
+      "contract_id": "G4"
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 32,
+  "ok": true,
+  "physics_steps": 1501,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 3.001999999999891,
+  "test": "anymal_c-g4-nominal",
+  "trace_path": "autoadapter_bench/diagnostics/capability_calibration/anymal_c/reference/anymal_c-g4-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 32,
+    "ok": true,
+    "path": "autoadapter_bench/diagnostics/capability_calibration/anymal_c/reference/anymal_c-g4-nominal/video.mp4"
+  },
+  "video_path": "autoadapter_bench/diagnostics/capability_calibration/anymal_c/reference/anymal_c-g4-nominal/video.mp4"
+}

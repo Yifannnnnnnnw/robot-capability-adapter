@@ -1,0 +1,25 @@
+{
+  "batch": "native quadruped low-level interfaces and calibrated G4 diagnostics",
+  "reference_not_model_generation": true,
+  "focused_check": "AA1/.venv/bin/python -m pytest -q auto_adapter/tests/test_quadruped_native_primitives.py: 4 passed",
+  "unitree_a1": {
+    "reference_conditions_passed": 4,
+    "reference_conditions_total": 10,
+    "nominal_G4_target_m": 0.285,
+    "G4_G5_pass": true,
+    "G1_G2_G3_pass": false
+  },
+  "anymal_c": {
+    "reference_conditions_passed": 4,
+    "reference_conditions_total": 10,
+    "nominal_G4_target_m": 0.405,
+    "G4_G5_pass": true,
+    "G1_G2_G3_pass": false
+  },
+  "false_success_fix": "Previous G4 nominal targets allowed unchanged native hold to pass. Updated stable settling and targets reject constant hold; real reference G4 passes without changing 0.03 m tolerance. Original positive false-success probes retained in g4_constant_hold_probe; focused named test reproduces physical distinction.",
+  "limitations": [
+    "Hand-written native-position gait does not yet satisfy G1-G3 measured velocity/pose/path conditions. These conditions are not validated reference positives and are not used to claim a fully validated generated driver.",
+    "Real generation canaries use only calibrated G4 nominal and require all five public methods to exist.",
+    "Raw physical traces and videos remain in local diagnostic directories."
+  ]
+}

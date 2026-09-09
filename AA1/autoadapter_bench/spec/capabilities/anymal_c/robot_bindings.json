@@ -1,0 +1,77 @@
+{
+  "artifact_type": "robot_bindings",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "anymal_c",
+  "source_robot_configuration_id": "anybotics_anymal_c",
+  "family": "quadruped",
+  "scene_path": "assets/mjcf/capabilities/anymal_c/fixed_scene.xml",
+  "base_body_name": "base",
+  "joint_names": [
+    "LF_HAA",
+    "LF_HFE",
+    "LF_KFE",
+    "RF_HAA",
+    "RF_HFE",
+    "RF_KFE",
+    "LH_HAA",
+    "LH_HFE",
+    "LH_KFE",
+    "RH_HAA",
+    "RH_HFE",
+    "RH_KFE"
+  ],
+  "actuator_names": [
+    "LF_HAA",
+    "LF_HFE",
+    "LF_KFE",
+    "RF_HAA",
+    "RF_HFE",
+    "RF_KFE",
+    "LH_HAA",
+    "LH_HFE",
+    "LH_KFE",
+    "RH_HAA",
+    "RH_HFE",
+    "RH_KFE"
+  ],
+  "leg_order": [
+    "LF",
+    "RF",
+    "LH",
+    "RH"
+  ],
+  "actuation": "joint_position",
+  "nominal_home_qpos_rad": [
+    0.0,
+    0.7,
+    -1.4,
+    0.0,
+    0.7,
+    -1.4,
+    0.0,
+    -0.7,
+    1.4,
+    0.0,
+    -0.7,
+    1.4
+  ],
+  "home_keyframe": "fixed_settled",
+  "foot_body_names": [
+    "LF_SHANK",
+    "RF_SHANK",
+    "LH_SHANK",
+    "RH_SHANK"
+  ],
+  "foot_geom_names": [
+    "geom_52",
+    "geom_66",
+    "geom_80",
+    "geom_94"
+  ],
+  "floor_geom_names": [
+    "floor"
+  ],
+  "source_binding_path": "autoadapter/references/fixed_family_v1/anybotics_anymal_c/robot_bindings.json",
+  "source_scene": "AA1 assets/mjcf/capabilities/anymal_c/fixed_scene.xml; robot dynamics included from local AA1 MJCF"
+}

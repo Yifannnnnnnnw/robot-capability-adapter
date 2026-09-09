@@ -1,0 +1,196 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "G3",
+  "case_id": "anymal_c-g3-calibrated_boundary",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"final_height_m\": 0.3224065444343644, \"final_planar_error_m\": 0.11906473327809497, \"max_abs_roll_pitch_rad\": 0.055929424280141395, \"max_planar_displacement_m\": 0.026541668142022058, \"ordered_waypoints_reached\": false, \"side_effects_ok\": true, \"sim_elapsed_s\": 6.09999999999955}",
+  "driver_origin": "reference",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 3050,
+    "body_max_displacement_from_reset": {
+      "LF_HIP": 0.0695597159426358,
+      "LF_SHANK": 0.07324189569310274,
+      "LF_THIGH": 0.07269519539276763,
+      "LH_HIP": 0.05281725132556798,
+      "LH_SHANK": 0.05741317909707284,
+      "LH_THIGH": 0.05256007384547585,
+      "RF_HIP": 0.07124951838010345,
+      "RF_SHANK": 0.07384129645926439,
+      "RF_THIGH": 0.07367053061138884,
+      "RH_HIP": 0.05383527224158446,
+      "RH_SHANK": 0.058026501177239606,
+      "RH_THIGH": 0.05274964911220609,
+      "base": 0.055381572427467274,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 5.589999999999606,
+        "geom1": "floor",
+        "geom2": "geom_51"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_52"
+      },
+      {
+        "first_time_s": 5.91999999999957,
+        "geom1": "floor",
+        "geom2": "geom_65"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_66"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_80"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_94"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_51",
+        "minimum_distance_m": -3.474649206688246e-05
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_52",
+        "minimum_distance_m": -0.019410897533114563
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_65",
+        "minimum_distance_m": -2.3924625219245987e-05
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_66",
+        "minimum_distance_m": -0.0202212615894872
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_80",
+        "minimum_distance_m": -0.019959183463558794
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_94",
+        "minimum_distance_m": -0.02075978488956845
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_51",
+        "step_count": 13
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_52",
+        "step_count": 3050
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_65",
+        "step_count": 15
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_66",
+        "step_count": 3050
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_80",
+        "step_count": 3050
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_94",
+        "step_count": 3050
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "LF_HAA": 0.08789808385148826,
+      "LF_HFE": 0.10169646773692154,
+      "LF_KFE": 0.1747031810859283,
+      "LH_HAA": 0.07949567199697152,
+      "LH_HFE": 0.07199561029239898,
+      "LH_KFE": 0.0982055349507065,
+      "RF_HAA": 0.08235365769045923,
+      "RF_HFE": 0.09058311224106241,
+      "RF_KFE": 0.1764928961878276,
+      "RH_HAA": 0.0747603139036481,
+      "RH_HFE": 0.06086360107725908,
+      "RH_KFE": 0.09725841059584694
+    },
+    "minimum_contact_distance_m": -0.02075978488956845,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {},
+    "step_count": 3050
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "anymal_c-g3-calibrated_boundary",
+  "method_name": "trace_planar_path",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "G3",
+    "measurements": {
+      "final_height_m": 0.3224065444343644,
+      "final_planar_error_m": 0.11906473327809497,
+      "max_abs_roll_pitch_rad": 0.055929424280141395,
+      "max_planar_displacement_m": 0.026541668142022058,
+      "ordered_waypoints_reached": false,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 6.09999999999955
+    },
+    "parameters": {
+      "body_name": "base",
+      "contract_id": "G3"
+    },
+    "score": 0.0
+  },
+  "model_generated": false,
+  "n_frames": 62,
+  "ok": false,
+  "physics_steps": 3050,
+  "reference": true,
+  "score": 0.0,
+  "sim_elapsed_s": 6.09999999999955,
+  "test": "anymal_c-g3-calibrated_boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/anymal_c/reference_final/anymal_c-g3-calibrated_boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 62,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/anymal_c/reference_final/anymal_c-g3-calibrated_boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/anymal_c/reference_final/anymal_c-g3-calibrated_boundary/video.mp4"
+}

@@ -1,0 +1,226 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "G2",
+  "case_id": "unitree_a1-g2-nominal",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"final_height_m\": 0.24647509150936203, \"final_planar_error_m\": 0.08791042561949694, \"final_yaw_error_rad\": 0.10338830231427965, \"max_abs_roll_pitch_rad\": 0.014633212618703593, \"max_planar_displacement_m\": 0.008717658281372012, \"side_effects_ok\": true, \"sim_elapsed_s\": 5.049999999999666}",
+  "driver_origin": "reference",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2525,
+    "body_max_displacement_from_reset": {
+      "FL_calf": 0.01567159859156564,
+      "FL_hip": 0.01807184134619331,
+      "FL_thigh": 0.017674931253940682,
+      "FR_calf": 0.020372277745650386,
+      "FR_hip": 0.018217076821443058,
+      "FR_thigh": 0.0191431525967673,
+      "RL_calf": 0.021662401977443606,
+      "RL_hip": 0.017233395141230134,
+      "RL_thigh": 0.01769070964695994,
+      "RR_calf": 0.017942792543590415,
+      "RR_hip": 0.017385844932392733,
+      "RR_thigh": 0.0174519409170316,
+      "trunk": 0.016662064173822044,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.05000000000000003,
+        "geom1": "floor",
+        "geom2": "geom_18"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_19"
+      },
+      {
+        "first_time_s": 0.034000000000000016,
+        "geom1": "floor",
+        "geom2": "geom_29"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_30"
+      },
+      {
+        "first_time_s": 0.030000000000000013,
+        "geom1": "floor",
+        "geom2": "geom_39"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_40"
+      },
+      {
+        "first_time_s": 0.044000000000000025,
+        "geom1": "floor",
+        "geom2": "geom_49"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_50"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_18",
+        "minimum_distance_m": -0.0013140901551171886
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_19",
+        "minimum_distance_m": -0.011314090155117192
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_29",
+        "minimum_distance_m": -0.0017049215877218884
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_30",
+        "minimum_distance_m": -0.011704921587721889
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_39",
+        "minimum_distance_m": -0.0016866951010344137
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_40",
+        "minimum_distance_m": -0.01168669510103441
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_49",
+        "minimum_distance_m": -0.001142752297284345
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_50",
+        "minimum_distance_m": -0.011142752297284352
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_18",
+        "step_count": 2483
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_19",
+        "step_count": 2525
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_29",
+        "step_count": 2510
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_30",
+        "step_count": 2525
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_39",
+        "step_count": 2512
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_40",
+        "step_count": 2525
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_49",
+        "step_count": 2505
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_50",
+        "step_count": 2525
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "FL_calf_joint": 0.04556646048438062,
+      "FL_hip_joint": 0.011315773027794924,
+      "FL_thigh_joint": 0.034484848168275795,
+      "FR_calf_joint": 0.050852938679395,
+      "FR_hip_joint": 0.009921132272887542,
+      "FR_thigh_joint": 0.033291884161759544,
+      "RL_calf_joint": 0.03526878028328162,
+      "RL_hip_joint": 0.010973706739804572,
+      "RL_thigh_joint": 0.033535836970252086,
+      "RR_calf_joint": 0.030505502003013163,
+      "RR_hip_joint": 0.008413163775986308,
+      "RR_thigh_joint": 0.019979316049428708
+    },
+    "minimum_contact_distance_m": -0.011704921587721889,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {},
+    "step_count": 2525
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "unitree_a1-g2-nominal",
+  "method_name": "move_body_relative_pose",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "G2",
+    "measurements": {
+      "final_height_m": 0.24647509150936203,
+      "final_planar_error_m": 0.08791042561949694,
+      "final_yaw_error_rad": 0.10338830231427965,
+      "max_abs_roll_pitch_rad": 0.014633212618703593,
+      "max_planar_displacement_m": 0.008717658281372012,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 5.049999999999666
+    },
+    "parameters": {
+      "body_name": "trunk",
+      "contract_id": "G2"
+    },
+    "score": 0.0
+  },
+  "model_generated": false,
+  "n_frames": 52,
+  "ok": false,
+  "physics_steps": 2525,
+  "reference": true,
+  "score": 0.0,
+  "sim_elapsed_s": 5.049999999999666,
+  "test": "unitree_a1-g2-nominal",
+  "trace_path": "autoadapter_bench/diagnostics/capability_calibration/unitree_a1/reference/unitree_a1-g2-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 52,
+    "ok": true,
+    "path": "autoadapter_bench/diagnostics/capability_calibration/unitree_a1/reference/unitree_a1-g2-nominal/video.mp4"
+  },
+  "video_path": "autoadapter_bench/diagnostics/capability_calibration/unitree_a1/reference/unitree_a1-g2-nominal/video.mp4"
+}

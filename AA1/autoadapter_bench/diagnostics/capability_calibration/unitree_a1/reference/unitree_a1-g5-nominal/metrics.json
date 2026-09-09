@@ -1,0 +1,46 @@
+{
+  "contract_id": "G5",
+  "measurements": {
+    "duration_matches_request": true,
+    "final_height_m": 0.25158028470503746,
+    "max_abs_roll_pitch_rad": 0.05,
+    "max_height_drift_m": 0.011667063461581056,
+    "max_planar_displacement_m": 0.016450074645310175,
+    "recovery_time_s": 0.0,
+    "requested_duration_s": 1.2,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 1.2000000000000008
+  },
+  "parameters": {
+    "body_name": "trunk",
+    "contract_id": "G5",
+    "floor_geom_names": [
+      "floor"
+    ],
+    "foot_geom_groups": [
+      [
+        "geom_30"
+      ],
+      [
+        "geom_19"
+      ],
+      [
+        "geom_50"
+      ],
+      [
+        "geom_40"
+      ]
+    ],
+    "forbidden_floor_geom_names": [
+      "geom_2",
+      "geom_3",
+      "geom_4",
+      "geom_5",
+      "geom_6",
+      "geom_7",
+      "geom_8",
+      "geom_9"
+    ]
+  },
+  "score": 1.0
+}

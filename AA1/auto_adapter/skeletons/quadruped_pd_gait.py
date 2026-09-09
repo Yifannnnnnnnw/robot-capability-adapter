@@ -20,6 +20,7 @@ quadruped with torque-controlled hip/thigh/calf per leg, in that order).
 """
 from __future__ import annotations
 
+import math
 from typing import Optional
 
 import numpy as np
@@ -331,6 +332,27 @@ class QuadrupedPDGaitSkeleton(SkeletonBase):
             "yaw_rate_rad_s": float(yaw_rate),
         }
 
+    def get_base_velocity(self) -> dict[str, np.ndarray]:
+        """Return the trusted world-frame base angular and linear velocity.
+
+        ``get_base_twist`` is retained for AA1 compatibility and includes the
+        body-yaw projection.  This smaller observation matches the public
+        quadruped primitive surface used by the capability-neutral skeleton.
+        """
+        spatial = np.zeros(6, dtype=np.float64)
+        self._mj.mj_objectVelocity(
+            self.model,
+            self.data,
+            self._mj.mjtObj.mjOBJ_BODY,
+            self._base_body_id,
+            spatial,
+            0,
+        )
+        return {
+            "angular": np.array(spatial[:3], dtype=np.float64, copy=True),
+            "linear": np.array(spatial[3:], dtype=np.float64, copy=True),
+        }
+
     # ─────────────────────────────────────────────────────────────────────
     # PD torque control (the workhorse — used by all behaviors)
     # ─────────────────────────────────────────────────────────────────────
@@ -371,6 +393,47 @@ class QuadrupedPDGaitSkeleton(SkeletonBase):
         by a subsequent :meth:`step` call.
         """
         self._apply_pd(q_targets)
+
+    def set_joint_torques(self, torques: np.ndarray) -> None:
+        """Write a bounded torque command without advancing the session."""
+        if self.spec.actuation != "joint_torque":
+            raise ValueError(
+                "native position actuators require apply_pd_posture, not torque commands"
+            )
+        command = np.asarray(torques, dtype=np.float64)
+        if command.shape != (self.dof,) or not np.all(np.isfinite(command)):
+            raise ValueError(f"torques must contain {self.dof} finite values")
+        command = np.clip(command, self._ctrl_lo, self._ctrl_hi)
+        for i, aid in enumerate(self._actuator_ids):
+            self.data.ctrl[aid] = float(command[i])
+
+    def apply_pd_posture(
+        self,
+        q_target: np.ndarray,
+        qd_target: Optional[np.ndarray] = None,
+    ) -> None:
+        """Write one PD or native position target to ``data.ctrl``."""
+        self._apply_pd(q_target, qd_target)
+
+    def move_to_posture(self, q_target: np.ndarray, duration: float = 2.0) -> None:
+        """Interpolate to a joint posture through real physics steps."""
+        target = np.asarray(q_target, dtype=np.float64)
+        if target.shape != (self.dof,) or not np.all(np.isfinite(target)):
+            raise ValueError(f"q_target must contain {self.dof} finite values")
+        target = np.clip(target, self._joint_lo, self._joint_hi)
+        duration_value = float(duration)
+        if not math.isfinite(duration_value) or duration_value < 0.0:
+            raise ValueError("duration must be a finite non-negative number")
+        n_steps = max(1, int(math.ceil(duration_value / float(self.model.opt.timestep))))
+        start = self.get_joint_positions()
+        for k in range(n_steps):
+            alpha = (k + 1) / n_steps
+            self._apply_pd((1.0 - alpha) * start + alpha * target)
+            self.step(1)
+
+    def stop(self, duration: float = 0.20) -> None:
+        """Hold the currently observed joint posture while damping motion."""
+        self.move_to_posture(self.get_joint_positions(), duration=duration)
 
     # ─────────────────────────────────────────────────────────────────────
     # Behavior: stand up — interpolate from current qpos to home_qpos
@@ -447,6 +510,99 @@ class QuadrupedPDGaitSkeleton(SkeletonBase):
         pos1, _ = self.get_base_pose()
         return float(pos1[0] - pos0[0]), float(pos1[1] - pos0[1])
 
+    def _phase(self, leg_index: int, leg: str) -> float:
+        if self.spec.gait_phases is not None:
+            return float(self.spec.gait_phases[leg])
+        return 0.0 if leg_index in (0, 3) else np.pi
+
+    def _gait_posture(
+        self,
+        phase_time: float,
+        vx: float,
+        vy: float,
+        yaw_rate: float,
+    ) -> np.ndarray:
+        """Build one conservative joint-position gait target.
+
+        A1 and ANYmal use the same hip/thigh/calf ordering but different joint
+        axes and limits.  The declared ``thigh_forward_sign`` and model-range
+        clipping keep this primitive morphology-driven; it writes no state.
+        ``swing_amp_hip`` is intentionally a small fixed lateral/yaw amplitude
+        in this AA1 Spec revision, whose public fields predate AA2's named
+        amplitude field.
+        """
+        vx_norm = float(vx) / float(self.spec.vx_max)
+        vy_norm = float(vy) / float(self.spec.vy_max)
+        yaw_norm = float(yaw_rate) / float(self.spec.vyaw_max)
+        calf_scale = max(abs(vx_norm), abs(vy_norm), abs(yaw_norm))
+        q_target = self._home_q.copy()
+        omega = 2.0 * np.pi * float(self.spec.gait_freq_hz)
+        swing_amp_hip = 0.035
+        for leg_index, leg in enumerate(self._leg_order):
+            phase = omega * float(phase_time) + self._phase(leg_index, leg)
+            wave = float(np.sin(phase))
+            swing = max(0.0, wave)
+            stance = min(0.0, wave)
+            base = leg_index * self._joints_per_leg
+            front_sign = 1.0 if leg_index < 2 else -1.0
+            lateral_command = vy_norm + front_sign * yaw_norm
+            q_target[base + _J_HIP] += swing_amp_hip * lateral_command * (
+                swing - 0.25 * (-stance)
+            )
+            q_target[base + _J_THIGH] += float(self.spec.swing_amp_thigh) * (
+                float(self.spec.thigh_forward_sign)
+                * vx_norm
+                * (swing - 0.5 * (-stance))
+            )
+            q_target[base + _J_CALF] -= (
+                float(self.spec.swing_amp_calf) * calf_scale * swing
+            )
+        return np.clip(q_target, self._joint_lo, self._joint_hi)
+
+    def command_planar_velocity(
+        self,
+        vx: float,
+        vy: float = 0.0,
+        yaw_rate: float = 0.0,
+        duration: float = 1.0,
+    ) -> None:
+        """Track a bounded planar/yaw command with native joint targets."""
+        vx_value = float(vx)
+        vy_value = float(vy)
+        yaw_value = float(yaw_rate)
+        duration_value = float(duration)
+        if not all(np.isfinite(value) for value in (vx_value, vy_value, yaw_value, duration_value)):
+            raise ValueError("planar velocity and duration must be finite")
+        if abs(vx_value) > float(self.spec.vx_max):
+            raise ValueError(f"vx exceeds configured limit {self.spec.vx_max}")
+        if abs(vy_value) > float(self.spec.vy_max):
+            raise ValueError(f"vy exceeds configured limit {self.spec.vy_max}")
+        if abs(yaw_value) > float(self.spec.vyaw_max):
+            raise ValueError(f"yaw_rate exceeds configured limit {self.spec.vyaw_max}")
+        if duration_value < 0.0:
+            raise ValueError("duration must be non-negative")
+        timestep = float(self.model.opt.timestep)
+        n_steps = max(1, int(math.ceil(duration_value / timestep)))
+        gait_period = 1.0 / float(self.spec.gait_freq_hz)
+        for _ in range(n_steps):
+            q_target = self._gait_posture(
+                self._gait_time,
+                vx_value,
+                vy_value,
+                yaw_value,
+            )
+            self._apply_pd(q_target)
+            self.step(1)
+            self._gait_time = (self._gait_time + timestep) % gait_period
+
+    def walk_lateral(self, speed: float = 0.15, duration: float = 1.0) -> None:
+        """Convenience primitive for a lateral body-frame command."""
+        self.command_planar_velocity(0.0, speed, 0.0, duration=duration)
+
+    def turn_in_place(self, yaw_rate: float = 0.6, duration: float = 1.0) -> None:
+        """Convenience primitive for a yaw-only body-frame command."""
+        self.command_planar_velocity(0.0, 0.0, yaw_rate, duration=duration)
+
     def calibrate_walk_direction(self, probe_secs: float = 0.6,
                                   probe_speed: float = 0.2) -> float:
         """Return the declared thigh sign without mutating simulator state.
@@ -466,7 +622,8 @@ class QuadrupedPDGaitSkeleton(SkeletonBase):
         return chosen
 
     def walk_forward(self, secs: float = 3.0, speed: float = 0.3,
-                     auto_calibrate: bool = True) -> bool:
+                     auto_calibrate: bool = True,
+                     duration: Optional[float] = None) -> bool:
         """Hand-tuned trot.  v1 — fragile; v2 will be convex-MPC.
 
         Diagonal pairs swing in anti-phase. Trot phases come from
@@ -479,6 +636,13 @@ class QuadrupedPDGaitSkeleton(SkeletonBase):
 
         Returns True iff the body moved forward (+X world) by >= 0.05 m.
         """
+        # ``duration`` is the capability-neutral AA2 spelling.  Keep the
+        # older ``secs``/``auto_calibrate`` call shape for AA1 callers while
+        # routing the explicit form through the same native command primitive.
+        if duration is not None:
+            self.command_planar_velocity(speed, duration=duration)
+            return True
+
         if auto_calibrate:
             thigh_sign = self.calibrate_walk_direction()
         else:
