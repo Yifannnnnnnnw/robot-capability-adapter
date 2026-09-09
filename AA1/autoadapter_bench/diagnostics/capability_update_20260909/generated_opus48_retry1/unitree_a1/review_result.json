@@ -1,0 +1,22 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "generation_ok": true,
+  "framework_all_ok": false,
+  "validation_scope": "one nominal G4 canary only",
+  "capability_conditions_passed": 0,
+  "capability_conditions_evaluated": 0,
+  "capability_conditions_required": 10,
+  "interface_error": "missing required capabilities: track_planar_twist, move_body_relative_pose, trace_planar_path, set_body_height, hold_stable_stance",
+  "failed_checks": [],
+  "task_result": "not_run",
+  "validated_driver_task_ok": false,
+  "task_metrics": null,
+  "video_path": null,
+  "physical_trace_path": null,
+  "generation_round_limit": 22,
+  "post_framework_repair_limit": 0,
+  "actual_generation_cost_usd": null,
+  "limitation": "One higher-model diagnostic; no manual candidate edits or added repair rounds. Native quadrupeds only use calibrated G4 nominal; native G1-G3 reference conditions have not passed."
+}
