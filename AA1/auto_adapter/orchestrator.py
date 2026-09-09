@@ -1209,8 +1209,8 @@ class SelfAssemble:
                     skip_reason = f"skipped — upstream `generate` failed: {gen_res.error}"
             elif phase == "validate":
                 # Already handled inside the `generate` branch above (outer
-                # GEN←VAL loop). Skip this iteration of the outer phase loop.
-                continue
+                # GEN←VAL loop). Still honor stop_after="validate" below.
+                pass
             else:
                 res = method_for[phase]()
                 results.append(res)
