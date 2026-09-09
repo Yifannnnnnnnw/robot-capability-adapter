@@ -1,0 +1,415 @@
+{
+  "diagnostic_only": true,
+  "time_basis": "Wall-clock seconds, including model calls and tools; not pure model inference time. From-scratch totals also include framework/session work.",
+  "token_basis": "Reported input/output tokens include repeated conversation context. Cache/billing breakdown is not fully retained by the current Holistic transport.",
+  "billing_note": "No Holistic invoice-derived generation charge is available. Null is unknown, not zero.",
+  "runs": [
+    {
+      "robot_id": "aloha_2",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/aloha_2",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/aloha_2/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 61.837608098983765,
+          "tokens": {
+            "in": 123377,
+            "out": 5421,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/aloha_2/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 114.06321692466736,
+          "tokens": {
+            "in": 356855,
+            "out": 8893,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/aloha_2/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": true,
+          "wall_time_s": 15.58134388923645,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 191.48216891288757,
+      "reported_tokens": {
+        "in": 480232,
+        "out": 14314
+      }
+    },
+    {
+      "robot_id": "franka",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/franka",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 43.585283041000366,
+          "tokens": {
+            "in": 62352,
+            "out": 4186,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 169.24156093597412,
+          "tokens": {
+            "in": 422738,
+            "out": 15859,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": false,
+          "wall_time_s": 29.828086137771606,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 242.6549301147461,
+      "reported_tokens": {
+        "in": 485090,
+        "out": 20045
+      }
+    },
+    {
+      "robot_id": "go2",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/go2",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/go2/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 36.93351602554321,
+          "tokens": {
+            "in": 53308,
+            "out": 3842,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/go2/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 148.00883412361145,
+          "tokens": {
+            "in": 376561,
+            "out": 11942,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/go2/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": false,
+          "wall_time_s": 56.05261301994324,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 240.9949631690979,
+      "reported_tokens": {
+        "in": 429869,
+        "out": 15784
+      }
+    },
+    {
+      "robot_id": "hello_robot_stretch_2",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 89.51035904884338,
+          "tokens": {
+            "in": 213091,
+            "out": 8755,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 191.44937014579773,
+          "tokens": {
+            "in": 128929,
+            "out": 4708,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": true,
+          "wall_time_s": 37.54137706756592,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 318.50110626220703,
+      "reported_tokens": {
+        "in": 342020,
+        "out": 13463
+      }
+    },
+    {
+      "robot_id": "kuka_iiwa14",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 35.82569432258606,
+          "tokens": {
+            "in": 42090,
+            "out": 3437,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 137.4613618850708,
+          "tokens": {
+            "in": 390444,
+            "out": 11512,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": false,
+          "wall_time_s": 20.313610076904297,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 193.60066628456116,
+      "reported_tokens": {
+        "in": 432534,
+        "out": 14949
+      }
+    },
+    {
+      "robot_id": "leap_hand",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 69.13653111457825,
+          "tokens": {
+            "in": 145942,
+            "out": 7451,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 243.90052199363708,
+          "tokens": {
+            "in": 197853,
+            "out": 6087,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": true,
+          "wall_time_s": 3.4340438842773438,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 316.4710969924927,
+      "reported_tokens": {
+        "in": 343795,
+        "out": 13538
+      }
+    },
+    {
+      "robot_id": "piper",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated/piper",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated/piper/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 51.67829990386963,
+          "tokens": {
+            "in": 89188,
+            "out": 4655,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/piper/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": false,
+          "wall_time_s": 402.3845040798187,
+          "tokens": {
+            "in": 466185,
+            "out": 43584,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/piper/traces/02_generate.jsonl"
+        }
+      ],
+      "reported_phase_wall_time_s": 454.06280398368835,
+      "reported_tokens": {
+        "in": 555373,
+        "out": 48239
+      }
+    },
+    {
+      "robot_id": "piper",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 51.24279522895813,
+          "tokens": {
+            "in": 92639,
+            "out": 4661,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 196.91342067718506,
+          "tokens": {
+            "in": 451409,
+            "out": 17125,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": false,
+          "wall_time_s": 17.842144012451172,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 265.99835991859436,
+      "reported_tokens": {
+        "in": 544048,
+        "out": 21786
+      },
+      "note": "Original summary has known duplicate validation/attempt accounting; use saved generation trace for the actual single generation attempt."
+    },
+    {
+      "robot_id": "h1",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/h1",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/h1/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "reported_pipeline_wall_time_s": 362.18254590034485,
+      "reported_tokens": {
+        "in": 1099263,
+        "out": 36756
+      },
+      "generation_ok": false,
+      "framework_ok": false
+    },
+    {
+      "robot_id": "skydio_x2",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/skydio_x2",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/skydio_x2/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-sonnet-4-6",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task price estimates do not cover generation.",
+      "reported_pipeline_wall_time_s": 1354.8863427639008,
+      "reported_tokens": {
+        "in": 452449,
+        "out": 21958
+      },
+      "generation_ok": true,
+      "framework_ok": true
+    }
+  ]
+}
