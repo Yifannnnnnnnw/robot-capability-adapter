@@ -1,0 +1,28 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "generation_phases": [
+    {
+      "phase": "01_study",
+      "ok": true,
+      "error": null
+    },
+    {
+      "phase": "02_generate",
+      "ok": true,
+      "error": null
+    }
+  ],
+  "framework_all_ok": false,
+  "framework_tests": [
+    {
+      "test": "driver_build",
+      "ok": false,
+      "detail": "AttributeError: module 'driver' has no attribute 'build'"
+    }
+  ],
+  "task_result": "not_run",
+  "actual_generation_cost_usd": null,
+  "failure_note": "Generated file lacked module-level build(); Framework construction failed. No task or manual candidate edits."
+}
