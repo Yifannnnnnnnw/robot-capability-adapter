@@ -107,6 +107,9 @@ robots:
     source: Unitree (mujoco_menagerie style)
 
   - id: franka
+    capability_mjcf: assets/mjcf/capabilities/franka/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/franka
+    capability_skeleton: ArmSerialDLSSkeleton
     mjcf: assets/mjcf/franka_panda/scene.xml
     state_refs: {ee_body: hand}
     class: arm
@@ -131,6 +134,9 @@ robots:
     source: mujoco_menagerie
 
   - id: kuka_iiwa14
+    capability_mjcf: assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/kuka_iiwa14
+    capability_skeleton: ArmSerialDLSSkeleton
     mjcf: assets/mjcf/kuka_iiwa_14/scene.xml
     state_refs: {ee_site: attachment_site}
     class: arm
@@ -143,6 +149,8 @@ robots:
     source: mujoco_menagerie
 
   - id: go2
+    capability_profile: autoadapter_bench/spec/capabilities/go2
+    capability_skeleton: Go2VelocityPolicySkeleton
     mjcf: assets/mjcf/go2/go2_scene.xml
     state_refs: {base_body: base_link}
     class: quadruped
