@@ -46,7 +46,10 @@ def test_stretch_base_then_fixed_world_reach() -> None:
     assert horizontal_displacement > 0.05
     assert np.linalg.norm(base_after_drive[:2] - BASE_TARGET_XY) < 0.04
 
+    reach_start = float(skeleton.data.time)
     reach_result = skeleton.move_cartesian(target, duration=2.0)
+    actual_steps = int(round((float(skeleton.data.time) - reach_start) / skeleton.model.opt.timestep))
+    assert reach_result["physics_steps"] == actual_steps
     base_after_reach, _ = skeleton.get_base_pose()
     ee_after, _ = skeleton.get_ee_pose()
     reach_error = float(np.linalg.norm(ee_after - target))

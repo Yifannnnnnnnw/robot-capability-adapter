@@ -356,6 +356,7 @@ class StretchMobileManipulationSkeleton(SkeletonBase):
         target = np.asarray(target_xyz, dtype=float)
         if target.shape != (3,) or not np.all(np.isfinite(target)):
             raise ValueError("target_xyz must be a finite 3-vector")
+        start_time = float(self.data.time)
         steps = self._steps(duration)
         yaw_target, _, _ = self._arm_geometry(target)
         self._turn_to_yaw(yaw_target, speed=0.3, hold_arm=True)
@@ -389,7 +390,7 @@ class StretchMobileManipulationSkeleton(SkeletonBase):
         if final_error > 0.025:
             raise RuntimeError("Stretch tool target drifted after settling")
         return {
-            "physics_steps": step + self.spec.settle_steps,
+            "physics_steps": int(round((float(self.data.time) - start_time) / self.model.opt.timestep)),
             "target_position": target.copy(),
             "final_position": final,
             "minimum_error_m": minimum_error,
