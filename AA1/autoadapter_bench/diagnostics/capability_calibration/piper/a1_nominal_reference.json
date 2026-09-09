@@ -1,0 +1,39 @@
+{
+  "model_generated": false,
+  "evidence_kind": "diagnostic_reference_positive_control",
+  "robot_configuration_id": "piper",
+  "case_id": "piper-a1-nominal",
+  "capability_id": "A1",
+  "scene_path": "assets/mjcf/capabilities/piper/fixed_scene.xml",
+  "controller": "autoadapter_bench.reference_controls.piper.reference_arm.ReferencePiperDriver",
+  "request": {
+    "target_position_m": [0.5278726066989874, 0.0014136382917729296, 0.2932552441045567],
+    "max_duration_s": 4.0
+  },
+  "reset": {"keyframe": "home"},
+  "reset_settle_s": 0.5,
+  "measurement": {
+    "start_position_m": [0.4989499513951784, 0.0014141646717092525, 0.3652504521410361],
+    "terminal_position_m": [0.5279106300732852, 0.0014129389542909185, 0.29345814302152573],
+    "terminal_position_error_m": 0.0002064321597355935,
+    "maximum_error_during_terminal_hold_m": 0.0027496417945823254,
+    "mean_error_during_terminal_hold_m": 0.000871891584349789,
+    "hold_duration_s": 0.5,
+    "sim_time_s": 4.499999999999726,
+    "total_sim_time_s_including_reset_settle": 4.999999999999671,
+    "physics_steps": 2250,
+    "joint7_max_abs_drift_rad": 3.5395634081783314e-09,
+    "all_ctrl_within_declared_mjcf_ranges": true
+  },
+  "execution_guard": {
+    "dynamic_action_writes": ["data.ctrl"],
+    "dynamic_step": "mujoco.mj_step",
+    "direct_dynamic_state_writes": false,
+    "ik_uses_independent_data": true
+  },
+  "verdict": "pass",
+  "limitations": [
+    "Diagnostic positive control only; this record is not a formal cohort trial.",
+    "No generated model or LLM output is used (model_generated:false)."
+  ]
+}
