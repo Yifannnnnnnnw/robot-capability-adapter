@@ -1,0 +1,43 @@
+{
+  "robot_id": "aloha_2",
+  "estimated_class": "bimanual",
+  "dof": 14,
+  "joints": [
+    {"name": "left/waist",        "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "left/shoulder",     "type": "hinge", "axis": [0, 1, 0], "ctrlrange": [-1.85005, 1.25664]},
+    {"name": "left/elbow",        "type": "hinge", "axis": [0, 1, 0], "ctrlrange": [-1.76278, 1.6057]},
+    {"name": "left/forearm_roll", "type": "hinge", "axis": [1, 0, 0], "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "left/wrist_angle",  "type": "hinge", "axis": [0, 1, 0], "ctrlrange": [-1.8675,  2.23402]},
+    {"name": "left/wrist_rotate", "type": "hinge", "axis": [1, 0, 0], "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "left/left_finger",  "type": "slide", "axis": [0, 0, -1], "ctrlrange": [0.002, 0.037]},
+    {"name": "left/right_finger", "type": "slide", "axis": [0, 0, -1], "ctrlrange": [0.002, 0.037]},
+    {"name": "right/waist",        "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "right/shoulder",     "type": "hinge", "axis": [0, 1, 0], "ctrlrange": [-1.85005, 1.25664]},
+    {"name": "right/elbow",        "type": "hinge", "axis": [0, 1, 0], "ctrlrange": [-1.76278, 1.6057]},
+    {"name": "right/forearm_roll", "type": "hinge", "axis": [1, 0, 0], "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "right/wrist_angle",  "type": "hinge", "axis": [0, 1, 0], "ctrlrange": [-1.8675,  2.23402]},
+    {"name": "right/wrist_rotate", "type": "hinge", "axis": [1, 0, 0], "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "right/left_finger",  "type": "slide", "axis": [0, 0, -1], "ctrlrange": [0.002, 0.037]},
+    {"name": "right/right_finger", "type": "slide", "axis": [0, 0, -1], "ctrlrange": [0.002, 0.037]}
+  ],
+  "actuators": [
+    {"name": "left/waist",        "joint": "left/waist",        "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "left/shoulder",     "joint": "left/shoulder",     "ctrlrange": [-1.85005, 1.25664]},
+    {"name": "left/elbow",        "joint": "left/elbow",        "ctrlrange": [-1.76278, 1.6057]},
+    {"name": "left/forearm_roll", "joint": "left/forearm_roll", "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "left/wrist_angle",  "joint": "left/wrist_angle",  "ctrlrange": [-1.8675,  2.23402]},
+    {"name": "left/wrist_rotate", "joint": "left/wrist_rotate", "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "left/gripper",      "joint": "left/left_finger",  "ctrlrange": [0.002, 0.037]},
+    {"name": "right/waist",        "joint": "right/waist",        "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "right/shoulder",     "joint": "right/shoulder",     "ctrlrange": [-1.85005, 1.25664]},
+    {"name": "right/elbow",        "joint": "right/elbow",        "ctrlrange": [-1.76278, 1.6057]},
+    {"name": "right/forearm_roll", "joint": "right/forearm_roll", "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "right/wrist_angle",  "joint": "right/wrist_angle",  "ctrlrange": [-1.8675,  2.23402]},
+    {"name": "right/wrist_rotate", "joint": "right/wrist_rotate", "ctrlrange": [-3.14158, 3.14158]},
+    {"name": "right/gripper",      "joint": "right/left_finger",  "ctrlrange": [0.002, 0.037]}
+  ],
+  "ee_site": "left/gripper",
+  "ee_body": "left/gripper_link",
+  "graspable_bodies": [],
+  "notes": "ALOHA 2 bimanual setup: two symmetric VX300s 6-DOF arms (left + right) each with a parallel-jaw gripper (slide fingers coupled by equality constraint); 14 actuators total (7 per arm); ee sites are left/gripper and right/gripper; no free-joint objects in scene."
+}
