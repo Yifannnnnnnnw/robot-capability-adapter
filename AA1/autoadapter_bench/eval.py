@@ -1528,6 +1528,11 @@ def run_task(planner, robot_dict: dict, task: dict,
         return run_capability_task(planner, robot_dict, task, n_trials)
     import numpy as np  # noqa: PLC0415
 
+    workspace = getattr(planner, "workspace", None)
+    report_path = Path(workspace) / "validate_report.json" if workspace is not None else None
+    framework = (json.loads(report_path.read_text())
+                 if report_path is not None and report_path.exists() else {})
+    framework_ok = framework.get("all_ok") is True
     trials: list[dict] = []
     for trial_idx in range(n_trials):
         print(f"    trial {trial_idx + 1}/{n_trials}: ", end="", flush=True)
@@ -1614,6 +1619,7 @@ def run_task(planner, robot_dict: dict, task: dict,
         if r is None:
             trials.append({
                 "trial": trial_idx, "llm_ok": False, "physics_ok": False,
+                "framework_ok": framework_ok, "validated_driver_task_ok": False,
                 "agreement": True, "n_tool_calls": 0, "frames": 0,
                 "duration_sec": 0.0, "tokens": {}, "summary": "",
                 "error": crash, "physics_detail": "crash",
@@ -1685,6 +1691,8 @@ def run_task(planner, robot_dict: dict, task: dict,
             "trial": trial_idx,
             "llm_ok": bool(r.ok),
             "physics_ok": bool(physics_ok),
+            "framework_ok": framework_ok,
+            "validated_driver_task_ok": bool(physics_ok) and framework_ok,
             "agreement": bool(r.ok == physics_ok),
             "n_tool_calls": r.n_tool_calls,
             "frames": r.n_frames,

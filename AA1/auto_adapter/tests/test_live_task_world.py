@@ -28,7 +28,10 @@ def test_task_uses_one_world_for_execution_and_truth(tmp_path):
                                n_tool_calls=1, n_frames=0, duration_sec=.2, token_usage={},
                                summary="fixture", error=None, mp4_path=None, trace_path=None)
 
-    planner = SimpleNamespace(_load_driver=build, execute_task=execute,
+    (tmp_path / "validate_report.json").write_text(json.dumps({
+        "all_ok": False, "structural_ok": True,
+    }))
+    planner = SimpleNamespace(_load_driver=build, execute_task=execute, workspace=tmp_path,
                               rec_dir=tmp_path / "recordings", trace_dir=tmp_path / "traces")
     result = run_task(planner, {"class": "arm", "state_refs": {"ee_site": "ee"}}, {
         "id": "fixture", "prompt": "fixture",
@@ -41,3 +44,5 @@ def test_task_uses_one_world_for_execution_and_truth(tmp_path):
     assert samples[-1]["ee"] != samples[0]["ee"]
     # This named test provides no video; it must not claim a complete trial.
     assert not result["physics_ok"]
+    assert result["framework_ok"] is False
+    assert result["validated_driver_task_ok"] is False

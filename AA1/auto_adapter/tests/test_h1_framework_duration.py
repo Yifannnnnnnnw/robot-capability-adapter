@@ -46,3 +46,27 @@ def test_h1_stand_balance_rejects_no_step_driver() -> None:
     assert result["metric"] == 0.0
     assert "elapsed=0.000s" in result["detail"]
     assert "steps=0" in result["detail"]
+
+
+def test_from_scratch_summary_does_not_hide_failed_humanoid_walk(tmp_path):
+    """Named orchestration fixture reproducing the real H1 7/8 verdict."""
+    from types import SimpleNamespace
+    from auto_adapter.orchestrator_from_scratch import FromScratchOrchestrator
+
+    runner = object.__new__(FromScratchOrchestrator)
+    runner.cfg = SimpleNamespace(robot_id="h1", max_outer_retries=0)
+    runner.workspace = tmp_path
+    (tmp_path / "study.json").write_text("{}")
+    (tmp_path / "driver_from_scratch.py").write_text("# named test fixture\n")
+    phase = SimpleNamespace(total_tokens={}, error=None)
+    runner.phase_study = lambda: phase
+    runner.phase_gen_algo = lambda: phase
+    runner._validate_from_scratch_driver = lambda: {
+        "all_ok": False, "structural_ok": True,
+        "tests": [{"test": "stand_balance", "ok": True},
+                  {"test": "humanoid_walk", "ok": False}],
+    }
+    result = runner.run()
+    assert result.gen_ok
+    assert result.validate_ok is False
+    assert result.validate_report["structural_ok"] is True

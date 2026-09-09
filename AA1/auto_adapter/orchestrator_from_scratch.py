@@ -1297,7 +1297,9 @@ class FromScratchOrchestrator:
 
         return FromScratchResult(
             robot_id=self.cfg.robot_id, workspace=self.workspace,
-            study_ok=True, gen_ok=gen_ok, validate_ok=validate_ok,
+            # Retry admission above uses the existing critical-test policy.
+            # The public result must still preserve a failed Framework check.
+            study_ok=True, gen_ok=gen_ok, validate_ok=report.get("all_ok") is True,
             driver_path=(self.workspace / "driver_from_scratch.py" if gen_ok else None),
             validate_report=report,
             total_duration_sec=time.time() - t0,
