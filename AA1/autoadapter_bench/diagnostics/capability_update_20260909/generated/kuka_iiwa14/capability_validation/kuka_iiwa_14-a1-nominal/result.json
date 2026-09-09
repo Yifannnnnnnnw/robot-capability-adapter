@@ -1,0 +1,94 @@
+{
+  "action_return": null,
+  "capability_id": "A1",
+  "case_id": "kuka_iiwa_14-a1-nominal",
+  "detail": "capability execution failed: A1 failed: final error 0.0230 m after 4.00 s; trusted metric contract did not pass (score=0); observed={\"best_error_m\": 0.002716880377810411, \"final_error_m\": 0.022972650833728077, \"longest_target_hold_s\": 0.1140000000000001, \"side_effects_ok\": true, \"sim_elapsed_s\": 4.001999999999726, \"site_max_displacement_m\": 0.09397356748197841}",
+  "driver_origin": "real_model_generation",
+  "error": "capability execution failed: A1 failed: final error 0.0230 m after 4.00 s",
+  "errors": [
+    "capability execution failed: A1 failed: final error 0.0230 m after 4.00 s",
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2001,
+    "body_max_displacement_from_reset": {
+      "base": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 1.1102230246251565e-16,
+      "link3": 0.02871257733444682,
+      "link4": 0.058969596481504565,
+      "link5": 0.064675992970612,
+      "link6": 0.08304854165021404,
+      "link7": 0.08992368046472102,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 0.004666299679456988,
+      "joint2": 0.1404735453400907,
+      "joint3": 0.005805384810316536,
+      "joint4": 0.007722654490629477,
+      "joint5": 0.0051948815949557905,
+      "joint6": 0.03359675312088422,
+      "joint7": 9.19771218003878e-08
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "attachment_site": 0.09397356748197841
+    },
+    "step_count": 2001
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "kuka_iiwa_14-a1-nominal",
+  "method_name": "move_end_effector_to_position",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A1",
+    "measurements": {
+      "best_error_m": 0.002716880377810411,
+      "final_error_m": 0.022972650833728077,
+      "longest_target_hold_s": 0.1140000000000001,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 4.001999999999726,
+      "site_max_displacement_m": 0.09397356748197841
+    },
+    "parameters": {
+      "contract_id": "A1",
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "attachment_site"
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 42,
+  "ok": false,
+  "physics_steps": 2001,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 4.001999999999726,
+  "test": "kuka_iiwa_14-a1-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/capability_validation/kuka_iiwa_14-a1-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 42,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/capability_validation/kuka_iiwa_14-a1-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/capability_validation/kuka_iiwa_14-a1-nominal/video.mp4"
+}

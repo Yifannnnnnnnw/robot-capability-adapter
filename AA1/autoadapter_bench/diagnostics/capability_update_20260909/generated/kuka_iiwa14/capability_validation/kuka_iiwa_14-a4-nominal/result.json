@@ -1,0 +1,108 @@
+{
+  "action_return": null,
+  "capability_id": "A4",
+  "case_id": "kuka_iiwa_14-a4-nominal",
+  "detail": "capability execution failed: A4: failed to reach precontact position; trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.022774122949373487, \"first_target_contact_s\": null, \"longest_target_contact_s\": 0.0, \"maximum_speed_after_contact_m_s\": null, \"minimum_contact_distance_m\": null, \"side_effects_ok\": true, \"sim_elapsed_s\": 2.4019999999999015, \"site_max_displacement_m\": 0.00039294048563550066}",
+  "driver_origin": "real_model_generation",
+  "error": "capability execution failed: A4: failed to reach precontact position",
+  "errors": [
+    "capability execution failed: A4: failed to reach precontact position",
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 1201,
+    "body_max_displacement_from_reset": {
+      "base": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 1.1102230246251565e-16,
+      "link3": 0.0003898425204858449,
+      "link4": 0.0008006545653010066,
+      "link5": 0.0012152554786687073,
+      "link6": 0.0023466185764681154,
+      "link7": 0.0009929760901982764,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 0.0023889800562640648,
+      "joint2": 0.0008248873628903253,
+      "joint3": 0.003029343700448051,
+      "joint4": 0.006578768836464244,
+      "joint5": 0.0036997899505800944,
+      "joint6": 0.022946764450897404,
+      "joint7": 5.5148351233236916e-08
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "attachment_site": 0.00039294048563550066
+    },
+    "step_count": 1201
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "kuka_iiwa_14-a4-nominal",
+  "method_name": "approach_until_contact",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A4",
+    "measurements": {
+      "best_precontact_error_m": 0.022774122949373487,
+      "first_target_contact_s": null,
+      "longest_target_contact_s": 0.0,
+      "maximum_speed_after_contact_m_s": null,
+      "minimum_contact_distance_m": null,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 2.4019999999999015,
+      "site_max_displacement_m": 0.00039294048563550066
+    },
+    "parameters": {
+      "contract_id": "A4",
+      "max_penetration_m": 0.005,
+      "precontact_gate": "held_window_then_ray",
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "attachment_site",
+      "target_geom_names": [
+        "fixed_contact_geom"
+      ],
+      "tool_body_names": [
+        "link7"
+      ],
+      "tool_geom_names": [
+        "geom_60",
+        "link7_contact_geom"
+      ]
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 26,
+  "ok": false,
+  "physics_steps": 1201,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 2.4019999999999015,
+  "test": "kuka_iiwa_14-a4-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 26,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-nominal/video.mp4"
+}

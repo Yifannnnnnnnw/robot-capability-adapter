@@ -1,0 +1,17 @@
+{
+  "contract_id": "A1",
+  "measurements": {
+    "best_error_m": 0.002716880377810411,
+    "final_error_m": 0.022972650833728077,
+    "longest_target_hold_s": 0.1140000000000001,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 4.001999999999726,
+    "site_max_displacement_m": 0.09397356748197841
+  },
+  "parameters": {
+    "contract_id": "A1",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "attachment_site"
+  },
+  "score": 0.0
+}

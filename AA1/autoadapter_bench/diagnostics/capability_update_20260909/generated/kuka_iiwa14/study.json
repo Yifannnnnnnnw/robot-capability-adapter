@@ -1,0 +1,27 @@
+{
+  "robot_id": "kuka_iiwa14",
+  "estimated_class": "arm",
+  "dof": 7,
+  "joints": [
+    {"name": "joint1", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-2.96706,  2.96706]},
+    {"name": "joint2", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-2.0944,   2.0944]},
+    {"name": "joint3", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-2.96706,  2.96706]},
+    {"name": "joint4", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-2.0944,   2.0944]},
+    {"name": "joint5", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-2.96706,  2.96706]},
+    {"name": "joint6", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-2.0944,   2.0944]},
+    {"name": "joint7", "type": "hinge", "axis": [0, 0, 1], "ctrlrange": [-3.05433,  3.05433]}
+  ],
+  "actuators": [
+    {"name": "actuator1", "joint": "joint1", "ctrlrange": [-2.96706,  2.96706]},
+    {"name": "actuator2", "joint": "joint2", "ctrlrange": [-2.0944,   2.0944]},
+    {"name": "actuator3", "joint": "joint3", "ctrlrange": [-2.96706,  2.96706]},
+    {"name": "actuator4", "joint": "joint4", "ctrlrange": [-2.0944,   2.0944]},
+    {"name": "actuator5", "joint": "joint5", "ctrlrange": [-2.96706,  2.96706]},
+    {"name": "actuator6", "joint": "joint6", "ctrlrange": [-2.0944,   2.0944]},
+    {"name": "actuator7", "joint": "joint7", "ctrlrange": [-3.05433,  3.05433]}
+  ],
+  "ee_site": "attachment_site",
+  "ee_body": "link7",
+  "graspable_bodies": [],
+  "notes": "KUKA iiwa14: 7-DOF serial revolute arm, all joints hinge about local Z-axis (axis resolved from iiwa default class); attachment_site at link7 tip (0 0 0.045); no free-joint graspable objects; no equality constraints; position-controlled via 7 general actuators with affine bias."
+}
