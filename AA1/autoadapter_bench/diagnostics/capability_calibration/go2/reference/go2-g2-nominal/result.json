@@ -1,0 +1,164 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "G2",
+  "case_id": "go2-g2-nominal",
+  "detail": "G2 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 550,
+    "body_max_displacement_from_reset": {
+      "FL_calf": 0.09228670521254763,
+      "FL_foot": 0.019240291598316913,
+      "FL_hip": 0.1062371479465198,
+      "FL_thigh": 0.09891329372517656,
+      "FR_calf": 0.1281843246778925,
+      "FR_foot": 0.08653700601046244,
+      "FR_hip": 0.11158764478585251,
+      "FR_thigh": 0.11955459669646323,
+      "RL_calf": 0.10749535550134481,
+      "RL_foot": 0.02186362686702802,
+      "RL_hip": 0.11590254001601975,
+      "RL_thigh": 0.1140664673792297,
+      "RR_calf": 0.12006552608182763,
+      "RR_foot": 0.01906720562964357,
+      "RR_hip": 0.12104092918107347,
+      "RR_thigh": 0.12260796969346631,
+      "base_link": 0.11268523371084761,
+      "d435_camera": 0.11038207277068507,
+      "mid360_lidar": 0.11242302599351627,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.004,
+        "geom1": "FL",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "FR",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "RL",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "RR",
+        "geom2": "floor"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "FL",
+        "geom2": "floor",
+        "minimum_distance_m": -0.01817534964690779
+      },
+      {
+        "geom1": "FR",
+        "geom2": "floor",
+        "minimum_distance_m": -0.018175349492457367
+      },
+      {
+        "geom1": "RL",
+        "geom2": "floor",
+        "minimum_distance_m": -0.018175014348759545
+      },
+      {
+        "geom1": "RR",
+        "geom2": "floor",
+        "minimum_distance_m": -0.018175014217189374
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "FL",
+        "geom2": "floor",
+        "step_count": 550
+      },
+      {
+        "geom1": "FR",
+        "geom2": "floor",
+        "step_count": 467
+      },
+      {
+        "geom1": "RL",
+        "geom2": "floor",
+        "step_count": 527
+      },
+      {
+        "geom1": "RR",
+        "geom2": "floor",
+        "step_count": 550
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "FL_calf_joint": 0.4923015134616111,
+      "FL_hip_joint": 0.030952614896681618,
+      "FL_thigh_joint": 0.1997216944365695,
+      "FR_calf_joint": 0.5588967243352756,
+      "FR_hip_joint": 0.041194456847534144,
+      "FR_thigh_joint": 0.3841991821584606,
+      "RL_calf_joint": 0.6047314924973672,
+      "RL_hip_joint": 0.036938484481217976,
+      "RL_thigh_joint": 0.23632994487734105,
+      "RR_calf_joint": 0.6244417634641171,
+      "RR_hip_joint": 0.04891689630735866,
+      "RR_thigh_joint": 0.17554433722483498
+    },
+    "minimum_contact_distance_m": -0.01817534964690779,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "imu": 0.11404857502028024,
+      "mid360_site": 0.1128865027843257
+    },
+    "step_count": 550
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "go2-g2-nominal",
+  "method_name": "move_body_relative_pose",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "G2",
+    "parameters": {
+      "body_name": "base_link",
+      "contract_id": "G2"
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 12,
+  "ok": true,
+  "physics_steps": 550,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 1.1000000000000008,
+  "test": "go2-g2-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/go2/reference/go2-g2-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 12,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/go2/reference/go2-g2-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/go2/reference/go2-g2-nominal/video.mp4"
+}

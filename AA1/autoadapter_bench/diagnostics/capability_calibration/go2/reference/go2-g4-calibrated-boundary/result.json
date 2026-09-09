@@ -1,0 +1,164 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "G4",
+  "case_id": "go2-g4-calibrated-boundary",
+  "detail": "G4 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2000,
+    "body_max_displacement_from_reset": {
+      "FL_calf": 0.035124250759109944,
+      "FL_foot": 0.020779328752741317,
+      "FL_hip": 0.05983237105295486,
+      "FL_thigh": 0.05984371154320711,
+      "FR_calf": 0.03512329267376081,
+      "FR_foot": 0.020778843069732437,
+      "FR_hip": 0.059832052083045636,
+      "FR_thigh": 0.05984328951509866,
+      "RL_calf": 0.028768379549219483,
+      "RL_foot": 0.0182926420622852,
+      "RL_hip": 0.054957981102386144,
+      "RL_thigh": 0.05502512948344092,
+      "RR_calf": 0.028767572403804703,
+      "RR_foot": 0.018292593271893608,
+      "RR_hip": 0.05495772679367801,
+      "RR_thigh": 0.055025014997265614,
+      "base_link": 0.05729464643682268,
+      "d435_camera": 0.06093709172917242,
+      "mid360_lidar": 0.05975865883216544,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.004,
+        "geom1": "FL",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "FR",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "RL",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "RR",
+        "geom2": "floor"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "FL",
+        "geom2": "floor",
+        "minimum_distance_m": -0.01817534964690779
+      },
+      {
+        "geom1": "FR",
+        "geom2": "floor",
+        "minimum_distance_m": -0.018175349492457367
+      },
+      {
+        "geom1": "RL",
+        "geom2": "floor",
+        "minimum_distance_m": -0.018175014348759545
+      },
+      {
+        "geom1": "RR",
+        "geom2": "floor",
+        "minimum_distance_m": -0.018175014217189374
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "FL",
+        "geom2": "floor",
+        "step_count": 1978
+      },
+      {
+        "geom1": "FR",
+        "geom2": "floor",
+        "step_count": 1978
+      },
+      {
+        "geom1": "RL",
+        "geom2": "floor",
+        "step_count": 2000
+      },
+      {
+        "geom1": "RR",
+        "geom2": "floor",
+        "step_count": 2000
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "FL_calf_joint": 0.24983846496089623,
+      "FL_hip_joint": 0.0010546315587331029,
+      "FL_thigh_joint": 0.1457878900623456,
+      "FR_calf_joint": 0.24983699256020464,
+      "FR_hip_joint": 0.0010550442367773406,
+      "FR_thigh_joint": 0.14578820581843266,
+      "RL_calf_joint": 0.2195220530466726,
+      "RL_hip_joint": 0.001775087771796784,
+      "RL_thigh_joint": 0.16720310269186445,
+      "RR_calf_joint": 0.21951996282933228,
+      "RR_hip_joint": 0.0017746541980307824,
+      "RR_thigh_joint": 0.16720452294519283
+    },
+    "minimum_contact_distance_m": -0.01817534964690779,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "imu": 0.05711947606096112,
+      "mid360_site": 0.06000272444906827
+    },
+    "step_count": 2000
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "go2-g4-calibrated-boundary",
+  "method_name": "set_body_height",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "G4",
+    "parameters": {
+      "body_name": "base_link",
+      "contract_id": "G4"
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 41,
+  "ok": true,
+  "physics_steps": 2000,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 3.9999999999997815,
+  "test": "go2-g4-calibrated-boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/go2/reference/go2-g4-calibrated-boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 41,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/go2/reference/go2-g4-calibrated-boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/go2/reference/go2-g4-calibrated-boundary/video.mp4"
+}

@@ -1,0 +1,302 @@
+{
+  "artifact_type": "private_go2_reference_conditions",
+  "schema_version": "1.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "go2",
+  "visibility": "reference_control_only",
+  "source_suite_path": "autoadapter/references/fixed_family_v1/unitree-go2-stock-12dof/capability_validation_suite.json",
+  "cases": [
+    {
+      "case_id": "go2-g1-nominal",
+      "case_role": "nominal",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.2,
+          0.0
+        ],
+        "yaw_rate_rad_s": 0.0,
+        "duration_s": 2.2
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g1-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.25,
+          0.0
+        ],
+        "yaw_rate_rad_s": -0.3,
+        "duration_s": 3.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g2-nominal",
+      "case_role": "nominal",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.08,
+          0.0
+        ],
+        "yaw_delta_rad": 0.1,
+        "max_duration_s": 5.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g2-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.06,
+          0.04
+        ],
+        "yaw_delta_rad": 0.15,
+        "max_duration_s": 6.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g3-nominal",
+      "case_role": "nominal",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.05,
+            0.0
+          ],
+          [
+            0.1,
+            0.0
+          ]
+        ],
+        "max_duration_s": 5.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g3-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.04,
+            -0.02
+          ],
+          [
+            0.08,
+            -0.04
+          ],
+          [
+            0.12,
+            0.0
+          ]
+        ],
+        "max_duration_s": 6.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g4-nominal",
+      "case_role": "nominal",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "request": {
+        "target_height_m": 0.26,
+        "max_duration_s": 3.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g4-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "request": {
+        "target_height_m": 0.32,
+        "max_duration_s": 4.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g5-nominal",
+      "case_role": "nominal",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "request": {
+        "duration_s": 1.2
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "post_settle": {
+          "tilt": {
+            "body_name": "base_link",
+            "roll_rad": 0.05,
+            "pitch_rad": 0.0,
+            "yaw_rad": 0.0
+          }
+        }
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    },
+    {
+      "case_id": "go2-g5-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "request": {
+        "duration_s": 1.8
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "post_settle": {
+          "tilt": {
+            "body_name": "base_link",
+            "roll_rad": -0.07,
+            "pitch_rad": 0.0,
+            "yaw_rad": 0.0
+          }
+        }
+      },
+      "timing": {
+        "settle_steps": 1,
+        "sample_hz": 20.0,
+        "video_fps": 10.0,
+        "video_width": 320,
+        "video_height": 240,
+        "camera": -1,
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      }
+    }
+  ]
+}
