@@ -1,0 +1,208 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "G5",
+  "case_id": "go2-g5-nominal",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"duration_matches_request\": false, \"final_height_m\": 0.2872869380952246, \"max_abs_roll_pitch_rad\": 0.05, \"max_height_drift_m\": 0.05426670207151557, \"max_planar_displacement_m\": 0.1277072428856102, \"recovery_time_s\": 0.0, \"requested_duration_s\": 1.2, \"side_effects_ok\": true, \"sim_elapsed_s\": 1.300000000000001}",
+  "driver_origin": "real_model_generation",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 650,
+    "body_max_displacement_from_reset": {
+      "FL_calf": 0.10046956015108308,
+      "FL_foot": 0.07162270567304438,
+      "FL_hip": 0.12828049443823777,
+      "FL_thigh": 0.12808743044120546,
+      "FR_calf": 0.09465414416688607,
+      "FR_foot": 0.07159620678926973,
+      "FR_hip": 0.12861334160572993,
+      "FR_thigh": 0.12884326904076576,
+      "RL_calf": 0.06259376021315893,
+      "RL_foot": 0.01258066966004516,
+      "RL_hip": 0.12916844836206967,
+      "RL_thigh": 0.12897483356883696,
+      "RR_calf": 0.05689144867825904,
+      "RR_foot": 0.025788244447560463,
+      "RR_hip": 0.12981147147948047,
+      "RR_thigh": 0.13012724298895267,
+      "base_link": 0.12887529474253523,
+      "d435_camera": 0.1264479062086999,
+      "mid360_lidar": 0.12594881607308422,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.004,
+        "geom1": "FL",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "FR",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "RL",
+        "geom2": "floor"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "RR",
+        "geom2": "floor"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "FL",
+        "geom2": "floor",
+        "minimum_distance_m": -0.01047875106611635
+      },
+      {
+        "geom1": "FR",
+        "geom2": "floor",
+        "minimum_distance_m": -0.024524477138840574
+      },
+      {
+        "geom1": "RL",
+        "geom2": "floor",
+        "minimum_distance_m": -0.010503551164192472
+      },
+      {
+        "geom1": "RR",
+        "geom2": "floor",
+        "minimum_distance_m": -0.024568406337378453
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "FL",
+        "geom2": "floor",
+        "step_count": 618
+      },
+      {
+        "geom1": "FR",
+        "geom2": "floor",
+        "step_count": 616
+      },
+      {
+        "geom1": "RL",
+        "geom2": "floor",
+        "step_count": 650
+      },
+      {
+        "geom1": "RR",
+        "geom2": "floor",
+        "step_count": 650
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "FL_calf_joint": 0.270776793300779,
+      "FL_hip_joint": 0.05244571071650779,
+      "FL_thigh_joint": 0.37779386348986,
+      "FR_calf_joint": 0.20686999805882178,
+      "FR_hip_joint": 0.04074542375664889,
+      "FR_thigh_joint": 0.3979009216398648,
+      "RL_calf_joint": 0.2719794047019859,
+      "RL_hip_joint": 0.030458342998678566,
+      "RL_thigh_joint": 0.5435425197333358,
+      "RR_calf_joint": 0.23979254852458043,
+      "RR_hip_joint": 0.0287303474741371,
+      "RR_thigh_joint": 0.5333897792413897
+    },
+    "minimum_contact_distance_m": -0.024568406337378453,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "imu": 0.12812702007339846,
+      "mid360_site": 0.12618897806728357
+    },
+    "step_count": 650
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "go2-g5-nominal",
+  "method_name": "hold_stable_stance",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "G5",
+    "measurements": {
+      "duration_matches_request": false,
+      "final_height_m": 0.2872869380952246,
+      "max_abs_roll_pitch_rad": 0.05,
+      "max_height_drift_m": 0.05426670207151557,
+      "max_planar_displacement_m": 0.1277072428856102,
+      "recovery_time_s": 0.0,
+      "requested_duration_s": 1.2,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 1.300000000000001
+    },
+    "parameters": {
+      "body_name": "base_link",
+      "contract_id": "G5",
+      "floor_geom_names": [
+        "floor"
+      ],
+      "foot_geom_groups": [
+        [
+          "FL"
+        ],
+        [
+          "FR"
+        ],
+        [
+          "RL"
+        ],
+        [
+          "RR"
+        ]
+      ],
+      "forbidden_floor_geom_names": [
+        "geom_1",
+        "geom_2",
+        "geom_3",
+        "geom_4",
+        "geom_5",
+        "geom_6",
+        "geom_7",
+        "geom_8",
+        "geom_9",
+        "geom_10",
+        "geom_11",
+        "geom_12",
+        "geom_13"
+      ]
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 14,
+  "ok": false,
+  "physics_steps": 650,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 1.300000000000001,
+  "test": "go2-g5-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/go2/generated_all/go2-g5-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 14,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/go2/generated_all/go2-g5-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/go2/generated_all/go2-g5-nominal/video.mp4"
+}

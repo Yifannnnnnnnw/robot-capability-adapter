@@ -1,0 +1,16 @@
+{
+  "contract_id": "G4",
+  "measurements": {
+    "final_height_error_m": 0.0015312829594917865,
+    "final_height_m": 0.3215312829594918,
+    "max_abs_roll_pitch_rad": 0.016799541190048554,
+    "max_planar_displacement_m": 0.021486671687332655,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 3.9999999999997815
+  },
+  "parameters": {
+    "body_name": "base_link",
+    "contract_id": "G4"
+  },
+  "score": 1.0
+}

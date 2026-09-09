@@ -1,0 +1,20 @@
+{
+  "contract_id": "G1",
+  "measurements": {
+    "duration_matches_request": true,
+    "final_height_m": 0.35284970270936944,
+    "max_abs_roll_pitch_rad": 0.02959046409069704,
+    "max_planar_displacement_m": 0.5326462202462869,
+    "mean_direction_error_rad": 0.0719031115748159,
+    "mean_velocity_error_m_s": 0.07497504720228018,
+    "mean_yaw_rate_error_rad_s": 0.15249894396823344,
+    "requested_duration_s": 3.0,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 2.999999999999891
+  },
+  "parameters": {
+    "body_name": "base_link",
+    "contract_id": "G1"
+  },
+  "score": 1.0
+}

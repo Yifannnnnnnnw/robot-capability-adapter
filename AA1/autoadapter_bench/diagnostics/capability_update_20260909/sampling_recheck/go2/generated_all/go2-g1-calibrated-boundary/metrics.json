@@ -1,0 +1,17 @@
+{
+  "contract_id": "G1",
+  "measurements": {
+    "duration_matches_request": false,
+    "final_height_m": 0.3239550902998481,
+    "max_abs_roll_pitch_rad": 0.044007757852114644,
+    "max_planar_displacement_m": 0.06172000126587419,
+    "requested_duration_s": 3.0,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 3.299999999999858
+  },
+  "parameters": {
+    "body_name": "base_link",
+    "contract_id": "G1"
+  },
+  "score": 0.0
+}
