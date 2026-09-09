@@ -1,0 +1,22 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-sonnet-4-6",
+  "generation_phases": [
+    {
+      "phase": "01_study",
+      "ok": true,
+      "error": null
+    },
+    {
+      "phase": "02_generate",
+      "ok": false,
+      "error": "max_iters=22 exhausted"
+    }
+  ],
+  "framework_all_ok": false,
+  "framework_tests": [],
+  "task_result": "not_run",
+  "actual_generation_cost_usd": null,
+  "failure_note": "Generation exhausted 22 tool/model turns without driver.py. No Framework repair or task."
+}

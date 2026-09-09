@@ -1,0 +1,1133 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "universal_robots_ur5e_robotiq_2f85",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "universal_robots_ur5e_robotiq_2f85-aa1-canonical-2026-09-10-v1",
+  "whole_suite_aggregation": "all_cases_pass",
+  "cases": [
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+      "case_role": "nominal",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "request": {
+        "target_position_m": [
+          -0.13399740197579427,
+          0.451491054171059,
+          0.26604776837560373
+        ],
+        "max_duration_s": 4.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A1 request bounds: target_position_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+      "measurement_binding": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "end_effector_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.015,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "all_samples"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A1"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a1-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "request": {
+        "target_position_m": [
+          -0.13399750178676234,
+          0.424318335696851,
+          0.2309966113234071
+        ],
+        "max_duration_s": 5.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A1 request bounds: target_position_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a1-calibrated_boundary",
+      "measurement_binding": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "end_effector_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.015,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "all_samples"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A1"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+      "case_role": "nominal",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "request": {
+        "waypoints_m": [
+          [
+            -0.13399740197579427,
+            0.451491054171059,
+            0.26604776837560373
+          ],
+          [
+            -0.13399750178676234,
+            0.424318335696851,
+            0.2309966113234071
+          ]
+        ],
+        "max_duration_per_segment_s": 3.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+      "measurement_binding": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "cartesian_path_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "ordered_waypoints_and_terminal_hold",
+            "terminal_hold_s": 0.5
+          },
+          "aggregation": {
+            "kind": "maximum_cross_track_and_terminal_error"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "cross_track_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.02
+            },
+            {
+              "metric": "terminal_position_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.015
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A2"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a2-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "request": {
+        "waypoints_m": [
+          [
+            -0.13399750178676234,
+            0.424318335696851,
+            0.2309966113234071
+          ],
+          [
+            -0.13399740197579427,
+            0.451491054171059,
+            0.26604776837560373
+          ],
+          [
+            -0.13399737748268248,
+            0.45815910319629305,
+            0.28159848932225084
+          ]
+        ],
+        "max_duration_per_segment_s": 4.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a2-calibrated_boundary",
+      "measurement_binding": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 13.0,
+      "criteria": [
+        {
+          "metric": "cartesian_path_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "ordered_waypoints_and_terminal_hold",
+            "terminal_hold_s": 0.5
+          },
+          "aggregation": {
+            "kind": "maximum_cross_track_and_terminal_error"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "cross_track_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.02
+            },
+            {
+              "metric": "terminal_position_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.015
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 13.0,
+        "max_steps": 6501
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A2"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a3-nominal",
+      "case_role": "nominal",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "request": {
+        "opening_fraction": 0.2,
+        "max_duration_s": 2.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a3-nominal",
+      "measurement_binding": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "fixed_arm",
+        "joint_name": "right_driver_joint",
+        "closed_position": 0.8,
+        "open_position": 0.0,
+        "guarded_joint_names": [
+          "shoulder_pan_joint",
+          "shoulder_lift_joint",
+          "elbow_joint",
+          "wrist_1_joint",
+          "wrist_2_joint",
+          "wrist_3_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "guard_site_name": "pinch_site"
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "normalised_aperture_error",
+          "unit": "ratio",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.25
+          },
+          "aggregation": {
+            "kind": "all_samples_and_bidirectional_excursion"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "bidirectional_excursion",
+              "unit": "ratio",
+              "comparator": ">=",
+              "threshold": 0.5
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5,
+        "qpos_by_joint": {
+          "right_driver_joint": 0.0,
+          "left_driver_joint": 0.0
+        },
+        "ctrl_by_actuator": {
+          "fingers_actuator": 0.0
+        }
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A3"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a3-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "request": {
+        "opening_fraction": 0.8,
+        "max_duration_s": 3.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a3-calibrated_boundary",
+      "measurement_binding": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "fixed_arm",
+        "joint_name": "right_driver_joint",
+        "closed_position": 0.8,
+        "open_position": 0.0,
+        "guarded_joint_names": [
+          "shoulder_pan_joint",
+          "shoulder_lift_joint",
+          "elbow_joint",
+          "wrist_1_joint",
+          "wrist_2_joint",
+          "wrist_3_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "guard_site_name": "pinch_site"
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "normalised_aperture_error",
+          "unit": "ratio",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.25
+          },
+          "aggregation": {
+            "kind": "all_samples_and_bidirectional_excursion"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "bidirectional_excursion",
+              "unit": "ratio",
+              "comparator": ">=",
+              "threshold": 0.5
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5,
+        "qpos_by_joint": {
+          "right_driver_joint": 0.8,
+          "left_driver_joint": 0.8
+        },
+        "ctrl_by_actuator": {
+          "fingers_actuator": 255.0
+        }
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A3"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+      "case_role": "nominal",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "request": {
+        "precontact_position_m": [
+          -0.13399725317860262,
+          0.4919998706957351,
+          0.33220036732109454
+        ],
+        "approach_direction_unit": [
+          1,
+          0,
+          0
+        ],
+        "max_travel_m": 0.06,
+        "max_approach_speed_m_s": 0.02,
+        "max_duration_s": 4.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+      "measurement_binding": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "tool_body_names": [
+          "left_coupler",
+          "left_driver",
+          "left_follower",
+          "left_pad",
+          "left_spring_link",
+          "right_coupler",
+          "right_driver",
+          "right_follower",
+          "right_pad",
+          "right_spring_link",
+          "robotiq_base"
+        ],
+        "tool_geom_names": [
+          "geom_33",
+          "geom_35",
+          "geom_37",
+          "geom_39",
+          "geom_41",
+          "right_pad1",
+          "right_pad2",
+          "geom_47",
+          "geom_49",
+          "geom_51",
+          "geom_53",
+          "left_pad1",
+          "left_pad2"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ],
+        "max_penetration_m": 0.005
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "contact_integrity",
+          "unit": "mixed",
+          "comparator": "==",
+          "threshold": 1,
+          "temporal": {
+            "kind": "ordered_precontact_ray_contact",
+            "contact_hold_s": 0.1
+          },
+          "aggregation": {
+            "kind": "all_gates"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "post_contact_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.02
+            },
+            {
+              "metric": "penetration",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.005
+            },
+            {
+              "metric": "unrelated_contact_count",
+              "unit": "count",
+              "comparator": "==",
+              "threshold": 0
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5,
+        "mocap_by_body": {
+          "fixed_contact_target": [
+            -0.03399725317860261,
+            0.4919998706957351,
+            0.33220036732109454
+          ]
+        }
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A4"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "request": {
+        "precontact_position_m": [
+          -0.13399725317860262,
+          0.4919998706957351,
+          0.33220036732109454
+        ],
+        "approach_direction_unit": [
+          1,
+          0,
+          0
+        ],
+        "max_travel_m": 0.07,
+        "max_approach_speed_m_s": 0.03,
+        "max_duration_s": 5.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+      "measurement_binding": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "tool_body_names": [
+          "left_coupler",
+          "left_driver",
+          "left_follower",
+          "left_pad",
+          "left_spring_link",
+          "right_coupler",
+          "right_driver",
+          "right_follower",
+          "right_pad",
+          "right_spring_link",
+          "robotiq_base"
+        ],
+        "tool_geom_names": [
+          "geom_33",
+          "geom_35",
+          "geom_37",
+          "geom_39",
+          "geom_41",
+          "right_pad1",
+          "right_pad2",
+          "geom_47",
+          "geom_49",
+          "geom_51",
+          "geom_53",
+          "left_pad1",
+          "left_pad2"
+        ],
+        "target_geom_names": [
+          "fixed_contact_geom"
+        ],
+        "precontact_gate": "held_window_then_ray",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ],
+        "max_penetration_m": 0.005
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "contact_integrity",
+          "unit": "mixed",
+          "comparator": "==",
+          "threshold": 1,
+          "temporal": {
+            "kind": "ordered_precontact_ray_contact",
+            "contact_hold_s": 0.1
+          },
+          "aggregation": {
+            "kind": "all_gates"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "post_contact_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.02
+            },
+            {
+              "metric": "penetration",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.005
+            },
+            {
+              "metric": "unrelated_contact_count",
+              "unit": "count",
+              "comparator": "==",
+              "threshold": 0
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5,
+        "mocap_by_body": {
+          "fixed_contact_target": [
+            -0.03399725317860261,
+            0.4919998706957351,
+            0.33220036732109454
+          ]
+        }
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A4"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a5-nominal",
+      "case_role": "nominal",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "request": {
+        "offset_robot_base_m": [
+          0.03,
+          0.0,
+          0.0
+        ],
+        "max_duration_per_leg_s": 3.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a5-nominal",
+      "measurement_binding": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "base_body_name": "base",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "criteria": [
+        {
+          "metric": "ordered_outbound_return_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.015,
+          "temporal": {
+            "kind": "ordered_phase_holds",
+            "outbound_hold_s": 0.25,
+            "return_hold_s": 0.5
+          },
+          "aggregation": {
+            "kind": "both_legs_and_displacement"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "requested_displacement_fraction",
+              "unit": "ratio",
+              "comparator": ">=",
+              "threshold": 0.8
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 8.0,
+        "max_steps": 4001
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A5"
+      }
+    },
+    {
+      "case_id": "universal_robots_ur5e_robotiq_2f85-a5-calibrated_boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "request": {
+        "offset_robot_base_m": [
+          0.0,
+          0.0,
+          0.06
+        ],
+        "max_duration_per_leg_s": 4.0
+      },
+      "request_grounding_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+        },
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+        }
+      ],
+      "instance_id": "universal_robots_ur5e_robotiq_2f85-a5-calibrated_boundary",
+      "measurement_binding": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "pinch_site",
+        "base_body_name": "base",
+        "guarded_joint_names": [
+          "right_driver_joint"
+        ],
+        "guarded_joint_tolerances": [
+          0.04000000000000001
+        ]
+      },
+      "guard_ids": [
+        "universal_robots_ur5e_robotiq_2f85-fixed-control",
+        "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+        "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+        "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 9.0,
+      "criteria": [
+        {
+          "metric": "ordered_outbound_return_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.015,
+          "temporal": {
+            "kind": "ordered_phase_holds",
+            "outbound_hold_s": 0.25,
+            "return_hold_s": 0.5
+          },
+          "aggregation": {
+            "kind": "both_legs_and_displacement"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "requested_displacement_fraction",
+              "unit": "ratio",
+              "comparator": ">=",
+              "threshold": 0.8
+            }
+          ]
+        }
+      ],
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "settle_s": 0.5
+      },
+      "timing": {
+        "repetitions": 1,
+        "sample_hz": 40,
+        "video_fps": 10,
+        "video_width": 640,
+        "video_height": 480,
+        "camera": "fixed_evidence",
+        "timeout_sim_s": 9.0,
+        "max_steps": 4501
+      },
+      "criteria_source": {
+        "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+        "capability_id": "A5"
+      }
+    }
+  ],
+  "scene_path": "assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml",
+  "design_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/capability_design.json",
+  "robot_bindings_path": "autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85/robot_bindings.json",
+  "guards": [
+    "universal_robots_ur5e_robotiq_2f85-fixed-control",
+    "universal_robots_ur5e_robotiq_2f85-fixed-no-state-write",
+    "universal_robots_ur5e_robotiq_2f85-fixed-canonical",
+    "universal_robots_ur5e_robotiq_2f85-fixed-control-range"
+  ]
+}
