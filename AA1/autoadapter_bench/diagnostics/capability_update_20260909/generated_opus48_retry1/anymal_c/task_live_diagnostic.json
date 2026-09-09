@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "anymal_c",
+    "robot_class": "quadruped",
+    "mjcf": "assets/mjcf/anybotics_anymal_c/scene.xml",
+    "vendor": "ANYbotics",
+    "dof": 12,
+    "model": "eu.anthropic.claude-opus-4-8",
+    "provider": "holistic",
+    "region": "us-east-1",
+    "git_sha": "50a27883f90b",
+    "started_at": "2026-09-09T23:53:05.267982",
+    "suites_requested": [
+      "capability"
+    ],
+    "completed_at": "2026-09-09T23:53:15.946918",
+    "wall_clock_sec": 10.67834186553955
+  },
+  "suites": {
+    "capability": {
+      "tasks": [
+        {
+          "id": "G4_diagnostic",
+          "prompt": "Execute set_body_height with request {\"target_height_m\": 0.405, \"max_duration_s\": 3.0}. Meet the capability's physical hold and timing requirements.",
+          "success_spec": {
+            "capability_id": "G4",
+            "n_trials": 1
+          },
+          "n_trials": 1,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": false,
+              "agreement": false,
+              "framework_ok": false,
+              "validated_driver_task_ok": false,
+              "n_tool_calls": 4,
+              "frames": 3,
+              "duration_sec": 9.099231004714966,
+              "tokens": {
+                "in": 12757,
+                "out": 449,
+                "cache_read": 0
+              },
+              "summary": "The `set_body_height` capability failed: it returned a G4 CapabilityError (\"support lost during hold\"), meaning the stable-stance hold requirement was not met. The commanded target (0.405 m) was not achieved and held \u2014 the torso ended at ~0.503 m (overshooting well past the target and even above the capability's max bound of ~0.448 m), confirming the stance destabilized rather than settling into a stable hold at 0.405 m. I did not retry, per protocol, since the motion did not succeed cleanly.",
+              "error": "trusted metric contract did not pass (score=0)",
+              "physics_detail": "trusted metric contract did not pass (score=0); observed={\"final_height_error_m\": 0.09845642684433875, \"final_height_m\": 0.5034564268443388, \"max_abs_roll_pitch_rad\": 0.003342100713488903, \"max_planar_displacement_m\": 2.4763567344174702e-05, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.12999999999998568}",
+              "physics_metrics": {
+                "contract_id": "G4",
+                "score": 0.0,
+                "parameters": {
+                  "body_name": "base",
+                  "contract_id": "G4"
+                },
+                "measurements": {
+                  "sim_elapsed_s": 0.12999999999998568,
+                  "side_effects_ok": true,
+                  "final_height_m": 0.5034564268443388,
+                  "max_planar_displacement_m": 2.4763567344174702e-05,
+                  "max_abs_roll_pitch_rad": 0.003342100713488903,
+                  "final_height_error_m": 0.09845642684433875
+                }
+              },
+              "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/task_traces/task_live_diagnostic/G4_diagnostic_t0_physics/anymal_c-g4-nominal/video.mp4",
+              "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/task_traces/task_live_diagnostic/G4_diagnostic_t0.jsonl",
+              "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/task_traces/task_live_diagnostic/G4_diagnostic_t0_physics/anymal_c-g4-nominal/trace.json"
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 0.0,
+          "agreement_rate": 0.0,
+          "mean_tool_calls": 4.0,
+          "tokens": {
+            "in": 12757,
+            "out": 449
+          },
+          "cost_usd": 0.22503
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 1,
+    "n_trials_total": 1,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 0.0,
+    "agreement_rate": 0.0,
+    "total_tokens": {
+      "in": 12757,
+      "out": 449
+    },
+    "total_cost_usd": 0.22503,
+    "wall_clock_sec": 10.67834186553955
+  }
+}
