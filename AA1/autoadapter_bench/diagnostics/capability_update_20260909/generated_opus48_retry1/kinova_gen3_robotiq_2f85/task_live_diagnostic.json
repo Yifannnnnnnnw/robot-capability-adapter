@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "kinova_gen3_robotiq_2f85",
+    "robot_class": "arm",
+    "mjcf": "assets/mjcf/kinova_gen3_robotiq_2f85/scene.xml",
+    "vendor": "Kinova",
+    "dof": 7,
+    "model": "eu.anthropic.claude-opus-4-8",
+    "provider": "holistic",
+    "region": "us-east-1",
+    "git_sha": "547493674e64",
+    "started_at": "2026-09-09T23:47:18.778203",
+    "suites_requested": [
+      "capability"
+    ],
+    "completed_at": "2026-09-09T23:47:26.824452",
+    "wall_clock_sec": 8.044995069503784
+  },
+  "suites": {
+    "capability": {
+      "tasks": [
+        {
+          "id": "A1_diagnostic",
+          "prompt": "Execute move_end_effector_to_position with request {\"target_position_m\": [0.2970707541869708, -0.5118414345559095, 0.3517976771886743], \"max_duration_s\": 4}. Meet the capability's physical hold and timing requirements.",
+          "success_spec": {
+            "capability_id": "A1",
+            "n_trials": 1
+          },
+          "n_trials": 1,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "framework_ok": false,
+              "validated_driver_task_ok": false,
+              "n_tool_calls": 2,
+              "frames": 7,
+              "duration_sec": 6.767122983932495,
+              "tokens": {
+                "in": 11857,
+                "out": 241,
+                "cache_read": 0
+              },
+              "summary": "I executed the move successfully. The end-effector moved from [0.289, -0.499, 0.426] to the target [0.297, -0.512, 0.352] over 4 seconds, settling with a final position error of about 7 mm.",
+              "error": null,
+              "physics_detail": "A1 trusted score=1.0",
+              "physics_metrics": {
+                "contract_id": "A1",
+                "score": 1.0,
+                "parameters": {
+                  "side_effect_guard_profile": "fixed_arm",
+                  "site_name": "pinch_site",
+                  "guarded_joint_names": [
+                    "right_driver_joint"
+                  ],
+                  "guarded_joint_tolerances": [
+                    0.04000000000000001
+                  ],
+                  "contract_id": "A1"
+                },
+                "measurements": {
+                  "sim_elapsed_s": 0.5720000000000004,
+                  "side_effects_ok": true,
+                  "site_max_displacement_m": 0.08299210885736809,
+                  "final_error_m": 0.007132608070126883,
+                  "best_error_m": 0.0019747366613080833,
+                  "longest_target_hold_s": 0.5000000000000003
+                }
+              },
+              "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kinova_gen3_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/kinova_gen3_robotiq_2f85-a1-nominal/video.mp4",
+              "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kinova_gen3_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0.jsonl",
+              "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kinova_gen3_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/kinova_gen3_robotiq_2f85-a1-nominal/trace.json"
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 2.0,
+          "tokens": {
+            "in": 11857,
+            "out": 241
+          },
+          "cost_usd": 0.19593000000000002
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 1,
+    "n_trials_total": 1,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 11857,
+      "out": 241
+    },
+    "total_cost_usd": 0.19593000000000002,
+    "wall_clock_sec": 8.044995069503784
+  }
+}

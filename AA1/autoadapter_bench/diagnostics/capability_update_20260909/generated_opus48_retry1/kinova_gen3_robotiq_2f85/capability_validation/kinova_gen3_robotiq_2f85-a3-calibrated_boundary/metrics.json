@@ -1,0 +1,38 @@
+{
+  "contract_id": "A3",
+  "measurements": {
+    "final_opening_error": 0.010729101193169499,
+    "final_opening_fraction": 0.7892708988068305,
+    "longest_opening_hold_s": 0.2540000000000002,
+    "maximum_opening_change": 0.7726963776890001,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.4740000000000004
+  },
+  "parameters": {
+    "closed_position": 0.8,
+    "contract_id": "A3",
+    "guard_site_name": "pinch_site",
+    "guarded_joint_names": [
+      "joint_1",
+      "joint_2",
+      "joint_3",
+      "joint_4",
+      "joint_5",
+      "joint_6",
+      "joint_7"
+    ],
+    "guarded_joint_tolerances": [
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03
+    ],
+    "joint_name": "right_driver_joint",
+    "open_position": 0,
+    "side_effect_guard_profile": "fixed_arm"
+  },
+  "score": 1.0
+}
