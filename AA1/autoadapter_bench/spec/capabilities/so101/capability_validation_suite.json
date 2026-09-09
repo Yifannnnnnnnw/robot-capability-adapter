@@ -1,0 +1,242 @@
+{
+  "artifact_type": "capability_validation_suite",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "so101",
+  "package_version": "1.0.0",
+  "scene_path": "assets/mjcf/capabilities/so101/fixed_scene.xml",
+  "design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json",
+  "robot_bindings_path": "autoadapter_bench/spec/capabilities/so101/robot_bindings.json",
+  "whole_suite_aggregation": "all_cases_pass",
+  "guards": [
+    "so101-fixed-control",
+    "so101-fixed-no-state-write",
+    "so101-fixed-canonical",
+    "so101-fixed-control-range"
+  ],
+  "cases": [
+    {
+      "case_id": "so101-a1-nominal",
+      "case_role": "nominal",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "instance_id": "so101-a1-nominal",
+      "request": {"target_position_m": [0.4, 0.02, 0.24], "max_duration_s": 4.0},
+      "measurement_binding": {
+        "contract_id": "A1",
+        "site_name": "ee_site",
+        "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["jaw_visual_joint"],
+        "guarded_joint_tolerances": [0.002]
+      },
+      "reset": {
+        "kind": "direct_state",
+        "settle_s": 0.5,
+        "qpos_by_joint": {
+          "shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0,
+          "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175
+        },
+        "ctrl_by_actuator": {
+          "act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0,
+          "act_elbow_flex": 0.0, "act_wrist_flex": 0.0,
+          "act_wrist_roll": 0.0, "act_jaw_visual": -0.175
+        }
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A1"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a1-nominal"
+    },
+    {
+      "case_id": "so101-a1-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "instance_id": "so101-a1-calibrated-boundary",
+      "request": {"target_position_m": [0.41, -0.02, 0.23], "max_duration_s": 5.0},
+      "measurement_binding": {
+        "contract_id": "A1", "site_name": "ee_site", "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A1"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a1-calibrated_boundary"
+    },
+    {
+      "case_id": "so101-a2-nominal",
+      "case_role": "nominal",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "instance_id": "so101-a2-nominal",
+      "request": {"waypoints_m": [[0.4, 0.02, 0.24], [0.405, 0.03, 0.238]], "max_duration_per_segment_s": 3.0},
+      "measurement_binding": {
+        "contract_id": "A2", "site_name": "ee_site", "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A2"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a2-nominal"
+    },
+    {
+      "case_id": "so101-a2-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "instance_id": "so101-a2-calibrated-boundary",
+      "request": {"waypoints_m": [[0.405, -0.02, 0.24], [0.41, -0.018, 0.24], [0.408, -0.015, 0.24]], "max_duration_per_segment_s": 4.0},
+      "measurement_binding": {
+        "contract_id": "A2", "site_name": "ee_site", "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 13.0, "max_steps": 6501},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A2"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a2-calibrated_boundary"
+    },
+    {
+      "case_id": "so101-a3-nominal",
+      "case_role": "nominal",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "instance_id": "so101-a3-nominal",
+      "request": {"opening_fraction": 0.2, "max_duration_s": 2.0},
+      "measurement_binding": {
+        "contract_id": "A3", "joint_name": "jaw_visual_joint", "gripper_actuator_name": "act_jaw_visual",
+        "closed_position": -0.175, "open_position": 1.75, "guard_site_name": "ee_site",
+        "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"],
+        "guarded_joint_tolerances": [0.03, 0.03, 0.03, 0.03, 0.03]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": 1.75},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": 1.75}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A3"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a3-nominal"
+    },
+    {
+      "case_id": "so101-a3-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "instance_id": "so101-a3-calibrated-boundary",
+      "request": {"opening_fraction": 0.8, "max_duration_s": 3.0},
+      "measurement_binding": {
+        "contract_id": "A3", "joint_name": "jaw_visual_joint", "gripper_actuator_name": "act_jaw_visual",
+        "closed_position": -0.175, "open_position": 1.75, "guard_site_name": "ee_site",
+        "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"],
+        "guarded_joint_tolerances": [0.03, 0.03, 0.03, 0.03, 0.03]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A3"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a3-calibrated_boundary"
+    },
+    {
+      "case_id": "so101-a4-nominal",
+      "case_role": "nominal",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "instance_id": "so101-a4-nominal",
+      "request": {"precontact_position_m": [0.42, -0.00018, 0.2496], "approach_direction_unit": [1.0, 0.0, 0.0], "max_travel_m": 0.04, "max_approach_speed_m_s": 0.02, "max_duration_s": 4.0},
+      "measurement_binding": {
+        "contract_id": "A4", "site_name": "ee_site", "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002],
+        "tool_geom_names": ["so101_tcp_contact"], "target_geom_names": ["fixed_contact_geom"],
+        "max_penetration_m": 0.005, "precontact_gate": "held_window_then_ray"
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175},
+        "mocap_by_body": {"fixed_contact_target": [0.45, -0.00018, 0.2496]}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A4"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a4-nominal"
+    },
+    {
+      "case_id": "so101-a4-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "instance_id": "so101-a4-calibrated-boundary",
+      "request": {"precontact_position_m": [0.418, 0.015, 0.247], "approach_direction_unit": [1.0, 0.0, 0.0], "max_travel_m": 0.05, "max_approach_speed_m_s": 0.03, "max_duration_s": 5.0},
+      "measurement_binding": {
+        "contract_id": "A4", "site_name": "ee_site", "side_effect_guard_profile": "fixed_arm",
+        "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002],
+        "tool_geom_names": ["so101_tcp_contact"], "target_geom_names": ["fixed_contact_geom"],
+        "max_penetration_m": 0.005, "precontact_gate": "held_window_then_ray"
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175},
+        "mocap_by_body": {"fixed_contact_target": [0.45, 0.015, 0.247]}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 9.0, "max_steps": 4501},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A4"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a4-calibrated_boundary"
+    },
+    {
+      "case_id": "so101-a5-nominal",
+      "case_role": "nominal",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "instance_id": "so101-a5-nominal",
+      "request": {"offset_robot_base_m": [0.015, 0.0, 0.0], "max_duration_per_leg_s": 3.0},
+      "measurement_binding": {
+        "contract_id": "A5", "site_name": "ee_site", "base_body_name": "base_link",
+        "side_effect_guard_profile": "fixed_arm", "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 8.0, "max_steps": 4001},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A5"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a5-nominal"
+    },
+    {
+      "case_id": "so101-a5-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "instance_id": "so101-a5-calibrated-boundary",
+      "request": {"offset_robot_base_m": [0.0, 0.0, 0.015], "max_duration_per_leg_s": 4.0},
+      "measurement_binding": {
+        "contract_id": "A5", "site_name": "ee_site", "base_body_name": "base_link",
+        "side_effect_guard_profile": "fixed_arm", "guarded_joint_names": ["jaw_visual_joint"], "guarded_joint_tolerances": [0.002]
+      },
+      "reset": {
+        "kind": "direct_state", "settle_s": 0.5,
+        "qpos_by_joint": {"shoulder_pan": 0.0, "shoulder_lift": 0.0, "elbow_flex": 0.0, "wrist_flex": 0.0, "wrist_roll": 0.0, "jaw_visual_joint": -0.175},
+        "ctrl_by_actuator": {"act_shoulder_pan": 0.0, "act_shoulder_lift": 0.0, "act_elbow_flex": 0.0, "act_wrist_flex": 0.0, "act_wrist_roll": 0.0, "act_jaw_visual": -0.175}
+      },
+      "timing": {"sample_hz": 40, "video_fps": 10, "video_width": 640, "video_height": 480, "camera": "fixed_evidence", "timeout_sim_s": 9.0, "max_steps": 4501},
+      "criteria_source": {"design_path": "autoadapter_bench/spec/capabilities/so101/capability_design.json", "capability_id": "A5"},
+      "source_instance": "AA2 fixed_family_v1/robotstudio_so101/capability_validation_suite.json#robotstudio_so101-a5-calibrated_boundary"
+    }
+  ]
+}
