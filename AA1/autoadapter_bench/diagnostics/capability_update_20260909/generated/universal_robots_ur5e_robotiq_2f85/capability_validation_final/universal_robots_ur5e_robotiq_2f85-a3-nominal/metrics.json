@@ -1,0 +1,36 @@
+{
+  "contract_id": "A3",
+  "measurements": {
+    "final_opening_error": 0.006688207429686344,
+    "final_opening_fraction": 0.20668820742968635,
+    "longest_opening_hold_s": 0.2400000000000002,
+    "maximum_opening_change": 0.7896686585476065,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.4540000000000004
+  },
+  "parameters": {
+    "closed_position": 0.8,
+    "contract_id": "A3",
+    "guard_site_name": "pinch_site",
+    "guarded_joint_names": [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03
+    ],
+    "joint_name": "right_driver_joint",
+    "open_position": 0.0,
+    "side_effect_guard_profile": "fixed_arm"
+  },
+  "score": 0.0
+}

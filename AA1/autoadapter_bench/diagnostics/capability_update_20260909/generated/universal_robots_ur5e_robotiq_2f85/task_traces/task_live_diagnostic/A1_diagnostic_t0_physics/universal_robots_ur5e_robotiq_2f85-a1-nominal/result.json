@@ -1,0 +1,123 @@
+{
+  "action_return": {
+    "type": "str",
+    "value": "The `move_end_effector_to_position` command executed **successfully**. The end effector has been moved to the target world-frame position **[x: -0.134 m, y: 0.451 m, z: 0.266 m]** within the allotted 4.0-second duration, satisfying all physical hold and timing requirements."
+  },
+  "capability_id": "A1",
+  "case_id": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+  "detail": "A1 trusted score=1.0",
+  "driver_origin": "provided_driver",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 363,
+    "body_max_displacement_from_reset": {
+      "base": 0.0,
+      "base_mount": 0.06883669544521254,
+      "fixed_contact_target": 0.0,
+      "forearm_link": 0.013362089982933955,
+      "left_coupler": 0.07099552942145644,
+      "left_driver": 0.07084084020796928,
+      "left_follower": 0.07353529380977783,
+      "left_pad": 0.07421395219775535,
+      "left_silicone_pad": 0.07421395219775535,
+      "left_spring_link": 0.0709271047411482,
+      "right_coupler": 0.06972395737623638,
+      "right_driver": 0.07021221832199899,
+      "right_follower": 0.0720957919026317,
+      "right_pad": 0.07316758445254092,
+      "right_silicone_pad": 0.07316758445254092,
+      "right_spring_link": 0.0706546143991106,
+      "robotiq_base": 0.06889539801249303,
+      "robotiq_mount": 0.06874729581758494,
+      "shoulder_link": 0.0,
+      "upper_arm_link": 0.0006750692575620609,
+      "world": 0.0,
+      "wrist_1_link": 0.05224775737598065,
+      "wrist_2_link": 0.052144212479873046,
+      "wrist_3_link": 0.07012560577780176
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "elbow_joint": 0.0993615940492385,
+      "left_coupler_joint": 1.5870881070881857e-05,
+      "left_driver_joint": 8.832418764841837e-05,
+      "left_follower_joint": 0.00016002983931254645,
+      "left_spring_link_joint": 7.807700714564016e-05,
+      "right_coupler_joint": 1.9433328202644954e-05,
+      "right_driver_joint": 9.01178627659106e-05,
+      "right_follower_joint": 0.00016184497126204992,
+      "right_spring_link_joint": 0.00012483240506003246,
+      "shoulder_lift_joint": 0.03152190661953447,
+      "shoulder_pan_joint": 0.004891811091722209,
+      "wrist_1_joint": 0.05440694230102916,
+      "wrist_2_joint": 0.008679802696254457,
+      "wrist_3_joint": 2.680824959691401e-07
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "attachment_site": 0.06874729581758494,
+      "pinch": 0.07612737327242174,
+      "pinch_site": 0.07612737327242174
+    },
+    "step_count": 363
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+  "method_name": "move_end_effector_to_position",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A1",
+    "measurements": {
+      "best_error_m": 0.002998368723730875,
+      "final_error_m": 0.008416356577736667,
+      "longest_target_hold_s": 0.5000000000000003,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.7260000000000005,
+      "site_max_displacement_m": 0.07612737327242174
+    },
+    "parameters": {
+      "contract_id": "A1",
+      "guarded_joint_names": [
+        "right_driver_joint"
+      ],
+      "guarded_joint_tolerances": [
+        0.04000000000000001
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "pinch_site"
+    },
+    "score": 1.0
+  },
+  "model_generated": null,
+  "n_frames": 9,
+  "ok": true,
+  "physics_steps": 363,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 0.7260000000000005,
+  "test": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/universal_robots_ur5e_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/universal_robots_ur5e_robotiq_2f85-a1-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 9,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/universal_robots_ur5e_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/universal_robots_ur5e_robotiq_2f85-a1-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/universal_robots_ur5e_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/universal_robots_ur5e_robotiq_2f85-a1-nominal/video.mp4"
+}
