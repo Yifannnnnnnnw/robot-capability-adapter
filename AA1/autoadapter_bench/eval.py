@@ -1534,13 +1534,21 @@ def run_task(planner, robot_dict: dict, task: dict,
                 pass
         before_state["objects"] = objects
 
-        # Execute via TaskPlanner
+        # Execute, sample and film the very same world whose initial state
+        # was measured above. Replay remains a diagnostic utility only.
+        from autoadapter_bench.physics import PhysicsTrace
         try:
-            r = planner.execute_task(task["prompt"], task_id=task_id)
+            physical_trace = PhysicsTrace(skel, state_refs)
+            planner._physics_trace = physical_trace
+            with physical_trace:
+                r = planner.execute_task(task["prompt"], task_id=task_id,
+                                         driver=skel, initialize=False)
             crash = None
         except Exception as e:  # noqa: BLE001
             r = None
             crash = f"{type(e).__name__}: {e}"
+        finally:
+            planner._physics_trace = None
 
         if r is None:
             trials.append({
@@ -1556,20 +1564,17 @@ def run_task(planner, robot_dict: dict, task: dict,
             print(f"CRASH ({crash[:60]})")
             continue
 
-        # Physics check: replay on fresh skel + measure
-        replay_skel = planner._load_driver()
-        replay_refs = _state_refs_for(robot_dict)
-        if hasattr(replay_skel, "home") and callable(getattr(replay_skel, "home")):
-            try:
-                replay_skel.home()
-            except Exception:  # noqa: BLE001
-                pass
-        phase_snaps: list = []
-        physics_samples: list = []
-        replay_clean = _replay_tool_calls(
-            replay_skel, r.tool_call_log, phase_snaps,
-            state_refs=replay_refs, trace_samples=physics_samples,
-        )
+        replay_skel = skel  # Legacy evaluator argument; this is the executed world.
+        physics_samples = physical_trace.samples
+        replay_clean = bool(physics_samples) and all(call.get("ok") for call in r.tool_call_log)
+        phase_by_index = {}
+        for state in physics_samples:
+            phase_by_index[state["idx"]] = {
+                "idx": state["idx"], "tool": state["tool"],
+                "ee": state.get("ee"), "xyz": state.get("base_xyz"),
+                "height": (state["base_xyz"][2] if "base_xyz" in state else None),
+            }
+        phase_snaps = list(phase_by_index.values())
         before_state["_phase_snapshots"] = phase_snaps
         before_state["_physics_samples"] = physics_samples
         before_state["_replay_clean"] = replay_clean
@@ -1588,18 +1593,32 @@ def run_task(planner, robot_dict: dict, task: dict,
             detail = f"physics eval exception: {type(e).__name__}: {e}"
             metrics = {}
         if not replay_clean:
-            detail = f"REPLAY DIVERGED. {detail}"
-            metrics["replay_diverged"] = True
+            detail = f"LIVE EXECUTION OR TRACE FAILED. {detail}"
+            metrics["live_execution_failed"] = True
             # A failed or missing replay method is a physics failure even if a
             # post-hoc observation happens to satisfy the geometric predicate.
             physics_ok = False
 
         mp4_path = getattr(r, "mp4_path", None)
         trace_path = getattr(r, "trace_path", None)
-        if mp4_path is None and expected_mp4 is not None and expected_mp4.exists():
-            mp4_path = expected_mp4
-        if trace_path is None and expected_trace is not None:
-            trace_path = expected_trace
+        metrics["behavior_ok_before_evidence_checks"] = bool(physics_ok)
+        evidence_error = None
+        try:
+            for label, path in (("video", mp4_path), ("generation trace", trace_path),
+                                ("physical trace", physics_trace_path)):
+                if path is None or not Path(path).is_file() or Path(path).stat().st_size == 0:
+                    raise ValueError(f"required {label} is unavailable")
+            import imageio.v2 as imageio
+            reader = imageio.get_reader(str(mp4_path), format="FFMPEG")
+            try:
+                reader.get_data(0)
+            finally:
+                reader.close()
+        except Exception as exc:
+            evidence_error = f"{type(exc).__name__}: {exc}"
+            physics_ok = False
+            detail = f"INCOMPLETE EVIDENCE: {evidence_error}. {detail}"
+        metrics["evidence_complete"] = evidence_error is None
 
         trials.append({
             "trial": trial_idx,
@@ -1611,7 +1630,7 @@ def run_task(planner, robot_dict: dict, task: dict,
             "duration_sec": r.duration_sec,
             "tokens": r.token_usage,
             "summary": (r.summary or "")[:300],
-            "error": r.error,
+            "error": r.error or evidence_error,
             "physics_detail": detail,
             "physics_metrics": metrics,
             "mp4_path": _path_str(mp4_path),

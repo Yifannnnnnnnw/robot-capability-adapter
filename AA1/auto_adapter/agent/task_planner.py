@@ -1030,6 +1030,9 @@ class TaskPlanner:
 
         def handler(inp: dict) -> Any:
             t0 = time.time()
+            trace = getattr(self, "_physics_trace", None)
+            if trace is not None:
+                trace.tool, trace.idx = method_name, len(call_log)
             try:
                 args = args_fn(inp)
                 kwargs = kwargs_fn(inp)
@@ -1078,6 +1081,9 @@ class TaskPlanner:
 
         def handler(inp: dict) -> Any:
             t0 = time.time()
+            trace = getattr(self, "_physics_trace", None)
+            if trace is not None:
+                trace.tool, trace.idx = method_name, len(call_log)
             try:
                 result = method()
                 capture.snapshot()
@@ -1106,6 +1112,8 @@ class TaskPlanner:
         task_id: Optional[str] = None,
         capture_video: bool = True,
         reset_world: bool = True,
+        driver: Any = None,
+        initialize: bool = True,
     ) -> TaskResult:
         """Run one NL task. Always builds a fresh skeleton (clean world).
 
@@ -1118,7 +1126,9 @@ class TaskPlanner:
             task_id = f"task_{int(time.time())}"
 
         # ─── Build a fresh skeleton + frame capture ───────────────────────
-        if reset_world:
+        if driver is not None:
+            skel = driver
+        elif reset_world:
             skel = self._load_driver()
         else:
             raise NotImplementedError("reset_world=False not yet implemented")
@@ -1129,7 +1139,7 @@ class TaskPlanner:
         # raw unsettled MJCF pose (objects mid-air by a few mm), creating
         # an asymmetry between what the agent observes and what the
         # evaluator measures the trial against.
-        if hasattr(skel, "home") and callable(getattr(skel, "home")):
+        if initialize and hasattr(skel, "home") and callable(getattr(skel, "home")):
             try:
                 skel.home()
             except Exception:  # noqa: BLE001 — best-effort homing

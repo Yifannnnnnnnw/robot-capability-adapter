@@ -62,12 +62,13 @@ def test_empty_gripper_false_is_not_replay_divergence() -> None:
     assert _replay_tool_calls(_EmptyGripper(), [{"tool": "gripper_close"}])
 
 
-def test_run_task_replay_exception_cannot_pass(tmp_path):
+def test_replay_exception_and_missing_live_world_cannot_pass(tmp_path):
     class CrashingGripperFixture:
         def gripper_open(self):
             raise RuntimeError("observed replay failure")
 
     calls = [{"tool": "gripper_open", "input": {}}]
+    assert not _replay_tool_calls(CrashingGripperFixture(), calls)
     result = SimpleNamespace(ok=True, tool_call_log=calls, n_tool_calls=1,
                              n_frames=0, duration_sec=0, token_usage={},
                              summary="", error=None, mp4_path=None, trace_path=None)
@@ -81,7 +82,7 @@ def test_run_task_replay_exception_cannot_pass(tmp_path):
                         "required_tools": ["gripper_open"]}}
     trial = run_task(planner, {"class": "arm"}, task, 1)[0]
     assert not trial["physics_ok"]
-    assert trial["physics_metrics"]["replay_diverged"]
+    assert "real MuJoCo model and data" in trial["error"]
 
 
 def test_h1_timed_balance_without_steps_fails() -> None:
