@@ -77,6 +77,39 @@ def _scene_movable_bodies(r) -> list[str]:
     return out
 
 
+def _trusted_from_scratch_class(robot, definition):
+    """The catalog selects morphology; candidate methods can only satisfy it."""
+    required = {
+        "arm": ("get_ee_pose", "move_cartesian"),
+        "quadruped": ("stand_up", "sit"),
+        "mobile_base": ("drive_forward", "turn"),
+        "aerial": ("takeoff", "move_to", "hover"),
+        "humanoid": ("stand_balance", "squat"),
+    }
+    morphology = (definition or {}).get("class")
+    if morphology not in required:
+        raise ValueError(f"no trusted from-scratch validator for {morphology!r}")
+    missing = [name for name in required[morphology] if not callable(getattr(robot, name, None))]
+    if missing:
+        raise ValueError(f"{morphology} driver missing required methods: {missing}")
+    return morphology
+
+
+def _validate_aerial_takeoff(robot, definition, *, trace_path):
+    from autoadapter_bench.physics import PhysicsTrace, grade_takeoff_trace
+    trace = PhysicsTrace(robot, definition["state_refs"])
+    with trace:
+        trace.tool = "takeoff"
+        robot.takeoff(height=0.5)
+        trace.tool = "hover"
+        robot.hover(secs=0.5)
+    ok, detail, metrics = grade_takeoff_trace(trace.samples)
+    trace_path.write_text(json.dumps({"samples": trace.samples}, indent=2))
+    return {"test": "takeoff", "ok": ok, "detail": detail,
+            "metric": metrics.get("height_error_m"), "metrics": metrics,
+            "trace_path": str(trace_path)}
+
+
 def _validate_humanoid_stand_balance(
     robot,
     robot_id: str,
@@ -229,6 +262,10 @@ auto_adapter.skeletons. The framework provides building blocks; you choose
 the algorithms.
 
 Hard rules:
+  - Write code in complete chunks of at most 150 lines; use write_file with
+    append=true for later chunks. Keep request durations and holds on data.time,
+    not wall-clock time. During actions advance state only through mj_step and
+    native actuator controls; do not teleport live qpos/qvel or change dynamics.
   - Use `mujoco`, `numpy`, and Python stdlib only. NO `from auto_adapter.skeletons
     import *`. Don't copy framework classes wholesale.
   - The driver must expose a class `Robot` with classmethod
@@ -708,14 +745,17 @@ class FromScratchOrchestrator:
                     report["all_ok"] = all(test["ok"] for test in report["tests"])
                     return report
 
-                # Detect robot class from available methods. Arm: has
-                # get_ee_pose + move_cartesian. Quadruped: has stand_up + sit.
-                # Both have home, describe, step.
-                has_arm = (hasattr(r, "get_ee_pose") and hasattr(r, "move_cartesian"))
-                has_quad = (hasattr(r, "stand_up") and hasattr(r, "sit"))
-                has_wheeled = (hasattr(r, "drive_forward") and hasattr(r, "turn"))
-                has_aerial = (hasattr(r, "takeoff") and hasattr(r, "move_to"))
-                has_humanoid = (hasattr(r, "stand_balance") and hasattr(r, "squat"))
+                try:
+                    morphology = _trusted_from_scratch_class(r, self.robot_definition)
+                except ValueError as exc:
+                    report["tests"].append({"test": "class_detection", "ok": False,
+                                             "detail": str(exc), "metric": 0.0})
+                    return report
+                has_arm = morphology == "arm"
+                has_quad = morphology == "quadruped"
+                has_wheeled = morphology == "mobile_base"
+                has_aerial = morphology == "aerial"
+                has_humanoid = morphology == "humanoid"
 
                 # home (always test if present)
                 if hasattr(r, "home"):
@@ -998,14 +1038,9 @@ class FromScratchOrchestrator:
                         return float(R[2, 2])
                     # takeoff: must gain altitude and stay upright (not flip)
                     try:
-                        z0 = float(_pos()[2]); r.takeoff(height=0.5)
-                        z1 = float(_pos()[2]); up = _upright()
-                        ok = bool((z1 - z0) > 0.15 and up > 0.7)
-                        report["tests"].append({
-                            "test": "takeoff", "ok": ok,
-                            "detail": f"dz={z1 - z0:+.3f} m (need >0.15), up={up:.2f} (need >0.7)",
-                            "metric": z1 - z0,
-                        })
+                        report["tests"].append(_validate_aerial_takeoff(
+                            r, self.robot_definition,
+                            trace_path=self.workspace / "takeoff_physics_trace.json"))
                     except Exception as e:  # noqa: BLE001
                         report["tests"].append({
                             "test": "takeoff", "ok": False,

@@ -4,6 +4,33 @@ import mujoco
 import numpy as np
 
 
+def grade_takeoff_trace(samples, *, target_height=0.5, tolerance=0.05,
+                        hold_s=0.5, min_climb=0.15, min_upright=0.7):
+    """Grade altitude and terminal hold from canonical physical samples."""
+    if len(samples) < 2:
+        return False, "takeoff requires a real physical trace", {}
+    heights = np.asarray([sample["base_xyz"][2] for sample in samples])
+    upright = np.asarray([sample["base_upright"] for sample in samples])
+    times = np.asarray([sample["time"] for sample in samples])
+    finite = bool(all(sample["finite"] for sample in samples)
+                  and np.isfinite(heights).all() and np.isfinite(upright).all()
+                  and np.isfinite(times).all())
+    in_target = (np.abs(heights - target_height) <= tolerance) & (upright >= min_upright)
+    first = len(samples) - 1
+    while first > 0 and in_target[first - 1] and in_target[first]:
+        first -= 1
+    held = float(times[-1] - times[first]) if in_target[-1] else 0.0
+    climb = float(heights[-1] - heights[0])
+    metrics = {"altitude_m": float(heights[-1]), "height_error_m": float(abs(heights[-1] - target_height)),
+               "climb_m": climb, "terminal_hold_s": held,
+               "sim_elapsed_s": float(times[-1] - times[0]), "physics_steps": len(samples) - 1,
+               "min_upright": float(upright.min()), "finite": finite}
+    ok = bool(finite and np.all(np.diff(times) > 0) and climb >= min_climb
+              and upright.min() >= min_upright and in_target[-1] and held >= hold_s - 1e-9)
+    return ok, (f"altitude={heights[-1]:.3f}m target={target_height:.3f}+/-{tolerance:.3f}; "
+                f"climb={climb:.3f}m; terminal hold={held:.3f}s (need {hold_s:.3f}s)"), metrics
+
+
 def find_mujoco(skel):
     model = data = None
     for value in vars(skel).values():
@@ -80,16 +107,32 @@ class PhysicsTrace:
     def __enter__(self):
         self.snapshot()
         self._original_step = mujoco.mj_step
+        self._remember_state()
 
         def step(model, data, nstep=1):
             if model is not self.model or data is not self.data:
                 return self._original_step(model, data, nstep)
             for _ in range(int(nstep)):
+                self._check_state()
                 self._original_step(model, data)
                 self.snapshot()
+                self._remember_state()
 
         mujoco.mj_step = step
         return self
 
     def __exit__(self, exc_type, exc, tb):
         mujoco.mj_step = self._original_step
+        if exc_type is None:
+            self._check_state()
+
+    def _remember_state(self):
+        self._last_qpos = self.data.qpos.copy()
+        self._last_qvel = self.data.qvel.copy()
+        self._last_time = float(self.data.time)
+
+    def _check_state(self):
+        if (not np.array_equal(self.data.qpos, self._last_qpos, equal_nan=True)
+                or not np.array_equal(self.data.qvel, self._last_qvel, equal_nan=True)
+                or float(self.data.time) != self._last_time):
+            raise ValueError("driver changed live qpos/qvel/time outside real physics stepping")

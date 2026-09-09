@@ -14,8 +14,8 @@ suites:
       - id: takeoff_to_05m
         prompt: |
           Take off and climb to about 0.5 m altitude, then hold a stable
-          hover. Stay upright.
-        success: {type: takeoff_to_height, min_altitude_m: 0.45, min_upright: 0.7, n_trials: 5}
+          hover for at least 0.5 seconds. Stay upright.
+        success: {type: takeoff_to_height, target_height_m: 0.5, tolerance_m: 0.05, hold_s: 0.5, min_climb_m: 0.15, min_upright: 0.7, n_trials: 5}
       - id: hover_at_05m
         prompt: |
           Take off to about 0.5 m and hover in place at that altitude; keep

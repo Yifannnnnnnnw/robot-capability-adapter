@@ -1260,6 +1260,15 @@ def evaluate_success(skel, before_state: dict, success_spec: dict,
             return np.array(success_spec[spec_key_abs], dtype=float)
 
         if typ == "takeoff_to_height":
+            if "target_height_m" in success_spec:
+                from autoadapter_bench.physics import grade_takeoff_trace
+                return grade_takeoff_trace(
+                    before_state.get("_physics_samples", []),
+                    target_height=float(success_spec["target_height_m"]),
+                    tolerance=float(success_spec["tolerance_m"]),
+                    hold_s=float(success_spec["hold_s"]),
+                    min_climb=float(success_spec.get("min_climb_m", .15)),
+                    min_upright=float(success_spec.get("min_upright", .7)))
             # Grade ABSOLUTE final altitude (matches the prompt "climb to ~X m");
             # the agent flies in world coordinates. (min_climb_m kept as a
             # legacy relative fallback.)
