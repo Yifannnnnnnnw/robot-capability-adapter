@@ -10,12 +10,45 @@
   "architecture": {
     "observation_size": 45,
     "history_frames": 5,
-    "student_encoder": [512, 256, 32],
-    "actor": [512, 256, 128, 12],
+    "student_encoder": [
+      512,
+      256,
+      32
+    ],
+    "actor": [
+      512,
+      256,
+      128,
+      12
+    ],
     "activation": "ELU",
     "latent_normalization": "L2"
   },
   "license": "MIT with bundled upstream BSD-3-Clause notice",
   "license_file": "reference/go2_velocity_policy_LICENSE.txt",
-  "torch_runtime_required": false
+  "torch_runtime_required": false,
+  "deployment_config_source": "https://github.com/wty-yy/go2_rl_gym/blob/30e74dc507bec7a642a8c98be26081f2c6f0822d/deploy/deploy_mujoco/configs/go2.yaml",
+  "deployment_parameters": {
+    "joint_order": "FL, FR, RL, RR; hip, thigh, calf per leg",
+    "default_joint_angles": [
+      0.1,
+      0.8,
+      -1.5,
+      -0.1,
+      0.8,
+      -1.5,
+      0.1,
+      1.0,
+      -1.5,
+      -0.1,
+      1.0,
+      -1.5
+    ],
+    "kp": 20.0,
+    "kd": 0.5,
+    "action_scale": 0.25,
+    "policy_period_s": 0.02,
+    "physics_timestep_s": 0.002,
+    "note": "Policy angle offsets are distinct from the AA1 MJCF home keyframe. The configured upstream active checkpoint is not used to change the retained go2_cts_150k weights."
+  }
 }

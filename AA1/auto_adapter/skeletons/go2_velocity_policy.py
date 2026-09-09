@@ -24,6 +24,12 @@ _JOINT_COUNT = 12
 _OBSERVATION_SIZE = 45
 _HISTORY_FRAMES = 5
 _COMMAND_SCALE = (2.0, 2.0, 0.25)
+# Pinned upstream deploy/deploy_mujoco/configs/go2.yaml. These are the
+# network's angle offsets, not the AA1 MJCF home-keyframe joint positions.
+_POLICY_DEFAULT_ANGLES = (
+    0.1, 0.8, -1.5, -0.1, 0.8, -1.5,
+    0.1, 1.0, -1.5, -0.1, 1.0, -1.5,
+)
 
 
 def _finite(value: float, field_name: str) -> float:
@@ -41,12 +47,18 @@ def _name(value: str, field_name: str) -> str:
 
 @dataclass(frozen=True)
 class Go2VelocityPolicySpec:
-    """Public morphology and command bounds for the retained Go2 policy."""
+    """Public bindings and deployment parameters for the retained Go2 policy.
+
+    Bind joints/actuators in FL, FR, RL, RR order, hip/thigh/calf per leg.
+    Keep the supplied default_joint_angles: these are trained policy offsets,
+    not the MJCF home pose. The pinned upstream deployment uses kp=20, kd=.5,
+    action_scale=.25 and a .02 s policy period at .002 s physics timestep.
+    """
 
     base_body_name: str
     joint_names: Sequence[str]
     actuator_names: Sequence[str]
-    default_joint_angles: Sequence[float]
+    default_joint_angles: Sequence[float] = _POLICY_DEFAULT_ANGLES
     kp: float = 20.0
     kd: float = 0.5
     action_scale: float = 0.25
