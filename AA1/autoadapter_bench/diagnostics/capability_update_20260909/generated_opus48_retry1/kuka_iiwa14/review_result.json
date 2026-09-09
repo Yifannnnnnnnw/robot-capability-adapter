@@ -1,0 +1,27 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "generation_ok": true,
+  "driver_build_ok": false,
+  "framework_all_ok": false,
+  "capability_conditions_passed": 0,
+  "capability_conditions_evaluated": 0,
+  "capability_conditions_required": 8,
+  "failed_checks": [
+    {
+      "test": "driver_build",
+      "detail": "AttributeError: module 'driver' has no attribute 'build'"
+    }
+  ],
+  "task_physics_ok": null,
+  "task_result": "not_run",
+  "validated_driver_task_ok": false,
+  "task_metrics": null,
+  "video_path": null,
+  "physical_trace_path": null,
+  "post_framework_repair_limit": 0,
+  "generation_round_limit": 22,
+  "actual_generation_cost_usd": null,
+  "limitation": "One bounded higher-model diagnostic. Original Sonnet attempts retained. Local execution tool routing was corrected before this attempt, so these runs are not a controlled model comparison."
+}

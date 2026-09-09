@@ -1,0 +1,73 @@
+{
+  "robot_id": "kuka_iiwa14",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kuka_iiwa14",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": true,
+      "duration_sec": 32.65200471878052,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kuka_iiwa14/traces/01_study.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kuka_iiwa14/study.json"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 54564,
+        "out": 2747,
+        "cache_read": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "02_generate",
+      "ok": true,
+      "duration_sec": 193.64890122413635,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kuka_iiwa14/traces/02_generate.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kuka_iiwa14/driver.py"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 858118,
+        "out": 16910,
+        "cache_read": 0
+      },
+      "metadata": {
+        "outer_gen_val_iters": 1
+      }
+    },
+    {
+      "name": "03_validate",
+      "ok": false,
+      "duration_sec": 0.0037021636962890625,
+      "trace_path": null,
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kuka_iiwa14/validate_report.json"
+      ],
+      "error": "AttributeError: module 'driver' has no attribute 'build'",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}
