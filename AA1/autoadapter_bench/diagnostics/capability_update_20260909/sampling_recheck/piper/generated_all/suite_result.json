@@ -1,0 +1,1344 @@
+{
+  "all_ok": false,
+  "artifact_type": "capability_validation_result",
+  "driver_origin": "real_model_generation",
+  "from_scratch": false,
+  "model_generated": true,
+  "output_dir": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all",
+  "reference": false,
+  "robot_id": "piper",
+  "schema_version": "1.0",
+  "suite_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/spec/capabilities/piper/capability_validation_suite.json",
+  "tests": [
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A1",
+      "case_id": "piper-a1-nominal",
+      "detail": "A1 trusted score=1.0",
+      "driver_origin": "real_model_generation",
+      "error": null,
+      "errors": [],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 456,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 0.04518467929004347,
+          "link4": 0.06542791334809835,
+          "link5": 0.06542791334809835,
+          "link6": 0.0765652722608302,
+          "link7": 0.0953339543729219,
+          "link8": 0.09533395428266135,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.6100000000000004,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6160000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6160000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_88"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -4.1487617881604004e-07
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "minimum_distance_m": -1.0644872533582919e-11
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "minimum_distance_m": -1.6031763636952214e-07
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 31
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "step_count": 14
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "step_count": 14
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 8.631781795232278e-05,
+          "joint2": 0.15869182798154902,
+          "joint3": 0.02213252951164235,
+          "joint4": 0.00048415554240366273,
+          "joint5": 0.024106247086685715,
+          "joint6": 0.0006974630734405325,
+          "joint7": 1.3494548889219827e-06,
+          "joint8": 7.224997538253644e-06
+        },
+        "minimum_contact_distance_m": -4.1487617881604004e-07,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.09460190221679134
+        },
+        "step_count": 456
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a1-nominal",
+      "method_name": "move_end_effector_to_position",
+      "metric": 1.0,
+      "metrics": {
+        "contract_id": "A1",
+        "measurements": {
+          "best_error_m": 0.000438808315584239,
+          "final_error_m": 0.000492723381014621,
+          "longest_target_hold_s": 0.5640000000000004,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.9120000000000007,
+          "site_max_displacement_m": 0.09460190221679134
+        },
+        "parameters": {
+          "contract_id": "A1",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site"
+        },
+        "score": 1.0
+      },
+      "model_generated": true,
+      "n_frames": 11,
+      "ok": true,
+      "physics_steps": 456,
+      "reference": false,
+      "score": 1.0,
+      "sim_elapsed_s": 0.9120000000000007,
+      "test": "piper-a1-nominal",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a1-nominal/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 11,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a1-nominal/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a1-nominal/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A1",
+      "case_id": "piper-a1-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_error_m\": 0.0006231694683360165, \"final_error_m\": 0.0020724092923470544, \"longest_target_hold_s\": 0.40600000000000025, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.8160000000000006, \"site_max_displacement_m\": 0.1515567261851615}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 408,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 0.07152435893796975,
+          "link4": 0.10383606763456979,
+          "link5": 0.10383606763456979,
+          "link6": 0.12204570535318952,
+          "link7": 0.15275396208264042,
+          "link8": 0.15275396174344397,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.6100000000000004,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6120000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6120000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_88"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -8.357064875688139e-07
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "minimum_distance_m": -2.0089248747085648e-11
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "minimum_distance_m": -5.811479451206615e-07
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 39
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "step_count": 32
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "step_count": 32
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 0.0001374879350771678,
+          "joint2": 0.251598252679581,
+          "joint3": 0.039018783005432045,
+          "joint4": 0.0007904501484458037,
+          "joint5": 0.04885808242896974,
+          "joint6": 0.001143753856221849,
+          "joint7": 2.2035287503944235e-06,
+          "joint8": 1.1754108062752289e-05
+        },
+        "minimum_contact_distance_m": -8.357064875688139e-07,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.1515567261851615
+        },
+        "step_count": 408
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a1-calibrated-boundary",
+      "method_name": "move_end_effector_to_position",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A1",
+        "measurements": {
+          "best_error_m": 0.0006231694683360165,
+          "final_error_m": 0.0020724092923470544,
+          "longest_target_hold_s": 0.40600000000000025,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.8160000000000006,
+          "site_max_displacement_m": 0.1515567261851615
+        },
+        "parameters": {
+          "contract_id": "A1",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site"
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 10,
+      "ok": false,
+      "physics_steps": 408,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.8160000000000006,
+      "test": "piper-a1-calibrated-boundary",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a1-calibrated-boundary/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 10,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a1-calibrated-boundary/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a1-calibrated-boundary/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A2",
+      "case_id": "piper-a2-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_error_m\": 0.0005396931374223383, \"max_cross_track_error_m\": 0.017764666253758457, \"ordered_waypoints_reached\": true, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.7200000000000005, \"site_max_displacement_m\": 0.13851578663737854}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 360,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 0.06771244425233922,
+          "link4": 0.09636120534227341,
+          "link5": 0.09636120534227341,
+          "link6": 0.11240431265184002,
+          "link7": 0.13957760091860053,
+          "link8": 0.1395776008137286,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.6100000000000004,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6160000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6160000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_88"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -4.1487617881604004e-07
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "minimum_distance_m": -1.0644872533582919e-11
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "minimum_distance_m": -1.6031763636952214e-07
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 23
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "step_count": 14
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "step_count": 14
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 8.631781795232278e-05,
+          "joint2": 0.2381236929234256,
+          "joint3": 0.024118652000498786,
+          "joint4": 0.0004952505600207973,
+          "joint5": 0.024106247086685715,
+          "joint6": 0.000720786175466963,
+          "joint7": 1.4992553983685192e-06,
+          "joint8": 7.224997538253644e-06
+        },
+        "minimum_contact_distance_m": -4.1487617881604004e-07,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.13851578663737854
+        },
+        "step_count": 360
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a2-nominal",
+      "method_name": "trace_cartesian_path",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A2",
+        "measurements": {
+          "final_error_m": 0.0005396931374223383,
+          "max_cross_track_error_m": 0.017764666253758457,
+          "ordered_waypoints_reached": true,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.7200000000000005,
+          "site_max_displacement_m": 0.13851578663737854
+        },
+        "parameters": {
+          "contract_id": "A2",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site"
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 9,
+      "ok": false,
+      "physics_steps": 360,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.7200000000000005,
+      "test": "piper-a2-nominal",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a2-nominal/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 9,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a2-nominal/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a2-nominal/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A2",
+      "case_id": "piper-a2-calibrated-boundary",
+      "detail": "A2 trusted score=1.0",
+      "driver_origin": "real_model_generation",
+      "error": null,
+      "errors": [],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 500,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 0.06196381302945785,
+          "link4": 0.09063812817674548,
+          "link5": 0.09063812817674548,
+          "link6": 0.10705188302694693,
+          "link7": 0.1353323808455786,
+          "link8": 0.1353323793616553,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.6100000000000004,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6120000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_87"
+          },
+          {
+            "first_time_s": 0.6120000000000004,
+            "geom1": "geom_85",
+            "geom2": "geom_88"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -8.357064875688139e-07
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "minimum_distance_m": -2.660548124935015e-11
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "minimum_distance_m": -5.811479451206615e-07
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 45
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_87",
+            "step_count": 40
+          },
+          {
+            "geom1": "geom_85",
+            "geom2": "geom_88",
+            "step_count": 40
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 0.0001374879350771678,
+          "joint2": 0.2178234422661196,
+          "joint3": 0.04748328944025815,
+          "joint4": 0.0007904501484458037,
+          "joint5": 0.04885808242896974,
+          "joint6": 0.001143753856221849,
+          "joint7": 3.303483928116022e-06,
+          "joint8": 1.1754108062752289e-05
+        },
+        "minimum_contact_distance_m": -8.357064875688139e-07,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.13422432254699096
+        },
+        "step_count": 500
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a2-calibrated-boundary",
+      "method_name": "trace_cartesian_path",
+      "metric": 1.0,
+      "metrics": {
+        "contract_id": "A2",
+        "measurements": {
+          "final_error_m": 0.0019065727278150838,
+          "max_cross_track_error_m": 0.01731731530573684,
+          "ordered_waypoints_reached": true,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 1.0000000000000009,
+          "site_max_displacement_m": 0.13422432254699096
+        },
+        "parameters": {
+          "contract_id": "A2",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site"
+        },
+        "score": 1.0
+      },
+      "model_generated": true,
+      "n_frames": 11,
+      "ok": true,
+      "physics_steps": 500,
+      "reference": false,
+      "score": 1.0,
+      "sim_elapsed_s": 1.0000000000000009,
+      "test": "piper-a2-calibrated-boundary",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a2-calibrated-boundary/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 11,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a2-calibrated-boundary/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a2-calibrated-boundary/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A3",
+      "case_id": "piper-a3-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_opening_error\": 0.02392349644077213, \"final_opening_fraction\": 0.22392349644077214, \"longest_opening_hold_s\": 0.15600000000000014, \"maximum_opening_change\": 0.7760765035586389, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.40000000000000036}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 200,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 6.630689276617851e-07,
+          "link4": 6.242578155080374e-06,
+          "link5": 6.242578155080374e-06,
+          "link6": 8.251336188508975e-06,
+          "link7": 0.027161033729272633,
+          "link8": 0.027159797906884376,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "contact_pair_step_counts": [],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 2.228947810290162e-05,
+          "joint2": 6.677977044677874e-07,
+          "joint3": 6.728021382240712e-07,
+          "joint4": 1.8531346707690317e-07,
+          "joint5": 2.2797514700339986e-07,
+          "joint6": 3.2398364966825735e-07,
+          "joint7": 0.027162677624552364,
+          "joint8": 0.027158154011275165
+        },
+        "minimum_contact_distance_m": null,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 1.1122592733045447e-05
+        },
+        "step_count": 200
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a3-nominal",
+      "method_name": "set_gripper_opening",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A3",
+        "measurements": {
+          "final_opening_error": 0.02392349644077213,
+          "final_opening_fraction": 0.22392349644077214,
+          "longest_opening_hold_s": 0.15600000000000014,
+          "maximum_opening_change": 0.7760765035586389,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.40000000000000036
+        },
+        "parameters": {
+          "closed_position": 0.0,
+          "contract_id": "A3",
+          "gripper_actuator_name": "gripper",
+          "guard_site_name": "ee_site",
+          "guarded_joint_names": [
+            "joint1",
+            "joint2",
+            "joint3",
+            "joint4",
+            "joint5",
+            "joint6"
+          ],
+          "guarded_joint_tolerances": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ],
+          "joint_name": "joint7",
+          "open_position": 0.035,
+          "side_effect_guard_profile": "fixed_arm"
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 5,
+      "ok": false,
+      "physics_steps": 200,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.40000000000000036,
+      "test": "piper-a3-nominal",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a3-nominal/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 5,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a3-nominal/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a3-nominal/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A3",
+      "case_id": "piper-a3-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_opening_error\": 0.023923496526660815, \"final_opening_fraction\": 0.7760765034733392, \"longest_opening_hold_s\": 0.15600000000000014, \"maximum_opening_change\": 0.7760765034723445, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.40000000000000036}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 200,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 6.633493773088686e-07,
+          "link4": 6.245216594467692e-06,
+          "link5": 6.245216594467692e-06,
+          "link6": 8.254825832749266e-06,
+          "link7": 0.02716103620607963,
+          "link8": 0.0271597955414707,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "contact_pair_step_counts": [],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 2.2298913419478898e-05,
+          "joint2": 6.681292596955046e-07,
+          "joint3": 6.739547804279766e-07,
+          "joint4": 1.7280341694293935e-07,
+          "joint5": 2.2938094930192853e-07,
+          "joint6": 3.461114325516022e-07,
+          "joint7": 0.027162677621532058,
+          "joint8": 0.02715815412579603
+        },
+        "minimum_contact_distance_m": null,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 1.1127299837566732e-05
+        },
+        "step_count": 200
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a3-calibrated-boundary",
+      "method_name": "set_gripper_opening",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A3",
+        "measurements": {
+          "final_opening_error": 0.023923496526660815,
+          "final_opening_fraction": 0.7760765034733392,
+          "longest_opening_hold_s": 0.15600000000000014,
+          "maximum_opening_change": 0.7760765034723445,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.40000000000000036
+        },
+        "parameters": {
+          "closed_position": 0.0,
+          "contract_id": "A3",
+          "gripper_actuator_name": "gripper",
+          "guard_site_name": "ee_site",
+          "guarded_joint_names": [
+            "joint1",
+            "joint2",
+            "joint3",
+            "joint4",
+            "joint5",
+            "joint6"
+          ],
+          "guarded_joint_tolerances": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ],
+          "joint_name": "joint7",
+          "open_position": 0.035,
+          "side_effect_guard_profile": "fixed_arm"
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 5,
+      "ok": false,
+      "physics_steps": 200,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.40000000000000036,
+      "test": "piper-a3-calibrated-boundary",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a3-calibrated-boundary/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 5,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a3-calibrated-boundary/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a3-calibrated-boundary/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A4",
+      "case_id": "piper-a4-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 1.7199924259588378e-12, \"first_target_contact_s\": null, \"longest_target_contact_s\": 0.0, \"maximum_speed_after_contact_m_s\": null, \"minimum_contact_distance_m\": -2.7379482399136163e-16, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.6800000000000005, \"site_max_displacement_m\": 4.333327061162249e-12}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 340,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 4.836947217424484e-12,
+          "link4": 1.579802607960866e-11,
+          "link5": 1.579802607960866e-11,
+          "link6": 8.657750839044354e-12,
+          "link7": 4.583609210420593e-12,
+          "link8": 4.583117837474832e-12,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.5100000000000003,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -2.7379482399136163e-16
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 1
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 2.0227692570531962e-13,
+          "joint2": 1.6969758931395518e-11,
+          "joint3": 7.775158294975881e-11,
+          "joint4": 1.1148530366387517e-10,
+          "joint5": 1.4136680475815253e-10,
+          "joint6": 1.3159525988088353e-10,
+          "joint7": 7.858877732367163e-14,
+          "joint8": 1.344138949825454e-13
+        },
+        "minimum_contact_distance_m": -2.7379482399136163e-16,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 4.333327061162249e-12
+        },
+        "step_count": 340
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a4-nominal",
+      "method_name": "approach_until_contact",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A4",
+        "measurements": {
+          "best_precontact_error_m": 1.7199924259588378e-12,
+          "first_target_contact_s": null,
+          "longest_target_contact_s": 0.0,
+          "maximum_speed_after_contact_m_s": null,
+          "minimum_contact_distance_m": -2.7379482399136163e-16,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.6800000000000005,
+          "site_max_displacement_m": 4.333327061162249e-12
+        },
+        "parameters": {
+          "contract_id": "A4",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "max_penetration_m": 0.005,
+          "precontact_gate": "held_window_then_ray",
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site",
+          "target_geom_names": [
+            "fixed_contact_geom"
+          ],
+          "tool_geom_names": [
+            "geom_82",
+            "geom_84",
+            "geom_85",
+            "geom_87",
+            "geom_88"
+          ]
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 8,
+      "ok": false,
+      "physics_steps": 340,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.6800000000000005,
+      "test": "piper-a4-nominal",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a4-nominal/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 8,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a4-nominal/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a4-nominal/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A4",
+      "case_id": "piper-a4-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 1.3617031358244499e-12, \"first_target_contact_s\": null, \"longest_target_contact_s\": 0.0, \"maximum_speed_after_contact_m_s\": null, \"minimum_contact_distance_m\": -3.727041767902925e-15, \"side_effects_ok\": true, \"sim_elapsed_s\": 1.4000000000000012, \"site_max_displacement_m\": 4.333327061162249e-12}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 700,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 4.836947217424484e-12,
+          "link4": 1.579802607960866e-11,
+          "link5": 1.579802607960866e-11,
+          "link6": 8.657750839044354e-12,
+          "link7": 4.583609210420593e-12,
+          "link8": 4.583117837474832e-12,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.5100000000000003,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -3.727041767902925e-15
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 2
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 4.152777086656098e-13,
+          "joint2": 1.6969758931395518e-11,
+          "joint3": 7.775158294975881e-11,
+          "joint4": 1.9252478317697291e-10,
+          "joint5": 1.4136680475815253e-10,
+          "joint6": 2.498583925758218e-10,
+          "joint7": 7.858877732367163e-14,
+          "joint8": 1.344138949825454e-13
+        },
+        "minimum_contact_distance_m": -3.727041767902925e-15,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 4.333327061162249e-12
+        },
+        "step_count": 700
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a4-calibrated-boundary",
+      "method_name": "approach_until_contact",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A4",
+        "measurements": {
+          "best_precontact_error_m": 1.3617031358244499e-12,
+          "first_target_contact_s": null,
+          "longest_target_contact_s": 0.0,
+          "maximum_speed_after_contact_m_s": null,
+          "minimum_contact_distance_m": -3.727041767902925e-15,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 1.4000000000000012,
+          "site_max_displacement_m": 4.333327061162249e-12
+        },
+        "parameters": {
+          "contract_id": "A4",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "max_penetration_m": 0.005,
+          "precontact_gate": "held_window_then_ray",
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site",
+          "target_geom_names": [
+            "fixed_contact_geom"
+          ],
+          "tool_geom_names": [
+            "geom_82",
+            "geom_84",
+            "geom_85",
+            "geom_87",
+            "geom_88"
+          ]
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 15,
+      "ok": false,
+      "physics_steps": 700,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 1.4000000000000012,
+      "test": "piper-a4-calibrated-boundary",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a4-calibrated-boundary/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 15,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a4-calibrated-boundary/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a4-calibrated-boundary/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A5",
+      "case_id": "piper-a5-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_outbound_error_m\": 0.0054709045244068855, \"final_return_error_m\": 0.014638102598948252, \"maximum_displacement_fraction\": 0.7319051299474126, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.10400000000000009, \"site_max_displacement_m\": 0.014638102598948252}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 52,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 0.014453003774666745,
+          "link4": 0.014406411714849724,
+          "link5": 0.014406411714849724,
+          "link6": 0.014477694838236296,
+          "link7": 0.01464566722583298,
+          "link8": 0.014645667069783978,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [
+          {
+            "first_time_s": 0.6020000000000004,
+            "geom1": "geom_84",
+            "geom2": "geom_87"
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "minimum_distance_m": -1.470495093398795e-07
+          }
+        ],
+        "contact_pair_step_counts": [
+          {
+            "geom1": "geom_84",
+            "geom2": "geom_87",
+            "step_count": 2
+          }
+        ],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 5.6362923893705884e-05,
+          "joint2": 0.05071217224833502,
+          "joint3": 0.05484377277660957,
+          "joint4": 0.00010576322598702508,
+          "joint5": 0.0036231834605730162,
+          "joint6": 9.42873359616877e-05,
+          "joint7": 1.5401389295058576e-06,
+          "joint8": 7.777138707629762e-06
+        },
+        "minimum_contact_distance_m": -1.470495093398795e-07,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.014638102598948252
+        },
+        "step_count": 52
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a5-nominal",
+      "method_name": "move_cartesian_offset_and_return",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A5",
+        "measurements": {
+          "best_outbound_error_m": 0.0054709045244068855,
+          "final_return_error_m": 0.014638102598948252,
+          "maximum_displacement_fraction": 0.7319051299474126,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.10400000000000009,
+          "site_max_displacement_m": 0.014638102598948252
+        },
+        "parameters": {
+          "base_body_name": "base_link",
+          "contract_id": "A5",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site"
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 3,
+      "ok": false,
+      "physics_steps": 52,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.10400000000000009,
+      "test": "piper-a5-nominal",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a5-nominal/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 3,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a5-nominal/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a5-nominal/video.mp4"
+    },
+    {
+      "action_return": {
+        "type": "dict"
+      },
+      "capability_id": "A5",
+      "case_id": "piper-a5-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_outbound_error_m\": 0.009819726285500725, \"final_return_error_m\": 0.01024140854807231, \"maximum_displacement_fraction\": 0.5120704274036155, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.1120000000000001, \"site_max_displacement_m\": 0.01024140854807231}",
+      "driver_origin": "real_model_generation",
+      "error": "trusted metric contract did not pass (score=0)",
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "evidence_summary": {
+        "actuator_force_nonzero_step_count": 56,
+        "body_max_displacement_from_reset": {
+          "base_link": 0.0,
+          "fixed_contact_target": 0.0,
+          "link1": 0.0,
+          "link2": 0.0,
+          "link3": 0.00036603402113114035,
+          "link4": 0.005496681744367947,
+          "link5": 0.005496681744367947,
+          "link6": 0.007448824325439273,
+          "link7": 0.010349506308051643,
+          "link8": 0.010349506305002155,
+          "world": 0.0
+        },
+        "canonical_model_data": true,
+        "contact_monitoring_complete": true,
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "contact_pair_step_counts": [],
+        "control_range_monitoring_complete": true,
+        "control_range_violation_actuators": [],
+        "control_range_violation_detected": false,
+        "ctrl_changed_from_reset": true,
+        "ctrl_observed_before_step": true,
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "joint_max_abs_deviation_from_reset": {
+          "joint1": 3.7750676707030233e-06,
+          "joint2": 0.001284189286477,
+          "joint3": 0.02183572694232483,
+          "joint4": 6.936134928734166e-05,
+          "joint5": 0.000650162251936627,
+          "joint6": 0.00012499076508662587,
+          "joint7": 2.347216946319598e-07,
+          "joint8": 1.3172016383721974e-06
+        },
+        "minimum_contact_distance_m": null,
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "physics_timestep_s": 0.002,
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.01024140854807231
+        },
+        "step_count": 56
+      },
+      "from_scratch": false,
+      "guard_errors": [],
+      "id": "piper-a5-calibrated-boundary",
+      "method_name": "move_cartesian_offset_and_return",
+      "metric": 0.0,
+      "metrics": {
+        "contract_id": "A5",
+        "measurements": {
+          "best_outbound_error_m": 0.009819726285500725,
+          "final_return_error_m": 0.01024140854807231,
+          "maximum_displacement_fraction": 0.5120704274036155,
+          "side_effects_ok": true,
+          "sim_elapsed_s": 0.1120000000000001,
+          "site_max_displacement_m": 0.01024140854807231
+        },
+        "parameters": {
+          "base_body_name": "base_link",
+          "contract_id": "A5",
+          "guarded_joint_names": [
+            "joint7"
+          ],
+          "guarded_joint_tolerances": [
+            0.00175
+          ],
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "ee_site"
+        },
+        "score": 0.0
+      },
+      "model_generated": true,
+      "n_frames": 3,
+      "ok": false,
+      "physics_steps": 56,
+      "reference": false,
+      "score": 0.0,
+      "sim_elapsed_s": 0.1120000000000001,
+      "test": "piper-a5-calibrated-boundary",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a5-calibrated-boundary/trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 3,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a5-calibrated-boundary/video.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/piper/generated_all/piper-a5-calibrated-boundary/video.mp4"
+    }
+  ]
+}
