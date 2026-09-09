@@ -1,0 +1,18 @@
+{
+  "contract_id": "A5",
+  "measurements": {
+    "best_outbound_error_m": 0.00026230380348521074,
+    "final_return_error_m": 0.0002931880068461421,
+    "maximum_displacement_fraction": 0.9868897166384172,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 6.249999999999479,
+    "site_max_displacement_m": 0.019737794332768344
+  },
+  "parameters": {
+    "base_body_name": "base",
+    "contract_id": "A5",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "attachment_site"
+  },
+  "score": 1.0
+}

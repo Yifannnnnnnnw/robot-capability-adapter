@@ -1,0 +1,26 @@
+{
+  "robot_id": "kuka_iiwa14",
+  "generated_driver_source": "autoadapter_bench/diagnostics/capability_update_20260909/generated/kuka_iiwa14/driver.py",
+  "driver_modified": false,
+  "sampling_fix_commit": "eac5d394",
+  "reference_passed": 8,
+  "reference_total": 8,
+  "generated_passed": 0,
+  "generated_total": 8,
+  "generated_failed_cases": [
+    "kuka_iiwa_14-a1-nominal",
+    "kuka_iiwa_14-a1-calibrated_boundary",
+    "kuka_iiwa_14-a2-nominal",
+    "kuka_iiwa_14-a2-calibrated_boundary",
+    "kuka_iiwa_14-a4-nominal",
+    "kuka_iiwa_14-a4-calibrated_boundary",
+    "kuka_iiwa_14-a5-nominal",
+    "kuka_iiwa_14-a5-calibrated_boundary"
+  ],
+  "reference_report": "autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/kuka_iiwa14/reference/suite_result.json",
+  "generated_report": "autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/kuka_iiwa14/generated_all/suite_result.json",
+  "limitations": [
+    "Same generated source re-executed under synchronized sampling; this is not a new model generation.",
+    "The original diagnostic results remain preserved."
+  ]
+}
