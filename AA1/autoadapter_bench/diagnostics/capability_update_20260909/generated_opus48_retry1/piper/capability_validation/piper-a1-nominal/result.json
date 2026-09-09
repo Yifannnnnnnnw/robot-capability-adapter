@@ -1,0 +1,149 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A1",
+  "case_id": "piper-a1-nominal",
+  "detail": "A1 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 427,
+    "body_max_displacement_from_reset": {
+      "base_link": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.045126261112125,
+      "link4": 0.06536647031629234,
+      "link5": 0.06536647031629234,
+      "link6": 0.07649582763435313,
+      "link7": 0.09524794138919265,
+      "link8": 0.09524794130624756,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.6120000000000004,
+        "geom1": "geom_84",
+        "geom2": "geom_87"
+      },
+      {
+        "first_time_s": 0.6160000000000004,
+        "geom1": "geom_85",
+        "geom2": "geom_87"
+      },
+      {
+        "first_time_s": 0.6160000000000004,
+        "geom1": "geom_85",
+        "geom2": "geom_88"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "minimum_distance_m": -6.189349827396752e-07
+      },
+      {
+        "geom1": "geom_85",
+        "geom2": "geom_87",
+        "minimum_distance_m": -1.2504629456147731e-11
+      },
+      {
+        "geom1": "geom_85",
+        "geom2": "geom_88",
+        "minimum_distance_m": -3.6437644029420296e-07
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "step_count": 22
+      },
+      {
+        "geom1": "geom_85",
+        "geom2": "geom_87",
+        "step_count": 15
+      },
+      {
+        "geom1": "geom_85",
+        "geom2": "geom_88",
+        "step_count": 15
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 8.615388296052032e-05,
+      "joint2": 0.15848622834911263,
+      "joint3": 0.02222912305417779,
+      "joint4": 0.0004870756550185991,
+      "joint5": 0.02376865471608352,
+      "joint6": 0.0006994372403789221,
+      "joint7": 1.2265348420565746e-06,
+      "joint8": 6.790616418799599e-06
+    },
+    "minimum_contact_distance_m": -6.189349827396752e-07,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "ee_site": 0.09451658552326707
+    },
+    "step_count": 427
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "piper-a1-nominal",
+  "method_name": "move_end_effector_to_position",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A1",
+    "measurements": {
+      "best_error_m": 0.00035278033930199516,
+      "final_error_m": 0.000778612834197965,
+      "longest_target_hold_s": 0.5000000000000003,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.8540000000000006,
+      "site_max_displacement_m": 0.09451658552326707
+    },
+    "parameters": {
+      "contract_id": "A1",
+      "guarded_joint_names": [
+        "joint7"
+      ],
+      "guarded_joint_tolerances": [
+        0.00175
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "ee_site"
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 10,
+  "ok": true,
+  "physics_steps": 427,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 0.8540000000000006,
+  "test": "piper-a1-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/piper/capability_validation/piper-a1-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 10,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/piper/capability_validation/piper-a1-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/piper/capability_validation/piper-a1-nominal/video.mp4"
+}
