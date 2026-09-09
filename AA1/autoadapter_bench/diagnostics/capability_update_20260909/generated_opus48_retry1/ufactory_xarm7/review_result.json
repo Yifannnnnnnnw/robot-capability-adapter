@@ -1,0 +1,17 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "generation_phases": [
+    {
+      "phase": "01_study",
+      "ok": false,
+      "error": "missing expected artifact(s): ['study.json']"
+    }
+  ],
+  "framework_all_ok": false,
+  "framework_tests": [],
+  "task_result": "not_run",
+  "actual_generation_cost_usd": null,
+  "failure_note": "Study used remote execute_python without MuJoCo, and study.json was not written to the local workspace. No driver or validation; routing defect under targeted fix. Original trace retained."
+}
