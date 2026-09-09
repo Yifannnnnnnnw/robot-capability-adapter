@@ -1,0 +1,18 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-sonnet-4-6",
+  "generation_ok": false,
+  "framework_all_ok": false,
+  "validation_scope": "not_run",
+  "task_result": "not_run",
+  "task_framework_ok": false,
+  "validated_driver_task_ok": false,
+  "task_metrics": null,
+  "task_video_path": null,
+  "task_physical_trace_path": null,
+  "generation_round_limit": 22,
+  "post_framework_repair_limit": 0,
+  "actual_generation_cost_usd": null,
+  "limitation": "No driver.py produced within 22 generation turns. Framework and task not run."
+}

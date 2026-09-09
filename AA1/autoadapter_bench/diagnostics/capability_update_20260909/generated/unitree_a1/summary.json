@@ -1,0 +1,79 @@
+{
+  "robot_id": "unitree_a1",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/unitree_a1",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": true,
+      "duration_sec": 48.4528648853302,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/unitree_a1/traces/01_study.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/unitree_a1/study.json"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 78234,
+        "out": 4835,
+        "cache_read": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "02_generate",
+      "ok": false,
+      "duration_sec": 60.62494897842407,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/unitree_a1/traces/02_generate.jsonl",
+      "artifacts": [],
+      "error": "max_iters=22 exhausted",
+      "token_usage": {
+        "in": 326583,
+        "out": 5561,
+        "cache_read": 0
+      },
+      "metadata": {
+        "outer_gen_val_iters": 1
+      }
+    },
+    {
+      "name": "validate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "skipped \u2014 upstream `generate` failed: max_iters=22 exhausted",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "validate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=generate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=generate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=generate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}
