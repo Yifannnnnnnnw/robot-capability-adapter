@@ -176,6 +176,11 @@ Success is measured against the task's ground-truth criterion using
 independently recorded simulator state and execution video, avoiding reliance
 on the controller's self-report.
 
+\textbf{Export.} A passing driver is bundled into
+\texttt{auto\_adapter\_\textless robot\textgreater\_artifacts/} together
+with the MJCF, the study and validate reports, and a generated README.
+Self-contained artifacts run on \texttt{numpy} and \texttt{mujoco} alone.
+
 The following subsections describe robot study and capability design, then
 explain how the tests are constructed. They subsequently detail driver
 generation, validation and repair, and downstream task execution.
