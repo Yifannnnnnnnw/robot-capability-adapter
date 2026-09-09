@@ -4,8 +4,8 @@ The class in this module is deliberately independent from the AutoAdapter
 runtime.  A caller supplies the canonical MuJoCo model and data, resets them
 to the case fixture, and invokes one public capability method.  Dynamic
 motion is produced only by writing position actuator targets to ``data.ctrl``
-and advancing with ``mujoco.mj_step``.  The inverse-kinematics routine uses a
-temporary qpos scratch state and restores it before any dynamic step.
+and advancing with ``mujoco.mj_step``.  The inverse-kinematics routine uses an
+independent ``mujoco.MjData`` scratch state and never writes the live state.
 """
 
 from __future__ import annotations
