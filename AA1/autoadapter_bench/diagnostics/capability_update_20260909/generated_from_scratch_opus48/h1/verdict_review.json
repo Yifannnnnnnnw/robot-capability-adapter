@@ -1,0 +1,28 @@
+{
+  "diagnostic_only": true,
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "provider": "holistic",
+  "generation_ok": true,
+  "framework_all_ok": false,
+  "framework_tests_passed": 7,
+  "framework_tests_total": 8,
+  "failed_framework_tests": [
+    "humanoid_walk"
+  ],
+  "task_id": "stand_balance_2s",
+  "task_physics_ok": true,
+  "validated_driver_task_ok": false,
+  "physics_metrics": {
+    "torso_h_m": 0.9526887988934675,
+    "upright": 0.9999987958548704,
+    "duration_s": 2.0019999999999123,
+    "required_duration_s": 2.0,
+    "behavior_ok_before_evidence_checks": true,
+    "evidence_complete": true
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/recordings/task_verdict_recheck/stand_balance_2s_t0.mp4",
+  "physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/task_traces/task_verdict_recheck/stand_balance_2s_t0_physics.json",
+  "original_summary_limitation": "Original summary.json validate_ok used legacy critical-test admission. It is not complete Framework success; validate_report.json all_ok=false is authoritative. Source fixed subsequently; original evidence retained.",
+  "focused_check": "pytest auto_adapter/tests/test_h1_framework_duration.py auto_adapter/tests/test_live_task_world.py: 3 passed; summary regression failed before the fix.",
+  "actual_generation_cost_usd": null
+}

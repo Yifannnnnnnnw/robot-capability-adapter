@@ -1,0 +1,64 @@
+{
+  "tests": [
+    {
+      "test": "no_skeleton_import",
+      "ok": true,
+      "detail": "OK \u2014 zero skeleton imports",
+      "metric": 1.0
+    },
+    {
+      "test": "robot_class_present",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "build_from_mjcf",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "home",
+      "ok": true,
+      "detail": "OK",
+      "metric": 1.0
+    },
+    {
+      "test": "stand_balance",
+      "ok": true,
+      "detail": "elapsed=2.002s (need >=2.000), steps=1001, min_h=0.938m (need >0.6), min_up=0.999 (need >0.7), finite=True",
+      "metric": 2.0019999999999123
+    },
+    {
+      "test": "squat",
+      "ok": true,
+      "detail": "stand h=0.96, dip=0.145m (need >=0.05), post-squat h=0.94, up=1.00",
+      "metric": 0.14476339606573885
+    },
+    {
+      "test": "humanoid_walk",
+      "ok": false,
+      "detail": "fwd=-0.214m (need >0.05), lat=-0.002 (|.|<0.08), dyaw=0deg (<20), min_h=0.93, min_up=0.99",
+      "metric": -0.21424998715021681
+    },
+    {
+      "test": "describe",
+      "ok": true,
+      "detail": "dict keys=['class', 'model', 'nq', 'nv', 'nu', 'actuators', 'base_xyz', 'base_rpy']",
+      "metric": 1.0
+    }
+  ],
+  "all_ok": false,
+  "source_metrics": {
+    "n_lines": 373,
+    "n_chars": 15120,
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "unknown"
+  },
+  "structural_ok": true,
+  "n_passed": 7,
+  "n_total": 8,
+  "outer_attempts": 0
+}

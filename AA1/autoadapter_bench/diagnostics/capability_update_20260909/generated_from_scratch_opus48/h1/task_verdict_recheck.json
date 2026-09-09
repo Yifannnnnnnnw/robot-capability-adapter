@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "h1",
+    "robot_class": "humanoid",
+    "mjcf": "assets/mjcf/h1/scene.xml",
+    "vendor": "Unitree",
+    "dof": 19,
+    "model": "eu.anthropic.claude-opus-4-8",
+    "provider": "holistic",
+    "region": "us-east-1",
+    "git_sha": "eb7de1392231",
+    "started_at": "2026-09-09T23:23:43.804905",
+    "suites_requested": [
+      "simple"
+    ],
+    "completed_at": "2026-09-09T23:25:00.334930",
+    "wall_clock_sec": 76.48783612251282
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "stand_balance_2s",
+          "prompt": "Stand and balance in place for about 2 seconds, keeping the torso\nupright and at standing height. Do not fall.\n",
+          "success_spec": {
+            "type": "torso_upright_height",
+            "min_torso_h_m": 0.85,
+            "min_upright": 0.7,
+            "duration_s": 2.0,
+            "n_trials": 5
+          },
+          "n_trials": 1,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "framework_ok": false,
+              "validated_driver_task_ok": false,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 254,
+              "duration_sec": 60.55648183822632,
+              "tokens": {
+                "in": 4843,
+                "out": 238,
+                "cache_read": 0
+              },
+              "summary": "I held a stable, upright standing pose for 2 seconds without falling, with the torso remaining at standing height (~0.95 m at the end).",
+              "error": null,
+              "physics_detail": "torso h=0.95m (need >=0.85), up=1.00",
+              "physics_metrics": {
+                "torso_h_m": 0.9526887988934675,
+                "upright": 0.9999987958548704,
+                "duration_s": 2.0019999999999123,
+                "required_duration_s": 2.0,
+                "behavior_ok_before_evidence_checks": true,
+                "evidence_complete": true
+              },
+              "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/recordings/task_verdict_recheck/stand_balance_2s_t0.mp4",
+              "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/task_traces/task_verdict_recheck/stand_balance_2s_t0.jsonl",
+              "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/task_traces/task_verdict_recheck/stand_balance_2s_t0_physics.json"
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.0,
+          "tokens": {
+            "in": 4843,
+            "out": 238
+          },
+          "cost_usd": 0.090495
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 1,
+    "n_trials_total": 1,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 4843,
+      "out": 238
+    },
+    "total_cost_usd": 0.090495,
+    "wall_clock_sec": 76.48783612251282
+  }
+}
