@@ -116,7 +116,7 @@ resulting simulation evidence does not establish hardware performance.
 
 \subsection{Framework overview}
 
-Auto-Adapter runs in four phases: study, generate, validation and demo. The
+Auto-Adapter runs in five phases: study, generate, validation, export and demo. The
 pipeline operates on a working directory containing the robot documentation,
 the robot's MJCF model files and a task library.
 Figure~\ref{fig:autoadapter-framework-workflow} shows the sequence and the
@@ -153,6 +153,11 @@ of execution, and \(\varepsilon\) is the specified tolerance. If any critical
 test fails, generate runs again with the diagnostic messages appended. Each
 revised driver is evaluated using the same tests and criteria.
 
+\textbf{export.} A passing driver is bundled into
+\texttt{auto\_adapter\_\textless robot\textgreater\_artifacts/} together
+with the MJCF, the study and validate reports, and a generated README.
+Self-contained artifacts run on \texttt{numpy} and \texttt{mujoco} alone.
+
 \textbf{demo.} ReCAP uses the generated driver to execute natural-language
 tasks, calling only capabilities that passed validation. It observes state
 through the driver's high-level methods and plans a sequence of capability
@@ -176,11 +181,6 @@ Success is measured against the task's ground-truth criterion using
 independently recorded simulator state and execution video, avoiding reliance
 on the controller's self-report.
 
-\textbf{Export.} A passing driver is bundled into
-\texttt{auto\_adapter\_\textless robot\textgreater\_artifacts/} together
-with the MJCF, the study and validate reports, and a generated README.
-Self-contained artifacts run on \texttt{numpy} and \texttt{mujoco} alone.
-
 The following subsections describe robot study and capability design, then
 explain how the tests are constructed. They subsequently detail driver
 generation, validation and repair, and downstream task execution.
@@ -199,93 +199,132 @@ generation, validation and repair, and downstream task execution.
 
 \subsection{Task-Grounded Capability and Validation Design}
 
-The design agent uses the task library and robot study to determine which
-operations the driver must expose. It groups task requirements that share a
-physical effect or observation. For example, approaching an object and
-reaching a placement location both require end-effector positioning. These
-destinations become a target parameter, while the task controller selects and
-orders targets. The design records which tasks motivate each capability.
+Task-Grounded Capability Design uses the robot study and documented task
+requirements to define between three and ten reusable capabilities. Each
+capability represents one composable physical effect and accepts a bounded,
+task-neutral request. The design also records which tasks motivate each
+capability and why. This relationship supplies coverage rationale rather than
+a call sequence, waypoint plan, or complete task policy. The resulting
+contracts are retained in \texttt{capability\_design.json}.
 
-The capability contract specifies the request, promised behaviour and
-operating range. For Cartesian positioning, it identifies the coordinate
-frame, units and end-effector reference. A reach-and-hold request requires
-\[
-e_k=\left\|\mathbf p_{\mathrm{ee}}(t_k)-\mathbf
-p^\star\right\|_2\leq\varepsilon
-\]
-at consecutive simulation steps spanning at least \(\tau\) and ending by
-\(T_{\max}\). Here, \(\mathbf p^\star\) is the requested target and \(\mathbf
-p_{\mathrm{ee}}(t_k)\) is the measured position of the declared reference. The
-time \(t_k\) is measured from invocation at simulation step \(k\), and
-\(\varepsilon\) is the position tolerance. The minimum holding duration
-\(\tau\) rejects a brief crossing of the target region. The deadline
-\(T_{\max}\) uses the same time origin as \(t_k\).
+For example, reaching above an object, positioning a gripper for grasping, and
+moving an object towards a destination all depend on controlled Cartesian
+positioning. These requirements may motivate an end-effector capability that
+accepts a target position. Its criterion can require the simulated end
+effector to enter and remain within a stated tolerance of that target. The
+capability therefore captures a reusable physical effect without embedding the
+identity or action sequence of a particular task.
 
-These numerical parameters are set before driver synthesis, retaining explicit
-task requirements for accuracy and duration. Where values are absent, the LLM
-proposes them and records their justification against the task and documented
-operating conditions. The proposals require examination during validation
-design because geometry and joint limits alone do not determine acceptable
-task accuracy.
+Before driver synthesis, the Independent Validation Compiler translates each
+capability criterion into executable simulation cases. It receives the
+capability design and the withheld information needed to initialise and
+observe each simulation, but it cannot inspect the candidate driver or its
+later revision history. For every capability, it constructs one nominal case
+representing ordinary use and one calibrated-boundary case near the declared
+operating limit. For the end-effector example, these could place one target
+well within the workspace and another near its declared boundary while
+retaining the same behavioural criterion.
 
-A separate validation compiler translates each contract into executable cases.
-Each case combines an initial simulation state, a concrete request and
-bindings between observations and MuJoCo entities. For reaching, the compiler
-samples the body or site representing the declared end-effector reference and
-applies the error and timing conditions. Each capability receives a nominal
-case and a feasible case near its declared operating boundary. An
-independently prepared reference implementation must pass both cases before
-the suite is fixed. This establishes feasibility for those cases, without
-establishing that the suite rejects every incorrect implementation.
+Before a formal suite is fixed, an independently prepared reference
+implementation executes every compiled case. This positive control establishes
+that the reference implementation can satisfy the cases under the fixed
+simulation conditions. It does not provide the later generation agent with the
+reference implementation or its outputs. The resulting
+\texttt{capability\_validation\_suite.json} is then fixed and withheld from
+driver synthesis and Repair.
 
-\subsection{Driver Synthesis and Validation}
+\subsection{Driver Synthesis and Physics-Grounded Feedback}
 
-The coding agent implements the capability contracts in \texttt{driver.py}.
-From-scratch synthesis generates control code, while skeleton-assisted
-synthesis configures a supplied controller and exposes the required methods.
-Robot bindings map joint names to position and velocity addresses, and
-actuator names to control indices. For the supplied serial-arm skeleton, the
-velocity addresses also select the corresponding columns of the positional
-Jacobian. Separate mappings accommodate differences in joint ordering,
-actuator ordering and the dimensions of the position and velocity arrays.
+Driver synthesis begins from an interface-only \texttt{driver.py} that defines
+the required construction function and capability signatures. It contains no
+robot-specific actuator mapping, controller implementation, task dispatch, or
+validation logic. Using the same ReAct tools, the agent develops the
+robot-specific implementation and runs bounded Python and simulation checks.
+The generated driver remains responsible for translating capability requests
+into actuator commands for the selected robot.
 
-For serial arms, the supplied controller uses DLS inverse kinematics
-\citep{wampler1986inverse}. The solver computes a joint target through
-kinematic evaluations and restores the original configuration before
-execution. The driver then interpolates position commands from the current
-control targets through \texttt{data.ctrl}, advancing MuJoCo at each step.
-During development, the agent compares the executed end-effector position with
-the requested target and inspects execution errors. This feedback guides
-revisions to robot bindings, control settings or execution duration.
+The framework supports two driver-generation modes. In the
+\textbf{from-scratch mode}, the ReAct agent constructs the controller and
+capability implementation, including the robot-specific actuator mapping and
+required state handling, from the permitted robot artefacts and development
+simulations. In the \textbf{skeleton-assisted mode}, the agent may additionally
+inspect task-neutral controller structures suited to the robot family, such as
+a generic Cartesian controller for a serial arm. These skeletons provide
+reusable control structure but contain no robot-specific joint or actuator
+mapping, task identity, private validation criteria, reset state, or verdict
+logic. Both modes implement the same capability contract and are assessed
+through the same independently compiled validation process. The experimental
+design specifies which mode is used in each study.
 
-For each validation case, the harness creates a fresh MuJoCo model and
-simulation state. It binds the driver to these objects before establishing the
-prescribed initial state. The checker reads observations directly from the
-simulation and applies the compiled acceptance conditions. For motion
-capabilities, acceptance requires actuator commands and physics steps to
-produce the evaluated motion; numerical pose assignments cannot substitute for
-that trajectory.
+Generation follows a write--run--observe--revise loop. The agent may execute
+its draft in bounded development simulations and inspect the resulting robot
+state. Import errors, unexpected actuator responses, contacts, and measured
+tracking errors can therefore inform the next revision. These observations
+support implementation development, but they cannot determine acceptance
+because the development environment does not contain the withheld validation
+cases.
 
-Failures return diagnostics for bounded repair, while executable checkers and
-the reference implementation remain withheld from the coding agent. The
-harness evaluates each revised driver against the original cases and criteria.
-Capabilities passing both cases become available to ReCAP through
-contract-derived tool schemas specifying operation names and argument types.
-Wrappers convert structured arguments into driver calls, including assembling
-Cartesian coordinates into a target vector. A separate task-level criterion
-evaluates the outcome produced by the selected calls.
+During execution, a motion-producing capability reads the current
+\texttt{mujoco.MjData}, computes an actuator command from the observed state
+and public request, and writes the command through \texttt{data.ctrl}.
+Subsequent MuJoCo steps produce the evaluated trajectory
+\citep{todorov2012mujoco}. This state-dependent interaction allows the
+controller to respond to tracking error as the simulation evolves rather than
+relying solely on a fixed command sequence.
+
+\subsection{Independent Assessment, Repair, and Task Demonstration}
+
+Each capability case executes the generated driver in an isolated process. The
+evaluation creates a fresh \texttt{mujoco.MjModel} and
+\texttt{mujoco.MjData} from the fixed model and applies the prescribed initial
+state. An evaluator outside the generated code records the actuator controls
+and resulting joint trajectory directly from MuJoCo, including
+\texttt{qpos}, \texttt{qvel}, and \texttt{ctrl}. Where required by a
+criterion, it also records relevant body or site poses and contacts.
+
+The evaluator applies the criteria compiled before driver synthesis. Driver
+return values, printed messages, and self-reported success do not constitute
+behavioural evidence. The evaluator also checks that observed motion results
+from actuator commands and subsequent MuJoCo simulation steps. A case is
+rejected if the candidate directly overwrites evaluated state variables instead
+of producing motion through the actuator interface and simulated physics.
+
+When a case fails, the generation agent receives the previous driver and a
+report summarising the request, observed outcome and relevant diagnostics.
+It does not receive the executable checker or other withheld case
+information. The agent may revise only the driver through the same public
+development interface, after which the revised implementation is assessed
+against the same fixed cases. The experimental design specifies the number of
+permitted revisions.
+
+Capability assessment and downstream task completion remain separate. A
+capability becomes available for task demonstration only when both its nominal
+and calibrated-boundary cases pass. Capabilities that fail either case remain
+unavailable, and passing a subset is not reported as validation of the complete
+driver. A separate task-level controller may then compose only the available
+capabilities when attempting the documented tasks.
+
+Task completion is judged independently from the recorded MuJoCo trajectory
+and continuous execution video rather than from the controller's declaration
+that it has finished. This task-level verdict does not alter the preceding
+capability results and cannot trigger Repair within the same run. An optional
+post-run analysis stage, termed Evolution, may propose a human-reviewed
+Experience record for use in a later independent run. It cannot modify the
+driver or verdicts of the originating run, and the experimental design states
+whether this stage is enabled.
+
+The resulting evidence supports claims about capability execution and task
+completion only under the specified MuJoCo model, requests, initial conditions,
+and measurement criteria. It does not establish hardware performance,
+deployment safety, or sim-to-real transfer.
 
 
 \section{Experiments and Results}
 
 \subsection{Experimental Configuration}
 
-Experiment 1 covers eleven robot configurations. These are SO-101, Unitree
-Go2, Franka Panda, Kinova Gen3, xArm7, UR5e, Piper, KUKA iiwa 14, LEAP Hand,
-Stretch 2 and ALOHA 2. Each configuration is evaluated in three fresh runs,
-giving 33 experimental units.
 
-Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms grouped by embodiment type. Experiment 1 uses the eleven configurations listed above.
+Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms grouped by embodiment type.
 
 \begin{figure}[htbp]
   \centering
@@ -324,84 +363,13 @@ Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms groupe
   \end{tabularx}
 \end{table}
 
-All runs use Claude Sonnet 4.6 under the same skeleton-assisted generation
-condition and execution limits. Within each robot, the task, capability design,
-simulation assets and private validation suite remain unchanged. Every run uses
-a fresh model conversation, workspace and simulator reset. No information is
-transferred between runs.
 
-The validation suites define 58 capabilities and 116 test cases. A test case
-invokes one capability with specified inputs from a fixed initial state. An
-independent evaluator measures the resulting state and motion in the physics
-simulator. It then applies a numerical pass criterion. Each capability has two
-cases: one representative request and one request near its permitted operating
-limit.
-
-A driver qualifies only if all its test cases pass. Capabilities that pass both
-cases are made available for task execution. If none passes, the task is
-recorded as not run. Task success is reported separately from complete-driver
-qualification.
-
-All 33 runs remain in the denominator. Early termination is reported with its
-stage and reason. Results are summarised for each robot and for the experiment
-as a whole. The analysis is descriptive because the tasks and simulation
-environments differ between robots.
 
 
 \subsection{Results}
 
 \section{Interpretation and Limitations}
 
-Auto-Adapter's principal methodological choice is to separate capability
-design, driver implementation, and behavioural judgement. Task-Grounded
-Capability Design connects a task-neutral interface to source-backed task
-requirements, while the Independent Validation Compiler defines executable
-cases without access to candidate code. The trusted \emph{Harness} then applies
-fixed criteria to measurements recorded outside the candidate. This arrangement
-prevents driver return values and self-reported completion from determining
-acceptance. It does not remove judgement from translating task standards into
-capability criteria or make the resulting suite exhaustive.
-
-The evidence produced at each stage answers a different question. Source and
-import checks establish only that a candidate can be loaded. A Capability
-Validation pass supports the declared physical effect for the exact nominal and
-calibrated-boundary cases; those two cases do not cover every request,
-interaction, or long-horizon composition. A Task Demo evaluates downstream
-composition using only capabilities that passed both cases. Its outcome neither
-changes the earlier capability verdicts nor establishes that the complete
-driver passed. Similarly, a terminal pass after Repair measures performance
-after bounded feedback and must remain distinct from initial-attempt
-performance.
-
-The framework definition alone does not establish that Auto-Adapter reliably
-produces effective drivers, outperforms alternative methods, or generalises
-across robot configurations. Those questions require the controlled
-evaluations in later chapters. Furthermore, Direct-MuJoCo evidence is
-conditional on the selected assets, requests, initial states, observation
-operators, and thresholds. It does not measure real-SDK fidelity, sensing
-uncertainty, communication latency, calibration error, hardware safety, or
-sim-to-real transfer. Cross-configuration outcomes must remain descriptive
-because morphology, actuation, task catalogue, scene, and observation
-facilities vary together.
 
 \section{Summary}
 
-This chapter defined Auto-Adapter as a framework for constructing a reusable,
-robot-specific Python driver from public robot information and source-backed
-task requirements. It first studies the robot and fixed simulation model,
-derives task-neutral capabilities, and compiles implementation-blind
-behavioural cases. A bounded ReAct coding agent then implements the driver
-using public MuJoCo feedback. The trusted \emph{Harness} evaluates the
-resulting actuator-mediated trajectories against fixed criteria rather than
-relying on candidate output.
-
-The workflow keeps source checking, capability validation, Repair, downstream
-Task Demo, and any later Experience use distinct. Only capabilities satisfying
-both their nominal and calibrated-boundary cases are exposed to Task Demo, and
-its terminal outcome does not rewrite driver verdicts. These boundaries provide
-an auditable basis for empirical comparison; they are not themselves evidence
-of universal integration or hardware readiness.
-Chapter~\ref{chapter:autoadapter-bench} evaluates driver synthesis and
-downstream use under controlled inputs, while
-Chapter~\ref{chapter:cross-robot-evaluation} examines the complete construction
-route across the declared Direct-MuJoCo configurations.
