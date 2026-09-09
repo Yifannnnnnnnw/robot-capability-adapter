@@ -1,0 +1,29 @@
+{
+  "robot_id": "franka",
+  "diagnostic_only": true,
+  "model_generated": true,
+  "provider": "holistic",
+  "model": "eu.anthropic.claude-sonnet-4-6",
+  "generation_ok": true,
+  "framework_ok": false,
+  "conditions_passed": 3,
+  "conditions_total": 10,
+  "failed_cases": [
+    "franka_panda-a1-nominal",
+    "franka_panda-a1-calibrated_boundary",
+    "franka_panda-a2-nominal",
+    "franka_panda-a4-nominal",
+    "franka_panda-a4-calibrated_boundary",
+    "franka_panda-a5-nominal",
+    "franka_panda-a5-calibrated_boundary"
+  ],
+  "task_ok": false,
+  "validated_driver_task_ok": false,
+  "task_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_traces/task_live_diagnostic/A1_diagnostic_t0.jsonl",
+  "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/franka_panda-a1-nominal/trace.json",
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/franka_panda-a1-nominal/video.mp4",
+  "limitations": [
+    "Initial recorded verdict before sampling correction eac5d394. These results remain preserved; corrected-sampling reruns are stored separately under sampling_recheck/franka.",
+    "A buildable generated driver is not a fully validated driver. TaskPlanner text is not the physical verdict."
+  ]
+}
