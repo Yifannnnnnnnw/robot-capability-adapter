@@ -1,0 +1,76 @@
+{
+  "robot_id": "so101",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": true,
+      "duration_sec": 22.160090684890747,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/traces/01_study.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/study.json"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 37808,
+        "out": 1804,
+        "cache_read": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "02_generate",
+      "ok": true,
+      "duration_sec": 224.4300389289856,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/traces/02_generate.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/driver.py"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 1065808,
+        "out": 21176,
+        "cache_read": 0
+      },
+      "metadata": {
+        "outer_gen_val_iters": 1
+      }
+    },
+    {
+      "name": "03_validate",
+      "ok": false,
+      "duration_sec": 9.310325860977173,
+      "trace_path": null,
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/validate_report.json"
+      ],
+      "error": "required framework validation failed",
+      "token_usage": {
+        "in": 0,
+        "out": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}

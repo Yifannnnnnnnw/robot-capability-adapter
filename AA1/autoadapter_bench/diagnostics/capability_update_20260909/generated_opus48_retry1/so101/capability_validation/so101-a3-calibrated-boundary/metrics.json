@@ -1,0 +1,35 @@
+{
+  "contract_id": "A3",
+  "measurements": {
+    "final_opening_error": 0.012747824959730591,
+    "final_opening_fraction": 0.8127478249597306,
+    "longest_opening_hold_s": 0.2480000000000001,
+    "maximum_opening_change": 1.064575775850636,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.7000000000000005
+  },
+  "parameters": {
+    "closed_position": -0.175,
+    "contract_id": "A3",
+    "gripper_actuator_name": "act_jaw_visual",
+    "guard_site_name": "ee_site",
+    "guarded_joint_names": [
+      "shoulder_pan",
+      "shoulder_lift",
+      "elbow_flex",
+      "wrist_flex",
+      "wrist_roll"
+    ],
+    "guarded_joint_tolerances": [
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03
+    ],
+    "joint_name": "jaw_visual_joint",
+    "open_position": 1.75,
+    "side_effect_guard_profile": "fixed_arm"
+  },
+  "score": 0.0
+}

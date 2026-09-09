@@ -1,0 +1,85 @@
+{
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "generation_ok": true,
+  "driver_build_ok": true,
+  "framework_all_ok": false,
+  "capability_conditions_passed": 0,
+  "capability_conditions_evaluated": 10,
+  "capability_conditions_required": 10,
+  "failed_checks": [
+    {
+      "test": "so101-a1-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_error_m\": 0.0010459042118129986, \"final_error_m\": 0.005125732679894643, \"longest_target_hold_s\": 0.49800000000000033, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.6100000000000004, \"site_max_displacement_m\": 0.04587869470107523}"
+    },
+    {
+      "test": "so101-a1-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_error_m\": 0.0017997490911342334, \"final_error_m\": 0.004173058169321439, \"longest_target_hold_s\": 0.49800000000000033, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.7720000000000006, \"site_max_displacement_m\": 0.06350966334300895}"
+    },
+    {
+      "test": "so101-a2-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_error_m\": 0.005350823489863676, \"max_cross_track_error_m\": 0.031387680214317405, \"ordered_waypoints_reached\": true, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.7760000000000006, \"site_max_displacement_m\": 0.06504787944053649}"
+    },
+    {
+      "test": "so101-a2-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_error_m\": 0.004649507801013471, \"max_cross_track_error_m\": 0.023022928089857914, \"ordered_waypoints_reached\": true, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.7580000000000006, \"site_max_displacement_m\": 0.04759079957636103}"
+    },
+    {
+      "test": "so101-a3-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_opening_error\": 0.013233276314702114, \"final_opening_fraction\": 0.1867667236852979, \"longest_opening_hold_s\": 0.2480000000000001, \"maximum_opening_change\": 1.0648784266349542, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.7000000000000005}"
+    },
+    {
+      "test": "so101-a3-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_opening_error\": 0.012747824959730591, \"final_opening_fraction\": 0.8127478249597306, \"longest_opening_hold_s\": 0.2480000000000001, \"maximum_opening_change\": 1.064575775850636, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.7000000000000005}"
+    },
+    {
+      "test": "so101-a4-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.0004190052869222914, \"first_target_contact_s\": 1.0700000000000007, \"longest_target_contact_s\": 0.1080000000000001, \"maximum_speed_after_contact_m_s\": 0.04525938380551435, \"minimum_contact_distance_m\": -0.00040949769404568376, \"side_effects_ok\": true, \"sim_elapsed_s\": 1.1780000000000008, \"site_max_displacement_m\": 0.05100106101736124}"
+    },
+    {
+      "test": "so101-a4-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.0006224806804508087, \"first_target_contact_s\": 0.7840000000000006, \"longest_target_contact_s\": 0.1200000000000001, \"maximum_speed_after_contact_m_s\": 0.12491958861189821, \"minimum_contact_distance_m\": -0.0008723600860591138, \"side_effects_ok\": true, \"sim_elapsed_s\": 1.024000000000001, \"site_max_displacement_m\": 0.05507619321382696}"
+    },
+    {
+      "test": "so101-a5-nominal",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_outbound_error_m\": 0.004775456567589451, \"final_return_error_m\": 0.00831468375085321, \"maximum_displacement_fraction\": 1.6345331632615558, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.9140000000000007, \"site_max_displacement_m\": 0.024517997448923336}"
+    },
+    {
+      "test": "so101-a5-calibrated-boundary",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"best_outbound_error_m\": 0.0007058158714731668, \"final_return_error_m\": 0.003767146216247297, \"maximum_displacement_fraction\": 1.2241308597181166, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.8700000000000007, \"site_max_displacement_m\": 0.018361962895771747}"
+    }
+  ],
+  "task_physics_ok": false,
+  "task_result": false,
+  "validated_driver_task_ok": false,
+  "task_metrics": {
+    "contract_id": "A1",
+    "score": 0.0,
+    "parameters": {
+      "contract_id": "A1",
+      "site_name": "ee_site",
+      "side_effect_guard_profile": "fixed_arm",
+      "guarded_joint_names": [
+        "jaw_visual_joint"
+      ],
+      "guarded_joint_tolerances": [
+        0.002
+      ]
+    },
+    "measurements": {
+      "sim_elapsed_s": 0.6100000000000004,
+      "side_effects_ok": true,
+      "site_max_displacement_m": 0.04587869470107523,
+      "final_error_m": 0.005125732679894643,
+      "best_error_m": 0.0010459042118129986,
+      "longest_target_hold_s": 0.49800000000000033
+    }
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/video.mp4",
+  "physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/trace.json",
+  "post_framework_repair_limit": 0,
+  "generation_round_limit": 22,
+  "actual_generation_cost_usd": null,
+  "limitation": "One bounded higher-model diagnostic. Original Sonnet attempts retained. Local execution tool routing was corrected before this attempt, so these runs are not a controlled model comparison."
+}

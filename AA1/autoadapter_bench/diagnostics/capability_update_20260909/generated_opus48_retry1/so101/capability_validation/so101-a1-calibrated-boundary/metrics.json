@@ -1,0 +1,23 @@
+{
+  "contract_id": "A1",
+  "measurements": {
+    "best_error_m": 0.0017997490911342334,
+    "final_error_m": 0.004173058169321439,
+    "longest_target_hold_s": 0.49800000000000033,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.7720000000000006,
+    "site_max_displacement_m": 0.06350966334300895
+  },
+  "parameters": {
+    "contract_id": "A1",
+    "guarded_joint_names": [
+      "jaw_visual_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.002
+    ],
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "ee_site"
+  },
+  "score": 0.0
+}
