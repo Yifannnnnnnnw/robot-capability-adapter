@@ -1,0 +1,251 @@
+{
+  "robot_id": "universal_robots_ur5e_robotiq_2f85",
+  "estimated_class": "arm",
+  "dof": 14,
+  "joints": [
+    {
+      "name": "shoulder_pan_joint",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -6.28319,
+        6.28319
+      ]
+    },
+    {
+      "name": "shoulder_lift_joint",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -6.28319,
+        6.28319
+      ]
+    },
+    {
+      "name": "elbow_joint",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -3.1415,
+        3.1415
+      ]
+    },
+    {
+      "name": "wrist_1_joint",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -6.28319,
+        6.28319
+      ]
+    },
+    {
+      "name": "wrist_2_joint",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -6.28319,
+        6.28319
+      ]
+    },
+    {
+      "name": "wrist_3_joint",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -6.28319,
+        6.28319
+      ]
+    },
+    {
+      "name": "right_driver_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        0.0,
+        0.8
+      ]
+    },
+    {
+      "name": "right_coupler_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -1.57,
+        0.0
+      ]
+    },
+    {
+      "name": "right_spring_link_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.29670597283,
+        0.8
+      ]
+    },
+    {
+      "name": "right_follower_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.872664,
+        0.872664
+      ]
+    },
+    {
+      "name": "left_driver_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        0.0,
+        0.8
+      ]
+    },
+    {
+      "name": "left_coupler_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -1.57,
+        0.0
+      ]
+    },
+    {
+      "name": "left_spring_link_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.29670597283,
+        0.8
+      ]
+    },
+    {
+      "name": "left_follower_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.872664,
+        0.872664
+      ]
+    }
+  ],
+  "actuators": [
+    {
+      "name": "shoulder_pan",
+      "joint": "shoulder_pan_joint",
+      "ctrlrange": [
+        -6.2831,
+        6.2831
+      ]
+    },
+    {
+      "name": "shoulder_lift",
+      "joint": "shoulder_lift_joint",
+      "ctrlrange": [
+        -6.2831,
+        6.2831
+      ]
+    },
+    {
+      "name": "elbow",
+      "joint": "elbow_joint",
+      "ctrlrange": [
+        -3.1415,
+        3.1415
+      ]
+    },
+    {
+      "name": "wrist_1",
+      "joint": "wrist_1_joint",
+      "ctrlrange": [
+        -6.2831,
+        6.2831
+      ]
+    },
+    {
+      "name": "wrist_2",
+      "joint": "wrist_2_joint",
+      "ctrlrange": [
+        -6.2831,
+        6.2831
+      ]
+    },
+    {
+      "name": "wrist_3",
+      "joint": "wrist_3_joint",
+      "ctrlrange": [
+        -6.2831,
+        6.2831
+      ]
+    },
+    {
+      "name": "fingers_actuator",
+      "joint": "tendon:split",
+      "ctrlrange": [
+        0.0,
+        255.0
+      ]
+    }
+  ],
+  "ee_site": "pinch_site",
+  "ee_body": "robotiq_base",
+  "graspable_bodies": [],
+  "notes": "UR5e 6-DOF serial arm + Robotiq 2F85 parallel gripper (8-joint coupled linkage, single tendon actuator); ee at pinch_site, no free bodies in model."
+}

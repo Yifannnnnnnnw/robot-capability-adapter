@@ -1,0 +1,122 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A2",
+  "case_id": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+  "detail": "A2 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 456,
+    "body_max_displacement_from_reset": {
+      "base": 0.0,
+      "base_mount": 0.10886850872724206,
+      "fixed_contact_target": 0.0,
+      "forearm_link": 0.022308746023903616,
+      "left_coupler": 0.11203076401492162,
+      "left_driver": 0.11175103514951937,
+      "left_follower": 0.1158567816303654,
+      "left_pad": 0.11686830924052785,
+      "left_silicone_pad": 0.11686830924052785,
+      "left_spring_link": 0.11185028402832944,
+      "right_coupler": 0.10995292834309998,
+      "right_driver": 0.11072297779873201,
+      "right_follower": 0.1134831988302594,
+      "right_pad": 0.11513901816679029,
+      "right_silicone_pad": 0.11513901816679029,
+      "right_spring_link": 0.11140411163873991,
+      "robotiq_base": 0.1089400901160914,
+      "robotiq_mount": 0.10876676567361243,
+      "shoulder_link": 0.0,
+      "upper_arm_link": 0.0011466842395843882,
+      "world": 0.0,
+      "wrist_1_link": 0.08323794542878514,
+      "wrist_2_link": 0.08309101524969079,
+      "wrist_3_link": 0.11155635230463266
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "elbow_joint": 0.15721877936163842,
+      "left_coupler_joint": 1.4992479192122717e-05,
+      "left_driver_joint": 8.759785904030636e-05,
+      "left_follower_joint": 0.0001604769487642487,
+      "left_spring_link_joint": 0.00013487855688886028,
+      "right_coupler_joint": 2.02147453280099e-05,
+      "right_driver_joint": 8.972021098186019e-05,
+      "right_follower_joint": 0.00016074090790143712,
+      "right_spring_link_joint": 0.0001272526434710074,
+      "shoulder_lift_joint": 0.05263360780798698,
+      "shoulder_pan_joint": 0.008309329988815728,
+      "wrist_1_joint": 0.0858734592639594,
+      "wrist_2_joint": 0.013690271276558752,
+      "wrist_3_joint": 1.0228926294522318e-06
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "attachment_site": 0.10876676567361243,
+      "pinch": 0.11974995480421312,
+      "pinch_site": 0.11974995480421312
+    },
+    "step_count": 456
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+  "method_name": "trace_cartesian_path",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A2",
+    "measurements": {
+      "final_error_m": 0.0076175555061366,
+      "max_cross_track_error_m": 0.0076175555061366,
+      "ordered_waypoints_reached": true,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.9120000000000007,
+      "site_max_displacement_m": 0.11974995480421312
+    },
+    "parameters": {
+      "contract_id": "A2",
+      "guarded_joint_names": [
+        "right_driver_joint"
+      ],
+      "guarded_joint_tolerances": [
+        0.04000000000000001
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "pinch_site"
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 11,
+  "ok": true,
+  "physics_steps": 456,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 0.9120000000000007,
+  "test": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/capability_validation/universal_robots_ur5e_robotiq_2f85-a2-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 11,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/capability_validation/universal_robots_ur5e_robotiq_2f85-a2-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/capability_validation/universal_robots_ur5e_robotiq_2f85-a2-nominal/video.mp4"
+}

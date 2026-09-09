@@ -1,0 +1,16 @@
+Robot: universal_robots_ur5e_robotiq_2f85  class: arm  workspace: /Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85
+
+=== suite: capability — 1 tasks ===
+  task: A1_diagnostic  (1 trials)
+
+Saved: /Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/task_live_diagnostic.json
+  total trials:         1
+  llm_pass_rate:        100%
+  physics_pass_rate:    100%
+  agreement_rate:       100%
+  cost: $0.25
+  wall: 10.2s
+/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/eval.py:1823: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "started_at": datetime.utcnow().isoformat(),
+/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/eval.py:1902: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  result["meta"]["completed_at"] = datetime.utcnow().isoformat()
