@@ -1,0 +1,39 @@
+{
+  "robot": "leap_hand",
+  "provider": "holistic",
+  "model": "eu.anthropic.claude-sonnet-4-6",
+  "driver_origin": "real_model_generation",
+  "generation_ok": true,
+  "framework_ok": true,
+  "task_ok": true,
+  "task_world": "single_live_world",
+  "physical_time_s": 0.7619999999999161,
+  "sample_count": 382,
+  "decoded_video_frame_shape": [
+    368,
+    480,
+    3
+  ],
+  "generation_trace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/traces/02_generate.jsonl",
+  "task_trace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/task_traces/task_live_diagnostic/four_fingertip_reach_t0.jsonl",
+  "physics_trace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/task_traces/task_live_diagnostic/four_fingertip_reach_t0_physics.json",
+  "video": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/leap_hand/recordings/task_live_diagnostic/four_fingertip_reach_t0.mp4",
+  "metrics": {
+    "per_finger_error_m": {
+      "index": 0.0029895573954040805,
+      "middle": 0.0026015235476231618,
+      "ring": 0.0026652244403683424,
+      "thumb": 0.002040884349000559
+    },
+    "aggregate_error_m": 0.005193650780788521,
+    "per_finger_displacement_m": {
+      "index": 0.0875509349055087,
+      "middle": 0.07841026580170968,
+      "ring": 0.06837676172804465,
+      "thumb": 0.0746748736610244
+    },
+    "all_fingers_moved": true,
+    "trace_finite": true
+  },
+  "limitation": "One four-fingertip reach diagnostic; LEAP adaptation, not official Shadow HandReach. Earlier task_diagnostic used replay; task_live_diagnostic uses one live world."
+}

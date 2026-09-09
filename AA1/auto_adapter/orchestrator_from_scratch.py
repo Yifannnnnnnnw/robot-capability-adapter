@@ -154,7 +154,8 @@ class FromScratchConfig:
     robot_id: str
     mjcf_path: Path
     workspace_root: Path
-    bedrock_model: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    bedrock_model: str = "us.anthropic.claude-sonnet-4-6"
+    model_provider: str = "holistic"
     aws_region: str = "us-east-1"
     ci_id: str = "aws.codeinterpreter.v1"
     ci_session_timeout_sec: int = 1800   # 30 min — generation is long
@@ -490,6 +491,7 @@ class FromScratchOrchestrator:
         loop = ReactLoop(
             tools=tools, system=system,
             model=self.cfg.bedrock_model, region=self.cfg.aws_region,
+            provider=self.cfg.model_provider,
             max_iters=max_iters,
             max_tokens_per_turn=self.cfg.max_tokens_per_turn,
             trace_path=trace_path,

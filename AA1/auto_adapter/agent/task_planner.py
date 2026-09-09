@@ -888,7 +888,8 @@ class TaskPlanner:
         *,
         workspace: Path,
         expected_robot_class: Optional[str] = None,
-        bedrock_model: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        bedrock_model: str = "us.anthropic.claude-sonnet-4-6",
+        model_provider: str = "holistic",
         region: str = "us-east-1",
         run_tag: Optional[str] = None,
         max_iters: int = 25,
@@ -914,6 +915,7 @@ class TaskPlanner:
             else _trusted_robot_class_for_mjcf(self.workspace / "mjcf.xml")
         )
         self.bedrock_model = bedrock_model
+        self.model_provider = model_provider
         self.region = region
         self.max_iters = int(max_iters)
         self.max_tokens_per_turn = int(max_tokens_per_turn)
@@ -1171,6 +1173,7 @@ class TaskPlanner:
             tools=tools,
             system=system,
             model=self.bedrock_model,
+            provider=self.model_provider,
             region=self.region,
             max_iters=self.max_iters,
             max_tokens_per_turn=self.max_tokens_per_turn,

@@ -73,6 +73,7 @@ class SelfAssembleConfig:
     validate_mode: str = "framework"
     aws_region: str = "us-east-1"
     bedrock_model: str = "us.anthropic.claude-sonnet-4-6"
+    model_provider: str = "holistic"
     dgx_host: str = "YOUR_DGX_HOST"
     dgx_remote_workspace: str = "/home/USER/auto_adapter_workspace"
     ci_id: str = "aws.codeinterpreter.v1"
@@ -564,6 +565,7 @@ class SelfAssemble:
             tools=tools,
             system=system,
             model=self.cfg.bedrock_model,
+            provider=self.cfg.model_provider,
             region=self.cfg.aws_region,
             max_iters=max_iters,
             max_tokens_per_turn=self.cfg.max_tokens_per_turn,
