@@ -125,6 +125,21 @@ def test_case_records_each_batched_physics_step_and_writes_trace_video(tmp_path:
     assert trace["model_generated"] is None
 
 
+def test_trace_positions_match_the_recorded_post_step_joint_state(tmp_path: Path) -> None:
+    """Reproduce the one-step pose lag observed in the Franka A1 hold trace."""
+    driver = _Driver()
+    driver.model = mujoco.MjModel.from_xml_string(XML.replace(
+        'name="ee_site" pos="0 0 0"', 'name="ee_site" pos="0.2 0 0"'))
+    driver.data = mujoco.MjData(driver.model)
+    result = run_capability_case(driver, _case("batched_hold"), tmp_path)
+    samples = json.loads(Path(result["trace_path"]).read_text())["evidence"]["samples"]
+    assert abs(samples[-1]["joint_positions"]["joint"]) > 0.001
+    for sample in samples:
+        angle = sample["joint_positions"]["joint"]
+        expected = [0.2 * np.cos(angle), 0.2 * np.sin(angle), 0.0]
+        assert np.allclose(sample["site_positions"]["ee_site"], expected, atol=1e-12)
+
+
 def test_case_rejects_live_state_and_model_parameter_writes(tmp_path: Path) -> None:
     state_result = run_capability_case(_Driver(), _case("writes_state", case_id="state"), tmp_path)
     model_result = run_capability_case(_Driver(), _case("writes_model", case_id="model"), tmp_path)

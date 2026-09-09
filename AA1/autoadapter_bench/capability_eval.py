@@ -781,6 +781,9 @@ class _TraceRecorder:
         forces = np.asarray(self.data.actuator_force, dtype=np.float64)
         if np.all(np.isfinite(forces)) and np.any(np.abs(forces) > 1.0e-12):
             self.actuator_force_nonzero_step_count += 1
+        # mj_step advances qpos/time after computing derived poses and contacts.
+        # Refresh those fields so sampling and video describe the recorded time.
+        self.mujoco.mj_forward(self.model, self.data)
         self._update_extrema()
         self._contacts_after_step()
         self.samples.append(self.snapshot())
