@@ -169,6 +169,9 @@ robots:
 
   - id: unitree_a1
     mjcf: assets/mjcf/unitree_a1/scene.xml
+    capability_mjcf: assets/mjcf/capabilities/unitree_a1/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/unitree_a1
+    capability_skeleton: QuadrupedPDGaitSkeleton
     state_refs: {base_body: trunk}
     class: quadruped
     dof: 12
@@ -181,6 +184,9 @@ robots:
 
   - id: anymal_c
     mjcf: assets/mjcf/anybotics_anymal_c/scene.xml
+    capability_mjcf: assets/mjcf/capabilities/anymal_c/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/anymal_c
+    capability_skeleton: QuadrupedPDGaitSkeleton
     state_refs: {base_body: base}
     class: quadruped
     dof: 12
@@ -194,6 +200,9 @@ robots:
 
   - id: kinova_gen3_robotiq_2f85
     mjcf: assets/mjcf/kinova_gen3_robotiq_2f85/scene.xml
+    capability_mjcf: assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/kinova_gen3_robotiq_2f85
+    capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: pinch_site}
     class: arm
     dof: 7
@@ -225,6 +234,9 @@ robots:
 
   - id: universal_robots_ur5e_robotiq_2f85
     mjcf: assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml
+    capability_mjcf: assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85
+    capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: pinch_site}
     class: arm
     dof: 6
