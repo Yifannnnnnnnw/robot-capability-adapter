@@ -67,6 +67,10 @@ class ArmSpec:
     gripper_actuator_names: Optional[list[str]] = None
     """Actuators for the gripper. If None, gripper ops are no-ops."""
 
+    gripper_joint_names: Optional[list[str]] = None
+    """Physical aperture joints for observation, including tendon-driven jaws.
+    Joint-transmission actuators can be resolved automatically when omitted."""
+
     gripper_close_ctrl: float = 0.0
     """data.ctrl[gripper_actuators] when closing the gripper."""
 

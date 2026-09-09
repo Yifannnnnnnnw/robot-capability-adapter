@@ -125,6 +125,17 @@ class ArmSerialDLSSkeleton(SkeletonBase):
                     raise ValueError(f"gripper_actuator_name {name!r} not in MJCF")
                 self._gripper_actuator_ids.append(int(aid))
 
+        self._gripper_joint_ids = []
+        for name in self.spec.gripper_joint_names or []:
+            jid = mj.mj_name2id(m, mj.mjtObj.mjOBJ_JOINT, name)
+            if jid < 0:
+                raise ValueError(f"gripper joint {name!r} not in MJCF")
+            self._gripper_joint_ids.append(int(jid))
+        if not self._gripper_joint_ids:
+            self._gripper_joint_ids = [int(m.actuator_trnid[aid, 0])
+                                      for aid in self._gripper_actuator_ids
+                                      if m.actuator_trntype[aid] == mj.mjtTrn.mjTRN_JOINT]
+
         # Grasp backend (codex F2): weld / contact / noop, picked from spec
         self.grasp_backend: GraspBackend = make_grasp_backend(self.spec)
         self.grasp_backend.setup(self)
@@ -168,24 +179,27 @@ class ArmSerialDLSSkeleton(SkeletonBase):
     def get_joint_velocities(self) -> np.ndarray:
         return np.array([self.data.qvel[adr] for adr in self._arm_qvel_adr], dtype=np.float64)
 
-    def _ee_pos_now(self) -> np.ndarray:
+    def _ee_pos_now(self, data=None) -> np.ndarray:
         """World-frame EE position from current data. Dispatches site vs body."""
+        data = self.data if data is None else data
         if self._ee_use_site:
-            return np.array(self.data.site_xpos[self._ee_site_id], dtype=np.float64)
-        return np.array(self.data.xpos[self._ee_body_id], dtype=np.float64)
+            return np.array(data.site_xpos[self._ee_site_id], dtype=np.float64)
+        return np.array(data.xpos[self._ee_body_id], dtype=np.float64)
 
-    def _ee_rot_now(self) -> np.ndarray:
+    def _ee_rot_now(self, data=None) -> np.ndarray:
         """World-frame EE rotation matrix from current data."""
+        data = self.data if data is None else data
         if self._ee_use_site:
-            return np.array(self.data.site_xmat[self._ee_site_id], dtype=np.float64).reshape(3, 3)
-        return np.array(self.data.xmat[self._ee_body_id], dtype=np.float64).reshape(3, 3)
+            return np.array(data.site_xmat[self._ee_site_id], dtype=np.float64).reshape(3, 3)
+        return np.array(data.xmat[self._ee_body_id], dtype=np.float64).reshape(3, 3)
 
-    def _ee_jac_pos(self, jacp: np.ndarray) -> None:
+    def _ee_jac_pos(self, jacp: np.ndarray, data=None) -> None:
         """Fill jacp (3×nv) with the EE positional Jacobian. Site vs body."""
+        data = self.data if data is None else data
         if self._ee_use_site:
-            self._mj.mj_jacSite(self.model, self.data, jacp, None, self._ee_site_id)
+            self._mj.mj_jacSite(self.model, data, jacp, None, self._ee_site_id)
         else:
-            self._mj.mj_jacBody(self.model, self.data, jacp, None, self._ee_body_id)
+            self._mj.mj_jacBody(self.model, data, jacp, None, self._ee_body_id)
 
     def get_ee_pose(self) -> tuple[np.ndarray, np.ndarray]:
         """Return (xyz, R) of the EE in the world frame.
@@ -215,7 +229,7 @@ class ArmSerialDLSSkeleton(SkeletonBase):
         """Forward kinematics. If `q` is None, uses current qpos.
 
         Returns dict with: pos (3,) and R (3, 3) of the EE site in world frame.
-        Restores state if a `q` was provided (does NOT permanently change qpos).
+        Uses independent calculation data when a `q` is provided.
         """
         if q is None:
             pos, R = self.get_ee_pose()
@@ -224,16 +238,13 @@ class ArmSerialDLSSkeleton(SkeletonBase):
         if len(q) != self.dof:
             raise ValueError(f"fk q length {len(q)} ≠ dof {self.dof}")
 
-        saved = np.array(self.data.qpos[:])
-        try:
-            for adr, val in zip(self._arm_qpos_adr, q):
-                self.data.qpos[adr] = float(val)
-            self._mj.mj_forward(self.model, self.data)
-            pos = self._ee_pos_now()
-            R = self._ee_rot_now()
-        finally:
-            self.data.qpos[:] = saved
-            self._mj.mj_forward(self.model, self.data)
+        scratch = self._mj.MjData(self.model)
+        self._mj.mj_copyData(scratch, self.model, self.data)
+        for adr, val in zip(self._arm_qpos_adr, q):
+            scratch.qpos[adr] = float(val)
+        self._mj.mj_forward(self.model, scratch)
+        pos = self._ee_pos_now(scratch)
+        R = self._ee_rot_now(scratch)
         return {"pos": pos, "R": R}
 
     # ─────────────────────────────────────────────────────────────────────
@@ -263,7 +274,7 @@ class ArmSerialDLSSkeleton(SkeletonBase):
         spec.ik_raise_on_unreachable=False) to keep legacy "return best-effort"
         behavior.
 
-        Returns the final joint vector. Does *not* permanently modify state.
+        Returns the final joint vector. Only independent calculation data is modified.
         """
         target = np.asarray(target_xyz, dtype=np.float64).reshape(3)
         q = (
@@ -280,43 +291,40 @@ class ArmSerialDLSSkeleton(SkeletonBase):
         if raise_on_unreachable is None:
             raise_on_unreachable = bool(getattr(self.spec, "ik_raise_on_unreachable", True))
 
-        saved = np.array(self.data.qpos[:])
+        scratch = self._mj.MjData(self.model)
+        self._mj.mj_copyData(scratch, self.model, self.data)
         last_err = float("inf")
-        try:
-            for _ in range(int(self.spec.ik_max_iter)):
-                # Push current candidate q into MuJoCo
-                for adr, val in zip(self._arm_qpos_adr, q):
-                    self.data.qpos[adr] = float(val)
-                self._mj.mj_forward(self.model, self.data)
+        for _ in range(int(self.spec.ik_max_iter)):
+            # Push current candidate q into MuJoCo
+            for adr, val in zip(self._arm_qpos_adr, q):
+                scratch.qpos[adr] = float(val)
+            self._mj.mj_forward(self.model, scratch)
 
-                ee_pos = self._ee_pos_now()
-                err = target - ee_pos
-                err_norm = float(np.linalg.norm(err))
-                last_err = err_norm
-                if err_norm < tol:
-                    break
+            ee_pos = self._ee_pos_now(scratch)
+            err = target - ee_pos
+            err_norm = float(np.linalg.norm(err))
+            last_err = err_norm
+            if err_norm < tol:
+                break
 
-                # EE positional Jacobian (3, nv) — site- or body-based
-                jacp = np.zeros((3, self.model.nv), dtype=np.float64)
-                self._ee_jac_pos(jacp)
-                J = jacp[:, self._arm_qvel_adr]  # (3, dof)
+            # EE positional Jacobian (3, nv) — site- or body-based
+            jacp = np.zeros((3, self.model.nv), dtype=np.float64)
+            self._ee_jac_pos(jacp, scratch)
+            J = jacp[:, self._arm_qvel_adr]  # (3, dof)
 
-                # Adaptive damping: lambda^2 grows when ||err|| or sigma_min(J)
-                # gets small. Cheap heuristic: scale damping^2 with 1/err_norm
-                # so far-from-target moves get aggressive correction and
-                # near-singularity moves get smoothed.
-                damp = base_damping * max(1.0, 0.05 / max(err_norm, 1e-6))
-                JJt = J @ J.T + (damp ** 2) * np.eye(3)
-                dq = J.T @ np.linalg.solve(JJt, err)
+            # Adaptive damping: lambda^2 grows when ||err|| or sigma_min(J)
+            # gets small. Cheap heuristic: scale damping^2 with 1/err_norm
+            # so far-from-target moves get aggressive correction and
+            # near-singularity moves get smoothed.
+            damp = base_damping * max(1.0, 0.05 / max(err_norm, 1e-6))
+            JJt = J @ J.T + (damp ** 2) * np.eye(3)
+            dq = J.T @ np.linalg.solve(JJt, err)
 
-                # Step clamp + joint-limit clamp
-                norm_dq = float(np.linalg.norm(dq))
-                if norm_dq > step_clamp:
-                    dq *= step_clamp / norm_dq
-                q = np.clip(q + dq, self._q_lo, self._q_hi)
-        finally:
-            self.data.qpos[:] = saved
-            self._mj.mj_forward(self.model, self.data)
+            # Step clamp + joint-limit clamp
+            norm_dq = float(np.linalg.norm(dq))
+            if norm_dq > step_clamp:
+                dq *= step_clamp / norm_dq
+            q = np.clip(q + dq, self._q_lo, self._q_hi)
 
         if last_err > tol and raise_on_unreachable:
             raise IKUnreachableError(residual=last_err, tolerance=tol, q_final=q)
@@ -332,6 +340,23 @@ class ArmSerialDLSSkeleton(SkeletonBase):
             raise ValueError(f"set_arm_actuators q length {len(q)} ≠ dof {self.dof}")
         for aid, val in zip(self._arm_actuator_ids, q):
             self.data.ctrl[aid] = float(val)
+
+    def set_gripper_control(self, value: float) -> None:
+        """Write one bounded native gripper control without stepping physics."""
+        value = float(value)
+        if not np.isfinite(value) or not self._gripper_actuator_ids:
+            raise ValueError("a finite control and a configured gripper are required")
+        for aid in self._gripper_actuator_ids:
+            command = (np.clip(value, *self.model.actuator_ctrlrange[aid])
+                       if self.model.actuator_ctrllimited[aid] else value)
+            self.data.ctrl[aid] = command
+
+    def get_gripper_joint_positions(self) -> dict[str, float]:
+        """Read actual aperture joint positions in native metres or radians."""
+        if self._gripper_actuator_ids and not self._gripper_joint_ids:
+            raise ValueError("tendon gripper observations require gripper_joint_names")
+        return {self.model.joint(jid).name: float(self.data.qpos[self.model.jnt_qposadr[jid]])
+                for jid in self._gripper_joint_ids}
 
     def move_joints(self, q_target: np.ndarray, duration: float = 2.0) -> bool:
         """Smoothly drive actuators from current target to q_target over `duration`.
