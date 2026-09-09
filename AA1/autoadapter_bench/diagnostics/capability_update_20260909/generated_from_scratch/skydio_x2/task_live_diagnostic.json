@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "skydio_x2",
+    "robot_class": "aerial",
+    "mjcf": "assets/mjcf/skydio_x2/scene.xml",
+    "vendor": "Skydio",
+    "dof": 6,
+    "model": "eu.anthropic.claude-sonnet-4-6",
+    "provider": "holistic",
+    "region": "us-east-1",
+    "git_sha": "eac5d394d2a9",
+    "started_at": "2026-09-09T22:32:39.633267",
+    "suites_requested": [
+      "simple"
+    ],
+    "completed_at": "2026-09-09T22:32:47.917853",
+    "wall_clock_sec": 8.283933877944946
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "takeoff_to_05m",
+          "prompt": "Take off and climb to about 0.5 m altitude, then hold a stable\nhover for at least 0.5 seconds. Stay upright.\n",
+          "success_spec": {
+            "type": "takeoff_to_height",
+            "target_height_m": 0.5,
+            "tolerance_m": 0.05,
+            "hold_s": 0.5,
+            "min_climb_m": 0.15,
+            "min_upright": 0.7,
+            "n_trials": 5
+          },
+          "n_trials": 1,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 3,
+              "frames": 41,
+              "duration_sec": 7.18632698059082,
+              "tokens": {
+                "in": 5551,
+                "out": 381,
+                "cache_read": 0
+              },
+              "summary": "Both steps completed successfully! Here's a summary:\n\n- \u2705 **Takeoff**: The drone climbed to ~0.5 m altitude (`z \u2248 0.473 m`).\n- \u2705 **Hover**: Held a stable hover for 0.5 seconds.\n- \u2705 **Upright**: The rotation matrix confirms the drone is nearly perfectly level (off-axis values are on the order of 10\u207b\u2075",
+              "error": null,
+              "physics_detail": "altitude=0.473m target=0.500+/-0.050; climb=0.173m; terminal hold=0.500s (need 0.500s)",
+              "physics_metrics": {
+                "altitude_m": 0.47291199398155864,
+                "height_error_m": 0.027088006018441357,
+                "climb_m": 0.17291199398155865,
+                "terminal_hold_s": 0.5000000000000004,
+                "sim_elapsed_s": 1.490000000000001,
+                "physics_steps": 149,
+                "min_upright": 0.9999999990487475,
+                "finite": true,
+                "behavior_ok_before_evidence_checks": true,
+                "evidence_complete": true
+              },
+              "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/skydio_x2/recordings/task_live_diagnostic/takeoff_to_05m_t0.mp4",
+              "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/skydio_x2/task_traces/task_live_diagnostic/takeoff_to_05m_t0.jsonl",
+              "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch/skydio_x2/task_traces/task_live_diagnostic/takeoff_to_05m_t0_physics.json"
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 3.0,
+          "tokens": {
+            "in": 5551,
+            "out": 381
+          },
+          "cost_usd": 0.022368
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 1,
+    "n_trials_total": 1,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 5551,
+      "out": 381
+    },
+    "total_cost_usd": 0.022368,
+    "wall_clock_sec": 8.283933877944946
+  }
+}
