@@ -1,0 +1,86 @@
+{
+  "robot_id": "piper",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": true,
+      "duration_sec": 51.24279522895813,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/traces/01_study.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/study.json"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 92639,
+        "out": 4661,
+        "cache_read": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "02_generate",
+      "ok": true,
+      "duration_sec": 196.91342067718506,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/traces/02_generate.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/driver.py"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 451409,
+        "out": 17125,
+        "cache_read": 0
+      },
+      "metadata": {
+        "outer_gen_val_iters": 2
+      }
+    },
+    {
+      "name": "03_validate",
+      "ok": false,
+      "duration_sec": 17.842144012451172,
+      "trace_path": null,
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/validate_report.json"
+      ],
+      "error": "required framework validation failed",
+      "token_usage": {
+        "in": 0,
+        "out": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "validate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "skipped \u2014 outer GEN\u2190VAL loop exhausted (2 attempts) and structural tests still fail: required framework validation failed",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}

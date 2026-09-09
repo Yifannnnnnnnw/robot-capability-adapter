@@ -1,0 +1,107 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A3",
+  "case_id": "piper-a3-nominal",
+  "detail": "A3 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 308,
+    "body_max_displacement_from_reset": {
+      "base_link": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 6.630689276617851e-07,
+      "link4": 6.242578155080374e-06,
+      "link5": 6.242578155080374e-06,
+      "link6": 8.251336188508975e-06,
+      "link7": 0.027880047903894454,
+      "link8": 0.027882327774067305,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 2.228947810290162e-05,
+      "joint2": 6.677977044677874e-07,
+      "joint3": 6.728021382240712e-07,
+      "joint4": 1.8531346707690317e-07,
+      "joint5": 2.2797514700339986e-07,
+      "joint6": 3.2398364966825735e-07,
+      "joint7": 0.027883653748747163,
+      "joint8": 0.027883024937237547
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "ee_site": 1.1122592733045447e-05
+    },
+    "step_count": 308
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "piper-a3-nominal",
+  "method_name": "set_gripper_opening",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A3",
+    "parameters": {
+      "closed_position": 0.0,
+      "contract_id": "A3",
+      "gripper_actuator_name": "gripper",
+      "guard_site_name": "ee_site",
+      "guarded_joint_names": [
+        "joint1",
+        "joint2",
+        "joint3",
+        "joint4",
+        "joint5",
+        "joint6"
+      ],
+      "guarded_joint_tolerances": [
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03
+      ],
+      "joint_name": "joint7",
+      "open_position": 0.035,
+      "side_effect_guard_profile": "fixed_arm"
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 8,
+  "ok": true,
+  "physics_steps": 308,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 0.6160000000000004,
+  "test": "piper-a3-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/capability_validation/piper-a3-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 8,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/capability_validation/piper-a3-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_retry1/piper/capability_validation/piper-a3-nominal/video.mp4"
+}

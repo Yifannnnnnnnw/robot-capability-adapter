@@ -1,0 +1,154 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "A4",
+  "case_id": "piper-a4-calibrated-boundary",
+  "detail": "A4 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 1590,
+    "body_max_displacement_from_reset": {
+      "base_link": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.0331932451188006,
+      "link4": 0.03306271524588471,
+      "link5": 0.03306271524588471,
+      "link6": 0.03310169229787141,
+      "link7": 0.03325138153715042,
+      "link8": 0.0332513815508605,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 3.5799999999998273,
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_84"
+      },
+      {
+        "first_time_s": 3.5799999999998273,
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_87"
+      },
+      {
+        "first_time_s": 0.5120000000000003,
+        "geom1": "geom_84",
+        "geom2": "geom_87"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_84",
+        "minimum_distance_m": -0.0001761729976539584
+      },
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_87",
+        "minimum_distance_m": -0.00017631795555054825
+      },
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "minimum_distance_m": -5.4889543564882375e-09
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_84",
+        "step_count": 51
+      },
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_87",
+        "step_count": 51
+      },
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "step_count": 8
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 4.970551293363757e-06,
+      "joint2": 0.11652067346010075,
+      "joint3": 0.12208927955618698,
+      "joint4": 0.00017078939514009617,
+      "joint5": 0.00868726051589945,
+      "joint6": 1.154567189550143e-05,
+      "joint7": 1.22626632529318e-06,
+      "joint8": 1.3036406966963175e-06
+    },
+    "minimum_contact_distance_m": -0.00017631795555054825,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "ee_site": 0.033243847475704955
+    },
+    "step_count": 1590
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "piper-a4-calibrated-boundary",
+  "method_name": "approach_until_contact",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A4",
+    "parameters": {
+      "contract_id": "A4",
+      "guarded_joint_names": [
+        "joint7"
+      ],
+      "guarded_joint_tolerances": [
+        0.00175
+      ],
+      "max_penetration_m": 0.005,
+      "precontact_gate": "held_window_then_ray",
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "ee_site",
+      "target_geom_names": [
+        "fixed_contact_geom"
+      ],
+      "tool_geom_names": [
+        "geom_82",
+        "geom_84",
+        "geom_85",
+        "geom_87",
+        "geom_88"
+      ]
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 33,
+  "ok": true,
+  "physics_steps": 1590,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 3.179999999999816,
+  "test": "piper-a4-calibrated-boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/piper/framework_reference/piper-a4-calibrated-boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 33,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/piper/framework_reference/piper-a4-calibrated-boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_calibration/piper/framework_reference/piper-a4-calibrated-boundary/video.mp4"
+}
