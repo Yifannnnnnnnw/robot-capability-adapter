@@ -1,0 +1,38 @@
+{
+  "contract_id": "A3",
+  "measurements": {
+    "final_opening_error": 0.0072089037292143165,
+    "final_opening_fraction": 0.20720890372921433,
+    "longest_opening_hold_s": 0.2500000000000002,
+    "maximum_opening_change": 0.7927912686429542,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.4780000000000004
+  },
+  "parameters": {
+    "closed_position": 0,
+    "contract_id": "A3",
+    "guard_site_name": "fixed_tcp",
+    "guarded_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "joint7"
+    ],
+    "guarded_joint_tolerances": [
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03
+    ],
+    "joint_name": "finger_joint1",
+    "open_position": 0.04,
+    "side_effect_guard_profile": "fixed_arm"
+  },
+  "score": 1.0
+}

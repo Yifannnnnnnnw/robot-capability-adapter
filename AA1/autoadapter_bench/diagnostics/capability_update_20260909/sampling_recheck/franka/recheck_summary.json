@@ -1,0 +1,67 @@
+{
+  "robot_id": "franka",
+  "generated_driver_source": "autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/driver.py",
+  "driver_modified": false,
+  "sampling_fix_commit": "eac5d394",
+  "reference_passed": 10,
+  "reference_total": 10,
+  "generated_passed": 7,
+  "generated_total": 10,
+  "generated_failed_cases": [
+    "franka_panda-a4-nominal",
+    "franka_panda-a4-calibrated_boundary",
+    "franka_panda-a5-calibrated_boundary"
+  ],
+  "reference_report": "autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/franka/reference/suite_result.json",
+  "generated_report": "autoadapter_bench/diagnostics/capability_update_20260909/sampling_recheck/franka/generated_all/suite_result.json",
+  "limitations": [
+    "Same generated source re-executed under synchronized sampling; this is not a new model generation.",
+    "The original diagnostic results remain preserved."
+  ],
+  "task": {
+    "trial": 0,
+    "llm_ok": true,
+    "physics_ok": true,
+    "agreement": true,
+    "framework_ok": false,
+    "validated_driver_task_ok": false,
+    "n_tool_calls": 1,
+    "frames": 8,
+    "duration_sec": 8.693074226379395,
+    "tokens": {
+      "in": 6174,
+      "out": 279,
+      "cache_read": 0
+    },
+    "summary": "The `move_end_effector_to_position` command executed **successfully**. Here's a summary:\n\n- **Target Position (World Frame):** `[0.5748, ~0.0, 0.4383]` meters\n- **Max Duration:** 4 seconds\n- **Outcome:** \u2705 Success\n- **Final Position Error:** ~**7.25 mm** \u2014 the end effector reached the target within a close tolerance, well within acceptable physical limits.\n\nThe arm moved to the specified world-frame position and held it for the required duration without any issues.",
+    "error": null,
+    "physics_detail": "A1 trusted score=1.0",
+    "physics_metrics": {
+      "contract_id": "A1",
+      "score": 1.0,
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "fixed_arm",
+        "site_name": "fixed_tcp",
+        "guarded_joint_names": [
+          "finger_joint1"
+        ],
+        "guarded_joint_tolerances": [
+          0.002
+        ]
+      },
+      "measurements": {
+        "sim_elapsed_s": 0.6380000000000005,
+        "side_effects_ok": true,
+        "site_max_displacement_m": 0.08201200670869024,
+        "final_error_m": 0.0072471294742500955,
+        "best_error_m": 0.0023086406188641967,
+        "longest_target_hold_s": 0.5000000000000003
+      }
+    },
+    "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_traces/task_sampling_recheck/A1_diagnostic_t0_physics/franka_panda-a1-nominal/video.mp4",
+    "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_traces/task_sampling_recheck/A1_diagnostic_t0.jsonl",
+    "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_traces/task_sampling_recheck/A1_diagnostic_t0_physics/franka_panda-a1-nominal/trace.json"
+  },
+  "task_report": "autoadapter_bench/diagnostics/capability_update_20260909/generated/franka/task_sampling_recheck.json"
+}
