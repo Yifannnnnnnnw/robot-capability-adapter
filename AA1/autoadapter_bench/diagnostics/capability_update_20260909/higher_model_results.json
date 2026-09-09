@@ -1,0 +1,137 @@
+{
+  "diagnostic_only": true,
+  "attempts": [
+    {
+      "robot_id": "so101",
+      "attempt_directory": "generated_opus48_retry1/so101",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "0/10 \u6761\u4ef6\u901a\u8fc7\uff1b\u5168\u5957\u672a\u901a\u8fc7",
+      "task_physics_ok": false,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/video.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/trace.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "piper",
+      "attempt_directory": "generated_opus48_retry1/piper",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "8/10 \u6761\u4ef6\u901a\u8fc7\uff1b\u5168\u5957\u672a\u901a\u8fc7",
+      "task_physics_ok": true,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/piper/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/piper-a1-nominal/video.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/piper/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/piper-a1-nominal/trace.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "franka",
+      "attempt_directory": "generated_opus48_retry1/franka",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "7/10 \u6761\u4ef6\u901a\u8fc7\uff1b\u5168\u5957\u672a\u901a\u8fc7",
+      "task_physics_ok": true,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/franka/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/franka_panda-a1-nominal/video.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/franka/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/franka_panda-a1-nominal/trace.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "kuka_iiwa14",
+      "attempt_directory": "generated_opus48_retry1/kuka_iiwa14",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "\u7f3a\u5c11 build()\uff1b\u6784\u5efa\u5931\u8d25\uff0c\u7269\u7406\u6761\u4ef6\u672a\u8fd0\u884c",
+      "task_physics_ok": null,
+      "task_video_path": null,
+      "task_physical_trace_path": null,
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "ufactory_xarm7",
+      "attempt_directory": "generated_opus48_retry1/ufactory_xarm7",
+      "driver_file_written": false,
+      "framework_all_ok": false,
+      "framework_summary": "Study \u4ea7\u7269\u672a\u843d\u5728\u672c\u5730\uff1b\u540e\u7eed\u672a\u8fd0\u884c\uff08\u5de5\u5177\u8def\u7531\u7f3a\u9677\uff0c\u5df2\u4fee\u590d\uff09",
+      "task_physics_ok": null,
+      "task_video_path": null,
+      "task_physical_trace_path": null,
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "kinova_gen3_robotiq_2f85",
+      "attempt_directory": "generated_opus48_retry1/kinova_gen3_robotiq_2f85",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "6/10 \u6761\u4ef6\u901a\u8fc7\uff1b\u5168\u5957\u672a\u901a\u8fc7",
+      "task_physics_ok": true,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kinova_gen3_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/kinova_gen3_robotiq_2f85-a1-nominal/video.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/kinova_gen3_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/kinova_gen3_robotiq_2f85-a1-nominal/trace.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "universal_robots_ur5e_robotiq_2f85",
+      "attempt_directory": "generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "5/10 \u6761\u4ef6\u901a\u8fc7\uff1b\u5168\u5957\u672a\u901a\u8fc7",
+      "task_physics_ok": true,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/universal_robots_ur5e_robotiq_2f85-a1-nominal/video.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/universal_robots_ur5e_robotiq_2f85-a1-nominal/trace.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "go2",
+      "attempt_directory": "generated_opus48_retry1/go2",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "\u7f3a\u5c11 build()\uff1b\u6784\u5efa\u5931\u8d25\uff0c\u7269\u7406\u6761\u4ef6\u672a\u8fd0\u884c",
+      "task_physics_ok": null,
+      "task_video_path": null,
+      "task_physical_trace_path": null,
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "unitree_a1",
+      "attempt_directory": "generated_opus48_retry1/unitree_a1",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "\u7f3a\u5c11 G1\u2013G5 \u5fc5\u9700\u65b9\u6cd5\uff1b\u7269\u7406\u9a8c\u8bc1\u672a\u8fd0\u884c",
+      "task_physics_ok": null,
+      "task_video_path": null,
+      "task_physical_trace_path": null,
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "anymal_c",
+      "attempt_directory": "generated_opus48_retry1/anymal_c",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "\u4ec5 G4 nominal\uff1a0/1\uff1b\u5168\u5957 10 \u6761\u4ef6\u672a\u9a8c\u8bc1",
+      "task_physics_ok": false,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/task_traces/task_live_diagnostic/G4_diagnostic_t0_physics/anymal_c-g4-nominal/video.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/task_traces/task_live_diagnostic/G4_diagnostic_t0_physics/anymal_c-g4-nominal/trace.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "robot_id": "h1",
+      "attempt_directory": "generated_from_scratch_opus48/h1",
+      "driver_file_written": true,
+      "framework_all_ok": false,
+      "framework_summary": "7/8 \u68c0\u67e5\u901a\u8fc7\uff1b\u884c\u8d70\u5931\u8d25",
+      "task_physics_ok": true,
+      "task_video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/recordings/task_verdict_recheck/stand_balance_2s_t0.mp4",
+      "task_physical_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_from_scratch_opus48/h1/task_traces/task_verdict_recheck/stand_balance_2s_t0_physics.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8"
+    }
+  ]
+}

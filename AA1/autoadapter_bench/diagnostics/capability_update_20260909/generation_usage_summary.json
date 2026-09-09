@@ -569,6 +569,44 @@
       "framework_all_ok": false
     },
     {
+      "robot_id": "anymal_c",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 36.664456844329834,
+          "tokens": {
+            "in": 88540,
+            "out": 3174,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 198.60720992088318,
+          "tokens": {
+            "in": 1276517,
+            "out": 15364,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/anymal_c/traces/02_generate.jsonl"
+        }
+      ],
+      "reported_phase_wall_time_s": 235.271666765213,
+      "reported_tokens": {
+        "in": 1365057,
+        "out": 18538
+      }
+    },
+    {
       "robot_id": "franka",
       "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/franka",
       "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/franka/summary.json",
@@ -803,6 +841,54 @@
       }
     },
     {
+      "robot_id": "so101",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 22.160090684890747,
+          "tokens": {
+            "in": 37808,
+            "out": 1804,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 224.4300389289856,
+          "tokens": {
+            "in": 1065808,
+            "out": 21176,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/so101/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": false,
+          "wall_time_s": 9.310325860977173,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 255.90045547485352,
+      "reported_tokens": {
+        "in": 1103616,
+        "out": 22980
+      }
+    },
+    {
       "robot_id": "ufactory_xarm7",
       "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/ufactory_xarm7",
       "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/ufactory_xarm7/summary.json",
@@ -827,6 +913,92 @@
       "reported_tokens": {
         "in": 45516,
         "out": 2186
+      }
+    },
+    {
+      "robot_id": "unitree_a1",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/unitree_a1",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/unitree_a1/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 41.321545124053955,
+          "tokens": {
+            "in": 63227,
+            "out": 3800,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/unitree_a1/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 234.31436610221863,
+          "tokens": {
+            "in": 1076309,
+            "out": 18096,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/unitree_a1/traces/02_generate.jsonl"
+        }
+      ],
+      "reported_phase_wall_time_s": 275.6359112262726,
+      "reported_tokens": {
+        "in": 1139536,
+        "out": 21896
+      }
+    },
+    {
+      "robot_id": "universal_robots_ur5e_robotiq_2f85",
+      "attempt_directory": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85",
+      "source_summary": "autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/summary.json",
+      "provider": "holistic",
+      "requested_model": "eu.anthropic.claude-opus-4-8",
+      "actual_generation_cost_usd": null,
+      "cost_basis": "Holistic billed price is not recorded; legacy task estimates do not cover generation.",
+      "phases": [
+        {
+          "name": "01_study",
+          "ok": true,
+          "wall_time_s": 35.53904414176941,
+          "tokens": {
+            "in": 94937,
+            "out": 2805,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/traces/01_study.jsonl"
+        },
+        {
+          "name": "02_generate",
+          "ok": true,
+          "wall_time_s": 224.58810591697693,
+          "tokens": {
+            "in": 1011330,
+            "out": 19531,
+            "cache_read": 0
+          },
+          "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_opus48_retry1/universal_robots_ur5e_robotiq_2f85/traces/02_generate.jsonl"
+        },
+        {
+          "name": "03_validate",
+          "ok": false,
+          "wall_time_s": 9.0796799659729,
+          "tokens": {
+            "in": 0,
+            "out": 0
+          },
+          "trace_path": null
+        }
+      ],
+      "reported_phase_wall_time_s": 269.20683002471924,
+      "reported_tokens": {
+        "in": 1106267,
+        "out": 22336
       }
     },
     {
