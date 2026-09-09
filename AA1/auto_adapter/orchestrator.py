@@ -63,7 +63,7 @@ class SelfAssembleConfig:
     robot_id: str
     mjcf_path: Path  # local path to the input MJCF
     workspace_root: Path  # `<workspace_root>/<robot_id>/` will be created
-    # "local" → run VALIDATE/DEMO on this Mac via local_exec.
+    # "local" → run STUDY/GENERATE/VALIDATE/DEMO on this Mac via local_exec.
     # "dgx"   → run VALIDATE/DEMO on `dgx_host` via ssh_dgx_exec + scp_*.
     mode: str = "local"
     # "framework" → orchestrator deterministically exercises the driver
@@ -501,6 +501,12 @@ class SelfAssemble:
     # ─── Lifecycle (CI session) ───────────────────────────────────────────
 
     def __enter__(self) -> "SelfAssemble":
+        # Local runs use the venv-backed local_exec tool for every phase; do
+        # not start an AgentCore session that could become an accidental
+        # execution/artifact world for STUDY or GENERATE.
+        if self.cfg.mode == "local":
+            return self
+
         import boto3  # noqa: PLC0415
 
         self._ci_client = boto3.client("bedrock-agentcore", region_name=self.cfg.aws_region)
@@ -646,8 +652,25 @@ class SelfAssemble:
     # ─── Per-phase methods (thin: just bind tools + prompts) ──────────────
 
     def _phase_study(self) -> PhaseResult:
-        assert self._exec_python_tool is not None
-        tools = self._local_tools() + [self._exec_python_tool]
+        if self.cfg.mode == "local":
+            # The workspace is the authoritative artifact world in local
+            # mode.  Keep MuJoCo probing in the same venv/cwd as write_file.
+            tools = self._local_tools() + self._local_runtime_tools()
+            system = (
+                _STUDY_SYSTEM
+                .replace("execute_python", "local_exec")
+                .replace(
+                    "the CI session preserves Python state across calls "
+                    "(imports persist, variables persist).",
+                    "each local_exec call starts a fresh process; include "
+                    "imports and setup in every command or save intermediates "
+                    "in workspace files.",
+                )
+            )
+        else:
+            assert self._exec_python_tool is not None
+            tools = self._local_tools() + [self._exec_python_tool]
+            system = _STUDY_SYSTEM
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
             f"MJCF file (workspace-relative): {self.mjcf_workspace_path}\n"
@@ -655,7 +678,7 @@ class SelfAssemble:
         )
         return self._run_phase(
             name="01_study",
-            system=_STUDY_SYSTEM,
+            system=system,
             user_msg=user_msg,
             tools=tools,
             max_iters=self.cfg.max_iters_study,
@@ -663,16 +686,34 @@ class SelfAssemble:
         )
 
     def _phase_generate(self, prior_validate_failures: Optional[str] = None) -> PhaseResult:
-        assert self._exec_python_tool is not None
-        # local_exec is needed in local mode so the agent can probe gripper
-        # direction on the actual MuJoCo model (AgentCore CI may not have
-        # mujoco installed). DGX mode still gets it via ssh_dgx_exec.
-        tools = (
-            self._local_tools()
-            + self._skeleton_tools()
-            + [self._exec_python_tool]
-            + self._runtime_tools()
-        )
+        system = _CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM
+        if self.cfg.mode == "local":
+            # All Python/MuJoCo probes and generated files must stay in the
+            # local workspace.  AgentCore is intentionally absent here.
+            tools = (
+                self._local_tools()
+                + self._skeleton_tools()
+                + self._local_runtime_tools()
+            )
+            system = (
+                system
+                .replace("execute_python", "local_exec")
+                .replace(
+                    "CI session state persists.",
+                    "each local_exec call starts a fresh process; include "
+                    "imports and setup in every command or save intermediates "
+                    "in workspace files.",
+                )
+            )
+        else:
+            assert self._exec_python_tool is not None
+            # DGX mode retains the existing CodeInterpreter + DGX routing.
+            tools = (
+                self._local_tools()
+                + self._skeleton_tools()
+                + [self._exec_python_tool]
+                + self._runtime_tools()
+            )
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
             f"study.json is in the workspace. MJCF is at {self.mjcf_workspace_path}.\n"
@@ -680,17 +721,19 @@ class SelfAssemble:
         )
         user_msg += capability_generation_context(self.robot_definition)
         if prior_validate_failures:
+            verification_tool = "local_exec" if self.cfg.mode == "local" else "execute_python"
             user_msg += (
                 "\n\nIMPORTANT — your previous driver.py was generated but the "
                 "outer VALIDATE harness reported the following structural "
                 "failures. Re-generate driver.py addressing these failures:\n"
                 f"{prior_validate_failures}\n"
-                "Read validate_report.json for the full report; use exec_python to "
+                "Read validate_report.json for the full report; use "
+                f"{verification_tool} to "
                 "verify your fixes BEFORE returning."
             )
         return self._run_phase(
             name="02_generate",
-            system=_CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM,
+            system=system,
             user_msg=user_msg,
             tools=tools,
             max_iters=self.cfg.max_iters_generate,
@@ -1227,6 +1270,10 @@ class SelfAssemble:
                     gen_res = self._phase_generate(prior_validate_failures=prior_failures)
                     if not gen_res.ok:
                         # GENERATE itself failed — no point retrying VALIDATE
+                        break
+                    if stop_after == "generate":
+                        # A generate-only canary must not silently run the
+                        # uncalibrated physical validation suite.
                         break
                     val_res = self._phase_validate()
                     if val_res.ok:

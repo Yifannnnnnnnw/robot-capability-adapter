@@ -37,3 +37,30 @@ def test_one_failed_validation_is_one_attempt_and_one_report(tmp_path, monkeypat
     assert [phase.name for phase in result.phases].count("validate") == 1
     generated = next(phase for phase in result.phases if phase.name == "generate")
     assert generated.metadata["outer_gen_val_iters"] == 1
+
+
+def test_stop_after_generate_skips_validation_suite(tmp_path, monkeypatch):
+    scene = tmp_path / "fixture.xml"
+    scene.write_text("<mujoco/>")
+    runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "output"))
+    calls = []
+
+    def phase(name):
+        def invoke(**kwargs):
+            calls.append(name)
+            return PhaseResult(name=name, ok=True, duration_sec=0.0)
+        return invoke
+
+    for name in ("study", "generate", "validate", "export", "demo"):
+        monkeypatch.setattr(runner, f"_phase_{name}", phase(name))
+
+    result = runner.run(stop_after="generate")
+
+    assert calls == ["study", "generate"]
+    assert [phase.name for phase in result.phases] == [
+        "study", "generate", "validate", "export", "demo"
+    ]
+    assert all(
+        phase.error == "not run — stop_after=generate"
+        for phase in result.phases[2:]
+    )
