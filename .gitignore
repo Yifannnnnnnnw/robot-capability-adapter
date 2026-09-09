@@ -39,6 +39,9 @@ dist/
 .DS_Store
 **/.DS_Store
 
+# Independent AA1 checkout for source comparison
+/AA1/
+
 # Raw experiment evidence stays local. Results documents retain run ids and
 # content hashes; large traces/videos and private run snapshots are not Git data.
 **/runs/*
