@@ -26,6 +26,9 @@ created: "2026-05-30"
 robots:
   - id: so101
     mjcf: assets/mjcf/so101_mujoco.xml
+    capability_mjcf: assets/mjcf/capabilities/so101/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/so101
+    capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: ee_site}
     class: arm
     dof: 5
@@ -205,6 +208,9 @@ robots:
 
   - id: ufactory_xarm7
     mjcf: assets/mjcf/ufactory_xarm7/scene.xml
+    capability_mjcf: assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml
+    capability_profile: autoadapter_bench/spec/capabilities/ufactory_xarm7
+    capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: link_tcp}
     class: arm
     dof: 7
