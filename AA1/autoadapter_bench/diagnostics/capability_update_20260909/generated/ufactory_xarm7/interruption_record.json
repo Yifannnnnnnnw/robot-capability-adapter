@@ -1,0 +1,20 @@
+{
+  "robot_id": "ufactory_xarm7",
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-sonnet-4-6",
+  "result": "interrupted_before_driver_written",
+  "driver_exists": false,
+  "reason": "Session interrupted; the previous execution process is no longer alive. Existing traces preserved; resumed execution uses a new directory.",
+  "trace_records": [
+    {
+      "trace_path": "autoadapter_bench/diagnostics/capability_update_20260909/generated/ufactory_xarm7/traces/01_study.jsonl",
+      "recorded_turns": 10,
+      "recorded_tokens": {
+        "in": 95837,
+        "out": 6223
+      },
+      "recorded_iteration_time_s": 62.897637128829956
+    }
+  ],
+  "actual_generation_cost_usd": null
+}
