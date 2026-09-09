@@ -1,0 +1,69 @@
+{
+  "robot_id": "ufactory_xarm7",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/ufactory_xarm7",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": true,
+      "duration_sec": 47.34399604797363,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/ufactory_xarm7/traces/01_study.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/ufactory_xarm7/study.json"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 57232,
+        "out": 4683,
+        "cache_read": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "02_generate",
+      "ok": false,
+      "duration_sec": 121.13815116882324,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/ufactory_xarm7/traces/02_generate.jsonl",
+      "artifacts": [],
+      "error": "max_iters=22 exhausted",
+      "token_usage": {
+        "in": 357169,
+        "out": 12195,
+        "cache_read": 0
+      },
+      "metadata": {
+        "outer_gen_val_iters": 1
+      }
+    },
+    {
+      "name": "validate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "skipped \u2014 upstream `generate` failed: max_iters=22 exhausted",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=validate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}

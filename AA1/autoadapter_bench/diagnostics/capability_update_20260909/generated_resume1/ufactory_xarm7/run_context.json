@@ -1,0 +1,9 @@
+{
+  "robot_id": "ufactory_xarm7",
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-sonnet-4-6",
+  "started_at": "2026-09-09T23:01:09.070325+00:00",
+  "reason": "Resume the interrupted Sonnet baseline in a new workspace; original traces retained.",
+  "actual_generation_cost_usd": null,
+  "finished_at": "2026-09-09T23:04:00.076148+00:00"
+}
