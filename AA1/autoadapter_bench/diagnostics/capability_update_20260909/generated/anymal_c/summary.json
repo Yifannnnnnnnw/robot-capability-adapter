@@ -1,0 +1,71 @@
+{
+  "robot_id": "anymal_c",
+  "workspace": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/anymal_c",
+  "ok": false,
+  "phases": [
+    {
+      "name": "01_study",
+      "ok": true,
+      "duration_sec": 36.60292387008667,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/anymal_c/traces/01_study.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/anymal_c/study.json"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 61535,
+        "out": 4040,
+        "cache_read": 0
+      },
+      "metadata": {}
+    },
+    {
+      "name": "02_generate",
+      "ok": true,
+      "duration_sec": 144.61333107948303,
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/anymal_c/traces/02_generate.jsonl",
+      "artifacts": [
+        "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/anymal_c/driver.py"
+      ],
+      "error": null,
+      "token_usage": {
+        "in": 392116,
+        "out": 15766,
+        "cache_read": 0
+      },
+      "metadata": {
+        "outer_gen_val_iters": 1
+      }
+    },
+    {
+      "name": "validate",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=generate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "export",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=generate",
+      "token_usage": {},
+      "metadata": {}
+    },
+    {
+      "name": "demo",
+      "ok": false,
+      "duration_sec": 0.0,
+      "trace_path": null,
+      "artifacts": [],
+      "error": "not run \u2014 stop_after=generate",
+      "token_usage": {},
+      "metadata": {}
+    }
+  ]
+}
