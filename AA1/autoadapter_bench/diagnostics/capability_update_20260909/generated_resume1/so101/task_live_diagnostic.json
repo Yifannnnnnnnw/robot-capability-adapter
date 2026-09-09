@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "so101",
+    "robot_class": "arm",
+    "mjcf": "assets/mjcf/so101_mujoco.xml",
+    "vendor": "LeRobot",
+    "dof": 5,
+    "model": "eu.anthropic.claude-sonnet-4-6",
+    "provider": "holistic",
+    "region": "us-east-1",
+    "git_sha": "d6c79d8409d3",
+    "started_at": "2026-09-09T23:04:24.667018",
+    "suites_requested": [
+      "capability"
+    ],
+    "completed_at": "2026-09-09T23:04:51.703703",
+    "wall_clock_sec": 27.035948038101196
+  },
+  "suites": {
+    "capability": {
+      "tasks": [
+        {
+          "id": "A1_diagnostic",
+          "prompt": "Execute move_end_effector_to_position with request {\"target_position_m\": [0.4, 0.02, 0.24], \"max_duration_s\": 4.0}. Meet the capability's physical hold and timing requirements.",
+          "success_spec": {
+            "capability_id": "A1",
+            "n_trials": 1
+          },
+          "n_trials": 1,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "framework_ok": false,
+              "validated_driver_task_ok": false,
+              "n_tool_calls": 1,
+              "frames": 27,
+              "duration_sec": 23.634423971176147,
+              "tokens": {
+                "in": 4944,
+                "out": 208,
+                "cache_read": 0
+              },
+              "summary": "The `move_end_effector_to_position` command executed successfully. The end effector moved to the target world-frame position **[0.4, 0.02, 0.24] m** within the allotted **4.0 seconds**, arriving with a final position error of approximately **4.3 mm** \u2014 well within acceptable tolerance.",
+              "error": null,
+              "physics_detail": "A1 trusted score=1.0",
+              "physics_metrics": {
+                "contract_id": "A1",
+                "score": 1.0,
+                "parameters": {
+                  "contract_id": "A1",
+                  "site_name": "ee_site",
+                  "side_effect_guard_profile": "fixed_arm",
+                  "guarded_joint_names": [
+                    "jaw_visual_joint"
+                  ],
+                  "guarded_joint_tolerances": [
+                    0.002
+                  ]
+                },
+                "measurements": {
+                  "sim_elapsed_s": 2.5199999999998886,
+                  "side_effects_ok": true,
+                  "site_max_displacement_m": 0.02651987746282326,
+                  "final_error_m": 0.004328740129915576,
+                  "best_error_m": 0.0037511311656120276,
+                  "longest_target_hold_s": 1.8139999999998881
+                }
+              },
+              "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/video.mp4",
+              "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0.jsonl",
+              "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/trace.json"
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 1.0,
+          "tokens": {
+            "in": 4944,
+            "out": 208
+          },
+          "cost_usd": 0.017952
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 1,
+    "n_trials_total": 1,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 4944,
+      "out": 208
+    },
+    "total_cost_usd": 0.017952,
+    "wall_clock_sec": 27.035948038101196
+  }
+}

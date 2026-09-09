@@ -1,0 +1,35 @@
+{
+  "robot_id": "so101",
+  "diagnostic_only": true,
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-sonnet-4-6",
+  "generation_ok": true,
+  "generation_error": null,
+  "generation_wall_time_s": 96.2639091014862,
+  "generation_tokens": {
+    "in": 240955,
+    "out": 8866,
+    "cache_read": 0
+  },
+  "actual_generation_cost_usd": null,
+  "reference_conditions_passed": 10,
+  "reference_conditions_total": 10,
+  "limitations": [
+    "Resumed Sonnet baseline after interrupted attempt; original partial traces retained separately.",
+    "TaskPlanner descriptions are not physical verdicts."
+  ],
+  "framework_ok": false,
+  "conditions_passed": 6,
+  "conditions_total": 10,
+  "failed_cases": [
+    "so101-a4-nominal",
+    "so101-a4-calibrated-boundary",
+    "so101-a5-nominal",
+    "so101-a5-calibrated-boundary"
+  ],
+  "task_ok": true,
+  "validated_driver_task_ok": false,
+  "task_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0.jsonl",
+  "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/trace.json",
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/so101/task_traces/task_live_diagnostic/A1_diagnostic_t0_physics/so101-a1-nominal/video.mp4"
+}
