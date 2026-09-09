@@ -1,0 +1,155 @@
+{
+  "robot_id": "hello_robot_stretch_2",
+  "estimated_class": "mobile_manipulator",
+  "dof": 8,
+  "joints": [
+    {
+      "name": "joint_right_wheel",
+      "type": "hinge",
+      "axis": [0.0, 0.0, -1.0],
+      "ctrlrange": [null, null]
+    },
+    {
+      "name": "joint_left_wheel",
+      "type": "hinge",
+      "axis": [0.0, 0.0, -1.0],
+      "ctrlrange": [null, null]
+    },
+    {
+      "name": "joint_lift",
+      "type": "slide",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [-0.5, 0.6]
+    },
+    {
+      "name": "joint_arm_l3",
+      "type": "slide",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [0.0, 0.13]
+    },
+    {
+      "name": "joint_arm_l2",
+      "type": "slide",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [0.0, 0.13]
+    },
+    {
+      "name": "joint_arm_l1",
+      "type": "slide",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [0.0, 0.13]
+    },
+    {
+      "name": "joint_arm_l0",
+      "type": "slide",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [0.0, 0.13]
+    },
+    {
+      "name": "joint_wrist_yaw",
+      "type": "hinge",
+      "axis": [0.0, 0.0, -1.0],
+      "ctrlrange": [-1.75, 4.0]
+    },
+    {
+      "name": "joint_gripper_slide",
+      "type": "slide",
+      "axis": [1.0, 0.0, 0.0],
+      "ctrlrange": [-0.005, 0.04]
+    },
+    {
+      "name": "joint_gripper_finger_left_open",
+      "type": "hinge",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [-0.6, 0.6]
+    },
+    {
+      "name": "joint_gripper_finger_right_open",
+      "type": "hinge",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [-0.6, 0.6]
+    },
+    {
+      "name": "rubber_left_x",
+      "type": "hinge",
+      "axis": [1.0, 0.0, 0.0],
+      "ctrlrange": [null, null]
+    },
+    {
+      "name": "rubber_left_y",
+      "type": "hinge",
+      "axis": [0.0, 1.0, 0.0],
+      "ctrlrange": [null, null]
+    },
+    {
+      "name": "rubber_right_x",
+      "type": "hinge",
+      "axis": [1.0, 0.0, 0.0],
+      "ctrlrange": [null, null]
+    },
+    {
+      "name": "rubber_right_y",
+      "type": "hinge",
+      "axis": [0.0, 1.0, 0.0],
+      "ctrlrange": [null, null]
+    },
+    {
+      "name": "joint_head_pan",
+      "type": "hinge",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [-3.9, 1.5]
+    },
+    {
+      "name": "joint_head_tilt",
+      "type": "hinge",
+      "axis": [0.0, 0.0, 1.0],
+      "ctrlrange": [-1.53, 0.79]
+    }
+  ],
+  "actuators": [
+    {
+      "name": "forward",
+      "joint": "tendon:forward",
+      "ctrlrange": [-1.0, 1.0]
+    },
+    {
+      "name": "turn",
+      "joint": "tendon:turn",
+      "ctrlrange": [-1.0, 1.0]
+    },
+    {
+      "name": "lift",
+      "joint": "joint_lift",
+      "ctrlrange": [-0.5, 0.6]
+    },
+    {
+      "name": "arm_extend",
+      "joint": "tendon:extend (joint_arm_l0~l3)",
+      "ctrlrange": [0.0, 0.52]
+    },
+    {
+      "name": "wrist_yaw",
+      "joint": "joint_wrist_yaw",
+      "ctrlrange": [-1.75, 4.0]
+    },
+    {
+      "name": "grip",
+      "joint": "joint_gripper_slide",
+      "ctrlrange": [-0.005, 0.04]
+    },
+    {
+      "name": "head_pan",
+      "joint": "joint_head_pan",
+      "ctrlrange": [-3.9, 1.5]
+    },
+    {
+      "name": "head_tilt",
+      "joint": "joint_head_tilt",
+      "ctrlrange": [-1.53, 0.79]
+    }
+  ],
+  "ee_site": null,
+  "ee_body": "link_gripper_slider",
+  "graspable_bodies": ["object"],
+  "notes": "Hello Robot Stretch 2: differential-drive mobile base (2 wheel joints via forward/turn tendon actuators), vertical prismatic lift, 4-stage telescoping arm (equality-constrained, single arm_extend actuator, effective reach 0-0.52 m), wrist yaw, 2-finger parallel gripper (slide+open joints), head pan/tilt; 8 actuators total; no ee_site defined; passive rubber-tip compliance joints present."
+}

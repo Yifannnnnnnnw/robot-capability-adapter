@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "benchmark_version": "v1.0",
+    "robot": "hello_robot_stretch_2",
+    "robot_class": "mobile_manipulator",
+    "mjcf": "assets/mjcf/hello_robot_stretch_2/scene.xml",
+    "vendor": "Hello Robot",
+    "dof": 11,
+    "model": "eu.anthropic.claude-sonnet-4-6",
+    "provider": "holistic",
+    "region": "us-east-1",
+    "git_sha": "4ef1a7b638b4",
+    "started_at": "2026-09-09T21:20:25.379873",
+    "suites_requested": [
+      "simple"
+    ],
+    "completed_at": "2026-09-09T21:21:13.710956",
+    "wall_clock_sec": 48.33037805557251
+  },
+  "suites": {
+    "simple": {
+      "tasks": [
+        {
+          "id": "base_then_ee_reach",
+          "prompt": "First drive the mobile base forward 0.10 m at speed 0.10 m/s.\nOnce the base is in the target region around world XY [-0.09, 0.00],\nmove the end-effector to world XYZ [-0.02, -0.24, 0.67] m.\nKeep the base still during the arm reach and report both results.\n",
+          "success_spec": {
+            "type": "mobile_manipulation_ordered",
+            "base_target_xy": [
+              -0.09,
+              0.0
+            ],
+            "base_tolerance_m": 0.025,
+            "min_base_motion_m": 0.05,
+            "arm_motion_threshold": 0.01,
+            "arm_base_drift_tolerance_m": 0.01,
+            "ee_target_xyz": [
+              -0.02,
+              -0.24,
+              0.67
+            ],
+            "ee_tolerance_m": 0.025,
+            "n_trials": 1
+          },
+          "n_trials": 1,
+          "trials": [
+            {
+              "trial": 0,
+              "llm_ok": true,
+              "physics_ok": true,
+              "agreement": true,
+              "n_tool_calls": 5,
+              "frames": 804,
+              "duration_sec": 44.6709201335907,
+              "tokens": {
+                "in": 9931,
+                "out": 832,
+                "cache_read": 0
+              },
+              "summary": "Here's a full summary of both results:\n\n---\n\n### \u2705 Phase 1 \u2014 Base Drive Forward\n| Metric | Value |\n|---|---|\n| Requested distance | 0.10 m @ 0.10 m/s |\n| Travelled distance | ~0.092 m |\n| Final base XY | **[-0.093, ~0.000]** |\n| Target region | ~[-0.09, 0.00] \u2705 |\n\nThe base landed at **[-0.093, 0.000",
+              "error": null,
+              "physics_detail": "base peak=0.0935m target_err=0.0045m; first arm=2988; EE err=0.0015m",
+              "physics_metrics": {
+                "base_peak_motion_m": 0.09354321146591986,
+                "base_target_error_m": 0.0044804229539608855,
+                "first_arm_motion_sample": 2988,
+                "arm_peak_motion": 0.06147832698584065,
+                "arm_base_drift_m": 1.3312101303409269e-05,
+                "ee_error_m": 0.001482849072142994,
+                "ordered": true,
+                "base_at_first_arm": true,
+                "base_stays_in_region": true,
+                "behavior_ok_before_evidence_checks": true,
+                "evidence_complete": true
+              },
+              "mp4_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2/recordings/task_live_diagnostic/base_then_ee_reach_t0.mp4",
+              "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2/task_traces/task_live_diagnostic/base_then_ee_reach_t0.jsonl",
+              "physics_trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated/hello_robot_stretch_2/task_traces/task_live_diagnostic/base_then_ee_reach_t0_physics.json"
+            }
+          ],
+          "llm_pass_rate": 1.0,
+          "physics_pass_rate": 1.0,
+          "agreement_rate": 1.0,
+          "mean_tool_calls": 5.0,
+          "tokens": {
+            "in": 9931,
+            "out": 832
+          },
+          "cost_usd": 0.042273
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "n_tasks": 1,
+    "n_trials_total": 1,
+    "llm_pass_rate": 1.0,
+    "physics_pass_rate": 1.0,
+    "agreement_rate": 1.0,
+    "total_tokens": {
+      "in": 9931,
+      "out": 832
+    },
+    "total_cost_usd": 0.042273,
+    "wall_clock_sec": 48.33037805557251
+  }
+}
