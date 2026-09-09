@@ -114,41 +114,71 @@ resulting simulation evidence does not establish hardware performance.
 
 \section{Auto-Adapter Framework}
 
-\subsection{Framework Structure and Agent Workspace}
+\subsection{Framework overview}
 
-Auto-Adapter constructs a capability interface for a given robot and generates
-a Python driver that implements its operations. Its inputs comprise public
-robot documentation, the fixed MuJoCo
-model used throughout a run, and task definitions whose requirements are
-traceable to public sources. The generated driver is not itself a task policy.
-Instead, it provides bounded robot operations that a separate controller may
-select and compose.
+Auto-Adapter runs in four phases: study, generate, validation and demo. The
+pipeline operates on a working directory containing the robot documentation,
+the robot's MJCF model files and a task library.
+Figure~\ref{fig:autoadapter-framework-workflow} shows the sequence and the
+feedback path from validation to generate.
 
-Interactive simulation can help an agent develop the driver, but the generated
-code should not control the evidence used to assess it. Auto-Adapter therefore
-separates three responsibilities: defining the required capabilities,
-implementing them for a particular robot, and assessing their physical effects.
-Capability requirements and validation cases are fixed before driver
-generation. The candidate driver cannot modify the observations, criteria, or
-verdict used in its assessment.
+\textbf{study.} The agent reads the robot documentation and inspects the MJCF
+to identify the joints, actuators and control conventions. It records its
+findings in \texttt{study.json}, then uses the task requirements to define
+reusable operations and their pass criteria. A separate validation compiler
+turns these criteria into executable tests before driver generation. The
+generation agent receives the capability interface but cannot inspect the
+tests. The agent can select a controller skeleton according to the robot's
+morphology: damped least-squares (DLS) inverse kinematics (IK) for serial arms,
+or proportional--derivative (PD) gait control for quadrupeds.
 
-The workflow applies this separation in a fixed order. It first studies the
-robot and simulation model before defining any capabilities. Task-Grounded
-Capability Design then derives reusable operations from the documented task
-requirements, after which an independent compiler constructs the corresponding
-behavioural tests. Driver synthesis implements the resulting capability
-interface. Independent capability assessment determines which operations may
-subsequently be used in downstream task demonstration.
+\textbf{generate.} The agent writes \texttt{driver.py} to implement the required
+operations. Through \texttt{execute\_python}, it runs the draft in development
+simulations and inspects the resulting robot state and execution errors. It
+revises the code against this feedback before submitting the driver to
+validation.
 
-Figure~\ref{fig:autoadapter-framework-workflow} traces this five-stage workflow
-from declared inputs to downstream task demonstration. Robot metadata, the MJCF
-model, and the task library feed study and capability design, while approved
-prior-run Experience is optional. During driver synthesis, the candidate may
-inspect files, revise \texttt{driver.py}, and use bounded development
-simulation. Independent assessment then runs the frozen driver in fresh MuJoCo
-tests and owns the capability verdict. Only accepted capabilities proceed to
-task demonstration; the dashed Repair path returns bounded feedback without
-exposing or changing the fixed validation cases.
+\textbf{validation.} The validator checks each capability in fresh MuJoCo
+simulations, using simulator state and the pass criteria prepared during study.
+For example:
+\[
+\texttt{driver.move\_cartesian}(\mathbf p^\star),
+\qquad
+\left\|\mathbf p_{\mathrm{ee}}(T)-\mathbf p^\star\right\|_2
+\leq \varepsilon,
+\]
+where \(\mathbf p^\star\) is the requested target,
+\(\mathbf p_{\mathrm{ee}}(T)\) is the end-effector position recorded at the end
+of execution, and \(\varepsilon\) is the specified tolerance. If any critical
+test fails, generate runs again with the diagnostic messages appended. Each
+revised driver is evaluated using the same tests and criteria.
+
+\textbf{demo.} ReCAP uses the generated driver to execute natural-language
+tasks, calling only capabilities that passed validation. It observes state
+through the driver's high-level methods and plans a sequence of capability
+calls, which the runtime executes and logs. For example, a pick-and-place task
+involving object \(o\) and target region \(\mathcal G\) follows:
+\[
+\operatorname{approach}(o)
+\rightarrow \operatorname{grasp}(o)
+\rightarrow \operatorname{lift}(o)
+\rightarrow \operatorname{place}(o,\mathcal G)
+\rightarrow \operatorname{release}(o).
+\]
+The terminal placement condition is
+\[
+\mathbf p_o(T)\in\mathcal G
+\;\land\;
+\operatorname{released}(o,T),
+\]
+where \(\mathbf p_o(T)\) is the object's position at the end of execution.
+Success is measured against the task's ground-truth criterion using
+independently recorded simulator state and execution video, avoiding reliance
+on the controller's self-report.
+
+The following subsections describe robot study and capability design, then
+explain how the tests are constructed. They subsequently detail driver
+generation, validation and repair, and downstream task execution.
 
 \begin{figure}[htbp]
   \centering
@@ -161,24 +191,6 @@ exposing or changing the fixed validation cases.
   dashed path denotes bounded Repair feedback.}
   \label{fig:autoadapter-framework-workflow}
 \end{figure}
-
-Each stage in which the language model authors an artefact uses a ReAct process
-that alternates between reasoning, tool use, and revision
-\citep{yao2023react}. The common interface provides
-\texttt{read\_file} for inspecting permitted inputs,
-\texttt{write\_file} for revising the current artefact, and
-\texttt{execute\_python} for bounded Python and MuJoCo execution. Results and
-execution errors return to the same conversation, allowing the agent to revise
-its work in response to observed behaviour.
-
-The initial robot-study stage, termed STUDY, establishes the information needed
-by the later stages. The agent examines the public documentation and fixed
-simulation model to determine how the robot is actuated, which limits and
-coordinate conventions apply, and which model elements provide observable
-evidence of motion. Bounded simulation probes may confirm how the model
-responds to actuator commands. The resulting \texttt{study.json} records these
-findings and unresolved implementation risks before either the capability
-contracts or driver code are written.
 
 \subsection{Task-Grounded Capability and Validation Design}
 
