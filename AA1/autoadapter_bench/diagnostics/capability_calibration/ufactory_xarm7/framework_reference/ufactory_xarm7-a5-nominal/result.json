@@ -1,0 +1,114 @@
+{
+  "action_return": {
+    "type": "NoneType",
+    "value": null
+  },
+  "capability_id": "A5",
+  "case_id": "ufactory_xarm7-a5-nominal",
+  "detail": "A5 trusted score=1.0",
+  "driver_origin": "reference",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 3125,
+    "body_max_displacement_from_reset": {
+      "fixed_contact_target": 0.0,
+      "left_finger": 0.01934373694594244,
+      "left_inner_knuckle": 0.01916622075211821,
+      "left_outer_knuckle": 0.01908670831230401,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.014780632257544,
+      "link4": 0.015016029743568735,
+      "link5": 0.01931945781933963,
+      "link6": 0.01931945781933963,
+      "link7": 0.018791107005513494,
+      "link_base": 0.0,
+      "right_finger": 0.01934374126822959,
+      "right_inner_knuckle": 0.01916620811690513,
+      "right_outer_knuckle": 0.019086679098915,
+      "world": 0.0,
+      "xarm_gripper_base_link": 0.018791107005513494
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 1.2276608589169149e-05,
+      "joint2": 0.05045119426875744,
+      "joint3": 2.282377944665256e-05,
+      "joint4": 0.0242722227057246,
+      "joint5": 1.072620785499475e-05,
+      "joint6": 0.03949063207181325,
+      "joint7": 4.059367508711703e-07,
+      "left_driver_joint": 0.00189822743982237,
+      "left_finger_joint": 0.0020764537974775417,
+      "left_inner_knuckle_joint": 0.0019439229059957045,
+      "right_driver_joint": 0.0018981718870624228,
+      "right_finger_joint": 0.00207645652450138,
+      "right_inner_knuckle_joint": 0.001944198846022662
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "link_tcp": 0.019728620950362735
+    },
+    "step_count": 3125
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "ufactory_xarm7-a5-nominal",
+  "method_name": "move_cartesian_offset_and_return",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A5",
+    "measurements": {
+      "best_outbound_error_m": 0.0002726267552604344,
+      "final_return_error_m": 0.0002744992496202568,
+      "maximum_displacement_fraction": 0.9864310475181366,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 6.249999999999479,
+      "site_max_displacement_m": 0.019728620950362732
+    },
+    "parameters": {
+      "base_body_name": "link_base",
+      "contract_id": "A5",
+      "guarded_joint_names": [
+        "left_driver_joint"
+      ],
+      "guarded_joint_tolerances": [
+        0.0425
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "link_tcp"
+    },
+    "score": 1.0
+  },
+  "model_generated": false,
+  "n_frames": 64,
+  "ok": true,
+  "physics_steps": 3125,
+  "reference": true,
+  "score": 1.0,
+  "sim_elapsed_s": 6.249999999999479,
+  "test": "ufactory_xarm7-a5-nominal",
+  "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 64,
+    "ok": true,
+    "path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-nominal/video.mp4"
+  },
+  "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-nominal/video.mp4"
+}

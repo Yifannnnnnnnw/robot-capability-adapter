@@ -1,0 +1,249 @@
+{
+  "model_generated": false,
+  "evidence_kind": "diagnostic_reference_positive_control_suite",
+  "robot_configuration_id": "ufactory_xarm7",
+  "scene_path": "assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml",
+  "controller": "autoadapter_bench.reference_controls.ufactory_xarm7.reference_arm.ReferenceXArm7Driver",
+  "reset_settle_s_per_case": 0.5,
+  "dynamic_action_path": {
+    "writes": [
+      "data.ctrl"
+    ],
+    "step": "mujoco.mj_step",
+    "direct_dynamic_state_writes": false,
+    "ik_uses_independent_data": true
+  },
+  "cases": [
+    {
+      "case_id": "ufactory_xarm7-a1-calibrated_boundary",
+      "capability_id": "A1",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 2750,
+      "sim_time_s": 5.499999999999561,
+      "video_frames": 56,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a1-calibrated_boundary/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a1-calibrated_boundary/trace.json",
+      "measurements": {
+        "best_error_m": 0.0008434233146521797,
+        "final_error_m": 0.0008434233146521797,
+        "longest_target_hold_s": 3.355999999999631,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 5.499999999999561,
+        "site_max_displacement_m": 0.022657597857673864
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a1-nominal",
+      "capability_id": "A1",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 2250,
+      "sim_time_s": 4.499999999999671,
+      "video_frames": 46,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a1-nominal/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a1-nominal/trace.json",
+      "measurements": {
+        "best_error_m": 0.0004175505221122022,
+        "final_error_m": 0.0004175505221122022,
+        "longest_target_hold_s": 3.36199999999967,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 4.499999999999671,
+        "site_max_displacement_m": 0.018858541711265938
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a2-calibrated_boundary",
+      "capability_id": "A2",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 6250,
+      "sim_time_s": 12.50000000000101,
+      "video_frames": 126,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a2-calibrated_boundary/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a2-calibrated_boundary/trace.json",
+      "measurements": {
+        "final_error_m": 5.835095711572851e-05,
+        "max_cross_track_error_m": 0.0012009176132883454,
+        "ordered_waypoints_reached": true,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 12.50000000000101,
+        "site_max_displacement_m": 0.13923671094137222
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a2-nominal",
+      "capability_id": "A2",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 3250,
+      "sim_time_s": 6.499999999999451,
+      "video_frames": 66,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a2-nominal/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a2-nominal/trace.json",
+      "measurements": {
+        "final_error_m": 7.412322226259282e-05,
+        "max_cross_track_error_m": 0.0012152375250273641,
+        "ordered_waypoints_reached": true,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 6.499999999999451,
+        "site_max_displacement_m": 0.10575625689777803
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a3-calibrated_boundary",
+      "capability_id": "A3",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 1625,
+      "sim_time_s": 3.249999999999808,
+      "video_frames": 34,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a3-calibrated_boundary/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a3-calibrated_boundary/trace.json",
+      "measurements": {
+        "final_opening_error": 0.03402566209690927,
+        "final_opening_fraction": 0.7659743379030908,
+        "longest_opening_hold_s": 2.4019999999998074,
+        "maximum_opening_change": 0.7271319325618589,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 3.249999999999808
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a3-nominal",
+      "capability_id": "A3",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 1125,
+      "sim_time_s": 2.2499999999999183,
+      "video_frames": 24,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a3-nominal/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a3-nominal/trace.json",
+      "measurements": {
+        "final_opening_error": 0.03535785149156975,
+        "final_opening_fraction": 0.23535785149156976,
+        "longest_opening_hold_s": 1.639999999999918,
+        "maximum_opening_change": 0.7641427508993146,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.2499999999999183
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a4-calibrated_boundary",
+      "capability_id": "A4",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 1301,
+      "sim_time_s": 2.6019999999998795,
+      "video_frames": 28,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a4-calibrated_boundary/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a4-calibrated_boundary/trace.json",
+      "measurements": {
+        "best_precontact_error_m": 0.0007510160215860123,
+        "first_target_contact_s": 2.5019999999998905,
+        "longest_target_contact_s": 0.09999999999998899,
+        "maximum_speed_after_contact_m_s": 0.01800035870907399,
+        "minimum_contact_distance_m": -3.642324933166007e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.6019999999998795,
+        "site_max_displacement_m": 0.02194982446806219
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a4-nominal",
+      "capability_id": "A4",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 1020,
+      "sim_time_s": 2.0399999999999414,
+      "video_frames": 22,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a4-nominal/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a4-nominal/trace.json",
+      "measurements": {
+        "best_precontact_error_m": 0.0007510160215860123,
+        "first_target_contact_s": 1.9399999999999524,
+        "longest_target_contact_s": 0.09999999999998899,
+        "maximum_speed_after_contact_m_s": 0.017978438175607944,
+        "minimum_contact_distance_m": -3.6634193640488154e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.0399999999999414,
+        "site_max_displacement_m": 0.01355373062383668
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a5-calibrated_boundary",
+      "capability_id": "A5",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 4125,
+      "sim_time_s": 8.249999999999591,
+      "video_frames": 84,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-calibrated_boundary/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-calibrated_boundary/trace.json",
+      "measurements": {
+        "best_outbound_error_m": 0.0002997605833918427,
+        "final_return_error_m": 0.0002915242674017161,
+        "maximum_displacement_fraction": 0.9850856556235725,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 8.249999999999591,
+        "site_max_displacement_m": 0.01970171311247145
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    },
+    {
+      "case_id": "ufactory_xarm7-a5-nominal",
+      "capability_id": "A5",
+      "score": 1.0,
+      "ok": true,
+      "physics_steps": 3125,
+      "sim_time_s": 6.249999999999479,
+      "video_frames": 64,
+      "video_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-nominal/video.mp4",
+      "trace_path": "/tmp/xarm7-suite-realvideo-20260909b/ufactory_xarm7-a5-nominal/trace.json",
+      "measurements": {
+        "best_outbound_error_m": 0.0002726267552604344,
+        "final_return_error_m": 0.0002744992496202568,
+        "maximum_displacement_fraction": 0.9864310475181366,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 6.249999999999479,
+        "site_max_displacement_m": 0.019728620950362732
+      },
+      "all_ctrl_within_declared_mjcf_ranges": true,
+      "direct_dynamic_state_writes": false,
+      "model_parameter_writes": false
+    }
+  ],
+  "verdict": "all_10_reference_cases_pass",
+  "source_run_dir": "/tmp/xarm7-suite-realvideo-20260909b",
+  "limitations": [
+    "Diagnostic calibration evidence only; no generated model or LLM output is used.",
+    "The score field is from the AA1 capability_metrics evaluator over trusted per-step samples.",
+    "The suite was run with the real MuJoCo offscreen Renderer; the listed MP4 paths are local /tmp artifacts and are intentionally not committed."
+  ]
+}

@@ -1,0 +1,567 @@
+{
+  "artifact_type": "capability_design",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "robot_configuration_id": "ufactory_xarm7",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "ufactory-xarm7-metaworld-source-protocols-2026-08-20-v1",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)",
+    "request_required": [
+      "request"
+    ]
+  },
+  "capabilities": [
+    {
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "description": "Move the UFACTORY xArm7 end effector to one bounded world-frame position.",
+      "effect": "Bounded closed-loop end-effector position regulation.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A1 request bounds: target_position_m"
+                }
+              ]
+            }
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_position_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The public robot state is available and finite before motion starts.",
+        "The requested world-frame target and duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_closed_loop_regulation",
+        "completion": "Regulate until the terminal hold criterion is satisfied or the requested duration expires."
+      },
+      "invariants": [
+        "Commands remain within the public actuator and joint limits.",
+        "The gripper aperture is not intentionally changed while the arm target is regulated."
+      ],
+      "failure_behavior": "Stop active motion and return a bounded capability error when the request cannot be completed within its declared duration or public limits.",
+      "criteria": [
+        {
+          "metric": "end_effector_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.015,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "all_samples"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A1"
+        }
+      ]
+    },
+    {
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "description": "Trace bounded UFACTORY xArm7 world-frame Cartesian waypoints in order.",
+      "effect": "Ordered Cartesian path tracking with bounded cross-track error.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "waypoints_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "unit": "m",
+              "frame": "world",
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+                  }
+                ]
+              }
+            }
+          },
+          "max_duration_per_segment_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 5.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "waypoints_m",
+          "max_duration_per_segment_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The public robot state is available and finite before path execution starts.",
+        "Every requested world-frame waypoint and segment duration satisfies the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "ordered_bounded_segments",
+        "completion": "Visit the supplied waypoints in order, then maintain the terminal waypoint for the criterion-defined hold."
+      },
+      "invariants": [
+        "Waypoint order is preserved throughout the call.",
+        "Commands remain within the public actuator and joint limits."
+      ],
+      "failure_behavior": "Stop active path motion and return a bounded capability error if a waypoint cannot be reached in sequence within the declared segment durations or public limits.",
+      "criteria": [
+        {
+          "metric": "cartesian_path_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "ordered_waypoints_and_terminal_hold",
+            "terminal_hold_s": 0.5
+          },
+          "aggregation": {
+            "kind": "maximum_cross_track_and_terminal_error"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "cross_track_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.02
+            },
+            {
+              "metric": "terminal_position_error",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.015
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A2"
+        }
+      ]
+    },
+    {
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "description": "Set the UFACTORY xArm7 physical gripper aperture by normalised opening fraction.",
+      "effect": "Bounded gripper aperture regulation without changing the arm target.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "opening_fraction": {
+            "type": "number",
+            "unit": "ratio",
+            "frame": "none",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "opening_fraction",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The public gripper state is available and finite before aperture regulation starts.",
+        "The requested opening fraction and duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_aperture_regulation",
+        "completion": "Regulate the aperture until the criterion-defined hold is satisfied or the requested duration expires."
+      },
+      "invariants": [
+        "The active arm pose target is not intentionally changed by this call.",
+        "Gripper commands remain within the public actuator limits."
+      ],
+      "failure_behavior": "Stop changing the gripper command and return a bounded capability error if the requested aperture cannot be established within the declared duration or public limits.",
+      "criteria": [
+        {
+          "metric": "normalised_aperture_error",
+          "unit": "ratio",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.25
+          },
+          "aggregation": {
+            "kind": "all_samples_and_bidirectional_excursion"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "bidirectional_excursion",
+              "unit": "ratio",
+              "comparator": ">=",
+              "threshold": 0.5
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A3"
+        }
+      ]
+    },
+    {
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "description": "Approach a reachable target along a bounded ray until controlled contact.",
+      "effect": "Bounded axial approach with controlled target contact and penetration.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "precontact_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+                }
+              ]
+            }
+          },
+          "approach_direction_unit": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "unitless",
+            "frame": "world",
+            "items": {
+              "type": "number",
+              "unit": "unitless",
+              "frame": "world",
+              "minimum": -1.0,
+              "maximum": 1.0,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+                }
+              ]
+            }
+          },
+          "max_travel_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "none",
+            "exclusiveMinimum": 0.0,
+            "maximum": 0.08,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+              }
+            ]
+          },
+          "max_approach_speed_m_s": {
+            "type": "number",
+            "unit": "m/s",
+            "frame": "none",
+            "exclusiveMinimum": 0.0,
+            "maximum": 0.05,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+              }
+            ]
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 8.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "precontact_position_m",
+          "approach_direction_unit",
+          "max_travel_m",
+          "max_approach_speed_m_s",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The public robot and contact observations are available and finite before approach starts.",
+        "The precontact pose, approach direction, travel, speed, and duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "precontact_then_contact_hold",
+        "completion": "Reach the precontact state, advance along the declared ray, and stop advancing once controlled contact is established."
+      },
+      "invariants": [
+        "Motion proceeds along the declared approach direction after the precontact state.",
+        "Commands remain within the requested travel, speed, public actuator, and joint limits.",
+        "Unrelated contact is not intentionally created."
+      ],
+      "failure_behavior": "Stop the approach and return a bounded capability error on unavailable contact observations, unrelated contact, exhausted travel or duration, or a public-limit violation.",
+      "criteria": [
+        {
+          "metric": "contact_integrity",
+          "unit": "mixed",
+          "comparator": "==",
+          "threshold": 1,
+          "temporal": {
+            "kind": "ordered_precontact_ray_contact",
+            "contact_hold_s": 0.1
+          },
+          "aggregation": {
+            "kind": "all_gates"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "post_contact_speed",
+              "unit": "m/s",
+              "comparator": "<=",
+              "threshold": 0.02
+            },
+            {
+              "metric": "penetration",
+              "unit": "m",
+              "comparator": "<=",
+              "threshold": 0.005
+            },
+            {
+              "metric": "unrelated_contact_count",
+              "unit": "count",
+              "comparator": "==",
+              "threshold": 0
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A4"
+        }
+      ]
+    },
+    {
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "description": "Move the UFACTORY xArm7 end effector by a base-frame offset and return.",
+      "effect": "Ordered outbound and return displacement tracking in the robot-base frame.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "offset_robot_base_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "unit": "m",
+            "frame": "robot_base",
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "robot_base",
+              "minimum": -0.06,
+              "maximum": 0.06,
+              "evidence_refs": [
+                {
+                  "source_id": "b1_driver_validation_criteria",
+                  "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+                }
+              ]
+            }
+          },
+          "max_duration_per_leg_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "minimum": 0.25,
+            "maximum": 5.0,
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+              }
+            ]
+          }
+        },
+        "required": [
+          "offset_robot_base_m",
+          "max_duration_per_leg_s"
+        ],
+        "additionalProperties": false
+      },
+      "preconditions": [
+        "The public robot state is available and finite before the outbound leg starts.",
+        "The requested robot-base offset and per-leg duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "ordered_outbound_and_return",
+        "completion": "Establish the requested outbound displacement before returning to the captured start pose."
+      },
+      "invariants": [
+        "The call uses the robot-base frame captured at its start.",
+        "The return leg is not started before the outbound leg has completed.",
+        "Commands remain within the public actuator and joint limits."
+      ],
+      "failure_behavior": "Stop active motion and return a bounded capability error if either ordered leg cannot complete within its declared duration or public limits.",
+      "criteria": [
+        {
+          "metric": "ordered_outbound_return_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.015,
+          "temporal": {
+            "kind": "ordered_phase_holds",
+            "outbound_hold_s": 0.25,
+            "return_hold_s": 0.5
+          },
+          "aggregation": {
+            "kind": "both_legs_and_displacement"
+          },
+          "source_refs": [
+            {
+              "source_id": "b1_driver_validation_criteria",
+              "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"
+            }
+          ],
+          "checks": [
+            {
+              "metric": "requested_displacement_fraction",
+              "unit": "ratio",
+              "comparator": ">=",
+              "threshold": 0.8
+            }
+          ]
+        }
+      ],
+      "evidence_refs": [
+        {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "SO-101 A5"
+        }
+      ]
+    }
+  ],
+  "task_support": [],
+  "scene_path": "assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml",
+  "robot_bindings_path": "autoadapter_bench/spec/capabilities/ufactory_xarm7/robot_bindings.json"
+}
