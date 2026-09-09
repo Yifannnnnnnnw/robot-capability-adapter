@@ -1,0 +1,9 @@
+{
+  "contract_id": "A1",
+  "parameters": {
+    "contract_id": "A1",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "attachment_site"
+  },
+  "score": 1.0
+}

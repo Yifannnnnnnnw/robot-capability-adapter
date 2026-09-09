@@ -1,0 +1,54 @@
+{
+  "artifact_type": "robot_bindings",
+  "schema_version": "2.0",
+  "robot_configuration_id": "kuka_iiwa14",
+  "family": "arm",
+  "scene_path": "assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml",
+  "site_name": "attachment_site",
+  "base_body_name": "base",
+  "arm_joint_names": ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7"],
+  "arm_actuator_names": ["actuator1", "actuator2", "actuator3", "actuator4", "actuator5", "actuator6", "actuator7"],
+  "joint_limits": {
+    "joint1": [-2.96706, 2.96706],
+    "joint2": [-2.0944, 2.0944],
+    "joint3": [-2.96706, 2.96706],
+    "joint4": [-2.0944, 2.0944],
+    "joint5": [-2.96706, 2.96706],
+    "joint6": [-2.0944, 2.0944],
+    "joint7": [-3.05433, 3.05433]
+  },
+  "continuous_joint_names": [],
+  "ik_max_iter": 120,
+  "ik_damping": 0.02,
+  "tool_geom_names": ["link7_contact_geom"],
+  "tool_body_names": ["link7"],
+  "target_geom_names": ["fixed_contact_geom"],
+  "fixture_target_body_name": "fixed_contact_target",
+  "fixture_origin_m": [0.6689216610421869, 1.9653493775345922e-18, 0.28504542429165386],
+  "fk_targets_m": [
+    [0.6519175340259213, 1.3918228253195858e-17, 0.1924353681094415],
+    [0.6364416340080432, 5.210352354021968e-18, 0.14087349879070193]
+  ],
+  "home_keyframe": "home",
+  "home_qpos_by_joint": {
+    "joint1": 0.0,
+    "joint2": 0.785398,
+    "joint3": 0.0,
+    "joint4": -1.5708,
+    "joint5": 0.0,
+    "joint6": 0.0,
+    "joint7": 0.0
+  },
+  "native_actuation": "position_general_affine_gravity_compensated",
+  "native_gains": [2000, 2000, 2000, 2000, 2000, 2000, 2000],
+  "native_bias_prm": [
+    [0, -2000, -200],
+    [0, -2000, -200],
+    [0, -2000, -200],
+    [0, -2000, -200],
+    [0, -2000, -200],
+    [0, -2000, -200],
+    [0, -2000, -200]
+  ],
+  "source": "AA1 assets/mjcf/kuka_iiwa_14/iiwa14.xml with independent fixed contact fixture, actual native ranges and position-servo bias"
+}

@@ -1,0 +1,30 @@
+{
+  "model_generated": false,
+  "evidence_kind": "diagnostic_reference_positive_control_suite",
+  "robot_configuration_id": "kuka_iiwa14",
+  "scene_path": "assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml",
+  "controller": "autoadapter_bench.reference_controls.kuka_iiwa14.reference_arm.ReferenceKukaDriver",
+  "reset_settle_s_per_case": 0.5,
+  "dynamic_action_path": {
+    "writes": ["data.ctrl"],
+    "step": "mujoco.mj_step",
+    "direct_dynamic_state_writes": false,
+    "ik_uses_independent_data": true
+  },
+  "cases": [
+    {"case_id": "kuka_iiwa_14-a1-nominal", "capability_id": "A1", "score": 1.0, "physics_steps": 2250, "sim_time_s": 4.499999999999671, "terminal_error_m": 0.00019402605685504758, "terminal_hold_max_error_m": 0.0019006258271513938, "video_frames": 46, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a1-nominal/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a1-calibrated_boundary", "capability_id": "A1", "score": 1.0, "physics_steps": 2750, "sim_time_s": 5.499999999999561, "terminal_error_m": 0.00019732380455152036, "terminal_hold_max_error_m": 0.002311512369852485, "video_frames": 56, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a1-calibrated_boundary/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a2-nominal", "capability_id": "A2", "score": 1.0, "physics_steps": 3250, "sim_time_s": 6.499999999999451, "terminal_error_m": 0.0002945317863720778, "maximum_path_error_m": 0.0010342259270973157, "video_frames": 66, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a2-nominal/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a2-calibrated_boundary", "capability_id": "A2", "score": 1.0, "physics_steps": 6250, "sim_time_s": 12.50000000000101, "terminal_error_m": 0.0003127941617804759, "maximum_path_error_m": 0.002792390787684967, "video_frames": 126, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a2-calibrated_boundary/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a4-nominal", "capability_id": "A4", "score": 1.0, "physics_steps": 1228, "sim_time_s": 2.4559999999998956, "first_target_contact_time_s": 2.855999999999907, "target_contact_steps": 51, "maximum_penetration_m": 0.00006701215719300685, "post_contact_speed_max_m_s": 0.016139935043747642, "video_frames": 26, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a4-nominal/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a4-calibrated_boundary", "capability_id": "A4", "score": 1.0, "physics_steps": 1523, "sim_time_s": 3.0459999999998306, "first_target_contact_time_s": 3.445999999999842, "target_contact_steps": 51, "maximum_penetration_m": 0.00007963001918880747, "post_contact_speed_max_m_s": 0.016118320332126238, "video_frames": 32, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a4-calibrated_boundary/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a5-nominal", "capability_id": "A5", "score": 1.0, "physics_steps": 3125, "sim_time_s": 6.249999999999479, "outbound_max_displacement_m": 0.019737794332768344, "outbound_target_error_m": 0.0002623038034852047, "terminal_return_error_m": 0.00029318800684636955, "video_frames": 64, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a5-nominal/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true},
+    {"case_id": "kuka_iiwa_14-a5-calibrated_boundary", "capability_id": "A5", "score": 1.0, "physics_steps": 4125, "sim_time_s": 8.249999999999591, "outbound_max_displacement_m": 0.019707786010306864, "outbound_target_error_m": 0.00029238197974138484, "terminal_return_error_m": 0.00029368964902694235, "video_frames": 84, "video_path": "autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a5-calibrated_boundary/video.mp4", "all_ctrl_within_declared_mjcf_ranges": true}
+  ],
+  "verdict": "all_8_reference_cases_pass",
+  "limitations": [
+    "Diagnostic calibration evidence only; no generated model or LLM output is used.",
+    "The score field is from the AA1 capability_metrics evaluator over trusted per-step samples.",
+    "The suite was run with the real MuJoCo offscreen Renderer; each listed MP4 completed with no renderer errors."
+  ]
+}

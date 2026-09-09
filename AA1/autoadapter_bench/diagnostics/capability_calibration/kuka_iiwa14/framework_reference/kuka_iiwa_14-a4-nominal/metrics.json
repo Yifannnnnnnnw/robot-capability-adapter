@@ -1,0 +1,21 @@
+{
+  "contract_id": "A4",
+  "parameters": {
+    "contract_id": "A4",
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "attachment_site",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_body_names": [
+      "link7"
+    ],
+    "tool_geom_names": [
+      "geom_60",
+      "link7_contact_geom"
+    ]
+  },
+  "score": 1.0
+}
