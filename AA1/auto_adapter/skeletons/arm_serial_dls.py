@@ -1,9 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 """Serial-chain manipulator skeleton: DLS IK + weld-based sim grasp.
 
-Production-tested motion primitives. The LLM agent fills an `ArmSpec`
-(joint / actuator / site / weld names) and instantiates this class — it
-does *not* implement any of the math below.
+This module supplies low-level joint, IK, state, grasp, and MuJoCo physics
+primitives. For a robot with a capability profile, a generated `Robot`
+subclass fills robot-specific bindings in `ArmSpec` and implements every
+public `method(request)` capability required by that profile. The profile and
+its criteria remain in the public `capability_design.json`.
+
+Robots without a capability profile retain the legacy binding interface:
+construct an `ArmSpec` with joint / actuator / site / weld names and
+instantiate this skeleton.
 
 Designed for: SO-100, SO-101, Franka Panda, UR5e, xArm 6/7, KUKA iiwa,
 and similar serial open-chain manipulators (5–7 DoF).
@@ -38,10 +44,13 @@ class IKUnreachableError(RuntimeError):
 class ArmSerialDLSSkeleton(SkeletonBase):
     """Damped Least-Squares IK + actuator-space interp + weld grasp.
 
-    All numerical methods (Jacobian, DLS damping, joint clamping, weld
-    activation) live in this file. Agent-generated code should only
-    construct an `ArmSpec`, call `from_mjcf`, and use the public API
-    below from `skills.py`.
+    This class provides low-level joint, IK, state, grasp, and MuJoCo physics
+    primitives. For a catalogued robot with a capability profile, a generated
+    `Robot` subclass fills robot-specific `ArmSpec` bindings and implements
+    every required public `method(request)` capability. The public
+    `capability_design.json` holds the profile and its criteria. Robots
+    without a capability profile retain the legacy `ArmSpec`/`from_mjcf`
+    binding interface and this class's public low-level methods.
     """
 
     def __init__(self, model, data, spec: ArmSpec) -> None:

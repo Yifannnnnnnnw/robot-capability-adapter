@@ -1,10 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Quadruped skeleton: joint-space control + hand-tuned periodic trot.
 
-This is the v1 quadruped skeleton — deliberately simple. It uses joint-space PD
-torque control with a sinusoidal trot gait so we can demonstrate a Go2 / ANYmal /
-Spot walking forward without any learning or convex MPC. v2 will replace the
-trot with proper convex-MPC body-control.
+This module supplies low-level joint, gait, state, actuator, and MuJoCo physics
+primitives. It supports native MuJoCo torque and position actuators: torque
+actuators receive bounded joint-space PD commands, while native position
+actuators receive bounded joint-position targets.
+
+For a robot with a capability profile, a generated `Robot` subclass fills
+robot-specific bindings in `QuadrupedSpec` and implements every public
+`method(request)` capability required by that profile. The profile and its
+criteria remain in the public `capability_design.json`. Robots without a
+capability profile retain the legacy binding interface.
 
 Design:
   - Spec lists four legs' joints + actuators (3 per leg), in model order.
@@ -16,7 +22,7 @@ Design:
   - PD: τ = kp · (q_des - q) + kd · (qd_des - qd); applied at every sim step
 
 Compatible with: Unitree Go1/Go2, Spot, ANYmal, Mini Cheetah (any 12-DoF
-quadruped with torque-controlled hip/thigh/calf per leg, in that order).
+quadruped with hip/thigh/calf joints per leg, in that order).
 """
 from __future__ import annotations
 
@@ -40,9 +46,16 @@ _J_HIP, _J_THIGH, _J_CALF = 0, 1, 2
 class QuadrupedPDGaitSkeleton(SkeletonBase):
     """12-DoF quadruped skeleton: joint-space PD + hand-tuned trot.
 
-    All math is plain numpy + MuJoCo. The LLM agent only fills the Spec and
-    instantiates this class. Behavior methods (`stand_up`, `walk_forward`,
-    `sit`) advance physics internally.
+    This class provides low-level joint, gait, state, actuator, and MuJoCo
+    physics primitives. It supports native MuJoCo torque and position
+    actuators. Behavior methods (`stand_up`, `walk_forward`, `sit`) advance
+    physics internally.
+
+    For a robot with a capability profile, a generated `Robot` subclass fills
+    robot-specific `QuadrupedSpec` bindings and implements every required
+    public `method(request)` capability. The profile and its criteria remain
+    in public `capability_design.json`. Robots without a capability profile
+    retain the legacy binding interface.
     """
 
     def __init__(self, model, data, spec: QuadrupedSpec) -> None:
@@ -624,7 +637,7 @@ class QuadrupedPDGaitSkeleton(SkeletonBase):
     def walk_forward(self, secs: float = 3.0, speed: float = 0.3,
                      auto_calibrate: bool = True,
                      duration: Optional[float] = None) -> bool:
-        """Hand-tuned trot.  v1 — fragile; v2 will be convex-MPC.
+        """Hand-tuned trot.
 
         Diagonal pairs swing in anti-phase. Trot phases come from
         spec.gait_phases or auto-derived from leg-key order.
