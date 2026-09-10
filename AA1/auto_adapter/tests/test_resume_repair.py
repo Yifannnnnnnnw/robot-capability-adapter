@@ -174,3 +174,23 @@ def test_standard_default_budget_is_initial_generation_plus_three_repairs(tmp_pa
     monkeypatch.setattr(runner, "_phase_validate", lambda: PhaseResult("validate", False, 0.0))
     runner.run(stop_after="validate")
     assert calls == [1, 2, 3]
+
+
+def test_existing_candidate_does_not_make_failed_model_invocation_a_success(tmp_path, monkeypatch):
+    from auto_adapter import orchestrator as module
+
+    scene = tmp_path / "fixture.xml"
+    scene.write_text("<mujoco/>")
+    runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "output"))
+    (runner.workspace / "driver.py").write_text("# copied historical candidate\n")
+    failed = SimpleNamespace(
+        ok=False, error="holistic invoke failed: DNS error", final_text="",
+        total_tokens={"in": 0, "out": 0},
+        trace=[SimpleNamespace(stop_reason="invoke_error")],
+    )
+    monkeypatch.setattr(module, "ReactLoop", lambda **kwargs: SimpleNamespace(run=lambda msg: failed))
+    result = runner._run_phase(name="03_repair_1", system="fixture", user_msg="fixture",
+                               tools=[], max_iters=1, expected_artifacts=["driver.py"])
+    assert result.ok is False
+    assert result.error == failed.error
+    assert result.metadata["transport_error"] is True

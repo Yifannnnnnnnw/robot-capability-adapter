@@ -25,10 +25,14 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
+import subprocess
+import sys
 import time
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 
 from .agent import ReactLoop, ReactResult, ToolSpec
 from .robot_catalog import (
@@ -192,11 +196,37 @@ class SelfAssembleResult:
     phases: list[PhaseResult]
     ok: bool  # True iff all phases reached `ok=True`
 
+    @property
+    def generation_ok(self) -> bool:
+        """Whether the recorded generation/repair result produced a candidate."""
+        candidates = [
+            phase for phase in self.phases
+            if phase.name in {"generate", "02_generate"}
+            or phase.name.startswith("03_repair_")
+        ]
+        return bool(candidates and candidates[-1].ok)
+
+    @property
+    def framework_ok(self) -> bool:
+        """Whether the legacy Framework validation phase passed."""
+        return any(phase.name in {"validate", "03_validate"} and phase.ok
+                   for phase in self.phases)
+
+    @property
+    def stage1_ok(self) -> bool:
+        """Whether the legacy result contains a successful phase-one path."""
+        return bool(self.phases and self.phases[0].name in {"study", "01_study"}
+                    and self.phases[0].ok and self.generation_ok
+                    and self.framework_ok)
+
     def to_json(self) -> dict:
         return {
             "robot_id": self.robot_id,
             "workspace": str(self.workspace),
             "ok": self.ok,
+            "generation_ok": self.generation_ok,
+            "framework_ok": self.framework_ok,
+            "stage1_ok": self.stage1_ok,
             "phases": [
                 {
                     "name": p.name,
@@ -696,6 +726,13 @@ class SelfAssemble:
             ok = result.ok
             error = result.error
 
+        # A resumed workspace already contains a candidate. Its existence
+        # cannot turn an API/transport failure into a successful repair.
+        transport_error = bool(result.trace and result.trace[-1].stop_reason == "invoke_error")
+        if transport_error:
+            ok = False
+            error = result.error or "model invocation failed"
+
         return PhaseResult(
             name=name,
             ok=ok,
@@ -705,6 +742,7 @@ class SelfAssemble:
             final_text=result.final_text,
             error=error,
             token_usage=result.total_tokens,
+            metadata={"transport_error": True} if transport_error else {},
         )
 
     # ─── Per-phase methods (thin: just bind tools + prompts) ──────────────
@@ -785,7 +823,7 @@ class SelfAssemble:
                 "outer VALIDATE harness reported the following structural "
                 "failures. Re-generate driver.py addressing these failures:\n"
                 f"{prior_validate_failures}\n"
-                "Read validate_report.json for the full report; use "
+                "Use only the candidate-facing feedback above; use "
                 f"{verification_tool} to "
                 "verify your fixes BEFORE returning."
             )
@@ -835,15 +873,17 @@ class SelfAssemble:
         verification_tool = "local_exec" if self.cfg.mode == "local" else "execute_python"
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
-            f"This is repair attempt {int(attempt)}. A prior driver.py already "
-            "exists in the workspace and is the candidate to modify IN PLACE.\n"
+            f"This is repair attempt {int(attempt)}. A prior driver.py may "
+            "exist in the workspace; if it exists, modify it IN PLACE, and if "
+            "it is missing, create it from the public inputs.\n"
             "Use the public study.json, the public capability contract, the "
             "MJCF, and the public skeleton interface. Preserve behavior that "
             "already passes and fix the failures below.\n\n"
             "Candidate-facing Framework feedback:\n"
             f"{feedback or '(no detail was reported; inspect the existing driver)'}\n\n"
             "Rules:\n"
-            "  1. Read and edit driver.py in place; leave a complete driver.py.\n"
+            "  1. Read and edit driver.py in place when present; otherwise create "
+            "a complete driver.py.\n"
             f"  2. Use {verification_tool} only for small public checks against the "
             "real MJCF and current driver.\n"
             "  3. Do not read validate_report.json, private validation suites, "
@@ -1505,3 +1545,856 @@ class SelfAssemble:
             lines.append("")
 
         (self.workspace / "narrative.md").write_text("\n".join(lines))
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Unified phase-one entrypoint
+# ──────────────────────────────────────────────────────────────────────────
+
+
+_STAGE1_MAX_REPAIRS = 3
+_STAGE1_FRAMEWORK_TIMEOUT_SEC = 900
+_STAGE1_SCRATCH_CHECKS = {
+    # These are the checks emitted by FromScratchOrchestrator's existing
+    # validator.  Requiring the complete set prevents a truthful all_ok=True
+    # on a report that simply omitted one of the trusted behaviours.
+    "h1": {
+        "no_skeleton_import", "robot_class_present", "build_from_mjcf",
+        "home", "stand_balance", "squat", "humanoid_walk", "describe",
+    },
+    "skydio_x2": {
+        "no_skeleton_import", "robot_class_present", "build_from_mjcf",
+        "home", "takeoff", "move_to", "describe",
+    },
+}
+
+
+def _stage1_write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False, default=str)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def _stage1_read_json(path: Path) -> Optional[dict]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _stage1_pointer(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    path = Path(value)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT.parent.resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
+def _stage1_python() -> str:
+    venv_python = REPO_ROOT / ".venv" / "bin" / "python"
+    return str(venv_python) if venv_python.is_file() else sys.executable
+
+
+def _stage1_git_commit() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except Exception:  # noqa: BLE001 - metadata must not block a run
+        return None
+    if getattr(result, "returncode", 1) != 0:
+        return None
+    value = str(getattr(result, "stdout", "") or "").strip()
+    return value or None
+
+
+def _stage1_utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _stage1_transport_error(result: Any) -> bool:
+    metadata = getattr(result, "metadata", None)
+    if isinstance(metadata, Mapping) and bool(metadata.get("transport_error")):
+        return True
+    trace = getattr(result, "trace", None) or []
+    if not trace:
+        return False
+    last = trace[-1]
+    reason = last.get("stop_reason") if isinstance(last, Mapping) else getattr(last, "stop_reason", None)
+    return reason == "invoke_error"
+
+
+def _stage1_external_exception(exc: BaseException) -> bool:
+    """Identify model/session failures without labelling local bugs blocked."""
+    if isinstance(exc, (TimeoutError, ConnectionError)):
+        return True
+    if isinstance(exc, ValueError) and "missing holistic api credential" in str(exc).lower():
+        return True
+    if isinstance(exc, (AttributeError, AssertionError, KeyError, NameError,
+                        TypeError, ValueError, UnboundLocalError)):
+        return False
+    text = (type(exc).__name__ + " " + str(exc)).lower()
+    return any(token in text for token in (
+        "invoke", "holistic", "bedrock", "agentcore", "credential",
+        "throttl", "rate limit", "network", "connection", "timeout",
+        "timed out", "dns", "authentication", "unauthorized",
+    ))
+
+
+def _stage1_trace_usage(path: Path) -> dict:
+    """Recover usage from a partially written JSONL trace after an exception."""
+    totals: dict[str, int | float] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return totals
+    for line in lines:
+        try:
+            step = json.loads(line)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        usage = step.get("token_usage") if isinstance(step, dict) else None
+        if not isinstance(usage, Mapping):
+            continue
+        for key, value in usage.items():
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            totals[key] = totals.get(key, 0) + value
+    return totals
+
+
+def _stage1_phase_result(
+    runner: Any,
+    result: Any,
+    *,
+    name: str,
+    started: float,
+    artifact_names: tuple[str, ...],
+) -> PhaseResult:
+    """Normalize a raw scratch ReactResult or standard PhaseResult."""
+    elapsed = max(0.0, time.time() - started)
+    trace_path = getattr(result, "trace_path", None)
+    if trace_path is None:
+        trace_path = runner.workspace / "traces" / f"{name}.jsonl"
+    else:
+        trace_path = Path(trace_path)
+    artifacts = [runner.workspace / rel for rel in artifact_names
+                 if (runner.workspace / rel).is_file()]
+    transport_error = _stage1_transport_error(result)
+    token_usage = getattr(result, "token_usage", None)
+    if token_usage is None:
+        token_usage = getattr(result, "total_tokens", None)
+    if not isinstance(token_usage, Mapping):
+        token_usage = _stage1_trace_usage(trace_path)
+    else:
+        token_usage = dict(token_usage)
+    existing = result if isinstance(result, PhaseResult) else None
+    if existing is not None:
+        duration = float(existing.duration_sec) if existing.duration_sec > 0 else elapsed
+        metadata = dict(existing.metadata or {})
+        if transport_error:
+            metadata["transport_error"] = True
+        return PhaseResult(
+            name=existing.name or name,
+            ok=bool(existing.ok) and not transport_error,
+            duration_sec=duration,
+            trace_path=Path(existing.trace_path) if existing.trace_path else trace_path,
+            artifact_paths=list(existing.artifact_paths or artifacts),
+            final_text=existing.final_text,
+            error=existing.error,
+            token_usage=dict(existing.token_usage or token_usage),
+            metadata=metadata,
+        )
+
+    ok = bool(artifacts) and not transport_error
+    error = getattr(result, "error", None)
+    if error is not None:
+        error = str(error)
+    return PhaseResult(
+        name=name,
+        ok=ok,
+        duration_sec=elapsed,
+        trace_path=trace_path if trace_path.exists() else None,
+        artifact_paths=artifacts,
+        final_text=str(getattr(result, "final_text", "") or ""),
+        error=error,
+        token_usage=dict(token_usage),
+        metadata={"transport_error": True} if transport_error else {},
+    )
+
+
+def _stage1_exception_result(
+    runner: Any,
+    *,
+    name: str,
+    started: float,
+    exc: BaseException,
+    artifact_names: tuple[str, ...],
+    external_blocked: bool = False,
+) -> PhaseResult:
+    trace_path = runner.workspace / "traces" / f"{name}.jsonl"
+    artifacts = [runner.workspace / rel for rel in artifact_names
+                 if (runner.workspace / rel).is_file()]
+    return PhaseResult(
+        name=name,
+        ok=False,
+        duration_sec=max(0.0, time.time() - started),
+        trace_path=trace_path if trace_path.exists() else None,
+        artifact_paths=artifacts,
+        error=f"{type(exc).__name__}: {exc}",
+        token_usage=_stage1_trace_usage(trace_path),
+        metadata={"transport_error": True} if external_blocked else {},
+    )
+
+
+def _stage1_phase_payload(result: Optional[PhaseResult]) -> Optional[dict]:
+    if result is None:
+        return None
+    return {
+        "name": result.name,
+        "ok": bool(result.ok),
+        "duration_sec": float(result.duration_sec),
+        "trace_path": _stage1_pointer(result.trace_path),
+        "artifacts": [_stage1_pointer(path) for path in result.artifact_paths],
+        "error": result.error,
+        "token_usage": dict(result.token_usage or {}),
+        "metadata": dict(result.metadata or {}),
+    }
+
+
+def _stage1_add_tokens(total: dict, usage: Mapping[str, Any] | None) -> None:
+    if not isinstance(usage, Mapping):
+        return
+    for key, value in usage.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        total[key] = total.get(key, 0) + value
+
+
+def _stage1_physics_seconds(report: Mapping[str, Any] | None) -> float:
+    if not isinstance(report, Mapping):
+        return 0.0
+    for key in ("physics_duration_sec", "physics_time_sec", "sim_elapsed_s"):
+        try:
+            value = report.get(key)
+            if value is not None:
+                return max(0.0, float(value))
+        except (TypeError, ValueError):
+            pass
+    total = 0.0
+    for item in report.get("tests", []) or []:
+        if not isinstance(item, Mapping):
+            continue
+        value = item.get("sim_elapsed_s")
+        if value is None:
+            metrics = item.get("metrics")
+            measurements = metrics.get("measurements") if isinstance(metrics, Mapping) else None
+            value = measurements.get("sim_elapsed_s") if isinstance(measurements, Mapping) else None
+        try:
+            if value is not None:
+                total += max(0.0, float(value))
+        except (TypeError, ValueError):
+            continue
+    return total
+
+
+def _stage1_route(definition: Mapping[str, Any]) -> str:
+    route = definition.get("generation_route")
+    if route not in {"skeleton", "from_scratch"}:
+        raise ValueError(f"unsupported generation_route={route!r}")
+    return str(route)
+
+
+def _stage1_canonical_definition(robot_id: str) -> dict:
+    definition = find_robot_definition(robot_id)
+    if not isinstance(definition, Mapping) or definition.get("id") != robot_id:
+        raise ValueError(f"robot is not present in the trusted zoo: {robot_id}")
+    return dict(definition)
+
+
+def _stage1_canonical_mjcf(definition: Mapping[str, Any]) -> Path:
+    relative = definition.get("capability_mjcf") or definition.get("mjcf")
+    if not isinstance(relative, str) or not relative:
+        raise ValueError("trusted robot definition has no MJCF")
+    return (REPO_ROOT / relative).resolve()
+
+
+def _stage1_reserved_outputs(root: Path, robot_id: str) -> list[Path]:
+    paths = [root / f"summary_{robot_id}.json", root / "initial" / robot_id]
+    try:
+        repair_roots = [path for path in root.iterdir()
+                        if path.name.startswith("repair_")]
+    except OSError:
+        repair_roots = []
+    paths.extend(path / robot_id for path in repair_roots)
+    return [path for path in paths if path.exists() or path.is_symlink()]
+
+
+def _stage1_copy_candidate(source: Optional[Path], destination: Path,
+                           route: str) -> list[Path]:
+    """Copy only public Study + candidate inputs into a fresh repair round."""
+    if source is None:
+        return []
+    source = source.resolve()
+    if source.is_file():
+        source = source.parent
+    if not source.is_dir():
+        raise FileNotFoundError(f"candidate source directory not found: {source}")
+    names = ("driver.py", "study.json") if route == "skeleton" else (
+        "driver_from_scratch.py", "driver.py", "study.json")
+    copied: list[Path] = []
+    for name in names:
+        src = source / name
+        if src.is_file():
+            dst = destination / name
+            shutil.copy2(src, dst)
+            copied.append(dst)
+    return copied
+
+
+def _stage1_standard_runner(
+    robot_id: str, mjcf_path: Path, workspace_root: Path, model: str
+) -> SelfAssemble:
+    cfg = SelfAssembleConfig(
+        robot_id=robot_id,
+        mjcf_path=mjcf_path,
+        workspace_root=workspace_root,
+        mode="local",
+        validate_mode="framework",
+        bedrock_model=model,
+        model_provider="holistic",
+        max_outer_gen_val_iters=1,
+    )
+    return SelfAssemble(cfg)
+
+
+def _stage1_scratch_runner(
+    robot_id: str, mjcf_path: Path, workspace_root: Path, model: str
+) -> Any:
+    from .orchestrator_from_scratch import FromScratchConfig, FromScratchOrchestrator
+
+    kwargs = dict(
+        robot_id=robot_id,
+        mjcf_path=mjcf_path,
+        workspace_root=workspace_root,
+        bedrock_model=model,
+        model_provider="holistic",
+    )
+    cfg = FromScratchConfig(**kwargs, mode="local")
+    return FromScratchOrchestrator(cfg)
+
+
+def _stage1_child_config(payload: Mapping[str, Any]) -> Any:
+    """Build the original local orchestrator for the clean worker process."""
+    workspace = Path(str(payload["workspace"])).resolve()
+    robot_id = str(payload["robot_id"])
+    mjcf_path = Path(str(payload["mjcf_path"])).resolve()
+    model = str(payload["model"])
+    route = str(payload["route"])
+    if route == "skeleton":
+        return _stage1_standard_runner(robot_id, mjcf_path, workspace.parent, model)
+    return _stage1_scratch_runner(robot_id, mjcf_path, workspace.parent, model)
+
+
+def _stage1_framework_child(payload: Mapping[str, Any]) -> int:
+    """Private ``python -c`` target for a clean Framework process."""
+    workspace = Path(str(payload["workspace"])).resolve()
+    report_path = workspace / "validate_report.json"
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(workspace)
+        runner = _stage1_child_config(payload)
+        if str(payload["route"]) == "skeleton":
+            phase = runner._phase_validate_framework()
+            report = _stage1_read_json(report_path)
+            if report is None:
+                report = {
+                    "tests": [],
+                    "all_ok": False,
+                    "error": getattr(phase, "error", None)
+                             or "Framework phase did not write validate_report.json",
+                }
+                _stage1_write_json(report_path, report)
+                return 2
+        else:
+            report = runner._validate_from_scratch_driver()
+            _stage1_write_json(report_path, report)
+        print(json.dumps({"all_ok": report.get("all_ok"),
+                          "n_tests": len(report.get("tests", []) or [])}))
+        return 0
+    except Exception as exc:  # noqa: BLE001
+        report = {
+            "tests": [],
+            "all_ok": False,
+            "error": f"framework subprocess exception: {type(exc).__name__}: {exc}",
+        }
+        _stage1_write_json(report_path, report)
+        print(report["error"], file=sys.stderr)
+        return 2
+    finally:
+        os.chdir(original_cwd)
+
+
+def _stage1_framework_ok(
+    report: Mapping[str, Any] | None,
+    robot_id: str,
+    definition: Mapping[str, Any],
+    route: str,
+) -> bool:
+    if not isinstance(report, Mapping) or report.get("all_ok") is not True:
+        return False
+    tests = [item for item in (report.get("tests", []) or [])
+             if isinstance(item, Mapping)]
+    if route == "skeleton" and definition.get("capability_profile"):
+        from .robot_catalog import load_capability_suite
+
+        try:
+            suite = load_capability_suite(dict(definition))
+        except Exception:
+            return False
+        expected = {
+            str(item.get("case_id", item.get("id")))
+            for item in suite.get("cases", suite.get("tests", []))
+            if isinstance(item, Mapping) and item.get("case_id", item.get("id"))
+        }
+        if not expected:
+            return False
+        for case_id in expected:
+            matching = [item for item in tests if str(
+                item.get("case_id", item.get("id", item.get("test")))) == case_id]
+            if not matching or not all(item.get("ok") is True for item in matching):
+                return False
+        return True
+    required = _STAGE1_SCRATCH_CHECKS.get(robot_id) if route == "from_scratch" else None
+    if required:
+        by_name = {str(item.get("test")): item for item in tests}
+        return required.issubset(by_name) and all(
+            by_name[name].get("ok") is True for name in required
+        )
+    return True
+
+
+def _stage1_framework_subprocess(
+    *,
+    robot_id: str,
+    workspace: Path,
+    definition: Mapping[str, Any],
+    route: str,
+    mjcf_path: Path,
+    model: str,
+) -> tuple[dict, dict]:
+    """Run the original Framework validator in a fresh AA1 venv process."""
+    report_path = workspace / "validate_report.json"
+    if report_path.exists() and report_path.is_file():
+        report_path.unlink()
+    payload = {
+        "robot_id": robot_id,
+        "workspace": str(workspace.resolve()),
+        "mjcf_path": str(mjcf_path.resolve()),
+        "route": route,
+        "model": model,
+        "robot_definition": dict(definition),
+    }
+    code = (
+        "import json, sys; "
+        "from auto_adapter.orchestrator import _stage1_framework_child; "
+        "raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))"
+    )
+    command = [_stage1_python(), "-c", code, json.dumps(payload, default=str)]
+    env = os.environ.copy()
+    current = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(REPO_ROOT) + (os.pathsep + current if current else "")
+    started = time.time()
+    info: dict[str, Any] = {
+        "command": command,
+        "timeout_sec": _STAGE1_FRAMEWORK_TIMEOUT_SEC,
+        "route": route,
+        "model": model,
+    }
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=workspace,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=_STAGE1_FRAMEWORK_TIMEOUT_SEC,
+            check=False,
+        )
+        info.update({
+            "returncode": getattr(completed, "returncode", None),
+            "duration_sec": max(0.0, time.time() - started),
+            "stdout_tail": str(getattr(completed, "stdout", "") or "")[-4000:],
+            "stderr_tail": str(getattr(completed, "stderr", "") or "")[-4000:],
+        })
+    except subprocess.TimeoutExpired as exc:
+        info.update({
+            "returncode": None,
+            "duration_sec": max(0.0, time.time() - started),
+            "timed_out": True,
+            "stdout_tail": str(exc.stdout)[-4000:] if exc.stdout else "",
+            "stderr_tail": str(exc.stderr)[-4000:] if exc.stderr else "",
+        })
+    except OSError as exc:
+        info.update({
+            "returncode": None,
+            "duration_sec": max(0.0, time.time() - started),
+            "spawn_error": f"{type(exc).__name__}: {exc}",
+        })
+    report = _stage1_read_json(report_path)
+    report_valid = report is not None
+    if report is None:
+        info["report_missing"] = True
+        report = {
+            "tests": [],
+            "all_ok": False,
+            "error": info.get("spawn_error")
+                     or ("Framework subprocess timed out" if info.get("timed_out")
+                         else "Framework subprocess did not write validate_report.json"),
+        }
+        _stage1_write_json(report_path, report)
+    child_ok = (
+        info.get("returncode") == 0
+        and not info.get("timed_out")
+        and not info.get("spawn_error")
+        and report_valid
+        and report_path.is_file()
+    )
+    info["child_ok"] = bool(child_ok)
+    if not child_ok:
+        report = dict(report)
+        report["all_ok"] = False
+        report["error"] = (
+            "Framework subprocess failed; report is not accepted: "
+            + str(info.get("spawn_error") or info.get("stderr_tail")
+                  or "nonzero returncode")
+        )
+        _stage1_write_json(report_path, report)
+    info["report_path"] = _stage1_pointer(report_path)
+    _stage1_write_json(workspace / "framework_subprocess.json", info)
+    return report, info
+
+
+def _stage1_run_phase(runner: Any, name: str, fn: Any,
+                      artifact_names: tuple[str, ...]) -> PhaseResult:
+    started = time.time()
+    try:
+        raw = fn()
+    except BaseException as exc:  # noqa: BLE001 - preserve partial traces
+        return _stage1_exception_result(
+            runner, name=name, started=started, exc=exc,
+            artifact_names=artifact_names,
+            external_blocked=_stage1_external_exception(exc),
+        )
+    return _stage1_phase_result(
+        runner, raw, name=name, started=started,
+        artifact_names=artifact_names,
+    )
+
+
+def _stage1_round_context(
+    workspace: Path,
+    *,
+    robot_id: str,
+    model: str,
+    route: str,
+    attempt: int,
+    max_repairs: int,
+    started_at: str,
+    git_commit: Optional[str],
+) -> dict:
+    return {
+        "robot_id": robot_id,
+        "provider": "holistic",
+        "model": model,
+        "route": route,
+        "round": "initial" if attempt == 0 else f"repair_{attempt}",
+        "attempt": attempt,
+        "started_at": started_at,
+        "finished_at": None,
+        "git_commit": git_commit,
+        "parameters": {"max_repairs": max_repairs},
+        "actual_generation_cost_usd": None,
+    }
+
+
+def _stage1_update_summary(path: Path, summary: dict) -> None:
+    _stage1_write_json(path, summary)
+
+
+def run_stage1(*, robot_id: str, workspace_root: Path | str, model: str,
+               max_repairs: int = 3) -> dict:
+    """Run one fresh Study → Generate → Framework → bounded repair path.
+
+    The entrypoint deliberately accepts no resume/source argument.  Every
+    output round is created under ``initial`` or ``repair_N`` and an existing
+    robot output is rejected before any round is constructed.
+    """
+    if isinstance(max_repairs, bool) or not isinstance(max_repairs, int):
+        raise TypeError("max_repairs must be an integer from 0 to 3")
+    if not 0 <= max_repairs <= _STAGE1_MAX_REPAIRS:
+        raise ValueError("max_repairs must be from 0 to 3")
+    if not isinstance(robot_id, str) or not robot_id:
+        raise ValueError("robot_id must be a non-empty string")
+    if not isinstance(model, str) or not model:
+        raise ValueError("model must be a non-empty string")
+
+    definition = _stage1_canonical_definition(robot_id)
+    route = _stage1_route(definition)
+    mjcf_path = _stage1_canonical_mjcf(definition)
+    root = Path(workspace_root).expanduser().resolve()
+    reserved = _stage1_reserved_outputs(root, robot_id)
+    if reserved:
+        raise FileExistsError(
+            "refusing to overwrite existing phase-one output: "
+            + ", ".join(_stage1_pointer(path) or str(path) for path in reserved)
+        )
+
+    summary_path = root / f"summary_{robot_id}.json"
+    git_commit = _stage1_git_commit()
+    run_started = time.time()
+    summary: dict[str, Any] = {
+        "robot_id": robot_id,
+        "provider": "holistic",
+        "model": model,
+        "route": route,
+        "git_commit": git_commit,
+        "max_repairs": max_repairs,
+        "attempts": 0,
+        "effective_repairs": 0,
+        "rounds": [],
+        "generation_ok": False,
+        "framework_ok": False,
+        "stage1_ok": False,
+        "external_blocked": False,
+        "error": None,
+        "total_tokens": {},
+        "total_duration_sec": 0.0,
+        "generation_duration_sec": 0.0,
+        "framework_duration_sec": 0.0,
+        "physics_duration_sec": 0.0,
+        "physics_time_sec": 0.0,
+        "actual_generation_cost_usd": None,
+        "workspace": None,
+        "summary_path": _stage1_pointer(summary_path),
+        "final_candidate": None,
+        "final_report": None,
+    }
+    _stage1_update_summary(summary_path, summary)
+
+    total_tokens: dict[str, Any] = {}
+    candidate_path: Optional[Path] = None
+    previous_workspace: Optional[Path] = None
+    report: Optional[dict] = None
+    report_path: Optional[Path] = None
+    last_error: Optional[str] = None
+    external_blocked = False
+    generation_ok = False
+    framework_ok = False
+
+    for attempt in range(max_repairs + 1):
+        round_root = root / ("initial" if attempt == 0 else f"repair_{attempt}")
+        round_started = _stage1_utc_now()
+        round_summary: dict[str, Any] = {
+            "attempt": attempt,
+            "round": "initial" if attempt == 0 else f"repair_{attempt}",
+            "workspace": _stage1_pointer(round_root / robot_id),
+            "copied_files": [],
+        }
+        summary["rounds"].append(round_summary)
+        summary["attempts"] = attempt + 1
+        _stage1_update_summary(summary_path, summary)
+
+        context: Optional[dict] = None
+        workspace: Optional[Path] = None
+        try:
+            if route == "skeleton":
+                runner = _stage1_standard_runner(robot_id, mjcf_path, round_root, model)
+                candidate_name = "driver.py"
+                study_name = "study.json"
+            else:
+                runner = _stage1_scratch_runner(robot_id, mjcf_path, round_root, model)
+                candidate_name = "driver_from_scratch.py"
+                study_name = "study.json"
+            workspace = Path(runner.workspace)
+            summary["workspace"] = _stage1_pointer(workspace)
+            context = _stage1_round_context(
+                workspace, robot_id=robot_id, model=model, route=route,
+                attempt=attempt, max_repairs=max_repairs,
+                started_at=round_started, git_commit=git_commit,
+            )
+            _stage1_write_json(workspace / "run_context.json", context)
+            round_summary["run_context"] = _stage1_pointer(workspace / "run_context.json")
+            if attempt > 0:
+                copied = _stage1_copy_candidate(previous_workspace,
+                                                workspace, route)
+                round_summary["copied_files"] = [_stage1_pointer(path) for path in copied]
+                _stage1_update_summary(summary_path, summary)
+
+            # The Study phase is only run once.  Repairs receive the original
+            # public study artifact and never regenerate it.
+            if attempt == 0:
+                study_fn = (runner._phase_study if route == "skeleton"
+                            else runner.phase_study)
+                study = _stage1_run_phase(
+                    runner, "01_study", study_fn,
+                    (study_name,),
+                )
+                round_summary["study"] = _stage1_phase_payload(study)
+                _stage1_add_tokens(total_tokens, study.token_usage)
+                summary["total_tokens"] = dict(total_tokens)
+                summary["generation_duration_sec"] += study.duration_sec
+                _stage1_update_summary(summary_path, summary)
+                context["study"] = _stage1_phase_payload(study)
+                _stage1_write_json(workspace / "run_context.json", context)
+                if not study.ok or _stage1_transport_error(study):
+                    last_error = study.error or "STUDY failed"
+                    external_blocked = bool(_stage1_transport_error(study))
+                    round_summary["framework_ok"] = False
+                    context["finished_at"] = _stage1_utc_now()
+                    _stage1_write_json(workspace / "run_context.json", context)
+                    break
+            elif not (workspace / study_name).is_file():
+                last_error = "study.json missing from repair input"
+                context["finished_at"] = _stage1_utc_now()
+                _stage1_write_json(workspace / "run_context.json", context)
+                break
+
+            if attempt == 0:
+                generate_fn = (runner._phase_generate if route == "skeleton"
+                               else runner.phase_gen_algo)
+                generation = _stage1_run_phase(
+                    runner, ("02_generate" if route == "skeleton" else "02_gen_algo"),
+                    generate_fn,
+                    (candidate_name,),
+                )
+            else:
+                feedback = validate_failure_feedback(report or {})
+                _stage1_write_json(workspace / "feedback_input.json", {"feedback": feedback})
+                round_summary["feedback_input"] = _stage1_pointer(workspace / "feedback_input.json")
+                _stage1_update_summary(summary_path, summary)
+                repair_fn = (lambda: runner._phase_repair(feedback, attempt)
+                             if route == "skeleton"
+                             else runner.phase_gen_repair(feedback, attempt))
+                generation = _stage1_run_phase(
+                    runner,
+                    (f"03_repair_{attempt}" if route == "skeleton"
+                     else f"03_gen_repair_{attempt}"),
+                    repair_fn,
+                    (candidate_name,),
+                )
+            round_summary["generation"] = _stage1_phase_payload(generation)
+            _stage1_add_tokens(total_tokens, generation.token_usage)
+            summary["total_tokens"] = dict(total_tokens)
+            summary["generation_duration_sec"] += generation.duration_sec
+            _stage1_update_summary(summary_path, summary)
+            context["generation"] = _stage1_phase_payload(generation)
+            _stage1_write_json(workspace / "run_context.json", context)
+
+            candidate = workspace / candidate_name
+            candidate_path = candidate if candidate.is_file() else None
+            generation_ok = bool(
+                generation.ok and candidate_path and not _stage1_transport_error(generation)
+            )
+            previous_workspace = workspace
+            round_summary["candidate"] = _stage1_pointer(candidate_path)
+            if attempt > 0 and generation.ok and generation_ok:
+                summary["effective_repairs"] += 1
+            summary["generation_ok"] = generation_ok
+            _stage1_update_summary(summary_path, summary)
+
+            if _stage1_transport_error(generation):
+                last_error = generation.error or "model invocation failed"
+                external_blocked = True
+                generation_ok = False
+                round_summary["framework_ok"] = False
+                context["finished_at"] = _stage1_utc_now()
+                _stage1_write_json(workspace / "run_context.json", context)
+                break
+
+            # Framework runs even when Generate omitted the candidate, so the
+            # missing-build signal reaches the repair prompt.
+            report, framework_info = _stage1_framework_subprocess(
+                robot_id=robot_id, workspace=workspace, definition=definition,
+                route=route, mjcf_path=mjcf_path, model=model,
+            )
+            report_path = workspace / "validate_report.json"
+            framework_seconds = float(framework_info.get("duration_sec") or 0.0)
+            summary["framework_duration_sec"] += framework_seconds
+            summary["physics_duration_sec"] += _stage1_physics_seconds(report)
+            summary["physics_time_sec"] = summary["physics_duration_sec"]
+            framework_ok = bool(framework_info.get("child_ok")) and _stage1_framework_ok(
+                report, robot_id, definition, route,
+            )
+            candidate_path = candidate if candidate.is_file() else None
+            generation_ok = bool(candidate_path) and generation_ok
+            summary["generation_ok"] = generation_ok
+            summary["framework_ok"] = framework_ok
+            round_summary["validate_report"] = _stage1_pointer(report_path)
+            round_summary["framework_report"] = round_summary["validate_report"]
+            round_summary["framework_subprocess"] = framework_info
+            round_summary["framework_ok"] = framework_ok
+            context["validate_report"] = _stage1_pointer(report_path)
+            context["framework_subprocess"] = framework_info
+            context["finished_at"] = _stage1_utc_now()
+            _stage1_write_json(workspace / "run_context.json", context)
+            _stage1_update_summary(summary_path, summary)
+
+            if framework_ok and generation_ok:
+                last_error = None
+                break
+            if framework_ok and not generation_ok:
+                # A Framework pass cannot hide a failed generation call.  Keep
+                # the generation error visible and use the remaining repair
+                # budget to obtain a completed model response.
+                last_error = generation.error or "generation failed"
+                if attempt >= max_repairs:
+                    break
+                continue
+            last_error = str(report.get("error") or "Framework validation failed")
+            if attempt >= max_repairs:
+                break
+        except BaseException as exc:  # noqa: BLE001 - preserve round evidence
+            last_error = f"{type(exc).__name__}: {exc}"
+            external_blocked = _stage1_external_exception(exc)
+            round_summary["error"] = last_error
+            if context is not None and workspace is not None:
+                context["finished_at"] = _stage1_utc_now()
+                _stage1_write_json(workspace / "run_context.json", context)
+            _stage1_update_summary(summary_path, summary)
+            # The workspace and context exist whenever construction completed;
+            # keep the finished timestamp absent only for a failed constructor.
+            break
+
+        if framework_ok and generation_ok:
+            break
+
+    summary["total_tokens"] = total_tokens
+    summary["generation_ok"] = bool(
+        generation_ok and candidate_path and candidate_path.is_file()
+    )
+    summary["framework_ok"] = bool(framework_ok)
+    summary["stage1_ok"] = bool(summary["generation_ok"] and framework_ok
+                                and not external_blocked)
+    summary["external_blocked"] = bool(external_blocked)
+    summary["error"] = last_error
+    summary["total_duration_sec"] = max(0.0, time.time() - run_started)
+    summary["final_candidate"] = _stage1_pointer(candidate_path)
+    summary["final_report"] = _stage1_pointer(report_path)
+    summary["final_candidate_path"] = summary["final_candidate"]
+    summary["final_report_path"] = summary["final_report"]
+    summary["final_framework_report"] = summary["final_report"]
+    _stage1_update_summary(summary_path, summary)
+    return summary
