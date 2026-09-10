@@ -1,0 +1,1 @@
+{"iter": 0, "thought": "", "actions": [], "observations": [{"is_error": true, "content": "holistic invoke failed after retries: URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>"}], "duration_ms": 1.271963119506836, "token_usage": {"in": 0, "out": 0}, "stop_reason": "invoke_error"}

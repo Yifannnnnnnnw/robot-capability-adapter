@@ -1,0 +1,13 @@
+{
+  "artifacts": [
+    "AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/go2/driver.py"
+  ],
+  "duration_sec": 0.5839359760284424,
+  "error": null,
+  "ok": true,
+  "token_usage": {
+    "in": 0,
+    "out": 0
+  },
+  "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/go2/traces/03_repair_1.jsonl"
+}

@@ -1,0 +1,15 @@
+{
+  "robot_id": "go2",
+  "diagnostic_only": true,
+  "source_summary": "summary_go2.json",
+  "transport_attempts": 3,
+  "effective_model_repairs": 0,
+  "token_usage": {"in": 0, "out": 0},
+  "trace_stop_reason": "invoke_error",
+  "recorded_error": "holistic invoke failed after retries: URLError: [Errno 8] nodename nor servname provided, or not known",
+  "framework_ok": false,
+  "physical_conditions_executed": 0,
+  "interpretation": "The historical launcher continued after transport failure because copied candidate files were treated as repair output. Its three attempts are not three completed model repairs. All three Framework reports fail at build(). Original summaries and traces are preserved unchanged.",
+  "actual_generation_cost_usd": null,
+  "next_run": "A separately recorded fresh Study/Generate run under the approved unified stage-one entry, with up to three genuine repairs."
+}
