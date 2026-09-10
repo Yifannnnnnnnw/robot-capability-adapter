@@ -1,0 +1,106 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A1",
+  "case_id": "franka_panda-a1-nominal",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"best_error_m\": 0.0024212206669243833, \"final_error_m\": 0.007261031403122013, \"longest_target_hold_s\": 0.49800000000000033, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.6360000000000005, \"site_max_displacement_m\": 0.08202266534426036}",
+  "driver_origin": "real_model_generation",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 318,
+    "body_max_displacement_from_reset": {
+      "fixed_contact_target": 0.0,
+      "hand": 0.08634746144985207,
+      "left_finger": 0.0879481386500204,
+      "link0": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.03704589459404646,
+      "link4": 0.038287668286484736,
+      "link5": 0.0838890733478892,
+      "link6": 0.0838890733478892,
+      "link7": 0.09200096301693217,
+      "right_finger": 0.07969788390483487,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "finger_joint1": 1.1660109191437285e-05,
+      "finger_joint2": 8.863056859313712e-06,
+      "joint1": 0.0004399080553224137,
+      "joint2": 0.11730108180865911,
+      "joint3": 0.00024218489808800175,
+      "joint4": 0.035650345930674954,
+      "joint5": 0.0019323741817170838,
+      "joint6": 0.0423050825363438,
+      "joint7": 1.7836380610258828e-06
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "fixed_tcp": 0.08202266534426036
+    },
+    "step_count": 318
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "franka_panda-a1-nominal",
+  "method_name": "move_end_effector_to_position",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A1",
+    "measurements": {
+      "best_error_m": 0.0024212206669243833,
+      "final_error_m": 0.007261031403122013,
+      "longest_target_hold_s": 0.49800000000000033,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.6360000000000005,
+      "site_max_displacement_m": 0.08202266534426036
+    },
+    "parameters": {
+      "contract_id": "A1",
+      "guarded_joint_names": [
+        "finger_joint1"
+      ],
+      "guarded_joint_tolerances": [
+        0.002
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "fixed_tcp"
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 8,
+  "ok": false,
+  "physics_steps": 318,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 0.6360000000000005,
+  "test": "franka_panda-a1-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/initial/franka/capability_validation/franka_panda-a1-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 8,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/initial/franka/capability_validation/franka_panda-a1-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/initial/franka/capability_validation/franka_panda-a1-nominal/video.mp4"
+}

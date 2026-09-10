@@ -1,0 +1,23 @@
+{
+  "contract_id": "A2",
+  "measurements": {
+    "final_error_m": 0.0019536207481046534,
+    "max_cross_track_error_m": 0.002331381646621704,
+    "ordered_waypoints_reached": true,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 5.5979999999995504,
+    "site_max_displacement_m": 0.12402968842989599
+  },
+  "parameters": {
+    "contract_id": "A2",
+    "guarded_joint_names": [
+      "finger_joint1"
+    ],
+    "guarded_joint_tolerances": [
+      0.002
+    ],
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "fixed_tcp"
+  },
+  "score": 1.0
+}

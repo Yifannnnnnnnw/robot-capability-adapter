@@ -1,0 +1,27 @@
+{
+  "all_stage1_ok": false,
+  "batch": "stage1_full_opus48_20260910T120531Z",
+  "duration_sec": 1137.259,
+  "exit_code": 1,
+  "finished_at_utc": "2026-09-10T12:24:29.062Z",
+  "launch_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/launch_20260910T120531804Z.json",
+  "max_repairs": 3,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "output_root": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z",
+  "results": [
+    {
+      "duration_sec": 1137.245,
+      "error": "Framework validation failed",
+      "finished_at_utc": "2026-09-10T12:24:29.062Z",
+      "robot_id": "franka",
+      "started_at_utc": "2026-09-10T12:05:31.804Z",
+      "status": "failed",
+      "summary_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/summary_franka.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka"
+    }
+  ],
+  "selected_robots": [
+    "franka"
+  ],
+  "started_at_utc": "2026-09-10T12:05:31.804Z"
+}

@@ -1,0 +1,104 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A1",
+  "case_id": "franka_panda-a1-nominal",
+  "detail": "A1 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 393,
+    "body_max_displacement_from_reset": {
+      "fixed_contact_target": 0.0,
+      "hand": 0.11183760547107546,
+      "left_finger": 0.11380792384449355,
+      "link0": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.05144178554422814,
+      "link4": 0.05316604266528465,
+      "link5": 0.1090203425084392,
+      "link6": 0.1090203425084392,
+      "link7": 0.1197945870571504,
+      "right_finger": 0.10276266503516113,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "finger_joint1": 1.3851286835793453e-05,
+      "finger_joint2": 1.580686250613611e-05,
+      "joint1": 0.0006481259954483109,
+      "joint2": 0.16297075135159658,
+      "joint3": 0.0003283692159958754,
+      "joint4": 0.03911608563879754,
+      "joint5": 0.002342225708373414,
+      "joint6": 0.05744290783540085,
+      "joint7": 3.930891349313015e-06
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "fixed_tcp": 0.10574195097476337
+    },
+    "step_count": 393
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "franka_panda-a1-nominal",
+  "method_name": "move_end_effector_to_position",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A1",
+    "measurements": {
+      "best_error_m": 0.0012236965047423035,
+      "final_error_m": 0.0018841728920178718,
+      "longest_target_hold_s": 0.5720000000000004,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.7860000000000006,
+      "site_max_displacement_m": 0.10574195097476337
+    },
+    "parameters": {
+      "contract_id": "A1",
+      "guarded_joint_names": [
+        "finger_joint1"
+      ],
+      "guarded_joint_tolerances": [
+        0.002
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "fixed_tcp"
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 9,
+  "ok": true,
+  "physics_steps": 393,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 0.7860000000000006,
+  "test": "franka_panda-a1-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a1-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 9,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a1-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a1-nominal/video.mp4"
+}

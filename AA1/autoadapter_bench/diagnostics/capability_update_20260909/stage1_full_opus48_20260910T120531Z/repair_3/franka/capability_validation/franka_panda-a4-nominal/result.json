@@ -1,0 +1,159 @@
+{
+  "action_return": null,
+  "capability_id": "A4",
+  "case_id": "franka_panda-a4-nominal",
+  "detail": "capability execution failed: A4:contact_unstable: contact made but hold criteria unmet; trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.006618735470054879, \"first_target_contact_s\": 3.7339999999997553, \"longest_target_contact_s\": 0.007999999999999119, \"maximum_speed_after_contact_m_s\": 0.062385690989452576, \"minimum_contact_distance_m\": -2.2091141305293552e-05, \"side_effects_ok\": true, \"sim_elapsed_s\": 4.001999999999726, \"site_max_displacement_m\": 0.045958239783058664}",
+  "driver_origin": "real_model_generation",
+  "error": "capability execution failed: A4:contact_unstable: contact made but hold criteria unmet",
+  "errors": [
+    "capability execution failed: A4:contact_unstable: contact made but hold criteria unmet",
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2001,
+    "body_max_displacement_from_reset": {
+      "fixed_contact_target": 0.0,
+      "hand": 0.038951695937409166,
+      "left_finger": 0.04179211201735737,
+      "link0": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.026467015244402748,
+      "link4": 0.027356356868128255,
+      "link5": 0.035672650844222574,
+      "link6": 0.035672650844222574,
+      "link7": 0.03225301792269625,
+      "right_finger": 0.04386476633749257,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 4.233999999999756,
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_65"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_65",
+        "minimum_distance_m": -2.2091141305293552e-05
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_65",
+        "step_count": 5
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "finger_joint1": 6.177364175859179e-06,
+      "finger_joint2": 5.9725346092248666e-06,
+      "joint1": 0.0023337127052645893,
+      "joint2": 0.08378085954284453,
+      "joint3": 0.001799446824950078,
+      "joint4": 0.05570965689583618,
+      "joint5": 0.012619373523439342,
+      "joint6": 0.10589696220364608,
+      "joint7": 2.700237070840661e-05
+    },
+    "minimum_contact_distance_m": -2.2091141305293552e-05,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "fixed_tcp": 0.045958239783058664
+    },
+    "step_count": 2001
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "franka_panda-a4-nominal",
+  "method_name": "approach_until_contact",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A4",
+    "measurements": {
+      "best_precontact_error_m": 0.006618735470054879,
+      "first_target_contact_s": 3.7339999999997553,
+      "longest_target_contact_s": 0.007999999999999119,
+      "maximum_speed_after_contact_m_s": 0.062385690989452576,
+      "minimum_contact_distance_m": -2.2091141305293552e-05,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 4.001999999999726,
+      "site_max_displacement_m": 0.045958239783058664
+    },
+    "parameters": {
+      "contract_id": "A4",
+      "guarded_joint_names": [
+        "finger_joint1"
+      ],
+      "guarded_joint_tolerances": [
+        0.002
+      ],
+      "max_penetration_m": 0.005,
+      "precontact_gate": "held_window_then_ray",
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "fixed_tcp",
+      "target_geom_names": [
+        "fixed_contact_geom"
+      ],
+      "tool_body_names": [
+        "hand",
+        "left_finger",
+        "right_finger"
+      ],
+      "tool_geom_names": [
+        "geom_60",
+        "geom_61",
+        "geom_62",
+        "geom_63",
+        "geom_64",
+        "geom_65",
+        "geom_66",
+        "geom_67",
+        "geom_68",
+        "geom_69",
+        "geom_70",
+        "geom_71",
+        "geom_72",
+        "geom_73",
+        "geom_74",
+        "geom_75",
+        "geom_76",
+        "geom_77",
+        "geom_78",
+        "geom_79",
+        "geom_80",
+        "geom_81"
+      ]
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 42,
+  "ok": false,
+  "physics_steps": 2001,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 4.001999999999726,
+  "test": "franka_panda-a4-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a4-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 42,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a4-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a4-nominal/video.mp4"
+}
