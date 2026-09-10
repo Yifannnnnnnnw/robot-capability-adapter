@@ -1,0 +1,1848 @@
+{
+  "tests": [
+    {
+      "test": "driver_build",
+      "ok": true,
+      "detail": "driver.build() returned Robot",
+      "metric": 1.0
+    },
+    {
+      "id": "so101-a1-nominal",
+      "case_id": "so101-a1-nominal",
+      "test": "so101-a1-nominal",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a1-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a1-nominal/video.mp4",
+      "sim_elapsed_s": 0.6100000000000004,
+      "physics_steps": 305,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 8,
+      "error": null,
+      "detail": "A1 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 305,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 305,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 305
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 305
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 305
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 305
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 305
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 305
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.05686018183925454,
+          "jaw_visual_joint": 3.084648273080082e-05,
+          "shoulder_lift": 0.14117248231137372,
+          "shoulder_pan": 0.09674285308992447,
+          "wrist_flex": 0.03740272561440257,
+          "wrist_roll": 0.00013927543367373208
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.04560605533974177
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1214303078545068e-08,
+          "base_link": 0.0,
+          "bottle": 1.7907215706799157e-08,
+          "duck": 0.011393085533026112,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.03574961314538604,
+          "jaw_visual": 0.03791119275353094,
+          "lego": 1.3896289432622323e-09,
+          "lower_arm_link": 0.01915074579029763,
+          "mug": 8.562238632292262e-07,
+          "screwdriver": 3.5239156225143523e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.0034302242870116397,
+          "world": 0.0,
+          "wrist_link": 0.030880726263726562
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a1-nominal/video.mp4",
+        "frame_count": 8,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A1",
+        "score": 1.0,
+        "parameters": {
+          "contract_id": "A1",
+          "site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ]
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.6100000000000004,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.04560605533974177,
+          "final_error_m": 0.005135812268868493,
+          "best_error_m": 0.0016818846428599357,
+          "longest_target_hold_s": 0.5000000000000003
+        }
+      }
+    },
+    {
+      "id": "so101-a1-calibrated-boundary",
+      "case_id": "so101-a1-calibrated-boundary",
+      "test": "so101-a1-calibrated-boundary",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a1-calibrated-boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a1-calibrated-boundary/video.mp4",
+      "sim_elapsed_s": 0.7720000000000006,
+      "physics_steps": 386,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 9,
+      "error": null,
+      "detail": "A1 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 386,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 386,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 386
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 386
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 386
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 386
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 386
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 386
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.15272526787094903,
+          "jaw_visual_joint": 0.00013441316610468546,
+          "shoulder_lift": 0.30244707829034556,
+          "shoulder_pan": 0.0921608561044338,
+          "wrist_flex": 0.08420131086881649,
+          "wrist_roll": 0.0001428905109120771
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.06413380081399264
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1214303078545068e-08,
+          "base_link": 0.0,
+          "bottle": 1.7907215706799157e-08,
+          "duck": 0.011393085533026112,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.05514223636123876,
+          "jaw_visual": 0.059025373098609064,
+          "lego": 1.3901931755842142e-09,
+          "lower_arm_link": 0.034088664938662985,
+          "mug": 1.0835899712129954e-06,
+          "screwdriver": 4.4416161782070335e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.003267877677693859,
+          "world": 0.0,
+          "wrist_link": 0.04900145571936451
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a1-calibrated-boundary/video.mp4",
+        "frame_count": 9,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A1",
+        "score": 1.0,
+        "parameters": {
+          "contract_id": "A1",
+          "site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ]
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.7720000000000006,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.06413380081399264,
+          "final_error_m": 0.00458454787904151,
+          "best_error_m": 0.0026691432515919974,
+          "longest_target_hold_s": 0.5000000000000003
+        }
+      }
+    },
+    {
+      "id": "so101-a2-nominal",
+      "case_id": "so101-a2-nominal",
+      "test": "so101-a2-nominal",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a2-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a2-nominal/video.mp4",
+      "sim_elapsed_s": 0.6180000000000004,
+      "physics_steps": 309,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 8,
+      "error": null,
+      "detail": "A2 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 309,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 309,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 309
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 309
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 309
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 309
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 309
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 309
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.07867315089895387,
+          "jaw_visual_joint": 3.084648273080082e-05,
+          "shoulder_lift": 0.1679097507182473,
+          "shoulder_pan": 0.10825917286656979,
+          "wrist_flex": 0.058912281899700644,
+          "wrist_roll": 0.00013927543367373208
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.05070981653698956
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1214303078545068e-08,
+          "base_link": 0.0,
+          "bottle": 1.7907215706799157e-08,
+          "duck": 0.011393085533026112,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.04025863289243927,
+          "jaw_visual": 0.04242801790274086,
+          "lego": 1.3896289432622323e-09,
+          "lower_arm_link": 0.022535280332272374,
+          "mug": 8.674515263353334e-07,
+          "screwdriver": 3.569356961257992e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.003838182333176921,
+          "world": 0.0,
+          "wrist_link": 0.03524203833487375
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a2-nominal/video.mp4",
+        "frame_count": 8,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A2",
+        "score": 1.0,
+        "parameters": {
+          "contract_id": "A2",
+          "site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ]
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.6180000000000004,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.05070981653698956,
+          "ordered_waypoints_reached": true,
+          "final_error_m": 0.005365123353280654,
+          "max_cross_track_error_m": 0.018402577050830485
+        }
+      }
+    },
+    {
+      "id": "so101-a2-calibrated-boundary",
+      "case_id": "so101-a2-calibrated-boundary",
+      "test": "so101-a2-calibrated-boundary",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a2-calibrated-boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a2-calibrated-boundary/video.mp4",
+      "sim_elapsed_s": 0.7460000000000006,
+      "physics_steps": 373,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 9,
+      "error": null,
+      "detail": "A2 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 373,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 373,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 373
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 373
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 373
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 373
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 373
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 373
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.15750070037782785,
+          "jaw_visual_joint": 1.2910216518308149e-05,
+          "shoulder_lift": 0.23966982336114012,
+          "shoulder_pan": 0.09356408688832259,
+          "wrist_flex": 0.09352818496220845,
+          "wrist_roll": 0.00014287893172262406
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.04924444762424956
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1214303078545068e-08,
+          "base_link": 0.0,
+          "bottle": 1.7907215706799157e-08,
+          "duck": 0.011393085533026112,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.04168874413988987,
+          "jaw_visual": 0.04473948624913997,
+          "lego": 1.3899463746071906e-09,
+          "lower_arm_link": 0.027083510179307838,
+          "mug": 1.0470986327955452e-06,
+          "screwdriver": 4.294671670878154e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.003317597983024174,
+          "world": 0.0,
+          "wrist_link": 0.03645188577671242
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a2-calibrated-boundary/video.mp4",
+        "frame_count": 9,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A2",
+        "score": 1.0,
+        "parameters": {
+          "contract_id": "A2",
+          "site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ]
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.7460000000000006,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.04924444762424956,
+          "ordered_waypoints_reached": true,
+          "final_error_m": 0.005510541449469957,
+          "max_cross_track_error_m": 0.024529152019125353
+        }
+      }
+    },
+    {
+      "id": "so101-a3-nominal",
+      "case_id": "so101-a3-nominal",
+      "test": "so101-a3-nominal",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "ok": false,
+      "score": 0.0,
+      "metric": 0.0,
+      "errors": [
+        "capability execution failed: candidate attempted to step a non-canonical world",
+        "trusted metric evaluation failed: B1 contract requires trusted time-series samples",
+        "no real mujoco.mj_step was observed",
+        "canonical model/data step guard failed",
+        "no observed control effect (changed ctrl or non-zero actuator force)"
+      ],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-nominal/video.mp4",
+      "sim_elapsed_s": 0.0,
+      "physics_steps": 0,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 1,
+      "error": "capability execution failed: candidate attempted to step a non-canonical world",
+      "detail": "capability execution failed: candidate attempted to step a non-canonical world; trusted metric evaluation failed: B1 contract requires trusted time-series samples; no real mujoco.mj_step was observed; canonical model/data step guard failed; no observed control effect (changed ctrl or non-zero actuator force)",
+      "evidence_summary": {
+        "canonical_model_data": false,
+        "step_count": 0,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": false,
+        "actuator_force_nonzero_step_count": 0,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": false,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.0,
+          "jaw_visual_joint": 0.0,
+          "shoulder_lift": 0.0,
+          "shoulder_pan": 0.0,
+          "wrist_flex": 0.0,
+          "wrist_roll": 0.0
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.0
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 0.0,
+          "base_link": 0.0,
+          "bottle": 0.0,
+          "duck": 0.0,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.0,
+          "jaw_visual": 0.0,
+          "lego": 0.0,
+          "lower_arm_link": 0.0,
+          "mug": 0.0,
+          "screwdriver": 0.0,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.0,
+          "world": 0.0,
+          "wrist_link": 0.0
+        }
+      },
+      "action_return": null,
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-nominal/video.mp4",
+        "frame_count": 1,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [
+        "no real mujoco.mj_step was observed",
+        "canonical model/data step guard failed",
+        "no observed control effect (changed ctrl or non-zero actuator force)"
+      ],
+      "metrics": {
+        "contract_id": "A3",
+        "score": 0.0,
+        "parameters": {
+          "contract_id": "A3",
+          "joint_name": "jaw_visual_joint",
+          "gripper_actuator_name": "act_jaw_visual",
+          "closed_position": -0.175,
+          "open_position": 1.75,
+          "guard_site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "shoulder_pan",
+            "shoulder_lift",
+            "elbow_flex",
+            "wrist_flex",
+            "wrist_roll"
+          ],
+          "guarded_joint_tolerances": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ]
+        },
+        "measurement_summary_error": "B1 contract requires trusted time-series samples"
+      }
+    },
+    {
+      "id": "so101-a3-calibrated-boundary",
+      "case_id": "so101-a3-calibrated-boundary",
+      "test": "so101-a3-calibrated-boundary",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "ok": false,
+      "score": 0.0,
+      "metric": 0.0,
+      "errors": [
+        "capability execution failed: candidate attempted to step a non-canonical world",
+        "trusted metric evaluation failed: B1 contract requires trusted time-series samples",
+        "no real mujoco.mj_step was observed",
+        "canonical model/data step guard failed",
+        "no observed control effect (changed ctrl or non-zero actuator force)"
+      ],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-calibrated-boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-calibrated-boundary/video.mp4",
+      "sim_elapsed_s": 0.0,
+      "physics_steps": 0,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 1,
+      "error": "capability execution failed: candidate attempted to step a non-canonical world",
+      "detail": "capability execution failed: candidate attempted to step a non-canonical world; trusted metric evaluation failed: B1 contract requires trusted time-series samples; no real mujoco.mj_step was observed; canonical model/data step guard failed; no observed control effect (changed ctrl or non-zero actuator force)",
+      "evidence_summary": {
+        "canonical_model_data": false,
+        "step_count": 0,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": false,
+        "actuator_force_nonzero_step_count": 0,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": false,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.0,
+          "jaw_visual_joint": 0.0,
+          "shoulder_lift": 0.0,
+          "shoulder_pan": 0.0,
+          "wrist_flex": 0.0,
+          "wrist_roll": 0.0
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.0
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 0.0,
+          "base_link": 0.0,
+          "bottle": 0.0,
+          "duck": 0.0,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.0,
+          "jaw_visual": 0.0,
+          "lego": 0.0,
+          "lower_arm_link": 0.0,
+          "mug": 0.0,
+          "screwdriver": 0.0,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.0,
+          "world": 0.0,
+          "wrist_link": 0.0
+        }
+      },
+      "action_return": null,
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-calibrated-boundary/video.mp4",
+        "frame_count": 1,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [
+        "no real mujoco.mj_step was observed",
+        "canonical model/data step guard failed",
+        "no observed control effect (changed ctrl or non-zero actuator force)"
+      ],
+      "metrics": {
+        "contract_id": "A3",
+        "score": 0.0,
+        "parameters": {
+          "contract_id": "A3",
+          "joint_name": "jaw_visual_joint",
+          "gripper_actuator_name": "act_jaw_visual",
+          "closed_position": -0.175,
+          "open_position": 1.75,
+          "guard_site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "shoulder_pan",
+            "shoulder_lift",
+            "elbow_flex",
+            "wrist_flex",
+            "wrist_roll"
+          ],
+          "guarded_joint_tolerances": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ]
+        },
+        "measurement_summary_error": "B1 contract requires trusted time-series samples"
+      }
+    },
+    {
+      "id": "so101-a4-nominal",
+      "case_id": "so101-a4-nominal",
+      "test": "so101-a4-nominal",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "ok": false,
+      "score": 0.0,
+      "metric": 0.0,
+      "errors": [
+        "capability execution failed: [A4] travel exhausted without contact",
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-nominal/video.mp4",
+      "sim_elapsed_s": 0.2240000000000002,
+      "physics_steps": 112,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 4,
+      "error": "capability execution failed: [A4] travel exhausted without contact",
+      "detail": "capability execution failed: [A4] travel exhausted without contact; trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.000636085713200516, \"first_target_contact_s\": null, \"longest_target_contact_s\": 0.0, \"maximum_speed_after_contact_m_s\": null, \"minimum_contact_distance_m\": -0.00027283755538041674, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.2240000000000002, \"site_max_displacement_m\": 0.07231904707014797}",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 112,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 112,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 112
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 112
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 112
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 112
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 112
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 112
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.6948735777464455,
+          "jaw_visual_joint": 0.00018792772456330264,
+          "shoulder_lift": 0.7519970679175753,
+          "shoulder_pan": 0.00048033886870381593,
+          "wrist_flex": 0.24471625250803608,
+          "wrist_roll": 4.055151239882529e-05
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.07231904707014797
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1209339331364332e-08,
+          "base_link": 0.0,
+          "bottle": 1.7899341286933e-08,
+          "duck": 0.011063350302220318,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.08232437422048311,
+          "jaw_visual": 0.07651292949112953,
+          "lego": 1.3886583383470546e-09,
+          "lower_arm_link": 0.08518627966609663,
+          "mug": 3.1450496682027145e-07,
+          "screwdriver": 1.3770877211110767e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 1.703808286990806e-05,
+          "world": 0.0,
+          "wrist_link": 0.08990164314960544
+        }
+      },
+      "action_return": null,
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-nominal/video.mp4",
+        "frame_count": 4,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A4",
+        "score": 0.0,
+        "parameters": {
+          "contract_id": "A4",
+          "site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ],
+          "tool_geom_names": [
+            "so101_tcp_contact"
+          ],
+          "target_geom_names": [
+            "fixed_contact_geom"
+          ],
+          "max_penetration_m": 0.005,
+          "precontact_gate": "held_window_then_ray"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.2240000000000002,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.07231904707014797,
+          "best_precontact_error_m": 0.000636085713200516,
+          "longest_target_contact_s": 0.0,
+          "first_target_contact_s": null,
+          "minimum_contact_distance_m": -0.00027283755538041674,
+          "maximum_speed_after_contact_m_s": null
+        }
+      }
+    },
+    {
+      "id": "so101-a4-calibrated-boundary",
+      "case_id": "so101-a4-calibrated-boundary",
+      "test": "so101-a4-calibrated-boundary",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "ok": false,
+      "score": 0.0,
+      "metric": 0.0,
+      "errors": [
+        "capability execution failed: [A4] travel exhausted without contact",
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-calibrated-boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-calibrated-boundary/video.mp4",
+      "sim_elapsed_s": 0.2320000000000002,
+      "physics_steps": 116,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 4,
+      "error": "capability execution failed: [A4] travel exhausted without contact",
+      "detail": "capability execution failed: [A4] travel exhausted without contact; trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.0031564499335727555, \"first_target_contact_s\": null, \"longest_target_contact_s\": 0.0, \"maximum_speed_after_contact_m_s\": null, \"minimum_contact_distance_m\": -0.00027283755538041674, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.2320000000000002, \"site_max_displacement_m\": 0.08317519957049095}",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 116,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 116,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 116
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 116
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 116
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 116
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 116
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 116
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.8091023413173115,
+          "jaw_visual_joint": 0.0001847700472324132,
+          "shoulder_lift": 0.8553851493073007,
+          "shoulder_pan": 0.06879477789807432,
+          "wrist_flex": 0.25344708754777573,
+          "wrist_roll": 0.00010571765962315879
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.08317519957049095
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1210354611322134e-08,
+          "base_link": 0.0,
+          "bottle": 1.7900987001747424e-08,
+          "duck": 0.01115056805476366,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.0932471882456324,
+          "jaw_visual": 0.08634566134252278,
+          "lego": 1.3889466666919795e-09,
+          "lower_arm_link": 0.0972554521246459,
+          "mug": 3.257307001067418e-07,
+          "screwdriver": 1.4205014908303518e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 0.0024397359608298343,
+          "world": 0.0,
+          "wrist_link": 0.10207827863170063
+        }
+      },
+      "action_return": null,
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-calibrated-boundary/video.mp4",
+        "frame_count": 4,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A4",
+        "score": 0.0,
+        "parameters": {
+          "contract_id": "A4",
+          "site_name": "ee_site",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ],
+          "tool_geom_names": [
+            "so101_tcp_contact"
+          ],
+          "target_geom_names": [
+            "fixed_contact_geom"
+          ],
+          "max_penetration_m": 0.005,
+          "precontact_gate": "held_window_then_ray"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.2320000000000002,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.08317519957049095,
+          "best_precontact_error_m": 0.0031564499335727555,
+          "longest_target_contact_s": 0.0,
+          "first_target_contact_s": null,
+          "minimum_contact_distance_m": -0.00027283755538041674,
+          "maximum_speed_after_contact_m_s": null
+        }
+      }
+    },
+    {
+      "id": "so101-a5-nominal",
+      "case_id": "so101-a5-nominal",
+      "test": "so101-a5-nominal",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a5-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a5-nominal/video.mp4",
+      "sim_elapsed_s": 0.8400000000000006,
+      "physics_steps": 420,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 10,
+      "error": null,
+      "detail": "A5 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 420,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 420,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 420
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 420
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 420
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 420
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 420
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 420
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112431e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.00027283755538041674
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.5434123441683395e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.18359759899621342,
+          "jaw_visual_joint": 4.0225296880358474e-06,
+          "shoulder_lift": 0.24333960133224297,
+          "shoulder_pan": 0.00029598758048837145,
+          "wrist_flex": 0.100440948490205,
+          "wrist_roll": 0.00012515222863224688
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.028828604149433428
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1214303058332622e-08,
+          "base_link": 0.0,
+          "bottle": 1.7907222801817072e-08,
+          "duck": 0.011393085533026112,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.030632332636392073,
+          "jaw_visual": 0.029459273652645696,
+          "lego": 1.3909011742316137e-09,
+          "lower_arm_link": 0.02815766856010398,
+          "mug": 1.1790284611951097e-06,
+          "screwdriver": 4.825577593618625e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 1.049896496717174e-05,
+          "world": 0.0,
+          "wrist_link": 0.03195266426613155
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a5-nominal/video.mp4",
+        "frame_count": 10,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A5",
+        "score": 1.0,
+        "parameters": {
+          "contract_id": "A5",
+          "site_name": "ee_site",
+          "base_body_name": "base_link",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ]
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.8400000000000006,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.028828604149433425,
+          "best_outbound_error_m": 0.0015671687246191306,
+          "final_return_error_m": 0.007644726219133581,
+          "maximum_displacement_fraction": 1.9219069432955618
+        }
+      }
+    },
+    {
+      "id": "so101-a5-calibrated-boundary",
+      "case_id": "so101-a5-calibrated-boundary",
+      "test": "so101-a5-calibrated-boundary",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a5-calibrated-boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a5-calibrated-boundary/video.mp4",
+      "sim_elapsed_s": 0.8740000000000007,
+      "physics_steps": 437,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 10,
+      "error": null,
+      "detail": "A5 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 437,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 437,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "step_count": 437
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "step_count": 437
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "step_count": 437
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "step_count": 437
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "step_count": 437
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "step_count": 437
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "banana_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.544405681112084e-05
+          },
+          {
+            "geom1": "bottle_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.54495170343562e-05
+          },
+          {
+            "geom1": "duck_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -0.0002728375553804237
+          },
+          {
+            "geom1": "lego_base",
+            "geom2": "tabletop",
+            "minimum_distance_m": -3.543412344168304e-05
+          },
+          {
+            "geom1": "mug_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.269226499756945e-05
+          },
+          {
+            "geom1": "screwdriver_geom",
+            "geom2": "tabletop",
+            "minimum_distance_m": -4.30462715447881e-05
+          }
+        ],
+        "minimum_contact_distance_m": -0.0002728375553804237,
+        "joint_max_abs_deviation_from_reset": {
+          "elbow_flex": 0.05812359802253948,
+          "jaw_visual_joint": 5.709460987796122e-05,
+          "shoulder_lift": 0.017594079282817032,
+          "shoulder_pan": 5.363486319758686e-05,
+          "wrist_flex": 0.03255233776034744,
+          "wrist_roll": 0.00012893016339514719
+        },
+        "site_max_displacement_from_reset": {
+          "ee_site": 0.018282955415826432
+        },
+        "body_max_displacement_from_reset": {
+          "banana": 1.1214302958562486e-08,
+          "base_link": 0.0,
+          "bottle": 1.7907222902432135e-08,
+          "duck": 0.01139308553302616,
+          "fixed_contact_target": 0.0,
+          "gripper_link": 0.010906247502756098,
+          "jaw_visual": 0.01249230334934447,
+          "lego": 1.3913431859396105e-09,
+          "lower_arm_link": 0.0020409614791895977,
+          "mug": 1.2267485275784375e-06,
+          "screwdriver": 5.017459765064599e-06,
+          "shoulder_link": 0.0,
+          "table": 0.0,
+          "upper_arm_link": 1.9024803364683788e-06,
+          "world": 0.0,
+          "wrist_link": 0.007421078285923387
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a5-calibrated-boundary/video.mp4",
+        "frame_count": 10,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A5",
+        "score": 1.0,
+        "parameters": {
+          "contract_id": "A5",
+          "site_name": "ee_site",
+          "base_body_name": "base_link",
+          "side_effect_guard_profile": "fixed_arm",
+          "guarded_joint_names": [
+            "jaw_visual_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.002
+          ]
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.8740000000000007,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.018282955415826432,
+          "best_outbound_error_m": 0.0001606424735858676,
+          "final_return_error_m": 0.003857517309267521,
+          "maximum_displacement_fraction": 1.2188636943884288
+        }
+      }
+    }
+  ],
+  "all_ok": false,
+  "structural_ok": true,
+  "n_passed": 7,
+  "n_total": 11
+}

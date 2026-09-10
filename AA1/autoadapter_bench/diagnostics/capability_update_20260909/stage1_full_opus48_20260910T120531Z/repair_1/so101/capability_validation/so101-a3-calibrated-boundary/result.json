@@ -1,0 +1,117 @@
+{
+  "action_return": null,
+  "capability_id": "A3",
+  "case_id": "so101-a3-calibrated-boundary",
+  "detail": "capability execution failed: candidate attempted to step a non-canonical world; trusted metric evaluation failed: B1 contract requires trusted time-series samples; no real mujoco.mj_step was observed; canonical model/data step guard failed; no observed control effect (changed ctrl or non-zero actuator force)",
+  "driver_origin": "real_model_generation",
+  "error": "capability execution failed: candidate attempted to step a non-canonical world",
+  "errors": [
+    "capability execution failed: candidate attempted to step a non-canonical world",
+    "trusted metric evaluation failed: B1 contract requires trusted time-series samples",
+    "no real mujoco.mj_step was observed",
+    "canonical model/data step guard failed",
+    "no observed control effect (changed ctrl or non-zero actuator force)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 0,
+    "body_max_displacement_from_reset": {
+      "banana": 0.0,
+      "base_link": 0.0,
+      "bottle": 0.0,
+      "duck": 0.0,
+      "fixed_contact_target": 0.0,
+      "gripper_link": 0.0,
+      "jaw_visual": 0.0,
+      "lego": 0.0,
+      "lower_arm_link": 0.0,
+      "mug": 0.0,
+      "screwdriver": 0.0,
+      "shoulder_link": 0.0,
+      "table": 0.0,
+      "upper_arm_link": 0.0,
+      "world": 0.0,
+      "wrist_link": 0.0
+    },
+    "canonical_model_data": false,
+    "contact_monitoring_complete": false,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": false,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "elbow_flex": 0.0,
+      "jaw_visual_joint": 0.0,
+      "shoulder_lift": 0.0,
+      "shoulder_pan": 0.0,
+      "wrist_flex": 0.0,
+      "wrist_roll": 0.0
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "ee_site": 0.0
+    },
+    "step_count": 0
+  },
+  "from_scratch": false,
+  "guard_errors": [
+    "no real mujoco.mj_step was observed",
+    "canonical model/data step guard failed",
+    "no observed control effect (changed ctrl or non-zero actuator force)"
+  ],
+  "id": "so101-a3-calibrated-boundary",
+  "method_name": "set_gripper_opening",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A3",
+    "measurement_summary_error": "B1 contract requires trusted time-series samples",
+    "parameters": {
+      "closed_position": -0.175,
+      "contract_id": "A3",
+      "gripper_actuator_name": "act_jaw_visual",
+      "guard_site_name": "ee_site",
+      "guarded_joint_names": [
+        "shoulder_pan",
+        "shoulder_lift",
+        "elbow_flex",
+        "wrist_flex",
+        "wrist_roll"
+      ],
+      "guarded_joint_tolerances": [
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03
+      ],
+      "joint_name": "jaw_visual_joint",
+      "open_position": 1.75,
+      "side_effect_guard_profile": "fixed_arm"
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 1,
+  "ok": false,
+  "physics_steps": 0,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 0.0,
+  "test": "so101-a3-calibrated-boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-calibrated-boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 1,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-calibrated-boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a3-calibrated-boundary/video.mp4"
+}

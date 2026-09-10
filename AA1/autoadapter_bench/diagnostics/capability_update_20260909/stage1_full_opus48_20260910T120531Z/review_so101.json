@@ -1,0 +1,84 @@
+{
+  "robot_id": "so101",
+  "scope": "Fresh Holistic Stage 1 diagnostic, no demo or ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "framework_ran": true,
+      "capability_passed": 0,
+      "capability_executed": 0,
+      "capability_required": 10,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "failed_checks": [
+        "driver_build"
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/initial/so101/validate_report.json",
+      "physics_seconds": 0
+    },
+    {
+      "round": "repair_1",
+      "framework_ran": true,
+      "capability_passed": 6,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "failed_checks": [
+        "so101-a3-nominal",
+        "so101-a3-calibrated-boundary",
+        "so101-a4-nominal",
+        "so101-a4-calibrated-boundary"
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/validate_report.json",
+      "physics_seconds": 4.916000000000004
+    },
+    {
+      "round": "repair_2",
+      "framework_ran": true,
+      "capability_passed": 8,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "failed_checks": [
+        "so101-a4-nominal",
+        "so101-a4-calibrated-boundary"
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_2/so101/validate_report.json",
+      "physics_seconds": 8.560000000000002
+    },
+    {
+      "round": "repair_3",
+      "framework_ran": false,
+      "framework_ok": null,
+      "reason": "holistic invoke failed after retries: URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "capability_executed": 0,
+      "candidate_unvalidated": true
+    }
+  ],
+  "stage1_ok": false,
+  "external_blocked": true,
+  "effective_repairs": 2,
+  "last_validated_candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_2/so101/driver.py",
+  "last_validated_capability_passed": 8,
+  "latest_candidate_framework_ran": false,
+  "error": "holistic invoke failed after retries: URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 2508494,
+    "out": 61892
+  },
+  "pipeline_wall_seconds": 3643.745908975601,
+  "launcher_monotonic_seconds": 929.942,
+  "physics_seconds": 13.476000000000006,
+  "actual_cost_usd": null,
+  "checks": [
+    "Initial missing build was rejected; no physical cases claimed",
+    "Repairs 1 and 2 each ran all ten trusted conditions with trace/video evidence",
+    "Repair 3 trace ends in invoke_error; no Framework report was created",
+    "Two completed repairs; partial third repair retains tokens and candidate but is not counted as a completed valid repair"
+  ],
+  "timing_note": "Original launcher per-robot interval uses monotonic time; pipeline total uses wall time. Both original values retained. They diverged on this run; timestamps and provider traces remain authoritative evidence."
+}
