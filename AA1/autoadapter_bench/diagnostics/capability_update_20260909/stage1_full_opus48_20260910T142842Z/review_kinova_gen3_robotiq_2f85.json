@@ -1,0 +1,140 @@
+{
+  "robot_id": "kinova_gen3_robotiq_2f85",
+  "scope": "fresh Holistic Stage 1 diagnostic; no export/demo/task/ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 1,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "kinova_gen3_robotiq_2f85-a1-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a2-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a3-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a5-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+          "error": "capability execution failed: A5: insufficient outbound displacement"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/kinova_gen3_robotiq_2f85/validate_report.json",
+      "physics_seconds": 5.944000000000004
+    },
+    {
+      "round": "repair_1",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 9,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+          "error": "capability execution failed: A5: insufficient outbound displacement"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/kinova_gen3_robotiq_2f85/validate_report.json",
+      "physics_seconds": 7.978000000000006
+    },
+    {
+      "round": "repair_2",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 9,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+          "error": "capability execution failed: A5: insufficient outbound displacement"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/kinova_gen3_robotiq_2f85/validate_report.json",
+      "physics_seconds": 7.978000000000006
+    },
+    {
+      "round": "repair_3",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 9,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/validate_report.json",
+      "physics_seconds": 9.820000000000007
+    }
+  ],
+  "generation_ok": true,
+  "framework_ok": false,
+  "stage1_ok": false,
+  "effective_repairs": 3,
+  "external_blocked": false,
+  "error": "Framework validation failed",
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 3445961,
+    "out": 80600
+  },
+  "wall_seconds": 1197.7033400535583,
+  "physics_seconds": 31.720000000000027,
+  "actual_cost_usd": null,
+  "checks": [
+    "All executed physical suites have the full expected case count and distinct IDs",
+    "Per-case trace/video paths exist and are nonempty; canonical Framework recording checks retained",
+    "Subprocess success is distinct from driver acceptance; build failures do not claim physical case execution",
+    "Every candidate, Study, generation/repair trace and failure report is retained separately",
+    "All four rounds exactly match the 10 case IDs in the trusted suite; candidates have no external local helper imports.",
+    "Final round: all 10 videos decode with ffmpeg; trace step counts and elapsed simulation times agree with reports; recorded capability execution is canonical with no detected live-state or model-parameter writes."
+  ],
+  "final_failure_measurements": {
+    "case": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+    "max_cross_track_error_m": 0.030563369417624896,
+    "required_max_m": 0.02,
+    "final_error_m": 0.0002284804698836435,
+    "ordered_waypoints_reached": true
+  },
+  "limitations": [
+    "Final driver constructor calibrates gripper on two additional MjData instances for 1500 mj_step calls each. Recorded capability execution is canonical, but these construction-time dynamic simulations are outside its trace/video; do not claim that every physical execution uses the recorded world.",
+    "Final candidate remains a Stage 1 failure after three repairs; passing conditions across different candidates cannot be combined into a robot pass."
+  ]
+}

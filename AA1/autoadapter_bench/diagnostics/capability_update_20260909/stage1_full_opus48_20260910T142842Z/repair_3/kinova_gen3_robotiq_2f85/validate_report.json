@@ -1,0 +1,1532 @@
+{
+  "tests": [
+    {
+      "test": "driver_build",
+      "ok": true,
+      "detail": "driver.build() returned Robot",
+      "metric": 1.0
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a1-nominal",
+      "case_id": "kinova_gen3_robotiq_2f85-a1-nominal",
+      "test": "kinova_gen3_robotiq_2f85-a1-nominal",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a1-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a1-nominal/video.mp4",
+      "sim_elapsed_s": 0.9640000000000007,
+      "physics_steps": 482,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 11,
+      "error": null,
+      "detail": "A1 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 482,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 482,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.0013543778163964681,
+          "joint_2": 0.19751690557686763,
+          "joint_3": 0.0018714545942160044,
+          "joint_4": 0.024128900895456606,
+          "joint_5": 0.00022729162795204487,
+          "joint_6": 0.041817264865870674,
+          "joint_7": 2.8627275459713886e-05,
+          "left_coupler_joint": 1.6535944427961295e-05,
+          "left_driver_joint": 0.00023976482654012926,
+          "left_follower_joint": 0.0003505769209434769,
+          "left_spring_link_joint": 0.0002807075331507148,
+          "right_coupler_joint": 1.9898525943062286e-05,
+          "right_driver_joint": 0.00023862239352619033,
+          "right_follower_joint": 0.00034776185291894926,
+          "right_spring_link_joint": 0.00026983730282464013
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.12810003386317942,
+          "pinch_site": 0.12274692087263028
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.09731237462650429,
+          "base_link": 0.0,
+          "bracelet_link": 0.08463114781854789,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.08297389755664804,
+          "half_arm_1_link": 7.279780206732107e-06,
+          "half_arm_2_link": 0.04148646804466274,
+          "left_coupler": 0.10803677204569341,
+          "left_driver": 0.10887873586076577,
+          "left_follower": 0.11815835603978928,
+          "left_pad": 0.1210458521033481,
+          "left_silicone_pad": 0.1210458521033481,
+          "left_spring_link": 0.11014623064351495,
+          "right_coupler": 0.10801287750736369,
+          "right_driver": 0.10886698886223478,
+          "right_follower": 0.11813297536668683,
+          "right_pad": 0.12102765007572519,
+          "right_silicone_pad": 0.12102765007572519,
+          "right_spring_link": 0.11014118275198453,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.06538457102144406,
+          "spherical_wrist_2_link": 0.06387369799723734,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a1-nominal/video.mp4",
+        "frame_count": 11,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A1",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A1"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.9640000000000007,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.1227469208726303,
+          "final_error_m": 0.0007479647738841042,
+          "best_error_m": 1.955958537638086e-05,
+          "longest_target_hold_s": 0.6480000000000005
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+      "case_id": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+      "test": "kinova_gen3_robotiq_2f85-a1-calibrated_boundary",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a1-calibrated_boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a1-calibrated_boundary/video.mp4",
+      "sim_elapsed_s": 0.9760000000000008,
+      "physics_steps": 488,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 11,
+      "error": null,
+      "detail": "A1 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 488,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 488,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.001384926809317344,
+          "joint_2": 0.27336228352999603,
+          "joint_3": 0.0020021497856497206,
+          "joint_4": 0.04242818633571366,
+          "joint_5": 0.00018140945651980915,
+          "joint_6": 0.05832610176926556,
+          "joint_7": 2.8345832222553824e-05,
+          "left_coupler_joint": 2.2958934819984964e-05,
+          "left_driver_joint": 0.00033906141001817294,
+          "left_follower_joint": 0.0004720018613937815,
+          "left_spring_link_joint": 0.00039098514649337337,
+          "right_coupler_joint": 2.6731208548441237e-05,
+          "right_driver_joint": 0.00033634973924124515,
+          "right_follower_joint": 0.00046876157914416865,
+          "right_spring_link_joint": 0.00038021002236151387
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.17800815398674072,
+          "pinch_site": 0.17050456113635468
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.13493059921182965,
+          "base_link": 0.0,
+          "bracelet_link": 0.11724416874723946,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.11466348232555634,
+          "half_arm_1_link": 7.44398100517637e-06,
+          "half_arm_2_link": 0.057329423875665884,
+          "left_coupler": 0.1498999819843607,
+          "left_driver": 0.15107532544908248,
+          "left_follower": 0.16407213092832945,
+          "left_pad": 0.16811959524172876,
+          "left_silicone_pad": 0.16811959524172876,
+          "left_spring_link": 0.15284525207588148,
+          "right_coupler": 0.14986935198892248,
+          "right_driver": 0.15106031320479127,
+          "right_follower": 0.16404173316423734,
+          "right_pad": 0.16809800125581448,
+          "right_silicone_pad": 0.16809800125581448,
+          "right_spring_link": 0.1528388199141676,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.0905866329211999,
+          "spherical_wrist_2_link": 0.08847293934776011,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a1-calibrated_boundary/video.mp4",
+        "frame_count": 11,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A1",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A1"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.9760000000000008,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.17050456113635468,
+          "final_error_m": 0.0007871821773334226,
+          "best_error_m": 3.42418141544731e-05,
+          "longest_target_hold_s": 0.6480000000000005
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a2-nominal",
+      "case_id": "kinova_gen3_robotiq_2f85-a2-nominal",
+      "test": "kinova_gen3_robotiq_2f85-a2-nominal",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a2-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a2-nominal/video.mp4",
+      "sim_elapsed_s": 0.8980000000000007,
+      "physics_steps": 449,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 10,
+      "error": null,
+      "detail": "A2 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 449,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 449,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.0006500632102781623,
+          "joint_2": 0.23904202865736524,
+          "joint_3": 0.0008370304451936761,
+          "joint_4": 0.021750286157065535,
+          "joint_5": 0.00015487265902007637,
+          "joint_6": 0.05208165792059072,
+          "joint_7": 2.600275178732403e-05,
+          "left_coupler_joint": 2.4783903998988903e-05,
+          "left_driver_joint": 0.0001902064738598529,
+          "left_follower_joint": 0.0003247786241746043,
+          "left_spring_link_joint": 0.0002212045636896657,
+          "right_coupler_joint": 2.5392928784586435e-05,
+          "right_driver_joint": 0.00019132784279030004,
+          "right_follower_joint": 0.0003322508330502907,
+          "right_spring_link_joint": 0.00020749767231298833
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.15748316284322977,
+          "pinch_site": 0.15084038374120354
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.11925648465242926,
+          "base_link": 0.0,
+          "bracelet_link": 0.10343226826593954,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.10034180841586429,
+          "half_arm_1_link": 3.494089693723277e-06,
+          "half_arm_2_link": 0.050171066306019724,
+          "left_coupler": 0.13257275349238395,
+          "left_driver": 0.13362194226384558,
+          "left_follower": 0.1451403876929744,
+          "left_pad": 0.1487250621243658,
+          "left_silicone_pad": 0.1487250621243658,
+          "left_spring_link": 0.13519729144714193,
+          "right_coupler": 0.13255323489869988,
+          "right_driver": 0.1336123064371839,
+          "right_follower": 0.14511958089279212,
+          "right_pad": 0.14870992563928703,
+          "right_silicone_pad": 0.14870992563928703,
+          "right_spring_link": 0.13519313130324048,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.07853765086722932,
+          "spherical_wrist_2_link": 0.0772806462199984,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a2-nominal/video.mp4",
+        "frame_count": 10,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A2",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A2"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.8980000000000007,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.15084038374120354,
+          "ordered_waypoints_reached": true,
+          "final_error_m": 0.0006079155476415064,
+          "max_cross_track_error_m": 0.027894357816916793
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+      "case_id": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+      "test": "kinova_gen3_robotiq_2f85-a2-calibrated_boundary",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "ok": false,
+      "score": 0.0,
+      "metric": 0.0,
+      "errors": [
+        "trusted metric contract did not pass (score=0)"
+      ],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a2-calibrated_boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a2-calibrated_boundary/video.mp4",
+      "sim_elapsed_s": 0.8020000000000006,
+      "physics_steps": 401,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 10,
+      "error": "trusted metric contract did not pass (score=0)",
+      "detail": "trusted metric contract did not pass (score=0); observed={\"final_error_m\": 0.0002284804698836435, \"max_cross_track_error_m\": 0.030563369417624896, \"ordered_waypoints_reached\": true, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.8020000000000006, \"site_max_displacement_m\": 0.1540742344832557}",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 401,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 401,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.004549637267379447,
+          "joint_2": 0.2562275754917709,
+          "joint_3": 0.0055378319572798596,
+          "joint_4": 0.04242818633571366,
+          "joint_5": 0.0008161948384824302,
+          "joint_6": 0.034447812013829626,
+          "joint_7": 2.4721791838100415e-05,
+          "left_coupler_joint": 3.031404330711455e-05,
+          "left_driver_joint": 0.00039012347963676957,
+          "left_follower_joint": 0.0005192692255300618,
+          "left_spring_link_joint": 0.0004970048369548302,
+          "right_coupler_joint": 2.582723947902493e-05,
+          "right_driver_joint": 0.00039067119063044284,
+          "right_follower_joint": 0.0005330408297933393,
+          "right_spring_link_joint": 0.0005055834494298627
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.16052947897679307,
+          "pinch_site": 0.1540742344832557
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.12342736066249765,
+          "base_link": 0.0,
+          "bracelet_link": 0.10812067960938113,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.10750239006272724,
+          "half_arm_1_link": 2.4454279221152506e-05,
+          "half_arm_2_link": 0.05374627889178168,
+          "left_coupler": 0.13628645842138226,
+          "left_driver": 0.13732987133154492,
+          "left_follower": 0.1484822881075019,
+          "left_pad": 0.15197973112306803,
+          "left_silicone_pad": 0.15197973112306803,
+          "left_spring_link": 0.13887349593643256,
+          "right_coupler": 0.13637469860923762,
+          "right_driver": 0.13737341346044052,
+          "right_follower": 0.14857903414709228,
+          "right_pad": 0.15204981830697176,
+          "right_silicone_pad": 0.15204981830697176,
+          "right_spring_link": 0.1388922998187507,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.08489242223563633,
+          "spherical_wrist_2_link": 0.08290794221589744,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a2-calibrated_boundary/video.mp4",
+        "frame_count": 10,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A2",
+        "score": 0.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A2"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.8020000000000006,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.1540742344832557,
+          "ordered_waypoints_reached": true,
+          "final_error_m": 0.0002284804698836435,
+          "max_cross_track_error_m": 0.030563369417624896
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a3-nominal",
+      "case_id": "kinova_gen3_robotiq_2f85-a3-nominal",
+      "test": "kinova_gen3_robotiq_2f85-a3-nominal",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a3-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a3-nominal/video.mp4",
+      "sim_elapsed_s": 0.5520000000000004,
+      "physics_steps": 276,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 7,
+      "error": null,
+      "detail": "A3 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 276,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 276,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 2.533338543386776e-07,
+          "joint_2": 1.804059007176617e-05,
+          "joint_3": 1.4042313760675995e-06,
+          "joint_4": 3.181976530264308e-05,
+          "joint_5": 1.5484848458092388e-07,
+          "joint_6": 5.8680393414722865e-05,
+          "joint_7": 1.7381286188111744e-08,
+          "left_coupler_joint": 0.10433694953318386,
+          "left_driver_joint": 0.6365888361799612,
+          "left_follower_joint": 0.6102304315864068,
+          "left_spring_link_joint": 0.6360195293061641,
+          "right_coupler_joint": 0.10433652388890582,
+          "right_driver_joint": 0.6365888360534614,
+          "right_follower_joint": 0.6102304299994682,
+          "right_spring_link_joint": 0.6360195267320229
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 2.5483605774226283e-05,
+          "pinch_site": 2.3693353504218314e-05
+        },
+        "body_max_displacement_from_reset": {
+          "base": 1.5087965675010486e-05,
+          "base_link": 0.0,
+          "bracelet_link": 1.1225299962728801e-05,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 7.599711712952808e-06,
+          "half_arm_1_link": 1.3616694660618438e-09,
+          "half_arm_2_link": 3.7955455743994974e-06,
+          "left_coupler": 0.019881317725542958,
+          "left_driver": 1.9024775057432167e-05,
+          "left_follower": 0.035975926476614094,
+          "left_pad": 0.036109448028000916,
+          "left_silicone_pad": 0.036109448028000916,
+          "left_spring_link": 1.9453901490322484e-05,
+          "right_coupler": 0.019881323858804995,
+          "right_driver": 1.9022168623309904e-05,
+          "right_follower": 0.035975942127590484,
+          "right_pad": 0.036109464055855245,
+          "right_silicone_pad": 0.036109464055855245,
+          "right_spring_link": 1.945277779583081e-05,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 9.710188880186904e-06,
+          "spherical_wrist_2_link": 1.091970116885524e-05,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a3-nominal/video.mp4",
+        "frame_count": 7,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A3",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "joint_name": "right_driver_joint",
+          "closed_position": 0.8,
+          "open_position": 0,
+          "guarded_joint_names": [
+            "joint_1",
+            "joint_2",
+            "joint_3",
+            "joint_4",
+            "joint_5",
+            "joint_6",
+            "joint_7"
+          ],
+          "guarded_joint_tolerances": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ],
+          "guard_site_name": "pinch_site",
+          "contract_id": "A3"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.5520000000000004,
+          "side_effects_ok": true,
+          "final_opening_fraction": 0.20102558910761792,
+          "final_opening_error": 0.001025589107617908,
+          "maximum_opening_change": 0.7957360450668267,
+          "longest_opening_hold_s": 0.3380000000000002
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a3-calibrated_boundary",
+      "case_id": "kinova_gen3_robotiq_2f85-a3-calibrated_boundary",
+      "test": "kinova_gen3_robotiq_2f85-a3-calibrated_boundary",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a3-calibrated_boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a3-calibrated_boundary/video.mp4",
+      "sim_elapsed_s": 0.5700000000000004,
+      "physics_steps": 285,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 7,
+      "error": null,
+      "detail": "A3 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 285,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 285,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "left_pad1",
+            "geom2": "right_pad1",
+            "step_count": 1
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "left_pad1",
+            "geom2": "right_pad1",
+            "first_time_s": 0.5020000000000003
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "left_pad1",
+            "geom2": "right_pad1",
+            "minimum_distance_m": -1.1537616179529605e-05
+          }
+        ],
+        "minimum_contact_distance_m": -1.1537616179529605e-05,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 5.686400950111192e-08,
+          "joint_2": 6.627771657718995e-06,
+          "joint_3": 3.7935928265397934e-07,
+          "joint_4": 7.813264695233357e-06,
+          "joint_5": 6.269183954845128e-08,
+          "joint_6": 1.9312899576351406e-05,
+          "joint_7": 1.8328282225255066e-08,
+          "left_coupler_joint": 0.05998462866821392,
+          "left_driver_joint": 0.6219275698895578,
+          "left_follower_joint": 0.6466939131187651,
+          "left_spring_link_joint": 0.6199105744930621,
+          "right_coupler_joint": 0.0600103324418459,
+          "right_driver_joint": 0.6219268795794359,
+          "right_follower_joint": 0.6468164866124619,
+          "right_spring_link_joint": 0.6198982839523428
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 4.195198731514832e-06,
+          "pinch_site": 3.867931992715462e-06
+        },
+        "body_max_displacement_from_reset": {
+          "base": 2.9186050782473716e-06,
+          "base_link": 0.0,
+          "bracelet_link": 2.7386318554834665e-06,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 2.7897837034465056e-06,
+          "half_arm_1_link": 3.0564405085337793e-10,
+          "half_arm_2_link": 1.3940995916223552e-06,
+          "left_coupler": 0.01943867709985141,
+          "left_driver": 3.2277468060692244e-06,
+          "left_follower": 0.035045793666404826,
+          "left_pad": 0.03514953460179884,
+          "left_silicone_pad": 0.03514953460179884,
+          "left_spring_link": 3.2655084732785536e-06,
+          "right_coupler": 0.019438642481375588,
+          "right_driver": 3.205316460317205e-06,
+          "right_follower": 0.03504523159699229,
+          "right_pad": 0.03514833456188,
+          "right_silicone_pad": 0.03514833456188,
+          "right_spring_link": 3.2561816403391653e-06,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 2.355036925111486e-06,
+          "spherical_wrist_2_link": 2.6661354330145883e-06,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a3-calibrated_boundary/video.mp4",
+        "frame_count": 7,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A3",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "joint_name": "right_driver_joint",
+          "closed_position": 0.8,
+          "open_position": 0,
+          "guarded_joint_names": [
+            "joint_1",
+            "joint_2",
+            "joint_3",
+            "joint_4",
+            "joint_5",
+            "joint_6",
+            "joint_7"
+          ],
+          "guarded_joint_tolerances": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ],
+          "guard_site_name": "pinch_site",
+          "contract_id": "A3"
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.5700000000000004,
+          "side_effects_ok": true,
+          "final_opening_fraction": 0.7939831205921252,
+          "final_opening_error": 0.0060168794078748755,
+          "maximum_opening_change": 0.7774085994742947,
+          "longest_opening_hold_s": 0.3500000000000002
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a4-nominal",
+      "case_id": "kinova_gen3_robotiq_2f85-a4-nominal",
+      "test": "kinova_gen3_robotiq_2f85-a4-nominal",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a4-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a4-nominal/video.mp4",
+      "sim_elapsed_s": 0.8180000000000006,
+      "physics_steps": 409,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 10,
+      "error": null,
+      "detail": "A4 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 409,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 409,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "fixed_contact_geom",
+            "geom2": "left_pad1",
+            "step_count": 76
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "fixed_contact_geom",
+            "geom2": "left_pad1",
+            "first_time_s": 1.1680000000000008
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "fixed_contact_geom",
+            "geom2": "left_pad1",
+            "minimum_distance_m": -3.224898820733349e-05
+          }
+        ],
+        "minimum_contact_distance_m": -3.224898820733349e-05,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.005742722687639423,
+          "joint_2": 0.007254971897511564,
+          "joint_3": 0.004662298276101762,
+          "joint_4": 0.010641102432245919,
+          "joint_5": 0.002016941019461042,
+          "joint_6": 0.0028588547109538176,
+          "joint_7": 2.4283789324952565e-05,
+          "left_coupler_joint": 0.007038041935218435,
+          "left_driver_joint": 0.00017557069698438373,
+          "left_follower_joint": 0.01800106279757483,
+          "left_spring_link_joint": 0.006516775848800506,
+          "right_coupler_joint": 1.451267884712104e-06,
+          "right_driver_joint": 0.00016847326461382926,
+          "right_follower_joint": 0.0001601117715990634,
+          "right_spring_link_joint": 0.00016739356747359942
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.007500934988969187,
+          "pinch_site": 0.007246226475623234
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.006074443101532275,
+          "base_link": 0.0,
+          "bracelet_link": 0.0055203975292932635,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.00312084772008599,
+          "half_arm_1_link": 3.08670920309522e-05,
+          "half_arm_2_link": 0.0016241596630385987,
+          "left_coupler": 0.006163582293406326,
+          "left_driver": 0.0063985282815385795,
+          "left_follower": 0.0069421831729033845,
+          "left_pad": 0.006949662073377822,
+          "left_silicone_pad": 0.006949662073377822,
+          "left_spring_link": 0.006569616973784093,
+          "right_coupler": 0.007003806190746807,
+          "right_driver": 0.006811144119065015,
+          "right_follower": 0.007481815609299534,
+          "right_pad": 0.007477663951774665,
+          "right_silicone_pad": 0.007477663951774665,
+          "right_spring_link": 0.006746183376924588,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.004050834822755871,
+          "spherical_wrist_2_link": 0.004682006767517069,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a4-nominal/video.mp4",
+        "frame_count": 10,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A4",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "tool_body_names": [
+            "base",
+            "bracelet_link",
+            "left_coupler",
+            "left_driver",
+            "left_follower",
+            "left_pad",
+            "left_spring_link",
+            "right_coupler",
+            "right_driver",
+            "right_follower",
+            "right_pad",
+            "right_spring_link"
+          ],
+          "tool_geom_names": [
+            "geom_15",
+            "geom_16",
+            "geom_17",
+            "geom_18",
+            "geom_19",
+            "geom_20",
+            "geom_21",
+            "geom_22",
+            "geom_23",
+            "geom_24",
+            "geom_25",
+            "geom_26",
+            "geom_29",
+            "geom_30",
+            "geom_31",
+            "geom_32",
+            "geom_33",
+            "geom_34",
+            "geom_35",
+            "geom_36",
+            "geom_37",
+            "geom_38",
+            "geom_41",
+            "geom_42",
+            "left_pad1",
+            "left_pad2",
+            "right_pad1",
+            "right_pad2"
+          ],
+          "target_geom_names": [
+            "fixed_contact_geom"
+          ],
+          "precontact_gate": "held_window_then_ray",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A4",
+          "max_penetration_m": 0.005
+        },
+        "measurements": {
+          "sim_elapsed_s": 0.8180000000000006,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.007246226475623234,
+          "passed": true,
+          "available": true,
+          "first_failed_gate": null,
+          "error": null,
+          "unavailable_measurements": [],
+          "required": {
+            "precontact_hold_s": 0.1,
+            "precontact_tolerance_m": 0.015,
+            "ray_axial_min_m": -0.002,
+            "ray_axial_max_m": 0.062,
+            "ray_lateral_tolerance_m": 0.01,
+            "ray_backtrack_tolerance_m": 0.002,
+            "ray_path_length_max_m": 0.066,
+            "approach_surface_relative_speed_max_m_s": 0.03,
+            "contact_normal_closing_speed_max_m_s": 0.03,
+            "post_contact_speed_max_m_s": 0.02,
+            "contact_hold_s": 0.1,
+            "max_duration_s": 4.0
+          },
+          "measured": {
+            "precontact_error_m": 0.007085154853450858,
+            "ray_axial_min_m": -2.57238063255949e-06,
+            "ray_axial_max_m": 0.006969044133273206,
+            "ray_lateral_error_m": 0.0002009007818981532,
+            "ray_backtrack_m": 2.57238063255949e-06,
+            "ray_path_length_m": 0.007030375723833396,
+            "a4_surface_relative_speed_m_s": 0.016169192027101997,
+            "a4_contact_normal_closing_speed_m_s": 0.014977738275782655,
+            "maximum_speed_after_contact_m_s": 0.009536553507801065
+          },
+          "longest_precontact_hold_s": 0.6660000000000005,
+          "precontact_window_start_s": 0.0,
+          "precontact_window_end_s": 0.10000000000000009,
+          "pre_gate_time_s": 0.10000000000000009,
+          "precontact_index": 50,
+          "first_target_contact_index": 334,
+          "precontact_error_m": 0.007085154853450858,
+          "first_target_contact_s": 0.6680000000000005,
+          "contact_window": [
+            334,
+            384
+          ],
+          "scored_contact_window_start_s": 0.6680000000000005,
+          "scored_contact_window_end_s": 0.7680000000000006,
+          "scored_contact_window_duration_s": 0.10000000000000009,
+          "scored_contact_window_s": [
+            0.6680000000000005,
+            0.7680000000000006
+          ],
+          "maximum_speed_after_contact_m_s": 0.009536553507801065,
+          "scored_contact_window_max_speed_m_s": 0.009536553507801065,
+          "maximum_surface_relative_speed_m_s": 0.016169192027101997,
+          "contact_normal_closing_speed_m_s": 0.014977738275782655,
+          "minimum_contact_distance_m": -3.224898820733349e-05,
+          "longest_target_contact_s": 0.15000000000000013,
+          "ray_axial_min_m": -2.57238063255949e-06,
+          "ray_axial_max_m": 0.006969044133273206,
+          "ray_lateral_error_m": 0.0002009007818981532,
+          "ray_backtrack_m": 2.57238063255949e-06,
+          "ray_path_length_m": 0.007030375723833396,
+          "a4_surface_relative_speed_m_s": 0.016169192027101997,
+          "a4_contact_normal_closing_speed_m_s": 0.014977738275782655,
+          "unrelated_contact_count": 0,
+          "best_precontact_error_m": 0.007077393609065336
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+      "case_id": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+      "test": "kinova_gen3_robotiq_2f85-a4-calibrated_boundary",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a4-calibrated_boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a4-calibrated_boundary/video.mp4",
+      "sim_elapsed_s": 1.486000000000001,
+      "physics_steps": 743,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 16,
+      "error": null,
+      "detail": "A4 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 743,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 743,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [
+          {
+            "geom1": "fixed_contact_geom",
+            "geom2": "left_pad1",
+            "step_count": 76
+          }
+        ],
+        "contact_pair_first_times_s": [
+          {
+            "geom1": "fixed_contact_geom",
+            "geom2": "left_pad1",
+            "first_time_s": 1.8360000000000014
+          }
+        ],
+        "contact_pair_min_distances": [
+          {
+            "geom1": "fixed_contact_geom",
+            "geom2": "left_pad1",
+            "minimum_distance_m": -3.1076546887286906e-05
+          }
+        ],
+        "minimum_contact_distance_m": -3.1076546887286906e-05,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.013632700666053044,
+          "joint_2": 0.0182970347596364,
+          "joint_3": 0.010971375341997103,
+          "joint_4": 0.02476241492212239,
+          "joint_5": 0.005178240778986603,
+          "joint_6": 0.0037446211928422457,
+          "joint_7": 2.379153277765056e-05,
+          "left_coupler_joint": 0.00726719915190328,
+          "left_driver_joint": 0.00019859753727212177,
+          "left_follower_joint": 0.01853199196013801,
+          "left_spring_link_joint": 0.006742709023748557,
+          "right_coupler_joint": 1.1856178160558385e-06,
+          "right_driver_joint": 0.00019075730654869328,
+          "right_follower_joint": 0.00018139739269575203,
+          "right_spring_link_joint": 0.00018963003605898488
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.01789043873178658,
+          "pinch_site": 0.017280330943268262
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.01447726938011804,
+          "base_link": 0.0,
+          "bracelet_link": 0.013155440721127447,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.007857554026384205,
+          "half_arm_1_link": 7.3275198650529e-05,
+          "half_arm_2_link": 0.004079875525068046,
+          "left_coupler": 0.014694122127635045,
+          "left_driver": 0.015251663118351893,
+          "left_follower": 0.0161292509764925,
+          "left_pad": 0.016467092448745432,
+          "left_silicone_pad": 0.016467092448745432,
+          "left_spring_link": 0.015660875531970393,
+          "right_coupler": 0.016703584417362492,
+          "right_driver": 0.01623876253184461,
+          "right_follower": 0.017855889293885843,
+          "right_pad": 0.017846014799946137,
+          "right_silicone_pad": 0.017846014799946137,
+          "right_spring_link": 0.016083270868895296,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.009796176138522478,
+          "spherical_wrist_2_link": 0.011164756161056855,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a4-calibrated_boundary/video.mp4",
+        "frame_count": 16,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A4",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "tool_body_names": [
+            "base",
+            "bracelet_link",
+            "left_coupler",
+            "left_driver",
+            "left_follower",
+            "left_pad",
+            "left_spring_link",
+            "right_coupler",
+            "right_driver",
+            "right_follower",
+            "right_pad",
+            "right_spring_link"
+          ],
+          "tool_geom_names": [
+            "geom_15",
+            "geom_16",
+            "geom_17",
+            "geom_18",
+            "geom_19",
+            "geom_20",
+            "geom_21",
+            "geom_22",
+            "geom_23",
+            "geom_24",
+            "geom_25",
+            "geom_26",
+            "geom_29",
+            "geom_30",
+            "geom_31",
+            "geom_32",
+            "geom_33",
+            "geom_34",
+            "geom_35",
+            "geom_36",
+            "geom_37",
+            "geom_38",
+            "geom_41",
+            "geom_42",
+            "left_pad1",
+            "left_pad2",
+            "right_pad1",
+            "right_pad2"
+          ],
+          "target_geom_names": [
+            "fixed_contact_geom"
+          ],
+          "precontact_gate": "held_window_then_ray",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A4",
+          "max_penetration_m": 0.005
+        },
+        "measurements": {
+          "sim_elapsed_s": 1.486000000000001,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.017280330943268262,
+          "passed": true,
+          "available": true,
+          "first_failed_gate": null,
+          "error": null,
+          "unavailable_measurements": [],
+          "required": {
+            "precontact_hold_s": 0.1,
+            "precontact_tolerance_m": 0.015,
+            "ray_axial_min_m": -0.002,
+            "ray_axial_max_m": 0.07200000000000001,
+            "ray_lateral_tolerance_m": 0.01,
+            "ray_backtrack_tolerance_m": 0.002,
+            "ray_path_length_max_m": 0.07700000000000001,
+            "approach_surface_relative_speed_max_m_s": 0.04,
+            "contact_normal_closing_speed_max_m_s": 0.04,
+            "post_contact_speed_max_m_s": 0.02,
+            "contact_hold_s": 0.1,
+            "max_duration_s": 5.0
+          },
+          "measured": {
+            "precontact_error_m": 0.007085154853450858,
+            "ray_axial_min_m": -2.57238063255949e-06,
+            "ray_axial_max_m": 0.016992004801697436,
+            "ray_lateral_error_m": 0.00027642207992565986,
+            "ray_backtrack_m": 2.57238063255949e-06,
+            "ray_path_length_m": 0.01705362258440988,
+            "a4_surface_relative_speed_m_s": 0.016170204800232707,
+            "a4_contact_normal_closing_speed_m_s": 0.014953796650881557,
+            "maximum_speed_after_contact_m_s": 0.00967340538663425
+          },
+          "longest_precontact_hold_s": 1.080000000000001,
+          "precontact_window_start_s": 0.0,
+          "precontact_window_end_s": 0.10000000000000009,
+          "pre_gate_time_s": 0.10000000000000009,
+          "precontact_index": 50,
+          "first_target_contact_index": 668,
+          "precontact_error_m": 0.007085154853450858,
+          "first_target_contact_s": 1.3360000000000012,
+          "contact_window": [
+            668,
+            718
+          ],
+          "scored_contact_window_start_s": 1.3360000000000012,
+          "scored_contact_window_end_s": 1.4360000000000013,
+          "scored_contact_window_duration_s": 0.10000000000000009,
+          "scored_contact_window_s": [
+            1.3360000000000012,
+            1.4360000000000013
+          ],
+          "maximum_speed_after_contact_m_s": 0.00967340538663425,
+          "scored_contact_window_max_speed_m_s": 0.00967340538663425,
+          "maximum_surface_relative_speed_m_s": 0.016170204800232707,
+          "contact_normal_closing_speed_m_s": 0.014953796650881557,
+          "minimum_contact_distance_m": -3.1076546887286906e-05,
+          "longest_target_contact_s": 0.15000000000000013,
+          "ray_axial_min_m": -2.57238063255949e-06,
+          "ray_axial_max_m": 0.016992004801697436,
+          "ray_lateral_error_m": 0.00027642207992565986,
+          "ray_backtrack_m": 2.57238063255949e-06,
+          "ray_path_length_m": 0.01705362258440988,
+          "a4_surface_relative_speed_m_s": 0.016170204800232707,
+          "a4_contact_normal_closing_speed_m_s": 0.014953796650881557,
+          "unrelated_contact_count": 0,
+          "best_precontact_error_m": 0.007077393609065336
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a5-nominal",
+      "case_id": "kinova_gen3_robotiq_2f85-a5-nominal",
+      "test": "kinova_gen3_robotiq_2f85-a5-nominal",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a5-nominal/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a5-nominal/video.mp4",
+      "sim_elapsed_s": 1.330000000000001,
+      "physics_steps": 665,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 15,
+      "error": null,
+      "detail": "A5 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 665,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 665,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.026249682714143407,
+          "joint_2": 0.03511175778236292,
+          "joint_3": 0.021279643847463614,
+          "joint_4": 0.04010685510895762,
+          "joint_5": 0.005604510952412112,
+          "joint_6": 0.03090261636570668,
+          "joint_7": 4.876641322604236e-05,
+          "left_coupler_joint": 4.7017930588694496e-05,
+          "left_driver_joint": 9.689095582844556e-05,
+          "left_follower_joint": 0.00014319213206941085,
+          "left_spring_link_joint": 0.00035661633028337327,
+          "right_coupler_joint": 4.619345349966051e-05,
+          "right_driver_joint": 9.1887117343046e-05,
+          "right_follower_joint": 0.00026979172259333946,
+          "right_spring_link_joint": 0.00019787972985440975
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.032661268534711775,
+          "pinch_site": 0.031544390301278105
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.02637555904693319,
+          "base_link": 0.0,
+          "bracelet_link": 0.02390798684145125,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.01508540448066711,
+          "half_arm_1_link": 0.00014108799383646264,
+          "half_arm_2_link": 0.007828823478136869,
+          "left_coupler": 0.026953551344460383,
+          "left_driver": 0.0278912160694941,
+          "left_follower": 0.029010865499201975,
+          "left_pad": 0.03004103587208502,
+          "left_silicone_pad": 0.03004103587208502,
+          "left_spring_link": 0.028600712775894592,
+          "right_coupler": 0.03034100597731627,
+          "right_driver": 0.029555533363069396,
+          "right_follower": 0.03247105950636757,
+          "right_pad": 0.032496133498500994,
+          "right_silicone_pad": 0.032496133498500994,
+          "right_spring_link": 0.029312826190387983,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.017867770556004952,
+          "spherical_wrist_2_link": 0.020115950416987726,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a5-nominal/video.mp4",
+        "frame_count": 15,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A5",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "base_body_name": "base_link",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A5"
+        },
+        "measurements": {
+          "sim_elapsed_s": 1.330000000000001,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.031544390301278105,
+          "best_outbound_error_m": 0.00012028591397742351,
+          "final_return_error_m": 0.00044791484810492976,
+          "maximum_displacement_fraction": 1.5772195150639052
+        }
+      }
+    },
+    {
+      "id": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+      "case_id": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+      "test": "kinova_gen3_robotiq_2f85-a5-calibrated_boundary",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "ok": true,
+      "score": 1.0,
+      "metric": 1.0,
+      "errors": [],
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a5-calibrated_boundary/trace.json",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a5-calibrated_boundary/video.mp4",
+      "sim_elapsed_s": 1.4240000000000013,
+      "physics_steps": 712,
+      "from_scratch": false,
+      "driver_origin": "real_model_generation",
+      "reference": false,
+      "model_generated": true,
+      "n_frames": 16,
+      "error": null,
+      "detail": "A5 trusted score=1.0",
+      "evidence_summary": {
+        "canonical_model_data": true,
+        "step_count": 712,
+        "physics_timestep_s": 0.002,
+        "ctrl_observed_before_step": true,
+        "ctrl_changed_from_reset": true,
+        "actuator_force_nonzero_step_count": 712,
+        "control_range_monitoring_complete": true,
+        "control_range_violation_detected": false,
+        "control_range_violation_actuators": [],
+        "direct_state_write_detected": false,
+        "direct_state_write_fields": [],
+        "model_parameter_write_detected": false,
+        "model_parameter_write_fields": [],
+        "contact_monitoring_complete": true,
+        "contact_pair_step_counts": [],
+        "contact_pair_first_times_s": [],
+        "contact_pair_min_distances": [],
+        "minimum_contact_distance_m": null,
+        "joint_max_abs_deviation_from_reset": {
+          "joint_1": 0.0002790158793570807,
+          "joint_2": 0.035132177869406034,
+          "joint_3": 0.00028848219286192744,
+          "joint_4": 0.021284205460785355,
+          "joint_5": 5.126206544282081e-05,
+          "joint_6": 0.03357125074211553,
+          "joint_7": 4.2896631992084266e-05,
+          "left_coupler_joint": 1.7196151405858367e-06,
+          "left_driver_joint": 3.0164132612527355e-05,
+          "left_follower_joint": 3.3772614888365974e-05,
+          "left_spring_link_joint": 4.221556239064443e-05,
+          "right_coupler_joint": 1.8448799065198026e-06,
+          "right_driver_joint": 3.017310619891e-05,
+          "right_follower_joint": 3.368594116322579e-05,
+          "right_spring_link_joint": 4.200646278880362e-05
+        },
+        "site_max_displacement_from_reset": {
+          "pinch": 0.033483444031488584,
+          "pinch_site": 0.03193256500999784
+        },
+        "body_max_displacement_from_reset": {
+          "base": 0.024475940083652538,
+          "base_link": 0.0,
+          "bracelet_link": 0.02065618566480812,
+          "fixed_contact_target": 0.0,
+          "forearm_link": 0.014784155024731207,
+          "half_arm_1_link": 1.4997103466804259e-06,
+          "half_arm_2_link": 0.007393158368348584,
+          "left_coupler": 0.02764221231625912,
+          "left_driver": 0.027889169789450274,
+          "left_follower": 0.030600727929287638,
+          "left_pad": 0.03143949968972281,
+          "left_silicone_pad": 0.03143949968972281,
+          "left_spring_link": 0.02826018096559052,
+          "right_coupler": 0.02763175976307165,
+          "right_driver": 0.027884020111319362,
+          "right_follower": 0.030589273948606794,
+          "right_pad": 0.03143122570515145,
+          "right_silicone_pad": 0.03143122570515145,
+          "right_spring_link": 0.028257959654575303,
+          "shoulder_link": 0.0,
+          "spherical_wrist_1_link": 0.011619366460635269,
+          "spherical_wrist_2_link": 0.014076089565390167,
+          "world": 0.0
+        }
+      },
+      "action_return": {
+        "type": "dict"
+      },
+      "video": {
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/kinova_gen3_robotiq_2f85/capability_validation/kinova_gen3_robotiq_2f85-a5-calibrated_boundary/video.mp4",
+        "frame_count": 16,
+        "ok": true,
+        "errors": []
+      },
+      "guard_errors": [],
+      "metrics": {
+        "contract_id": "A5",
+        "score": 1.0,
+        "parameters": {
+          "side_effect_guard_profile": "fixed_arm",
+          "site_name": "pinch_site",
+          "base_body_name": "base_link",
+          "guarded_joint_names": [
+            "right_driver_joint"
+          ],
+          "guarded_joint_tolerances": [
+            0.04000000000000001
+          ],
+          "contract_id": "A5"
+        },
+        "measurements": {
+          "sim_elapsed_s": 1.4240000000000013,
+          "side_effects_ok": true,
+          "site_max_displacement_m": 0.03193256500999784,
+          "best_outbound_error_m": 1.6009957304486274e-05,
+          "final_return_error_m": 0.0008190621280975052,
+          "maximum_displacement_fraction": 1.5966282504998919
+        }
+      }
+    }
+  ],
+  "all_ok": false,
+  "structural_ok": true,
+  "n_passed": 10,
+  "n_total": 11
+}

@@ -1,0 +1,17 @@
+{
+  "child_ok": true,
+  "command": [
+    "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+    "-c",
+    "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+    "{\"robot_id\": \"kinova_gen3_robotiq_2f85\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/kinova_gen3_robotiq_2f85\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"kinova_gen3_robotiq_2f85\", \"mjcf\": \"assets/mjcf/kinova_gen3_robotiq_2f85/scene.xml\", \"generation_route\": \"skeleton\", \"capability_mjcf\": \"assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/kinova_gen3_robotiq_2f85\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"state_refs\": {\"ee_site\": \"pinch_site\"}, \"class\": \"arm\", \"dof\": 7, \"vendor\": \"Kinova\", \"gripper\": \"Robotiq_2F-85\", \"ee_ref\": \"site\", \"notes\": \"Fixed-base 7-DoF serial arm with a tendon/equality-coupled Robotiq\\n2F-85 gripper. The public end-effector site is `pinch_site`.\\nPosition actuators expose seven arm joints and one gripper command.\\n\", \"source\": \"MuJoCo Menagerie (Kinova Gen3 + Robotiq 2F-85 composite)\"}}"
+  ],
+  "duration_sec": 13.29401707649231,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/kinova_gen3_robotiq_2f85/validate_report.json",
+  "returncode": 0,
+  "route": "skeleton",
+  "stderr_tail": "",
+  "stdout_tail": "{\"all_ok\": false, \"n_tests\": 11}\n",
+  "timeout_sec": 900
+}

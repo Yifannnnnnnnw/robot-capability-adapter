@@ -1,0 +1,272 @@
+{
+  "robot_id": "kinova_gen3_robotiq_2f85",
+  "estimated_class": "arm",
+  "dof": 8,
+  "joints": [
+    {
+      "name": "joint_1",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "joint_2",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -2.24,
+        2.24
+      ]
+    },
+    {
+      "name": "joint_3",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "joint_4",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -2.57,
+        2.57
+      ]
+    },
+    {
+      "name": "joint_5",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "joint_6",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -2.09,
+        2.09
+      ]
+    },
+    {
+      "name": "joint_7",
+      "type": "hinge",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "right_driver_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        0.0,
+        0.8
+      ]
+    },
+    {
+      "name": "right_coupler_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -1.57,
+        0.0
+      ]
+    },
+    {
+      "name": "right_spring_link_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.29671,
+        0.8
+      ]
+    },
+    {
+      "name": "right_follower_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.87266,
+        0.87266
+      ]
+    },
+    {
+      "name": "left_driver_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        0.0,
+        0.8
+      ]
+    },
+    {
+      "name": "left_coupler_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -1.57,
+        0.0
+      ]
+    },
+    {
+      "name": "left_spring_link_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.29671,
+        0.8
+      ]
+    },
+    {
+      "name": "left_follower_joint",
+      "type": "hinge",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrlrange": [
+        -0.87266,
+        0.87266
+      ]
+    }
+  ],
+  "actuators": [
+    {
+      "name": "joint_1",
+      "joint": "joint_1",
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "joint_2",
+      "joint": "joint_2",
+      "ctrlrange": [
+        -2.24973,
+        2.24973
+      ]
+    },
+    {
+      "name": "joint_3",
+      "joint": "joint_3",
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "joint_4",
+      "joint": "joint_4",
+      "ctrlrange": [
+        -2.5796,
+        2.5796
+      ]
+    },
+    {
+      "name": "joint_5",
+      "joint": "joint_5",
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "joint_6",
+      "joint": "joint_6",
+      "ctrlrange": [
+        -2.09963,
+        2.09963
+      ]
+    },
+    {
+      "name": "joint_7",
+      "joint": "joint_7",
+      "ctrlrange": [
+        -3.14159,
+        3.14159
+      ]
+    },
+    {
+      "name": "fingers_actuator",
+      "joint": "tendon:split",
+      "ctrlrange": [
+        0.0,
+        255.0
+      ]
+    }
+  ],
+  "ee_site": "pinch_site",
+  "ee_body": "bracelet_link",
+  "graspable_bodies": [],
+  "notes": "Kinova Gen3 7-DOF serial arm + Robotiq 2f85 tendon-driven parallel gripper (8 actuators); ee_site=pinch_site on bracelet_link; no free-joint objects in scene."
+}
