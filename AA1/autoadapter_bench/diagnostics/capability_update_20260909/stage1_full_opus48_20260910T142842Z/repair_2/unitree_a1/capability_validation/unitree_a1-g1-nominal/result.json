@@ -1,0 +1,225 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "G1",
+  "case_id": "unitree_a1-g1-nominal",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"duration_matches_request\": false, \"final_height_m\": 0.22858575540271447, \"max_abs_roll_pitch_rad\": 0.04587692957743121, \"max_planar_displacement_m\": 0.08741751341660527, \"requested_duration_s\": 2.2, \"side_effects_ok\": true, \"sim_elapsed_s\": 2.401999999999957}",
+  "driver_origin": "real_model_generation",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 1200,
+    "body_max_displacement_from_reset": {
+      "FL_calf": 0.11134057863642893,
+      "FL_hip": 0.09325577837217298,
+      "FL_thigh": 0.10113674368771323,
+      "FR_calf": 0.10007600855123759,
+      "FR_hip": 0.08519304494029721,
+      "FR_thigh": 0.07850853648313856,
+      "RL_calf": 0.12446587744091395,
+      "RL_hip": 0.09661650790844747,
+      "RL_thigh": 0.10427057373014167,
+      "RR_calf": 0.09415577193129052,
+      "RR_hip": 0.08864040967703311,
+      "RR_thigh": 0.08196373935281913,
+      "trunk": 0.08940386870068642,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.33200000000000024,
+        "geom1": "floor",
+        "geom2": "geom_18"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_19"
+      },
+      {
+        "first_time_s": 0.034000000000000016,
+        "geom1": "floor",
+        "geom2": "geom_29"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_30"
+      },
+      {
+        "first_time_s": 0.030000000000000013,
+        "geom1": "floor",
+        "geom2": "geom_39"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_40"
+      },
+      {
+        "first_time_s": 0.04000000000000002,
+        "geom1": "floor",
+        "geom2": "geom_49"
+      },
+      {
+        "first_time_s": 0.004,
+        "geom1": "floor",
+        "geom2": "geom_50"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_18",
+        "minimum_distance_m": -0.0006004296980865898
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_19",
+        "minimum_distance_m": -0.010600429698086593
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_29",
+        "minimum_distance_m": -0.00152244398263208
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_30",
+        "minimum_distance_m": -0.01152244398263209
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_39",
+        "minimum_distance_m": -0.0016243731735964603
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_40",
+        "minimum_distance_m": -0.011624373173596474
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_49",
+        "minimum_distance_m": -0.0005239735246754997
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_50",
+        "minimum_distance_m": -0.0105239735246755
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_18",
+        "step_count": 444
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_19",
+        "step_count": 835
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_29",
+        "step_count": 617
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_30",
+        "step_count": 935
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_39",
+        "step_count": 929
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_40",
+        "step_count": 1201
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_49",
+        "step_count": 897
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_50",
+        "step_count": 1201
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "FL_calf_joint": 0.1288255495884929,
+      "FL_hip_joint": 0.0628643198619949,
+      "FL_thigh_joint": 0.11219219425671678,
+      "FR_calf_joint": 0.1362089505114381,
+      "FR_hip_joint": 0.025332610051355776,
+      "FR_thigh_joint": 0.1257125247054275,
+      "RL_calf_joint": 0.15199729001818207,
+      "RL_hip_joint": 0.027081788831637078,
+      "RL_thigh_joint": 0.12814619319404852,
+      "RR_calf_joint": 0.16319866630965696,
+      "RR_hip_joint": 0.04880468309432746,
+      "RR_thigh_joint": 0.09429814902758715
+    },
+    "minimum_contact_distance_m": -0.011624373173596474,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {},
+    "step_count": 1201
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "unitree_a1-g1-nominal",
+  "method_name": "track_planar_twist",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "G1",
+    "measurements": {
+      "duration_matches_request": false,
+      "final_height_m": 0.22858575540271447,
+      "max_abs_roll_pitch_rad": 0.04587692957743121,
+      "max_planar_displacement_m": 0.08741751341660527,
+      "requested_duration_s": 2.2,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 2.401999999999957
+    },
+    "parameters": {
+      "body_name": "trunk",
+      "contract_id": "G1"
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 26,
+  "ok": false,
+  "physics_steps": 1201,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 2.401999999999957,
+  "test": "unitree_a1-g1-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/unitree_a1/capability_validation/unitree_a1-g1-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 26,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/unitree_a1/capability_validation/unitree_a1-g1-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/unitree_a1/capability_validation/unitree_a1-g1-nominal/video.mp4"
+}

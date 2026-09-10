@@ -1,0 +1,17 @@
+{
+  "contract_id": "G2",
+  "measurements": {
+    "final_height_m": 0.23932810499990004,
+    "final_planar_error_m": 0.09559599820029545,
+    "final_yaw_error_rad": 0.1025194244623453,
+    "max_abs_roll_pitch_rad": 0.017775862317345112,
+    "max_planar_displacement_m": 0.019454952513607557,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 5.001999999999671
+  },
+  "parameters": {
+    "body_name": "trunk",
+    "contract_id": "G2"
+  },
+  "score": 0.0
+}

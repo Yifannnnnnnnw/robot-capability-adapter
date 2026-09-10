@@ -1,0 +1,28 @@
+{
+  "all_stage1_ok": false,
+  "batch": "stage1_full_opus48_20260910T142842Z",
+  "duration_sec": 1124.598,
+  "exit_code": 1,
+  "finished_at_utc": "2026-09-10T16:19:30.965Z",
+  "launch_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/launch_20260910T160046367Z.json",
+  "max_repairs": 3,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "output_root": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z",
+  "results": [
+    {
+      "duration_sec": 1124.595,
+      "error": "AttributeError: module 'driver' has no attribute 'build'",
+      "finished_at_utc": "2026-09-10T16:19:30.964Z",
+      "monotonic_duration_sec": 1124.581,
+      "robot_id": "unitree_a1",
+      "started_at_utc": "2026-09-10T16:00:46.368Z",
+      "status": "failed",
+      "summary_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/summary_unitree_a1.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/unitree_a1"
+    }
+  ],
+  "selected_robots": [
+    "unitree_a1"
+  ],
+  "started_at_utc": "2026-09-10T16:00:46.367Z"
+}
