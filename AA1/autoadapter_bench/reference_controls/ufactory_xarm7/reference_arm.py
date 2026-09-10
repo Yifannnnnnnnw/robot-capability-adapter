@@ -301,8 +301,12 @@ class ReferenceXArm7Driver:
             raise ValueError("approach travel and speed are outside the public bounds")
 
         precontact_duration = min(1.0, max(0.5, 0.3 * duration_s))
-        self._track_position(precontact, precontact_duration)
+        # Preserve an already-valid measured pose as the public ray origin;
+        # otherwise prepare the requested pose before taking the dwell sample.
+        if float(np.linalg.norm(self._ee_position() - precontact)) > 0.015:
+            self._track_position(precontact, precontact_duration)
         self._hold(0.1)
+        ray_origin = self._ee_position()
         command_speed = min(max_speed, 0.018)
         approach_duration = max(0.25, duration_s - precontact_duration)
         approach_steps = self._steps(approach_duration)
@@ -311,7 +315,7 @@ class ReferenceXArm7Driver:
                 max_travel,
                 command_speed * self._timestep * float(index + 1),
             )
-            desired = precontact + distance * direction
+            desired = ray_origin + distance * direction
             self._command_arm(self._solve_position_ik(desired))
             self._command_gripper(self._gripper_target)
             mujoco.mj_step(self.model, self.data)
