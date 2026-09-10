@@ -1,75 +1,85 @@
 # AA1 capability integration diagnostics
 
-This is the approved integration diagnostic, not a formal experiment protocol.
-AA1 is tracked by the parent repository on `codex/aa1-capability-integration`.
-Model calls use the existing Holistic transport and credentials; reference
-controllers are never labelled as model-generated drivers.
+This file describes the current bounded Stage 1 diagnostic. It is an
+integration check, not a formal experiment protocol, manifest, or governance
+record. The parent repository tracks AA1; the original AA1 upstream is never a
+push destination.
 
-The robot zoo selects `capability_profile`, `capability_mjcf` and the required
-`capability_skeleton`. Generation receives only the public design plus Study,
-MJCF and low-level skeleton APIs. `build()` returns a generated subclass whose
-capability methods accept `request`. Framework loads private conditions from
-the catalog and samples the same MuJoCo world that executes those methods.
-TaskPlanner uses the public request schemas and the same physical scorer.
+Stage 1 runs fresh generation for the remaining canonical robots in this
+order: `franka`, `so101`, `kuka_iiwa14`, `ufactory_xarm7`,
+`kinova_gen3_robotiq_2f85`, `universal_robots_ur5e_robotiq_2f85`, `go2`,
+`unitree_a1`, `anymal_c`, and `h1`. The robot catalog marks the thirteen
+canonical skeleton-route robots explicitly; `h1` and `skydio_x2` use the
+from-scratch route. `piper`, `leap_hand`, `hello_robot_stretch_2`, `aloha_2`,
+and `skydio_x2` already passed their earlier bounded diagnostic scope and are
+excluded from this launcher. They are not rerun by Stage 1.
 
-PiPER is the first complete profile. Its two conditions for each of A1–A5
-passed the independent reference controller and the shared physical evaluator
-(10/10), including real rendered videos. The result is at
-`diagnostics/capability_calibration/piper/framework_reference/suite_result.json`.
-Per-case result files include the local raw trace and MP4 paths. Large raw
-physics traces and videos remain local; compact results and code are committed.
+The launcher in `scripts/run/run_stage1.py` is only a thin invocation wrapper.
+It calls `auto_adapter.orchestrator.run_stage1` once per selected robot with a
+fresh initial generation and up to three Framework-feedback repairs. It does
+not implement generation, repair, validation, Demo, evaluation, or ReCAP.
+The default model is `eu.anthropic.claude-opus-4-8`; `--max-repairs` accepts
+0–3. An existing output root is valid when submissions contain disjoint
+robots. The pipeline decides whether a particular robot workspace may be
+written again. If the pipeline reports an external model/API block, the
+launcher stops model calls and records later selected robots as
+`not_run_external_blocked` with the originating error.
 
-The first real PiPER generation exhausted 22 turns after truncated `write_file`
-arguments omitted `content`. It produced no driver and did not run Framework.
-Its original evidence remains under
-`diagnostics/capability_update_20260909/generated/piper/`.
-The follow-up uses bounded file chunks with `append=true`; it generated a real
-driver and passed 7/10 Framework conditions. Both A4 conditions and the A5
-nominal condition failed. This is not a fully validated robot. Evidence is
-under `diagnostics/capability_update_20260909/generated_retry1/piper/`.
-The historical retry summary incorrectly labels one generation attempt as two
-and duplicates the validation phase; the recorded generation trace is one
-attempt. The orchestrator accounting is now fixed without rewriting that run.
+Each robot's pipeline-owned evidence has an `initial/<robot>/` directory and,
+when needed, `repair_N/<robot>/` directories. A compact `summary_<robot>.json`
+records the declared outcome and paths. The launcher creates one small
+`launch_<UTC timestamp>.json` per invocation with selected robots, timing,
+forwarded arguments, and compact results; it does not replace those per-robot
+summaries. A returned API zero-response or transport error is not a valid
+repair and cannot turn an existing candidate into a successful result. Costs
+are `null` when the provider does not report a known cost.
 
-Run from the AA1 directory using `.venv/bin/python`. Real generation example:
+For the skeleton route, Framework evaluates every public capability condition
+in its nominal and boundary cases using the trusted catalog and the same
+MuJoCo model/data world. H1 retains all eight checks: driver build, home,
+real two-second `stand_balance` physics with its trace and video,
+`squat`, `humanoid_walk`, and the required structural checks. A missing or
+failed H1 walking method remains a failed check. Stage 2 is deferred.
 
-```python
-from pathlib import Path
-from auto_adapter.orchestrator import SelfAssemble, SelfAssembleConfig
+Reference controls establish whether a trusted condition is physically
+reachable; they are not model-generated drivers and do not enter a generated
+result. The remaining reference gaps are Unitree A1 and ANYmal-C G1–G3
+(nominal and boundary). The earlier reports remain historical evidence:
+[FIRST_ROUND_RESULTS.md](diagnostics/capability_update_20260909/FIRST_ROUND_RESULTS.md),
+[HIGHER_MODEL_RESULTS.md](diagnostics/capability_update_20260909/HIGHER_MODEL_RESULTS.md),
+and [FULL_REPORT_20260910.md](diagnostics/capability_update_20260909/FULL_REPORT_20260910.md).
+In particular, the old PiPER generation failure is preserved in those reports
+and is not presented as a current Stage 1 result.
 
-cfg = SelfAssembleConfig(
-    robot_id="piper", mjcf_path=Path("assets/mjcf/piper/scene.xml").resolve(),
-    workspace_root=Path("/tmp/aa1-piper-canary").resolve(),
-    model_provider="holistic", bedrock_model="eu.anthropic.claude-sonnet-4-6",
-    max_outer_gen_val_iters=1,
-)
-with SelfAssemble(cfg) as pipeline:
-    print(pipeline.run(stop_after="validate").to_json())
-```
+Compact summaries, source, and generation traces are suitable for Git review.
+Large per-trial videos and raw physics traces remain local. H1's current
+stand evidence is written under its pipeline workspace as
+`stand_balance_2s_physics_trace.json` and
+`recordings/stand_balance_2s.mp4`.
 
-Task diagnostic for a generated driver:
-
-```sh
-.venv/bin/python -m autoadapter_bench.eval --robot piper --suites capability \
-  --n-trials 1 --provider holistic --model eu.anthropic.claude-sonnet-4-6 \
-  --driver-workspace /tmp/aa1-piper-canary/piper \
-  --output /tmp/aa1-piper-canary/piper/task_diagnostic.json
-```
-
-Task reports retain `framework_ok` and `validated_driver_task_ok`. A task pass
-cannot erase failed capability conditions. Builds that fail cannot run tasks.
-The demo remains on the existing ReAct flow; the proposed ReCAP change is deferred.
-
-Focused checks for this common interface batch:
+Run from `AA1` with the project virtual environment. For a shared batch root,
+review and commit each remaining robot as a separate invocation:
 
 ```sh
-.venv/bin/python -m pytest -q auto_adapter/tests/test_stop_after_validate.py \
-  auto_adapter/tests/test_capability_interface.py \
-  auto_adapter/tests/test_capability_physics.py \
-  auto_adapter/tests/test_generation_file_chunks.py
+BATCH="autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_$(date -u +%Y%m%dT%H%M%SZ)"
+
+.venv/bin/python scripts/run/run_stage1.py --robots franka --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots so101 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots kuka_iiwa14 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots ufactory_xarm7 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots kinova_gen3_robotiq_2f85 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots universal_robots_ur5e_robotiq_2f85 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots go2 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots unitree_a1 --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots anymal_c --output-root "$BATCH"
+.venv/bin/python scripts/run/run_stage1.py --robots h1 --output-root "$BATCH"
 ```
 
-The checks cover generated subclasses, missing methods, trusted morphology,
-canonical physical stepping, direct state/model writes, unusable video, chunked
-generation recovery and accurate phase accounting. Named fixtures are tests,
-not substitutes for the real reference and Holistic runs above.
+Focused launcher and local-route checks use test doubles only:
+
+```sh
+.venv/bin/python -m pytest -q \
+  auto_adapter/tests/test_from_scratch_local_mode.py \
+  auto_adapter/tests/test_stage1_launcher.py \
+  auto_adapter/tests/test_h1_framework_duration.py
+```

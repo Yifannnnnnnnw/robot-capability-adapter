@@ -26,6 +26,7 @@ created: "2026-05-30"
 robots:
   - id: so101
     mjcf: assets/mjcf/so101_mujoco.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/so101/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/so101
     capability_skeleton: ArmSerialDLSSkeleton
@@ -95,6 +96,7 @@ robots:
 
   - id: piper
     mjcf: assets/mjcf/piper/scene.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/piper/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/piper
     capability_skeleton: ArmSerialDLSSkeleton
@@ -114,6 +116,7 @@ robots:
     capability_profile: autoadapter_bench/spec/capabilities/franka
     capability_skeleton: ArmSerialDLSSkeleton
     mjcf: assets/mjcf/franka_panda/scene.xml
+    generation_route: skeleton
     state_refs: {ee_body: hand}
     class: arm
     dof: 7
@@ -141,6 +144,7 @@ robots:
     capability_profile: autoadapter_bench/spec/capabilities/kuka_iiwa14
     capability_skeleton: ArmSerialDLSSkeleton
     mjcf: assets/mjcf/kuka_iiwa_14/scene.xml
+    generation_route: skeleton
     state_refs: {ee_site: attachment_site}
     class: arm
     dof: 7
@@ -155,6 +159,7 @@ robots:
     capability_profile: autoadapter_bench/spec/capabilities/go2
     capability_skeleton: Go2VelocityPolicySkeleton
     mjcf: assets/mjcf/go2/go2_scene.xml
+    generation_route: skeleton
     state_refs: {base_body: base_link}
     class: quadruped
     dof: 12
@@ -169,6 +174,7 @@ robots:
 
   - id: unitree_a1
     mjcf: assets/mjcf/unitree_a1/scene.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/unitree_a1/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/unitree_a1
     capability_skeleton: QuadrupedPDGaitSkeleton
@@ -184,6 +190,7 @@ robots:
 
   - id: anymal_c
     mjcf: assets/mjcf/anybotics_anymal_c/scene.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/anymal_c/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/anymal_c
     capability_skeleton: QuadrupedPDGaitSkeleton
@@ -200,6 +207,7 @@ robots:
 
   - id: kinova_gen3_robotiq_2f85
     mjcf: assets/mjcf/kinova_gen3_robotiq_2f85/scene.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/kinova_gen3_robotiq_2f85
     capability_skeleton: ArmSerialDLSSkeleton
@@ -217,6 +225,7 @@ robots:
 
   - id: ufactory_xarm7
     mjcf: assets/mjcf/ufactory_xarm7/scene.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/ufactory_xarm7
     capability_skeleton: ArmSerialDLSSkeleton
@@ -234,6 +243,7 @@ robots:
 
   - id: universal_robots_ur5e_robotiq_2f85
     mjcf: assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml
+    generation_route: skeleton
     capability_mjcf: assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml
     capability_profile: autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85
     capability_skeleton: ArmSerialDLSSkeleton
@@ -251,6 +261,7 @@ robots:
 
   - id: leap_hand
     mjcf: assets/mjcf/leap_hand/scene_right.xml
+    generation_route: skeleton
     class: dexterous_hand
     dof: 16
     vendor: LEAP Hand
@@ -271,6 +282,7 @@ robots:
 
   - id: hello_robot_stretch_2
     mjcf: assets/mjcf/hello_robot_stretch_2/scene.xml
+    generation_route: skeleton
     class: mobile_manipulator
     dof: 11
     vendor: Hello Robot
@@ -289,6 +301,7 @@ robots:
 
   - id: aloha_2
     mjcf: assets/mjcf/aloha_2/scene.xml
+    generation_route: skeleton
     class: bimanual
     dof: 12
     vendor: Trossen Robotics
@@ -306,6 +319,7 @@ robots:
 
   - id: skydio_x2
     mjcf: assets/mjcf/skydio_x2/scene.xml
+    generation_route: from_scratch
     state_refs: {base_body: x2}
     class: aerial
     dof: 6
@@ -322,6 +336,7 @@ robots:
 
   - id: h1
     mjcf: assets/mjcf/h1/scene.xml
+    generation_route: from_scratch
     state_refs: {base_body: pelvis}
     class: humanoid
     dof: 19

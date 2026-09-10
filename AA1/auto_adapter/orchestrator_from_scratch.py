@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
 import os
 import sys
 import time
@@ -117,6 +118,8 @@ def _validate_humanoid_stand_balance(
     mjcf_path: Path,
     *,
     secs: float = 2.0,
+    trace_path: Path | None = None,
+    video_path: Path | None = None,
 ) -> dict:
     """Validate a humanoid stand over the real simulated interval.
 
@@ -124,6 +127,29 @@ def _validate_humanoid_stand_balance(
     samples after every real ``mj_step`` so a driver that only returns from
     ``stand_balance`` cannot pass on its initial upright pose.
     """
+    # Evidence output is opt-in so the existing focused no-op regression can
+    # keep its lightweight API.  The official H1 validator supplies both paths
+    # and therefore requires both artifacts to be usable for a pass.
+    evidence_requested = trace_path is not None or video_path is not None
+    if evidence_requested:
+        if trace_path is None:
+            trace_path = Path(video_path).with_suffix(".json")
+        if video_path is None:
+            video_path = Path(trace_path).with_suffix(".mp4")
+        trace_path = Path(trace_path)
+        video_path = Path(video_path)
+
+    trace = None
+    video = None
+    video_info: dict[str, Any] | None = None
+    trace_samples: list[dict] = []
+    errors: list[str] = []
+    elapsed = 0.0
+    finite = False
+    min_height = 0.0
+    min_upright = 0.0
+    physics_ok = False
+
     try:
         from autoadapter_bench.physics import PhysicsTrace  # noqa: PLC0415
         from .robot_catalog import find_robot_definition  # noqa: PLC0415
@@ -136,46 +162,117 @@ def _validate_humanoid_stand_balance(
                 f"trusted robot definition has no humanoid base_body for {robot_id!r}"
             )
 
-        trace = PhysicsTrace(robot, {"base_body": base_body})
+        if evidence_requested:
+            # Reuse the trusted recorder used by capability evaluation.  Its
+            # frames and PhysicsTrace samples observe this exact robot/model/data
+            # while the generated stand_balance method advances real mj_step.
+            from autoadapter_bench.capability_eval import _VideoRecorder  # noqa: PLC0415
+
+            timestep = float(robot.model.opt.timestep)
+            if not math.isfinite(timestep) or timestep <= 0.0:
+                raise ValueError("stand_balance evidence requires a positive model timestep")
+            capture_every = max(1, round(1.0 / (30.0 * timestep)))
+            video = _VideoRecorder(
+                robot,
+                video_path,
+                capture_every=capture_every,
+                fps=1.0 / (timestep * capture_every),
+                width=480, height=360, camera=-1,
+            )
+
+            class _EvidencePhysicsTrace(PhysicsTrace):
+                def snapshot(self):
+                    state = super().snapshot()
+                    step_count = max(0, len(self.samples) - 1)
+                    video.capture(force=step_count == 0, step_count=step_count)
+                    return state
+
+            trace = _EvidencePhysicsTrace(robot, {"base_body": base_body})
+        else:
+            trace = PhysicsTrace(robot, {"base_body": base_body})
+
         with trace:
             trace.tool, trace.idx = "stand_balance", -1
             robot.stand_balance(secs=float(secs))
 
-        samples = trace.samples
-        if not samples:
+        trace_samples = list(trace.samples)
+        if not trace_samples:
             raise ValueError("stand_balance produced no physics samples")
-        elapsed = float(samples[-1]["time"] - samples[0]["time"])
-        heights = [float(sample["base_xyz"][2]) for sample in samples]
-        upright = [float(sample["base_upright"]) for sample in samples]
-        finite = all(bool(sample["finite"]) for sample in samples)
+        elapsed = float(trace_samples[-1]["time"] - trace_samples[0]["time"])
+        heights = [float(sample["base_xyz"][2]) for sample in trace_samples]
+        upright = [float(sample["base_upright"]) for sample in trace_samples]
+        finite = all(bool(sample["finite"]) for sample in trace_samples)
         min_height = min(heights)
         min_upright = min(upright)
         elapsed_ok = elapsed >= float(secs) - 1e-9
-        ok = bool(
+        physics_ok = bool(
             elapsed_ok
             and finite
             and min_height > 0.6
             and min_upright > 0.7
         )
-        return {
-            "test": "stand_balance",
-            "ok": ok,
-            "detail": (
-                f"elapsed={elapsed:.3f}s (need >={float(secs):.3f}), "
-                f"steps={max(0, len(samples) - 1)}, "
-                f"min_h={min_height:.3f}m (need >0.6), "
-                f"min_up={min_upright:.3f} (need >0.7), "
-                f"finite={finite}"
-            ),
-            "metric": elapsed,
-        }
     except Exception as exc:  # noqa: BLE001
-        return {
-            "test": "stand_balance",
-            "ok": False,
-            "detail": f"{type(exc).__name__}: {exc}",
-            "metric": 0.0,
-        }
+        errors.append(f"{type(exc).__name__}: {exc}")
+    finally:
+        if video is not None:
+            try:
+                video_info = video.finish()
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"video finalization failed: {type(exc).__name__}: {exc}")
+        if trace_path is not None and trace is not None:
+            try:
+                trace_path.parent.mkdir(parents=True, exist_ok=True)
+                trace_path.write_text(
+                    json.dumps(
+                        {
+                            "artifact_type": "h1_stand_balance_physics_trace",
+                            "schema_version": "1.0",
+                            "robot_id": robot_id,
+                            "same_model_data": True,
+                            "samples": trace_samples or list(trace.samples),
+                        },
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"trace finalization failed: {type(exc).__name__}: {exc}")
+
+    if trace_path is not None:
+        if not trace_path.is_file() or trace_path.stat().st_size <= 0:
+            errors.append("required stand_balance trace unavailable")
+    if video_path is not None:
+        if not video_info or not video_info.get("ok"):
+            details = "; ".join(str(item) for item in (video_info or {}).get("errors", []))
+            errors.append("required stand_balance video unavailable" + (f": {details}" if details else ""))
+
+    if trace_samples:
+        elapsed_text = (
+            f"elapsed={elapsed:.3f}s (need >={float(secs):.3f}), "
+            f"steps={max(0, len(trace_samples) - 1)}, "
+            f"min_h={min_height:.3f}m (need >0.6), "
+            f"min_up={min_upright:.3f} (need >0.7), "
+            f"finite={finite}"
+        )
+    else:
+        elapsed_text = "elapsed=0.000s (need >={:.3f}), steps=0".format(float(secs))
+    detail = elapsed_text
+    if errors:
+        detail += "; " + "; ".join(errors)
+    result = {
+        "test": "stand_balance",
+        "ok": bool(physics_ok and not errors),
+        "detail": detail,
+        "metric": elapsed if physics_ok else 0.0,
+    }
+    if trace_path is not None:
+        result["trace_path"] = str(trace_path)
+    if video_path is not None:
+        result["video_path"] = str(video_path)
+    if video_info is not None:
+        result["video"] = video_info
+        result["n_frames"] = int(video_info.get("frame_count", 0))
+    return result
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -199,6 +296,10 @@ class FromScratchConfig:
     max_iters_gen_repair: int = 20       # repair passes are shorter than first gen
     max_outer_retries: int = 3           # repairs after the initial generation/validation
     max_tokens_per_turn: int = 8000
+    # ``agentcore`` preserves the historical entry behavior.  ``local`` uses
+    # the AA1 workspace and venv for every generation probe and never creates
+    # a remote CodeInterpreter session.
+    mode: str = "agentcore"
 
 
 @dataclass
@@ -387,8 +488,9 @@ Hard rules:
             or uprightness drops below a guard. Forbidden: open-loop joint
             oscillations, a large first step, writing the base pose directly,
             judging progress by world-x (use the start-heading frame).
-        It is FINE if walk_forward fails — stand+squat already validate; an
-        honest "walk not achieved" is acceptable. Do NOT fake forward progress.
+        For H1, walk_forward is a required public method and its Framework
+        check is required. A failed walk remains a failed H1 diagnostic; do
+        not fake forward progress or report success from stand+squat alone.
 
       OTHER (biped, …):
         Whatever makes sense. Write the behaviors a useful task planner
@@ -463,6 +565,12 @@ class FromScratchOrchestrator:
         self._exec_python_tool: Optional[ToolSpec] = None
 
     def __enter__(self) -> "FromScratchOrchestrator":
+        if self._is_local_mode():
+            # Local mode deliberately has no AgentCore lifecycle.  The ReAct
+            # model transport remains the same, but all code and artifact
+            # probes run through the workspace-bound local_exec tool.
+            return self
+
         import boto3  # noqa: PLC0415
         from botocore.config import Config  # noqa: PLC0415
 
@@ -487,6 +595,40 @@ class FromScratchOrchestrator:
             self._ci_client, self._ci_session_id, ci_id=self.cfg.ci_id,
         )
         return self
+
+    def _is_local_mode(self) -> bool:
+        """Whether this run uses the local workspace execution route."""
+        return getattr(self.cfg, "mode", "agentcore") == "local"
+
+    @staticmethod
+    def _localize_prompt(prompt: str) -> str:
+        """Adapt AgentCore wording to fresh-process local_exec semantics."""
+        localized = (
+            prompt
+            .replace("execute_python", "local_exec")
+            .replace(
+                "The session\nkeeps state across calls.",
+                "Each local_exec call starts a fresh process; include imports "
+                "and setup in every command or save intermediates in workspace files.",
+            )
+            .replace(
+                "The session keeps state across calls.",
+                "Each local_exec call starts a fresh process; include imports "
+                "and setup in every command or save intermediates in workspace files.",
+            )
+            .replace(
+                "sandboxed CI",
+                "the local workspace",
+            )
+            .replace("local_exec or local_exec", "local_exec")
+        )
+        if "fresh process" not in localized:
+            localized += (
+                "\n\nLocal execution note: each local_exec call starts a fresh process; "
+                "include imports and setup in every command or save intermediates "
+                "in workspace files."
+            )
+        return localized
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self._ci_session_id is not None:
@@ -546,24 +688,34 @@ class FromScratchOrchestrator:
         return res
 
     def phase_study(self) -> ReactResult:
-        assert self._exec_python_tool is not None
-        tools = self._common_tools() + [self._exec_python_tool]
+        if self._is_local_mode():
+            tools = self._common_tools() + [self._local_runtime_tool()]
+            system = self._localize_prompt(_STUDY_SYSTEM)
+        else:
+            assert self._exec_python_tool is not None
+            tools = self._common_tools() + [self._exec_python_tool]
+            system = _STUDY_SYSTEM
         user = (
             f"Robot ID: {self.cfg.robot_id}\n"
             "MJCF (workspace-relative): mjcf.xml\n"
             "Produce study.json per the procedure."
         )
         return self._run_loop(
-            name="01_study", system=_STUDY_SYSTEM, user_msg=user,
+            name="01_study", system=system, user_msg=user,
             tools=tools, max_iters=self.cfg.max_iters_study,
         )
 
     def phase_gen_algo(self) -> ReactResult:
         """The from-scratch driver synthesis phase."""
-        assert self._exec_python_tool is not None
-        tools = self._common_tools() + [
-            self._exec_python_tool, self._local_runtime_tool(),
-        ]
+        if self._is_local_mode():
+            tools = self._common_tools() + [self._local_runtime_tool()]
+            system = self._localize_prompt(_GEN_ALGO_SYSTEM)
+        else:
+            assert self._exec_python_tool is not None
+            tools = self._common_tools() + [
+                self._exec_python_tool, self._local_runtime_tool(),
+            ]
+            system = _GEN_ALGO_SYSTEM
         user = (
             f"Robot ID: {self.cfg.robot_id}\n"
             "study.json is in the workspace. MJCF at mjcf.xml.\n"
@@ -572,7 +724,6 @@ class FromScratchOrchestrator:
         )
         from .robot_catalog import capability_generation_context
         user += capability_generation_context(self.robot_definition, from_scratch=True)
-        system = _GEN_ALGO_SYSTEM
         if self.capability_design:
             system += ("\nFor a catalogued capability profile, implement its complete "
                        "method(request) interface in addition to build/home/step/render. "
@@ -590,18 +741,18 @@ class FromScratchOrchestrator:
         post-step physical state until the structural-test suite passes' — the
         framework validator is otherwise out of the agent's inner loop.
         """
+        # A resumed repair may be invoked without entering a context manager;
+        # retain that established local-only behavior while ensuring a stale
+        # remote handle cannot leak into an explicitly local run.
+        local = self._is_local_mode() or self._exec_python_tool is None
         tools = self._common_tools()
-        if self._exec_python_tool is not None:
+        if not local and self._exec_python_tool is not None:
             # Reuse the existing AgentCore session when the full pipeline is
             # active; a resumed candidate can omit it and stay local-only.
             tools.append(self._exec_python_tool)
         tools.append(self._local_runtime_tool())
-        system = _GEN_ALGO_SYSTEM
+        system = self._localize_prompt(_GEN_ALGO_SYSTEM) if local else _GEN_ALGO_SYSTEM
         verification_tool = "local_exec"
-        if self._exec_python_tool is None:
-            system = system.replace("execute_python", "local_exec")
-        else:
-            verification_tool = "local_exec"
         user = (
             f"Robot ID: {self.cfg.robot_id}\n"
             f"This is repair attempt {int(attempt)}. Your existing "
@@ -624,6 +775,11 @@ class FromScratchOrchestrator:
         )
         from .robot_catalog import capability_generation_context
         user += capability_generation_context(self.robot_definition, from_scratch=True)
+        if self.capability_design:
+            system += ("\nFor a catalogued capability profile, implement its complete "
+                       "method(request) interface in addition to build/home/step/render. "
+                       "The profile supersedes the legacy per-class motion API lists. "
+                       "No retained policies, supplied skeletons or reference drivers.")
         return self._run_loop(
             name=f"03_gen_repair_{int(attempt)}", system=system,
             user_msg=user, tools=tools,
@@ -1089,7 +1245,9 @@ class FromScratchOrchestrator:
                     # not only the initial/final pose after a no-op return.
                     report["tests"].append(
                         _validate_humanoid_stand_balance(
-                            r, self.cfg.robot_id, self.cfg.mjcf_path, secs=2.0
+                            r, self.cfg.robot_id, self.cfg.mjcf_path, secs=2.0,
+                            trace_path=self.workspace / "stand_balance_2s_physics_trace.json",
+                            video_path=self.workspace / "recordings" / "stand_balance_2s.mp4",
                         )
                     )
                     # squat: must ACTUALLY DESCEND by ~depth then recover
@@ -1127,12 +1285,20 @@ class FromScratchOrchestrator:
                             "test": "squat", "ok": False,
                             "detail": f"{type(e).__name__}: {e}", "metric": 0.0,
                         })
-                    # humanoid_walk: NON-CRITICAL frontier probe. In-call thread
-                    # sampling; progress measured in the START-HEADING frame so
-                    # fall-forward / inaction / rotation cannot game it. Failing
-                    # is fine (stand+squat already validate); passing lets us
-                    # claim short-shuffle walking.
-                    if hasattr(r, "walk_forward"):
+                    # H1 requires the complete eight-check Framework surface,
+                    # including walk_forward.  Keep the physical check honest:
+                    # missing or failed walking remains a failed diagnostic.
+                    is_h1 = (
+                        self.cfg.robot_id == "h1"
+                        or (self.robot_definition or {}).get("id") == "h1"
+                    )
+                    if is_h1 and not callable(getattr(r, "walk_forward", None)):
+                        report["tests"].append({
+                            "test": "humanoid_walk", "ok": False,
+                            "detail": "driver missing required method walk_forward",
+                            "metric": 0.0,
+                        })
+                    elif callable(getattr(r, "walk_forward", None)):
                         try:
                             import threading as _th2
                             import time as _tm2
@@ -1236,7 +1402,7 @@ class FromScratchOrchestrator:
                           "stand_up", "sit", "walk_forward",
                           "drive_forward", "turn",
                           "takeoff", "move_to",
-                          "stand_balance", "squat"}
+                          "stand_balance", "squat", "humanoid_walk"}
         critical_results = [t for t in report["tests"] if t["test"] in critical_tests]
         report["structural_ok"] = (
             bool(critical_results) and all(t["ok"] for t in critical_results)
