@@ -1,0 +1,127 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A4",
+  "case_id": "kuka_iiwa_14-a4-calibrated_boundary",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"best_precontact_error_m\": 0.008537510398436518, \"first_target_contact_s\": 3.673999999999762, \"longest_target_contact_s\": 0.12199999999998656, \"maximum_speed_after_contact_m_s\": 0.03831470584178126, \"minimum_contact_distance_m\": -0.0006853093793884948, \"side_effects_ok\": true, \"sim_elapsed_s\": 3.7959999999997485, \"site_max_displacement_m\": 0.042520246581345414}",
+  "driver_origin": "real_model_generation",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 1898,
+    "body_max_displacement_from_reset": {
+      "base": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 1.1102230246251565e-16,
+      "link3": 0.01878859264082277,
+      "link4": 0.03858781862662864,
+      "link5": 0.03853971014760938,
+      "link6": 0.03886404813486173,
+      "link7": 0.04069977387852584,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 4.173999999999762,
+        "geom1": "fixed_contact_geom",
+        "geom2": "link7_contact_geom"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "link7_contact_geom",
+        "minimum_distance_m": -0.0006853093793884948
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "link7_contact_geom",
+        "step_count": 62
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 0.006079664972559609,
+      "joint2": 0.09179281500554848,
+      "joint3": 0.008644700289417377,
+      "joint4": 0.10971254084140147,
+      "joint5": 0.009210781715433405,
+      "joint6": 0.09346775300184622,
+      "joint7": 3.2218102577456868e-06
+    },
+    "minimum_contact_distance_m": -0.0006853093793884948,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "attachment_site": 0.042520246581345414
+    },
+    "step_count": 1898
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "kuka_iiwa_14-a4-calibrated_boundary",
+  "method_name": "approach_until_contact",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A4",
+    "measurements": {
+      "best_precontact_error_m": 0.008537510398436518,
+      "first_target_contact_s": 3.673999999999762,
+      "longest_target_contact_s": 0.12199999999998656,
+      "maximum_speed_after_contact_m_s": 0.03831470584178126,
+      "minimum_contact_distance_m": -0.0006853093793884948,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 3.7959999999997485,
+      "site_max_displacement_m": 0.042520246581345414
+    },
+    "parameters": {
+      "contract_id": "A4",
+      "max_penetration_m": 0.005,
+      "precontact_gate": "held_window_then_ray",
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "attachment_site",
+      "target_geom_names": [
+        "fixed_contact_geom"
+      ],
+      "tool_body_names": [
+        "link7"
+      ],
+      "tool_geom_names": [
+        "geom_60",
+        "link7_contact_geom"
+      ]
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 39,
+  "ok": false,
+  "physics_steps": 1898,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 3.7959999999997485,
+  "test": "kuka_iiwa_14-a4-calibrated_boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-calibrated_boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 39,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-calibrated_boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-calibrated_boundary/video.mp4"
+}

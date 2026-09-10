@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "test": "driver_build",
+      "ok": false,
+      "detail": "AttributeError: module 'driver' has no attribute 'build'",
+      "metric": 0.0
+    }
+  ],
+  "all_ok": false,
+  "error": "AttributeError: module 'driver' has no attribute 'build'"
+}

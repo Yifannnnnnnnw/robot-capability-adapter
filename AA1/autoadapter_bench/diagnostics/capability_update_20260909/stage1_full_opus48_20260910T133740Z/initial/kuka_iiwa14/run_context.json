@@ -1,0 +1,65 @@
+{
+  "actual_generation_cost_usd": null,
+  "attempt": 0,
+  "finished_at": "2026-09-10T13:41:59.691306+00:00",
+  "framework_subprocess": {
+    "child_ok": true,
+    "command": [
+      "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+      "-c",
+      "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+      "{\"robot_id\": \"kuka_iiwa14\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"kuka_iiwa14\", \"capability_mjcf\": \"assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/kuka_iiwa14\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"mjcf\": \"assets/mjcf/kuka_iiwa_14/scene.xml\", \"generation_route\": \"skeleton\", \"state_refs\": {\"ee_site\": \"attachment_site\"}, \"class\": \"arm\", \"dof\": 7, \"vendor\": \"KUKA\", \"gripper\": null, \"ee_ref\": \"site\", \"notes\": \"7-DOF redundant. No gripper. EE home pose at Z\\u22481.3m (very high).\\n\", \"source\": \"mujoco_menagerie\"}}"
+    ],
+    "duration_sec": 8.877779006958008,
+    "model": "eu.anthropic.claude-opus-4-8",
+    "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/validate_report.json",
+    "returncode": 0,
+    "route": "skeleton",
+    "stderr_tail": "",
+    "stdout_tail": "{\"all_ok\": false, \"n_tests\": 9}\n",
+    "timeout_sec": 900
+  },
+  "generation": {
+    "artifacts": [
+      "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/driver.py"
+    ],
+    "duration_sec": 219.07966113090515,
+    "error": null,
+    "metadata": {},
+    "name": "02_generate",
+    "ok": true,
+    "token_usage": {
+      "cache_read": 0,
+      "in": 931605,
+      "out": 18372
+    },
+    "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/traces/02_generate.jsonl"
+  },
+  "git_commit": "d17a42a0a7931a71b566b34130d2b24c432a27cd",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "parameters": {
+    "max_repairs": 3
+  },
+  "provider": "holistic",
+  "robot_id": "kuka_iiwa14",
+  "round": "initial",
+  "route": "skeleton",
+  "started_at": "2026-09-10T13:37:40.313300+00:00",
+  "study": {
+    "artifacts": [
+      "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/study.json"
+    ],
+    "duration_sec": 30.651893138885498,
+    "error": null,
+    "metadata": {},
+    "name": "01_study",
+    "ok": true,
+    "token_usage": {
+      "cache_read": 0,
+      "in": 56285,
+      "out": 2452
+    },
+    "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/traces/01_study.jsonl"
+  },
+  "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/validate_report.json"
+}

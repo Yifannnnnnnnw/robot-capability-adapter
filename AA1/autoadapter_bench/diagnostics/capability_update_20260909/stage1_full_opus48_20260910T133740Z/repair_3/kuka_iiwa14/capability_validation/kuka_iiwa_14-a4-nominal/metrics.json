@@ -1,0 +1,31 @@
+{
+  "contract_id": "A4",
+  "measurements": {
+    "best_precontact_error_m": 0.008537510398436518,
+    "first_target_contact_s": 2.7219999999998663,
+    "longest_target_contact_s": 0.12199999999998656,
+    "maximum_speed_after_contact_m_s": 0.036510460288785906,
+    "minimum_contact_distance_m": -0.0006861825316424111,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 2.843999999999853,
+    "site_max_displacement_m": 0.031563684441684114
+  },
+  "parameters": {
+    "contract_id": "A4",
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "attachment_site",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_body_names": [
+      "link7"
+    ],
+    "tool_geom_names": [
+      "geom_60",
+      "link7_contact_geom"
+    ]
+  },
+  "score": 0.0
+}

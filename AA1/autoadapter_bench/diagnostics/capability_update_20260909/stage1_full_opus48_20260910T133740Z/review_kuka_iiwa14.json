@@ -1,0 +1,111 @@
+{
+  "robot_id": "kuka_iiwa14",
+  "scope": "fresh Holistic Stage 1 diagnostic; no export/demo/task/ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 5,
+      "capability_executed": 8,
+      "capability_required": 8,
+      "failed_checks": [
+        {
+          "check": "kuka_iiwa_14-a2-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kuka_iiwa_14-a4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kuka_iiwa_14-a4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/validate_report.json",
+      "physics_seconds": 9.550000000000008
+    },
+    {
+      "round": "repair_1",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 0,
+      "capability_executed": 0,
+      "capability_required": 8,
+      "failed_checks": [
+        {
+          "check": "driver_build",
+          "error": "AttributeError: module 'driver' has no attribute 'build'"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/validate_report.json",
+      "physics_seconds": 0
+    },
+    {
+      "round": "repair_2",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 6,
+      "capability_executed": 8,
+      "capability_required": 8,
+      "failed_checks": [
+        {
+          "check": "kuka_iiwa_14-a4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kuka_iiwa_14-a4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/validate_report.json",
+      "physics_seconds": 11.06399999999999
+    },
+    {
+      "round": "repair_3",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 6,
+      "capability_executed": 8,
+      "capability_required": 8,
+      "failed_checks": [
+        {
+          "check": "kuka_iiwa_14-a4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "kuka_iiwa_14-a4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+      "physics_seconds": 14.529999999999607
+    }
+  ],
+  "generation_ok": true,
+  "framework_ok": false,
+  "stage1_ok": false,
+  "effective_repairs": 3,
+  "external_blocked": false,
+  "error": "Framework validation failed",
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 2844304,
+    "out": 59956
+  },
+  "wall_seconds": 807.9990348815918,
+  "physics_seconds": 35.14399999999961,
+  "actual_cost_usd": null,
+  "checks": [
+    "All executed physical suites have the full expected case count and distinct IDs",
+    "Per-case trace/video paths exist and are nonempty; canonical Framework recording checks retained",
+    "Subprocess success is distinct from driver acceptance; build failures do not claim physical case execution",
+    "Every candidate, Study, generation/repair trace and failure report is retained separately"
+  ]
+}

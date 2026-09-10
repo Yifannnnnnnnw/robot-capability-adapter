@@ -1,0 +1,239 @@
+{
+  "actual_generation_cost_usd": null,
+  "attempts": 4,
+  "effective_repairs": 3,
+  "error": "Framework validation failed",
+  "external_blocked": false,
+  "final_candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/driver.py",
+  "final_candidate_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/driver.py",
+  "final_framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+  "final_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+  "final_report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+  "framework_duration_sec": 47.275360107421875,
+  "framework_ok": false,
+  "generation_duration_sec": 759.7697763442993,
+  "generation_ok": true,
+  "git_commit": "d17a42a0a7931a71b566b34130d2b24c432a27cd",
+  "max_repairs": 3,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "physics_duration_sec": 35.14399999999961,
+  "physics_time_sec": 35.14399999999961,
+  "provider": "holistic",
+  "robot_id": "kuka_iiwa14",
+  "rounds": [
+    {
+      "attempt": 0,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/driver.py",
+      "copied_files": [],
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"kuka_iiwa14\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"kuka_iiwa14\", \"capability_mjcf\": \"assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/kuka_iiwa14\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"mjcf\": \"assets/mjcf/kuka_iiwa_14/scene.xml\", \"generation_route\": \"skeleton\", \"state_refs\": {\"ee_site\": \"attachment_site\"}, \"class\": \"arm\", \"dof\": 7, \"vendor\": \"KUKA\", \"gripper\": null, \"ee_ref\": \"site\", \"notes\": \"7-DOF redundant. No gripper. EE home pose at Z\\u22481.3m (very high).\\n\", \"source\": \"mujoco_menagerie\"}}"
+        ],
+        "duration_sec": 8.877779006958008,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 9}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/driver.py"
+        ],
+        "duration_sec": 219.07966113090515,
+        "error": null,
+        "metadata": {},
+        "name": "02_generate",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 931605,
+          "out": 18372
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/traces/02_generate.jsonl"
+      },
+      "round": "initial",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/run_context.json",
+      "study": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/study.json"
+        ],
+        "duration_sec": 30.651893138885498,
+        "error": null,
+        "metadata": {},
+        "name": "01_study",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 56285,
+          "out": 2452
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/traces/01_study.jsonl"
+      },
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14"
+    },
+    {
+      "attempt": 1,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/driver.py",
+      "copied_files": [
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/driver.py",
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/study.json"
+      ],
+      "feedback_input": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/feedback_input.json",
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"kuka_iiwa14\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"kuka_iiwa14\", \"capability_mjcf\": \"assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/kuka_iiwa14\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"mjcf\": \"assets/mjcf/kuka_iiwa_14/scene.xml\", \"generation_route\": \"skeleton\", \"state_refs\": {\"ee_site\": \"attachment_site\"}, \"class\": \"arm\", \"dof\": 7, \"vendor\": \"KUKA\", \"gripper\": null, \"ee_ref\": \"site\", \"notes\": \"7-DOF redundant. No gripper. EE home pose at Z\\u22481.3m (very high).\\n\", \"source\": \"mujoco_menagerie\"}}"
+        ],
+        "duration_sec": 0.4706699848175049,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 1}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/driver.py"
+        ],
+        "duration_sec": 234.1094000339508,
+        "error": null,
+        "metadata": {},
+        "name": "03_repair_1",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 817738,
+          "out": 20274
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/traces/03_repair_1.jsonl"
+      },
+      "round": "repair_1",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/run_context.json",
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_1/kuka_iiwa14"
+    },
+    {
+      "attempt": 2,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/driver.py",
+      "copied_files": [
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/driver.py",
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/study.json"
+      ],
+      "feedback_input": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/feedback_input.json",
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"kuka_iiwa14\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"kuka_iiwa14\", \"capability_mjcf\": \"assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/kuka_iiwa14\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"mjcf\": \"assets/mjcf/kuka_iiwa_14/scene.xml\", \"generation_route\": \"skeleton\", \"state_refs\": {\"ee_site\": \"attachment_site\"}, \"class\": \"arm\", \"dof\": 7, \"vendor\": \"KUKA\", \"gripper\": null, \"ee_ref\": \"site\", \"notes\": \"7-DOF redundant. No gripper. EE home pose at Z\\u22481.3m (very high).\\n\", \"source\": \"mujoco_menagerie\"}}"
+        ],
+        "duration_sec": 14.11154317855835,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 9}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/driver.py"
+        ],
+        "duration_sec": 101.44978189468384,
+        "error": null,
+        "metadata": {},
+        "name": "03_repair_2",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 478822,
+          "out": 6904
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/traces/03_repair_2.jsonl"
+      },
+      "round": "repair_2",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/run_context.json",
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14"
+    },
+    {
+      "attempt": 3,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/driver.py",
+      "copied_files": [
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/driver.py",
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/study.json"
+      ],
+      "feedback_input": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/feedback_input.json",
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"kuka_iiwa14\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"kuka_iiwa14\", \"capability_mjcf\": \"assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/kuka_iiwa14\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"mjcf\": \"assets/mjcf/kuka_iiwa_14/scene.xml\", \"generation_route\": \"skeleton\", \"state_refs\": {\"ee_site\": \"attachment_site\"}, \"class\": \"arm\", \"dof\": 7, \"vendor\": \"KUKA\", \"gripper\": null, \"ee_ref\": \"site\", \"notes\": \"7-DOF redundant. No gripper. EE home pose at Z\\u22481.3m (very high).\\n\", \"source\": \"mujoco_menagerie\"}}"
+        ],
+        "duration_sec": 23.815367937088013,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 9}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/driver.py"
+        ],
+        "duration_sec": 174.47904014587402,
+        "error": null,
+        "metadata": {},
+        "name": "03_repair_3",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 559854,
+          "out": 11954
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/traces/03_repair_3.jsonl"
+      },
+      "round": "repair_3",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/run_context.json",
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14"
+    }
+  ],
+  "route": "skeleton",
+  "stage1_ok": false,
+  "summary_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/summary_kuka_iiwa14.json",
+  "total_duration_sec": 807.9990348815918,
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 2844304,
+    "out": 59956
+  },
+  "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14"
+}
