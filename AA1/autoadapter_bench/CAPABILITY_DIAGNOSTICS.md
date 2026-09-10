@@ -30,9 +30,12 @@ when needed, `repair_N/<robot>/` directories. A compact `summary_<robot>.json`
 records the declared outcome and paths. The launcher creates one small
 `launch_<UTC timestamp>.json` per invocation with selected robots, timing,
 forwarded arguments, and compact results; it does not replace those per-robot
-summaries. A returned API zero-response or transport error is not a valid
-repair and cannot turn an existing candidate into a successful result. Costs
-are `null` when the provider does not report a known cost.
+summaries. In each launch row, `duration_sec` is the UTC wall interval between
+`started_at_utc` and `finished_at_utc`; `monotonic_duration_sec` preserves the
+local monotonic measurement for diagnostics. A returned API zero-response or
+transport error is not a valid repair and cannot turn an existing candidate
+into a successful result. Costs are `null` when the provider does not report a
+known cost.
 
 For the skeleton route, Framework evaluates every public capability condition
 in its nominal and boundary cases using the trusted catalog and the same

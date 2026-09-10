@@ -103,6 +103,10 @@ def _utc_text(value: datetime) -> str:
     )
 
 
+def _wall_duration_sec(started: datetime, finished: datetime) -> float:
+    return round((finished - started).total_seconds(), 3)
+
+
 def _compact_result(robot_id: str, value: Any, duration_sec: float) -> dict[str, Any]:
     """Translate the fixed pipeline result into a small launch row."""
     if not isinstance(value, dict):
@@ -216,6 +220,8 @@ def run_selected(
     for index, robot_id in enumerate(robots):
         robot_started = _utc_now()
         t0 = time.monotonic()
+        pipeline_result: Any = None
+        pipeline_error: Exception | None = None
         try:
             pipeline_result = invoke(
                 robot_id=robot_id,
@@ -223,16 +229,24 @@ def run_selected(
                 model=model,
                 max_repairs=max_repairs,
             )
-            result = _compact_result(robot_id, pipeline_result, time.monotonic() - t0)
         except Exception as exc:  # noqa: BLE001
+            pipeline_error = exc
+        robot_finished = _utc_now()
+        wall_duration_sec = _wall_duration_sec(robot_started, robot_finished)
+        monotonic_duration_sec = round(time.monotonic() - t0, 3)
+        if pipeline_error is not None:
             result = {
                 "robot_id": robot_id,
                 "status": "error",
-                "duration_sec": round(time.monotonic() - t0, 3),
-                "error": f"{type(exc).__name__}: {exc}",
+                "duration_sec": wall_duration_sec,
+                "monotonic_duration_sec": monotonic_duration_sec,
+                "error": f"{type(pipeline_error).__name__}: {pipeline_error}",
             }
+        else:
+            result = _compact_result(robot_id, pipeline_result, wall_duration_sec)
+            result["monotonic_duration_sec"] = monotonic_duration_sec
         result["started_at_utc"] = _utc_text(robot_started)
-        result["finished_at_utc"] = _utc_text(_utc_now())
+        result["finished_at_utc"] = _utc_text(robot_finished)
         results.append(result)
         aggregate["results"] = results
         _update_launch_aggregate(launch_path, aggregate)
@@ -251,6 +265,7 @@ def run_selected(
                         "robot_id": remaining,
                         "status": "not_run_external_blocked",
                         "duration_sec": 0.0,
+                        "monotonic_duration_sec": 0.0,
                         "error": blocked_error,
                     }
                 )

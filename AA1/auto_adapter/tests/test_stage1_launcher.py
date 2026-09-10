@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,37 @@ def test_launcher_forwards_api_arguments_and_accepts_pipeline_result_without_fil
     persisted = json.loads(launch_path.read_text())
     assert persisted["results"][0]["status"] == "stage1_ok"
     assert "franka:" in capsys.readouterr().out
+
+
+def test_row_duration_uses_utc_wall_interval_and_keeps_monotonic_measurement(
+    tmp_path, monkeypatch, capsys
+):
+    wall = iter([
+        datetime(2026, 9, 10, 12, 0, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 10, 12, 0, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 10, 12, 0, 10, tzinfo=timezone.utc),
+        datetime(2026, 9, 10, 12, 0, 10, tzinfo=timezone.utc),
+    ])
+    monotonic = iter([100.0, 100.25])
+    monkeypatch.setattr(launcher, "_utc_now", lambda: next(wall))
+    monkeypatch.setattr(launcher.time, "monotonic", lambda: next(monotonic))
+
+    code, aggregate = launcher.run_selected(
+        robots=["franka"],
+        model="test-model",
+        max_repairs=0,
+        output_root=tmp_path,
+        pipeline_runner=lambda **_kwargs: {
+            "stage1_ok": True,
+            "external_blocked": False,
+        },
+    )
+
+    assert code == 0
+    row = aggregate["results"][0]
+    assert row["duration_sec"] == 10.0
+    assert row["monotonic_duration_sec"] == 0.25
+    assert "(10.0s)" in capsys.readouterr().out
 
 
 def test_status_field_cannot_turn_stage1_false_into_success(tmp_path):
