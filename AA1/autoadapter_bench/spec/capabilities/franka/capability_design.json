@@ -405,6 +405,55 @@
       ],
       "temporal_semantics": {
         "kind": "precontact_then_contact_hold",
+        "deadline": {
+          "request_field": "max_duration_s",
+          "interval": "from capability invocation until the start of the required first continuous target-contact window",
+          "maximum_s": "request.max_duration_s"
+        },
+        "precontact_dwell": {
+          "position_tolerance_m": 0.015,
+          "minimum_duration_s": 0.1,
+          "contact_free": true
+        },
+        "ray_origin": "Use the actual measured tool position at the endpoint of the first completed contact-free precontact dwell as p_start.",
+        "ray_approach": {
+          "coordinate_definitions": {
+            "axial_progress": "s = dot(p - p_start, d), with p the measured world-frame tool point and d = request.approach_direction_unit.",
+            "lateral_deviation": "norm((p - p_start) - s*d), using the same measured p, p_start, d, and s."
+          },
+          "axial_progress_m": {
+            "minimum": -0.002,
+            "maximum": "request.max_travel_m + 0.002",
+            "maximum_backtrack_m": 0.002,
+            "backtrack_reference": "running maximum axial progress"
+          },
+          "lateral_deviation_m": {"maximum": 0.01},
+          "path_length": {
+            "maximum_factor": 1.1,
+            "relative_to": "request.max_travel_m"
+          },
+          "approach_surface_speed": {
+            "measurement": "maximum relative-speed norm of the nearest allowed tool-target collision-surface points over eligible pairs; disabled visual geometries are excluded",
+            "phase": "before first target contact",
+            "maximum": "request.max_approach_speed_m_s + 0.01"
+          },
+          "first_contact_closing_speed": {
+            "measurement": "maximum contact-normal closing speed over allowed active contacts",
+            "maximum": "request.max_approach_speed_m_s + 0.01"
+          }
+        },
+        "contact_hold": {
+          "window": "first continuous target-contact window",
+          "minimum_duration_s": 0.1,
+          "post_contact_speed": {
+            "measurement": "Euclidean norm of consecutive measured world-frame tool-point displacement divided by the simulation sample dt",
+            "maximum_m_s": 0.02,
+            "aggregation": "maximum over samples after the contact-window start sample through its endpoint",
+            "samples": "after the contact-window start sample through its endpoint"
+          },
+          "penetration_max_m": 0.005,
+          "unrelated_tool_external_contact_max_count": 0
+        },
         "completion": "Reach the precontact state, advance along the declared ray, and stop advancing once controlled contact is established."
       },
       "invariants": [
