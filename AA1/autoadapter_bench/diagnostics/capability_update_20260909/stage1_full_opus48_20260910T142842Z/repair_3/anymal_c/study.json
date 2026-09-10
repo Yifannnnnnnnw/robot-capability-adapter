@@ -1,0 +1,37 @@
+{
+  "robot_id": "anymal_c",
+  "estimated_class": "quadruped",
+  "dof": 12,
+  "joints": [
+    {"name": "LF_HAA", "type": "hinge", "axis": [1.0, 0.0, 0.0], "ctrlrange": [-0.72, 0.49]},
+    {"name": "LF_HFE", "type": "hinge", "axis": [1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "LF_KFE", "type": "hinge", "axis": [1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "RF_HAA", "type": "hinge", "axis": [1.0, 0.0, 0.0], "ctrlrange": [-0.49, 0.72]},
+    {"name": "RF_HFE", "type": "hinge", "axis": [-1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "RF_KFE", "type": "hinge", "axis": [-1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "LH_HAA", "type": "hinge", "axis": [-1.0, 0.0, 0.0], "ctrlrange": [-0.72, 0.49]},
+    {"name": "LH_HFE", "type": "hinge", "axis": [1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "LH_KFE", "type": "hinge", "axis": [1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "RH_HAA", "type": "hinge", "axis": [-1.0, 0.0, 0.0], "ctrlrange": [-0.49, 0.72]},
+    {"name": "RH_HFE", "type": "hinge", "axis": [-1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]},
+    {"name": "RH_KFE", "type": "hinge", "axis": [-1.0, 0.0, 0.0], "ctrlrange": [-9.4248, 9.4248]}
+  ],
+  "actuators": [
+    {"name": "LF_HAA", "joint": "LF_HAA", "ctrlrange": [-6.28, 6.28]},
+    {"name": "LF_HFE", "joint": "LF_HFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "LF_KFE", "joint": "LF_KFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "RF_HAA", "joint": "RF_HAA", "ctrlrange": [-6.28, 6.28]},
+    {"name": "RF_HFE", "joint": "RF_HFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "RF_KFE", "joint": "RF_KFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "LH_HAA", "joint": "LH_HAA", "ctrlrange": [-6.28, 6.28]},
+    {"name": "LH_HFE", "joint": "LH_HFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "LH_KFE", "joint": "LH_KFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "RH_HAA", "joint": "RH_HAA", "ctrlrange": [-6.28, 6.28]},
+    {"name": "RH_HFE", "joint": "RH_HFE", "ctrlrange": [-6.28, 6.28]},
+    {"name": "RH_KFE", "joint": "RH_KFE", "ctrlrange": [-6.28, 6.28]}
+  ],
+  "ee_site": null,
+  "ee_body": "base",
+  "graspable_bodies": [],
+  "notes": "ANYmal C quadruped: floating base + 4 legs (LF/RF/LH/RH) each with HAA/HFE/KFE hinges; 12 position-servo actuators, feet are *_SHANK bodies; no sites, no free objects."
+}

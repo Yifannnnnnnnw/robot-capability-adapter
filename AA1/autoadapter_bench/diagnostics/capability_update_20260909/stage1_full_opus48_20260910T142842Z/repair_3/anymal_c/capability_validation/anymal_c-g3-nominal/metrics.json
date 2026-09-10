@@ -1,0 +1,17 @@
+{
+  "contract_id": "G3",
+  "measurements": {
+    "final_height_m": 0.33355985369813046,
+    "final_planar_error_m": 0.08349094641247044,
+    "max_abs_roll_pitch_rad": 0.0915837970094352,
+    "max_planar_displacement_m": 0.06428920886947433,
+    "ordered_waypoints_reached": true,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 1.1340000000000008
+  },
+  "parameters": {
+    "body_name": "base",
+    "contract_id": "G3"
+  },
+  "score": 0.0
+}

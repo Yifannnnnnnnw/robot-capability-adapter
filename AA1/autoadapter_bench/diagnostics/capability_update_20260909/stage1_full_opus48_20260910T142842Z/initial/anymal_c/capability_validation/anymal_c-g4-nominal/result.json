@@ -1,0 +1,164 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "G4",
+  "case_id": "anymal_c-g4-nominal",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"final_height_error_m\": 0.001217849086963707, \"final_height_m\": 0.40621784908696373, \"max_abs_roll_pitch_rad\": 0.0017943337396111978, \"max_planar_displacement_m\": 0.00018743392843213242, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.6319999999999304}",
+  "driver_origin": "real_model_generation",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 316,
+    "body_max_displacement_from_reset": {
+      "LF_HIP": 0.06526225147853981,
+      "LF_SHANK": 0.049399623682782764,
+      "LF_THIGH": 0.06506344203312496,
+      "LH_HIP": 0.06509079006129391,
+      "LH_SHANK": 0.049452184092616626,
+      "LH_THIGH": 0.0648619489303394,
+      "RF_HIP": 0.06526225216923413,
+      "RF_SHANK": 0.04939909723408322,
+      "RF_THIGH": 0.06506352027120864,
+      "RH_HIP": 0.06509079058523422,
+      "RH_SHANK": 0.04945268636762489,
+      "RH_THIGH": 0.06486186892644627,
+      "base": 0.06517447604716292,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_52"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_66"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_80"
+      },
+      {
+        "first_time_s": 2.002000000000001,
+        "geom1": "floor",
+        "geom2": "geom_94"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_52",
+        "minimum_distance_m": -0.018344620752100832
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_66",
+        "minimum_distance_m": -0.018344633926482806
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_80",
+        "minimum_distance_m": -0.018335996783654163
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_94",
+        "minimum_distance_m": -0.01833598395234462
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "floor",
+        "geom2": "geom_52",
+        "step_count": 316
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_66",
+        "step_count": 316
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_80",
+        "step_count": 316
+      },
+      {
+        "geom1": "floor",
+        "geom2": "geom_94",
+        "step_count": 316
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "LF_HAA": 0.003396573583304391,
+      "LF_HFE": 0.1284850263785079,
+      "LF_KFE": 0.26755017814485615,
+      "LH_HAA": 0.00336289407499428,
+      "LH_HFE": 0.12805562746279975,
+      "LH_KFE": 0.266665022786305,
+      "RF_HAA": 0.0033959239619082426,
+      "RF_HFE": 0.12848710521053175,
+      "RF_KFE": 0.26755134586628326,
+      "RH_HAA": 0.003363835247484105,
+      "RH_HFE": 0.12805353932992625,
+      "RH_KFE": 0.2666638174121063
+    },
+    "minimum_contact_distance_m": -0.018344633926482806,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {},
+    "step_count": 316
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "anymal_c-g4-nominal",
+  "method_name": "set_body_height",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "G4",
+    "measurements": {
+      "final_height_error_m": 0.001217849086963707,
+      "final_height_m": 0.40621784908696373,
+      "max_abs_roll_pitch_rad": 0.0017943337396111978,
+      "max_planar_displacement_m": 0.00018743392843213242,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.6319999999999304
+    },
+    "parameters": {
+      "body_name": "base",
+      "contract_id": "G4"
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 8,
+  "ok": false,
+  "physics_steps": 316,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 0.6319999999999304,
+  "test": "anymal_c-g4-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/anymal_c/capability_validation/anymal_c-g4-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 8,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/anymal_c/capability_validation/anymal_c-g4-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/anymal_c/capability_validation/anymal_c-g4-nominal/video.mp4"
+}

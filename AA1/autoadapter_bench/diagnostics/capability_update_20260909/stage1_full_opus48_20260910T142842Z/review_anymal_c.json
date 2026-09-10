@@ -1,0 +1,342 @@
+{
+  "robot_id": "anymal_c",
+  "scope": "fresh Holistic Stage 1 diagnostic; no export/demo/task/ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 0,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "anymal_c-g1-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g1-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g2-nominal",
+          "error": "capability execution failed: pose not settled: pos_err=0.080 yaw_err=0.101"
+        },
+        {
+          "check": "anymal_c-g2-calibrated_boundary",
+          "error": "capability execution failed: pose not settled: pos_err=0.071 yaw_err=0.151"
+        },
+        {
+          "check": "anymal_c-g3-nominal",
+          "error": "capability execution failed: waypoint 1 not reached before deadline"
+        },
+        {
+          "check": "anymal_c-g3-calibrated_boundary",
+          "error": "capability execution failed: waypoint 1 not reached before deadline"
+        },
+        {
+          "check": "anymal_c-g4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g5-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g5-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/anymal_c/validate_report.json",
+      "physics_seconds": 31.87799999999823
+    },
+    {
+      "round": "repair_1",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 0,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "anymal_c-g1-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g1-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g2-nominal",
+          "error": "capability execution failed: pose not settled: pos_err=0.080 yaw_err=0.101"
+        },
+        {
+          "check": "anymal_c-g2-calibrated_boundary",
+          "error": "capability execution failed: pose not settled: pos_err=0.071 yaw_err=0.151"
+        },
+        {
+          "check": "anymal_c-g3-nominal",
+          "error": "capability execution failed: waypoint 1 not reached before deadline"
+        },
+        {
+          "check": "anymal_c-g3-calibrated_boundary",
+          "error": "capability execution failed: waypoint 1 not reached before deadline"
+        },
+        {
+          "check": "anymal_c-g4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g5-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g5-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/anymal_c/validate_report.json",
+      "physics_seconds": 31.87799999999823
+    },
+    {
+      "round": "repair_2",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 0,
+      "capability_executed": 0,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "driver_build",
+          "error": "AttributeError: module 'driver' has no attribute 'build'"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/anymal_c/validate_report.json",
+      "physics_seconds": 0
+    },
+    {
+      "round": "repair_3",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 1,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "anymal_c-g1-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g1-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g2-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g3-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g3-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g4-nominal",
+          "error": "capability execution failed: support integrity lost during height change"
+        },
+        {
+          "check": "anymal_c-g4-calibrated_boundary",
+          "error": "capability execution failed: support integrity lost during height change"
+        },
+        {
+          "check": "anymal_c-g5-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "anymal_c-g5-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/anymal_c/validate_report.json",
+      "physics_seconds": 21.639999999999013
+    }
+  ],
+  "generation_ok": true,
+  "framework_ok": false,
+  "stage1_ok": false,
+  "effective_repairs": 3,
+  "external_blocked": false,
+  "error": "Framework validation failed",
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 4448570,
+    "out": 81730
+  },
+  "wall_seconds": 1208.4513638019562,
+  "physics_seconds": 85.39599999999547,
+  "actual_cost_usd": null,
+  "checks": [
+    "All executed physical suites have the full expected case count and distinct IDs",
+    "Per-case trace/video paths exist and are nonempty; canonical Framework recording checks retained",
+    "Subprocess success is distinct from driver acceptance; build failures do not claim physical case execution",
+    "Every candidate, Study, generation/repair trace and failure report is retained separately",
+    "initial, repair_1 and repair_3 each exactly match all 10 trusted case IDs; repair_2 stops at missing-build failure. Candidate imports only standard library, numpy and AA1 skeleton/base.",
+    "Final round: all 10 videos decode with ffmpeg; canonical trace steps/time agree with reports; no detected live-state/model writes or additional dynamic MjData simulation in candidate."
+  ],
+  "final_failure_measurements": [
+    {
+      "case": "anymal_c-g1-calibrated_boundary",
+      "score": 0.0,
+      "measurements": {
+        "duration_matches_request": true,
+        "final_height_m": 0.3660267923594396,
+        "max_abs_roll_pitch_rad": 0.27700127269110925,
+        "max_planar_displacement_m": 0.5246901995347232,
+        "mean_direction_error_rad": 0.899826828805194,
+        "mean_velocity_error_m_s": 0.3697968479309706,
+        "mean_yaw_rate_error_rad_s": 0.8784169962598044,
+        "requested_duration_s": 3.0,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 3.001999999999891
+      }
+    },
+    {
+      "case": "anymal_c-g1-nominal",
+      "score": 0.0,
+      "measurements": {
+        "duration_matches_request": false,
+        "final_height_m": 0.36251133252279893,
+        "max_abs_roll_pitch_rad": 0.2289572661471231,
+        "max_planar_displacement_m": 0.5806155854999318,
+        "requested_duration_s": 2.2,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 4.043999999999777
+      }
+    },
+    {
+      "case": "anymal_c-g2-calibrated_boundary",
+      "score": 0.0,
+      "measurements": {
+        "final_height_m": 0.39926224982720393,
+        "final_planar_error_m": 0.06250152055063685,
+        "final_yaw_error_rad": 0.12066523810655205,
+        "max_abs_roll_pitch_rad": 0.013765748737594051,
+        "max_planar_displacement_m": 0.010744320083355081,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 0.7520000000000006
+      }
+    },
+    {
+      "case": "anymal_c-g2-nominal",
+      "score": 1.0,
+      "measurements": {
+        "final_height_m": 0.37441238084288164,
+        "final_planar_error_m": 0.0655088846605577,
+        "final_yaw_error_rad": 0.06647895201515563,
+        "max_abs_roll_pitch_rad": 0.028295659589287092,
+        "max_planar_displacement_m": 0.022616106863004328,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.9140000000000015
+      }
+    },
+    {
+      "case": "anymal_c-g3-calibrated_boundary",
+      "score": 0.0,
+      "measurements": {
+        "final_height_m": 0.4333153929495049,
+        "final_planar_error_m": 0.04980706194295338,
+        "max_abs_roll_pitch_rad": 0.07963760947885726,
+        "max_planar_displacement_m": 0.11316897618434742,
+        "ordered_waypoints_reached": true,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.0920000000000007
+      }
+    },
+    {
+      "case": "anymal_c-g3-nominal",
+      "score": 0.0,
+      "measurements": {
+        "final_height_m": 0.33355985369813046,
+        "final_planar_error_m": 0.08349094641247044,
+        "max_abs_roll_pitch_rad": 0.0915837970094352,
+        "max_planar_displacement_m": 0.06428920886947433,
+        "ordered_waypoints_reached": true,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.1340000000000008
+      }
+    },
+    {
+      "case": "anymal_c-g4-calibrated_boundary",
+      "score": 0.0,
+      "measurements": {
+        "final_height_error_m": 0.079697872606524,
+        "final_height_m": 0.48334504437065784,
+        "max_abs_roll_pitch_rad": 1.0020692326617386,
+        "max_planar_displacement_m": 0.3593382338140508,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 3.3479999999996317
+      }
+    },
+    {
+      "case": "anymal_c-g4-nominal",
+      "score": 0.0,
+      "measurements": {
+        "final_height_error_m": 0.14613632173973856,
+        "final_height_m": 0.5511363217397386,
+        "max_abs_roll_pitch_rad": 1.0028834703390948,
+        "max_planar_displacement_m": 0.29993868164308735,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.353999999999741
+      }
+    },
+    {
+      "case": "anymal_c-g5-calibrated_boundary",
+      "score": 0.0,
+      "measurements": {
+        "duration_matches_request": false,
+        "final_height_m": 0.4325674940971375,
+        "max_abs_roll_pitch_rad": 0.07,
+        "max_height_drift_m": 0.10815291787743897,
+        "max_planar_displacement_m": 0.031739700056105345,
+        "recovery_time_s": 0.044000000000000025,
+        "requested_duration_s": 1.8,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.2999999999999683
+      }
+    },
+    {
+      "case": "anymal_c-g5-nominal",
+      "score": 0.0,
+      "measurements": {
+        "duration_matches_request": false,
+        "final_height_m": 0.431521018358497,
+        "max_abs_roll_pitch_rad": 0.05,
+        "max_height_drift_m": 0.10614021073750224,
+        "max_planar_displacement_m": 0.020280578744920497,
+        "recovery_time_s": 0.0,
+        "requested_duration_s": 1.2,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.7000000000000013
+      }
+    }
+  ],
+  "limitations": [
+    "Previously documented ANYmal-C G1-G3 reference positive-control gaps remain; these diagnostic failures cannot be attributed solely to model generation.",
+    "Final driver passes only G2 nominal; final G5 runs exceed requested duration by 0.5 s and drift in height by more than 0.10 m."
+  ]
+}
