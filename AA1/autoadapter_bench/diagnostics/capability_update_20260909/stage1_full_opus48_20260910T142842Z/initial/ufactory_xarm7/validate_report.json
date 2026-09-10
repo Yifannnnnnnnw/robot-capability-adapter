@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "test": "driver_build",
+      "ok": true,
+      "detail": "driver.build() returned Robot",
+      "metric": 1.0
+    },
+    {
+      "test": "behavior_smoke",
+      "ok": false,
+      "detail": "ValueError: missing required capabilities: approach_until_contact, move_cartesian_offset_and_return",
+      "metric": 0.0
+    }
+  ],
+  "all_ok": false,
+  "structural_ok": false,
+  "n_passed": 1,
+  "n_total": 2
+}

@@ -1,0 +1,90 @@
+{
+  "robot_id": "ufactory_xarm7",
+  "scope": "fresh Holistic Stage 1 diagnostic; no export/demo/task/ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 0,
+      "capability_executed": 0,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "behavior_smoke",
+          "error": "ValueError: missing required capabilities: approach_until_contact, move_cartesian_offset_and_return"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/ufactory_xarm7/validate_report.json",
+      "physics_seconds": 0
+    },
+    {
+      "round": "repair_1",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 6,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "ufactory_xarm7-a3-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "ufactory_xarm7-a3-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "ufactory_xarm7-a4-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "ufactory_xarm7-a4-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/ufactory_xarm7/validate_report.json",
+      "physics_seconds": 7.112000000000005
+    },
+    {
+      "round": "repair_2",
+      "framework_ran": true,
+      "framework_ok": true,
+      "subprocess_ok": true,
+      "capability_passed": 10,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/ufactory_xarm7/validate_report.json",
+      "physics_seconds": 10.095999999999856
+    }
+  ],
+  "generation_ok": true,
+  "framework_ok": true,
+  "stage1_ok": true,
+  "effective_repairs": 2,
+  "external_blocked": false,
+  "error": null,
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 2747849,
+    "out": 61695
+  },
+  "wall_seconds": 1266.4864478111267,
+  "physics_seconds": 17.207999999999863,
+  "actual_cost_usd": null,
+  "checks": [
+    "All executed physical suites have the full expected case count and distinct IDs",
+    "Per-case trace/video paths exist and are nonempty; canonical Framework recording checks retained",
+    "Subprocess success is distinct from driver acceptance; build failures do not claim physical case execution",
+    "Every candidate, Study, generation/repair trace and failure report is retained separately",
+    "repair_1 and repair_2 case IDs exactly match the trusted capability validation suite"
+  ],
+  "limitations": [
+    "git diff --cached --check reports one trailing space in the model-generated repair_1 driver at line 362; the authentic generated candidate is preserved unchanged.",
+    "Initial full model request is not stored in the existing JSONL trace; public capability context and its injection code were checked at the recorded source commit."
+  ]
+}

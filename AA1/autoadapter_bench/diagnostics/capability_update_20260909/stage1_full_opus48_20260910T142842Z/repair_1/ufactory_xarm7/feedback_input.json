@@ -1,0 +1,3 @@
+{
+  "feedback": "Framework failure feedback (measurements only):\n- check=behavior_smoke: detail=ValueError: missing required capabilities: approach_until_contact, move_cartesian_offset_and_return"
+}

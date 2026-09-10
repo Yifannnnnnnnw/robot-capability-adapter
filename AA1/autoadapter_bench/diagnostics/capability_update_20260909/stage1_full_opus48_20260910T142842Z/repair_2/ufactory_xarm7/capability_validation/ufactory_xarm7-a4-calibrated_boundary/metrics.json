@@ -1,0 +1,111 @@
+{
+  "contract_id": "A4",
+  "measurements": {
+    "a4_contact_normal_closing_speed_m_s": 0.018589359664901935,
+    "a4_surface_relative_speed_m_s": 0.03525352162818157,
+    "available": true,
+    "best_precontact_error_m": 0.009019446469607107,
+    "contact_normal_closing_speed_m_s": 0.018589359664901935,
+    "contact_window": [
+      1088,
+      1138
+    ],
+    "error": null,
+    "first_failed_gate": null,
+    "first_target_contact_index": 1088,
+    "first_target_contact_s": 2.1759999999999264,
+    "longest_precontact_hold_s": 0.5140000000000003,
+    "longest_target_contact_s": 0.11999999999998678,
+    "maximum_speed_after_contact_m_s": 0.0035221014384908913,
+    "maximum_surface_relative_speed_m_s": 0.03525352162818157,
+    "measured": {
+      "a4_contact_normal_closing_speed_m_s": 0.018589359664901935,
+      "a4_surface_relative_speed_m_s": 0.03525352162818157,
+      "maximum_speed_after_contact_m_s": 0.0035221014384908913,
+      "precontact_error_m": 0.010643080006585174,
+      "ray_axial_max_m": 0.01934856611633906,
+      "ray_axial_min_m": -0.00042281022870388485,
+      "ray_backtrack_m": 0.0004322765624674152,
+      "ray_lateral_error_m": 0.008258878263237244,
+      "ray_path_length_m": 0.03540391832596526
+    },
+    "minimum_contact_distance_m": -2.5493261097799937e-05,
+    "passed": true,
+    "pre_gate_time_s": 0.10000000000000009,
+    "precontact_error_m": 0.010643080006585174,
+    "precontact_index": 50,
+    "precontact_window_end_s": 0.10000000000000009,
+    "precontact_window_start_s": 0.0,
+    "ray_axial_max_m": 0.01934856611633906,
+    "ray_axial_min_m": -0.00042281022870388485,
+    "ray_backtrack_m": 0.0004322765624674152,
+    "ray_lateral_error_m": 0.008258878263237244,
+    "ray_path_length_m": 0.03540391832596526,
+    "required": {
+      "approach_surface_relative_speed_max_m_s": 0.04,
+      "contact_hold_s": 0.1,
+      "contact_normal_closing_speed_max_m_s": 0.04,
+      "max_duration_s": 5.0,
+      "post_contact_speed_max_m_s": 0.02,
+      "precontact_hold_s": 0.1,
+      "precontact_tolerance_m": 0.015,
+      "ray_axial_max_m": 0.07200000000000001,
+      "ray_axial_min_m": -0.002,
+      "ray_backtrack_tolerance_m": 0.002,
+      "ray_lateral_tolerance_m": 0.01,
+      "ray_path_length_max_m": 0.07700000000000001
+    },
+    "scored_contact_window_duration_s": 0.09999999999998899,
+    "scored_contact_window_end_s": 2.2759999999999154,
+    "scored_contact_window_max_speed_m_s": 0.0035221014384908913,
+    "scored_contact_window_s": [
+      2.1759999999999264,
+      2.2759999999999154
+    ],
+    "scored_contact_window_start_s": 2.1759999999999264,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 2.295999999999913,
+    "site_max_displacement_m": 0.019414477862918104,
+    "unavailable_measurements": [],
+    "unrelated_contact_count": 0
+  },
+  "parameters": {
+    "contract_id": "A4",
+    "guarded_joint_names": [
+      "left_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.0425
+    ],
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "link_tcp",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_body_names": [
+      "left_finger",
+      "left_inner_knuckle",
+      "left_outer_knuckle",
+      "right_finger",
+      "right_inner_knuckle",
+      "right_outer_knuckle",
+      "xarm_gripper_base_link"
+    ],
+    "tool_geom_names": [
+      "left_finger_pad_1",
+      "left_finger_pad_2",
+      "left_finger_visual_geom",
+      "left_inner_knuckle_geom",
+      "left_outer_knuckle_geom",
+      "right_finger_pad_1",
+      "right_finger_pad_2",
+      "right_finger_visual_geom",
+      "right_inner_knuckle_geom",
+      "right_outer_knuckle_geom",
+      "xarm_gripper_base_geom"
+    ]
+  },
+  "score": 1.0
+}

@@ -1,0 +1,39 @@
+{
+  "contract_id": "A3",
+  "measurements": {
+    "final_opening_error": 0.04765749549555956,
+    "final_opening_fraction": 0.24765749549555957,
+    "longest_opening_hold_s": 0.2500000000000002,
+    "maximum_opening_change": 0.7518431068953247,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.4660000000000004
+  },
+  "parameters": {
+    "closed_position": 0.85,
+    "contract_id": "A3",
+    "gripper_actuator_name": "gripper",
+    "guard_site_name": "link_tcp",
+    "guarded_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "joint7"
+    ],
+    "guarded_joint_tolerances": [
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03
+    ],
+    "joint_name": "left_driver_joint",
+    "open_position": 0.0,
+    "side_effect_guard_profile": "fixed_arm"
+  },
+  "score": 1.0
+}

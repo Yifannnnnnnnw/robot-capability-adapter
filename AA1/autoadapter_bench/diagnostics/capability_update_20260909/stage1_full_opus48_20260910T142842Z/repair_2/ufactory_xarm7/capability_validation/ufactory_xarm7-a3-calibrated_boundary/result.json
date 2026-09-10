@@ -1,0 +1,128 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A3",
+  "case_id": "ufactory_xarm7-a3-calibrated_boundary",
+  "detail": "A3 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 235,
+    "body_max_displacement_from_reset": {
+      "fixed_contact_target": 0.0,
+      "left_finger": 0.0325179619550264,
+      "left_inner_knuckle": 0.0005013772241588213,
+      "left_outer_knuckle": 0.0004920073666509613,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 9.672940133503682e-05,
+      "link4": 9.828146587752814e-05,
+      "link5": 0.0003382647651802474,
+      "link6": 0.0003382647651802474,
+      "link7": 0.0004588286067657825,
+      "link_base": 0.0,
+      "right_finger": 0.032553747115154116,
+      "right_inner_knuckle": 0.0005011671396260232,
+      "right_outer_knuckle": 0.0004915808909423279,
+      "world": 0.0,
+      "xarm_gripper_base_link": 0.0004588286067657825
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 4.137554269147376e-07,
+      "joint2": 0.00033013441833718016,
+      "joint3": 2.9898816098776032e-05,
+      "joint4": 0.0005329887760132657,
+      "joint5": 5.428281941230402e-06,
+      "joint6": 0.00028251284599223325,
+      "joint7": 1.2927311519912767e-07,
+      "left_driver_joint": 0.6019097033968319,
+      "left_finger_joint": 0.590446735730486,
+      "left_inner_knuckle_joint": 0.6026359335189405,
+      "right_driver_joint": 0.6019079286424664,
+      "right_finger_joint": 0.590329491377807,
+      "right_inner_knuckle_joint": 0.6026547670461783
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "link_tcp": 0.0005720336671263445
+    },
+    "step_count": 235
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "ufactory_xarm7-a3-calibrated_boundary",
+  "method_name": "set_gripper_opening",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A3",
+    "measurements": {
+      "final_opening_error": 0.05302853183896594,
+      "final_opening_fraction": 0.7469714681610341,
+      "longest_opening_hold_s": 0.2500000000000002,
+      "maximum_opening_change": 0.7081290628198023,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.4700000000000004
+    },
+    "parameters": {
+      "closed_position": 0.85,
+      "contract_id": "A3",
+      "gripper_actuator_name": "gripper",
+      "guard_site_name": "link_tcp",
+      "guarded_joint_names": [
+        "joint1",
+        "joint2",
+        "joint3",
+        "joint4",
+        "joint5",
+        "joint6",
+        "joint7"
+      ],
+      "guarded_joint_tolerances": [
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03,
+        0.03
+      ],
+      "joint_name": "left_driver_joint",
+      "open_position": 0.0,
+      "side_effect_guard_profile": "fixed_arm"
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 6,
+  "ok": true,
+  "physics_steps": 235,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 0.4700000000000004,
+  "test": "ufactory_xarm7-a3-calibrated_boundary",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/ufactory_xarm7/capability_validation/ufactory_xarm7-a3-calibrated_boundary/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 6,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/ufactory_xarm7/capability_validation/ufactory_xarm7-a3-calibrated_boundary/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/ufactory_xarm7/capability_validation/ufactory_xarm7-a3-calibrated_boundary/video.mp4"
+}

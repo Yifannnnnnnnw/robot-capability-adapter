@@ -1,0 +1,24 @@
+{
+  "contract_id": "A5",
+  "measurements": {
+    "best_outbound_error_m": 0.0019368098556021276,
+    "final_return_error_m": 0.0028681867613611456,
+    "maximum_displacement_fraction": 0.9407301046136466,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.9040000000000007,
+    "site_max_displacement_m": 0.018814602092272932
+  },
+  "parameters": {
+    "base_body_name": "link_base",
+    "contract_id": "A5",
+    "guarded_joint_names": [
+      "left_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.0425
+    ],
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "link_tcp"
+  },
+  "score": 1.0
+}
