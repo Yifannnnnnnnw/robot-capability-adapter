@@ -47,6 +47,7 @@ from .agent.tools import (
     make_read_file_tool,
     make_write_file_tool,
 )
+from .orchestrator import validate_failure_feedback
 
 
 def _vlog(msg: str) -> None:
@@ -582,41 +583,51 @@ class FromScratchOrchestrator:
             tools=tools, max_iters=self.cfg.max_iters_gen_algo,
         )
 
-    def phase_gen_repair(self, report: dict, attempt: int) -> ReactResult:
-        """Outer VAL→GEN retry: feed the held-out validator's failing tests
-        back to the agent so it can fix driver_from_scratch.py in place.
+    def phase_gen_repair(self, feedback: str, attempt: int) -> ReactResult:
+        """Repair the existing driver from candidate-facing feedback.
 
         This is what makes the from-scratch pipeline actually 'iterate against
         post-step physical state until the structural-test suite passes' — the
         framework validator is otherwise out of the agent's inner loop.
         """
-        assert self._exec_python_tool is not None
-        tools = self._common_tools() + [
-            self._exec_python_tool, self._local_runtime_tool(),
-        ]
-        failing = [t for t in report.get("tests", []) if not t.get("ok")]
-        fail_lines = "\n".join(
-            f"  - {t.get('test')}: {t.get('detail', '')}" for t in failing
-        ) or "  (driver missing or unparseable)"
-        if report.get("error"):
-            fail_lines = f"  - {report['error']}\n" + fail_lines
+        tools = self._common_tools()
+        if self._exec_python_tool is not None:
+            # Reuse the existing AgentCore session when the full pipeline is
+            # active; a resumed candidate can omit it and stay local-only.
+            tools.append(self._exec_python_tool)
+        tools.append(self._local_runtime_tool())
+        system = _GEN_ALGO_SYSTEM
+        verification_tool = "local_exec"
+        if self._exec_python_tool is None:
+            system = system.replace("execute_python", "local_exec")
+        else:
+            verification_tool = "local_exec"
         user = (
             f"Robot ID: {self.cfg.robot_id}\n"
-            "Your driver_from_scratch.py was written but the held-out structural\n"
-            "validator FAILED the following tests:\n"
-            f"{fail_lines}\n\n"
-            "Fix driver_from_scratch.py IN PLACE so every failing test passes.\n"
+            f"This is repair attempt {int(attempt)}. Your existing "
+            "driver_from_scratch.py is the candidate to fix IN PLACE.\n"
+            "The held-out Framework validator supplied this candidate-facing "
+            "feedback:\n"
+            f"{feedback or '(no detail was reported; inspect the existing driver)'}\n\n"
+            "Fix the reported failures while preserving behavior that already "
+            "passes.\n"
             "Steps:\n"
             "  1. read_file driver_from_scratch.py — find the cause of each failure.\n"
             "  2. Fix the code (e.g. wrong MuJoCo attribute names, IK math, gripper\n"
             "     logic). Keep the public API and the no-skeleton-import rule.\n"
-            "  3. local_exec to re-run build_from_mjcf('mjcf.xml') + the failing\n"
+            f"  3. {verification_tool} to re-run build_from_mjcf('mjcf.xml') + the failing\n"
             "     behavior and confirm it works before finishing.\n"
-            "  4. write_file the corrected driver_from_scratch.py."
+            "  4. write_file the corrected driver_from_scratch.py.\n"
+            "Do not read validate_report.json, private validation suites, score "
+            "or reference control implementations; the feedback above is the "
+            "complete validation signal for this repair."
         )
+        from .robot_catalog import capability_generation_context
+        user += capability_generation_context(self.robot_definition, from_scratch=True)
         return self._run_loop(
-            name=f"03_gen_repair_{attempt}", system=_GEN_ALGO_SYSTEM,
-            user_msg=user, tools=tools, max_iters=self.cfg.max_iters_gen_repair,
+            name=f"03_gen_repair_{int(attempt)}", system=system,
+            user_msg=user, tools=tools,
+            max_iters=min(22, max(1, int(self.cfg.max_iters_gen_repair))),
         )
 
     # ─── Framework validation (no LLM) ────────────────────────────────────
@@ -1272,10 +1283,10 @@ class FromScratchOrchestrator:
 
         # VALIDATE (framework, deterministic)
         report = self._validate_from_scratch_driver()
-        # validate_ok = "did the agent produce a structurally-valid driver"
-        # (critical structural tests pass, even if e.g. describe() returned
-        # a str instead of dict — cosmetic).
-        validate_ok = report.get("structural_ok", report.get("all_ok", False))
+        # Repair admission is strict: every Framework check must pass.  The
+        # legacy structural subset is useful diagnostics, but cannot suppress
+        # a failed public check.
+        validate_ok = report.get("all_ok") is True
 
         # OUTER VAL→GEN RETRY: if the held-out validator fails, feed the failing
         # tests back to the agent and let it repair the driver in place. This is
@@ -1285,12 +1296,14 @@ class FromScratchOrchestrator:
         while (not validate_ok and gen_ok
                and outer_attempts < self.cfg.max_outer_retries):
             outer_attempts += 1
-            r_rep = self.phase_gen_repair(report, outer_attempts)
+            r_rep = self.phase_gen_repair(
+                validate_failure_feedback(report), outer_attempts
+            )
             tok_in += int(r_rep.total_tokens.get("in", 0))
             tok_out += int(r_rep.total_tokens.get("out", 0))
             gen_ok = (self.workspace / "driver_from_scratch.py").exists()
             report = self._validate_from_scratch_driver()
-            validate_ok = report.get("structural_ok", report.get("all_ok", False))
+            validate_ok = report.get("all_ok") is True
 
         report["outer_attempts"] = outer_attempts
         (self.workspace / "validate_report.json").write_text(json.dumps(report, indent=2))

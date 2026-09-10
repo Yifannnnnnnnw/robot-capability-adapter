@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -49,6 +50,68 @@ from .agent.tools import (
 # ──────────────────────────────────────────────────────────────────────────
 # Public dataclasses
 # ──────────────────────────────────────────────────────────────────────────
+
+
+def _feedback_text(value: Any) -> str:
+    """Render a small candidate-facing value while hiding absolute paths."""
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        value = "; ".join(_feedback_text(item) for item in value)
+    elif isinstance(value, dict):
+        value = json.dumps(value, sort_keys=True, default=str)
+    else:
+        value = str(value)
+    # Details/errors are useful, but a validator may have embedded a local
+    # artifact path in them.  Keep the measured failure and redact that path.
+    return re.sub(
+        r"(?<![A-Za-z0-9_.-])(?:/|[A-Za-z]:[\\/])[^\s,;]+",
+        "<path omitted>",
+        value,
+    )
+
+
+def validate_failure_feedback(report: dict) -> str:
+    """Return the small failure signal that is safe to give a generator.
+
+    Only failed checks, their detail/error text, and the evaluator's public
+    ``metrics.measurements`` are copied.  Private request
+    bindings, reset data, suite results, and artifact paths stay in the
+    validator report.
+    """
+    lines: list[str] = ["Framework failure feedback (measurements only):"]
+    failures = []
+    for test in (report.get("tests", []) or []) if isinstance(report, dict) else []:
+        if not isinstance(test, dict) or bool(test.get("ok")):
+            continue
+
+        label = test.get("capability_id") or test.get("test") or "check"
+        method_name = test.get("method_name")
+        if method_name and method_name != label:
+            label = f"{label}.{method_name}"
+        parts: list[str] = []
+        for key in ("detail", "error"):
+            text = _feedback_text(test.get(key))
+            if text:
+                parts.append(f"{key}={text}")
+        errors = _feedback_text(test.get("errors"))
+        if errors:
+            parts.append(f"errors={errors}")
+        metrics = test.get("metrics")
+        measurements = metrics.get("measurements") if isinstance(metrics, dict) else None
+        if measurements is not None:
+            parts.append(f"measurements={_feedback_text(measurements)}")
+        failures.append(f"- check={_feedback_text(label)}: "
+                        + ("; ".join(parts) or "no detail"))
+
+    if failures:
+        lines.extend(failures)
+    else:
+        error = _feedback_text(report.get("error")) if isinstance(report, dict) else ""
+        lines.append(
+            "- framework error=" + (error or "validation failed without a reported check")
+        )
+    return "\n".join(lines)
 
 
 @dataclass
@@ -740,27 +803,81 @@ class SelfAssemble:
             expected_artifacts=["driver.py"],
         )
 
+    def _phase_repair(self, feedback: str, attempt: int) -> PhaseResult:
+        """Repair the existing driver from a sanitized Framework signal.
+
+        A repair gets its own trace so the original generation remains
+        inspectable.  The validator report and private suite are deliberately
+        not generation inputs; the caller supplies only
+        :func:`validate_failure_feedback` output.
+        """
+        system = _CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM
+        if self.cfg.mode == "local":
+            tools = (
+                self._local_tools()
+                + self._skeleton_tools()
+                + self._local_runtime_tools()
+            )
+            system = (
+                system
+                .replace("execute_python", "local_exec")
+                .replace(
+                    "CI session state persists.",
+                    "each local_exec call starts a fresh process; include "
+                    "imports and setup in every command or save intermediates "
+                    "in workspace files.",
+                )
+            )
+        else:
+            assert self._exec_python_tool is not None
+            tools = (
+                self._local_tools()
+                + self._skeleton_tools()
+                + [self._exec_python_tool]
+                + self._runtime_tools()
+            )
+
+        verification_tool = "local_exec" if self.cfg.mode == "local" else "execute_python"
+        user_msg = (
+            f"Robot ID: {self.cfg.robot_id}\n"
+            f"This is repair attempt {int(attempt)}. A prior driver.py already "
+            "exists in the workspace and is the candidate to modify IN PLACE.\n"
+            "Use the public study.json, the public capability contract, the "
+            "MJCF, and the public skeleton interface. Preserve behavior that "
+            "already passes and fix the failures below.\n\n"
+            "Candidate-facing Framework feedback:\n"
+            f"{feedback or '(no detail was reported; inspect the existing driver)'}\n\n"
+            "Rules:\n"
+            "  1. Read and edit driver.py in place; leave a complete driver.py.\n"
+            f"  2. Use {verification_tool} only for small public checks against the "
+            "real MJCF and current driver.\n"
+            "  3. Do not read validate_report.json, private validation suites, "
+            "scoring code, or reference control implementations. The feedback "
+            "above is the complete validation signal for this repair.\n"
+            "  4. Keep request handling, real actuator physics, observations, and "
+            "the existing public interface intact; do not hard-code a test.\n"
+            "Finish after writing the corrected driver.py."
+        )
+        user_msg += capability_generation_context(self.robot_definition)
+        return self._run_phase(
+            name=f"03_repair_{int(attempt)}",
+            system=system,
+            user_msg=user_msg,
+            tools=tools,
+            max_iters=min(22, max(1, int(self.cfg.max_iters_generate))),
+            expected_artifacts=["driver.py"],
+        )
+
     def _summarise_validate_failures(self) -> str:
-        """Read validate_report.json and produce a short bullet-list of which
-        structural tests failed and their detail strings. Used to inject
-        failure context into a retried GENERATE pass (outer GEN←VAL loop)."""
+        """Read the report and return only candidate-facing failure feedback."""
         report_path = self.workspace / "validate_report.json"
         if not report_path.exists():
             return "validate_report.json missing — assume driver build failed."
         try:
             report = json.loads(report_path.read_text())
-        except Exception as e:
-            return f"validate_report.json unreadable: {type(e).__name__}: {e}"
-        failures = []
-        for t in report.get("tests", []) or []:
-            if not t.get("ok", False):
-                failures.append(
-                    f"  - test={t.get('test', '?')}: {t.get('detail', '(no detail)')}"
-                )
-        if not failures:
-            err = report.get("error") or "no specific failures listed"
-            return f"VALIDATE returned not-ok but no per-test failures listed: {err}"
-        return "Failed structural tests:\n" + "\n".join(failures)
+        except Exception:
+            return "validate_report.json unreadable — no failure details available."
+        return validate_failure_feedback(report)
 
     def _phase_validate(self) -> PhaseResult:
         if self.cfg.validate_mode == "framework":
@@ -1256,9 +1373,10 @@ class SelfAssemble:
                     PhaseResult(name=phase, ok=False, duration_sec=0.0, error=skip_reason)
                 )
             elif phase == "generate":
-                # Outer GEN←VAL retry loop. We run GENERATE, then VALIDATE.
-                # If VALIDATE structural tests fail, feed the failure detail
-                # back into GENERATE's prompt and retry up to `max_outer`.
+                # Outer GEN←VAL retry loop. The first pass is GENERATE; later
+                # passes repair the existing driver with their own trace.
+                # If VALIDATE structural tests fail, feed only the sanitized
+                # failure detail back into a repair pass up to `max_outer`.
                 max_outer = max(1, int(self.cfg.max_outer_gen_val_iters))
                 gen_res: Optional[PhaseResult] = None
                 val_res: Optional[PhaseResult] = None
@@ -1267,7 +1385,12 @@ class SelfAssemble:
                 prior_failures: Optional[str] = None
                 while outer_iter < max_outer:
                     attempts += 1
-                    gen_res = self._phase_generate(prior_validate_failures=prior_failures)
+                    if prior_failures is None:
+                        gen_res = self._phase_generate()
+                    else:
+                        gen_res = self._phase_repair(
+                            prior_failures, attempt=attempts - 1
+                        )
                     if not gen_res.ok:
                         # GENERATE itself failed — no point retrying VALIDATE
                         break
