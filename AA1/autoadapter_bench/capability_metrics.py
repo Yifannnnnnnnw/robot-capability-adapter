@@ -430,70 +430,310 @@ def _first_contact_times(ctx: _Context) -> dict[tuple[str, str], float]:
         result[pair] = min(result.get(pair, math.inf), first_time)
     return result
 
-def _contact_approach(ctx: _Context, *, positions: Sequence[Sequence[float]], precontact: Sequence[float], direction: Sequence[float], robot_geoms: set[str], target_geoms: set[str], precontact_tolerance: float=0.015, stable_precontact: bool=False) -> bool:
-    ray = _unit(direction, 'approach direction')
-    maximum_travel = _number(_request(ctx, 'max_travel_m'), 'max_travel_m')
-    maximum_speed = _number(_request(ctx, 'max_approach_speed_m_s'), 'max_approach_speed_m_s')
-    if stable_precontact:
-        held_start: int | None = None
-        pre_index = None
-        for index in range(len(positions)):
-            held = _distance(positions[index], precontact) <= precontact_tolerance + 1e-12 and (not _pair_contact(ctx, index, robot_geoms, target_geoms))
-            if not held:
-                held_start = None
-                continue
-            if held_start is None:
-                held_start = index
-            if ctx.times[index] - ctx.times[held_start] + 1e-12 < 0.1:
-                continue
-            delta = _sub(positions[index], precontact)
-            axial = _dot(delta, ray)
-            lateral = _norm(_sub(delta, _scale(ray, axial)))
-            if axial < -0.002 - 1e-12 or axial > maximum_travel + 0.002 + 1e-12 or lateral > 0.01 + 1e-12 or (index > 0 and _sample_speed(ctx, positions, index) > maximum_speed + 0.01 + 1e-12) or (index + 1 < len(positions) and _sample_speed(ctx, positions, index + 1) > maximum_speed + 0.01 + 1e-12):
-                continue
-            pre_index = index
-            break
-    else:
-        pre_index = next((index for index, position in enumerate(positions) if _distance(position, precontact) <= precontact_tolerance and (not _pair_contact(ctx, index, robot_geoms, target_geoms))), None)
-    if pre_index is None:
-        return False
-    first_target_contact = min((time_s for (geom1, geom2), time_s in _first_contact_times(ctx).items() if geom1 in robot_geoms and geom2 in target_geoms or (geom2 in robot_geoms and geom1 in target_geoms)), default=math.inf)
-    if first_target_contact < ctx.times[pre_index] - 1e-12:
-        return False
-    contact_window = _window(ctx, lambda index: _pair_contact(ctx, index, robot_geoms, target_geoms), 0.1, after=pre_index + 1)
+def _longest_true_window(ctx: _Context, flags: Sequence[bool]) -> tuple[int, int, float] | None:
+    """Return the longest contiguous true interval, measured in sim time."""
+    best: tuple[int, int, float] | None = None
+    start: int | None = None
+    for index, active in enumerate(flags):
+        if active:
+            if start is None:
+                start = index
+            duration = ctx.times[index] - ctx.times[start]
+            if best is None or duration > best[2] + 1.0e-12:
+                best = (start, index, duration)
+        else:
+            start = None
+    return best
+
+
+def _a4_required_sample_value(
+    ctx: _Context, index: int, key: str
+) -> float:
+    sample = ctx.samples[index]
+    if key not in sample or sample[key] is None:
+        raise B1ContractError(
+            f"A4 required trusted measurement {key} is unavailable at sample {index}"
+        )
+    value = _number(sample[key], key)
+    if value < 0.0:
+        raise B1ContractError(f"{key} must be non-negative")
+    return value
+
+
+def _a4_contact_evaluator(
+    ctx: _Context,
+    *,
+    positions: Sequence[Sequence[float]],
+    precontact: Sequence[float],
+    direction: Sequence[float],
+    robot_geoms: set[str],
+    target_geoms: set[str],
+    precontact_tolerance: float = 0.015,
+) -> dict[str, Any]:
+    """Evaluate A4 once and return the same gate diagnostics used for feedback."""
+    ray = _unit(direction, "approach direction")
+    maximum_travel = _number(_request(ctx, "max_travel_m"), "max_travel_m")
+    maximum_speed = _number(
+        _request(ctx, "max_approach_speed_m_s"), "max_approach_speed_m_s"
+    )
+    maximum_duration = _number(_request(ctx, "max_duration_s"), "max_duration_s")
+    result: dict[str, Any] = {
+        "passed": False,
+        "available": True,
+        "first_failed_gate": None,
+        "error": None,
+        "unavailable_measurements": [],
+        "required": {
+            "precontact_hold_s": 0.1,
+            "precontact_tolerance_m": precontact_tolerance,
+            "ray_axial_min_m": -0.002,
+            "ray_axial_max_m": maximum_travel + 0.002,
+            "ray_lateral_tolerance_m": 0.01,
+            "ray_backtrack_tolerance_m": 0.002,
+            "ray_path_length_max_m": 1.1 * maximum_travel,
+            "approach_surface_relative_speed_max_m_s": maximum_speed + 0.01,
+            "contact_normal_closing_speed_max_m_s": maximum_speed + 0.01,
+            "post_contact_speed_max_m_s": 0.02,
+            "contact_hold_s": 0.1,
+            "max_duration_s": maximum_duration,
+        },
+        "measured": {},
+        "longest_precontact_hold_s": 0.0,
+        "precontact_window_start_s": None,
+        "precontact_window_end_s": None,
+        "pre_gate_time_s": None,
+        "precontact_index": None,
+        "first_target_contact_index": None,
+        "precontact_error_m": None,
+        "first_target_contact_s": None,
+        "contact_window": None,
+        "scored_contact_window_start_s": None,
+        "scored_contact_window_end_s": None,
+        "scored_contact_window_duration_s": None,
+        "scored_contact_window_s": None,
+        "maximum_speed_after_contact_m_s": None,
+        "scored_contact_window_max_speed_m_s": None,
+        "maximum_surface_relative_speed_m_s": None,
+        "contact_normal_closing_speed_m_s": None,
+        "minimum_contact_distance_m": ctx.evidence.get("minimum_contact_distance_m"),
+    }
+
+    def fail(gate: str, detail: str | None = None) -> None:
+        if result["first_failed_gate"] is None:
+            result["first_failed_gate"] = gate
+            if detail:
+                result["error"] = detail
+
+    def finish() -> dict[str, Any]:
+        side_effects_ok = _side_effects_pass(ctx, "A4")
+        result["side_effects_ok"] = side_effects_ok
+        if not side_effects_ok:
+            fail("side_effects")
+        result["passed"] = bool(
+            result["available"] and result["first_failed_gate"] is None
+        )
+        return result
+
+    target_contact = [
+        _pair_contact(ctx, index, robot_geoms, target_geoms)
+        for index in range(len(positions))
+    ]
+    precontact_hold = [
+        _distance(position, precontact) <= precontact_tolerance + 1.0e-12
+        and not target_contact[index]
+        for index, position in enumerate(positions)
+    ]
+    longest_precontact = _longest_true_window(ctx, precontact_hold)
+    if longest_precontact is not None:
+        result["longest_precontact_hold_s"] = longest_precontact[2]
+    dwell = _window(ctx, lambda index: precontact_hold[index], 0.1)
+    if dwell is None:
+        fail("precontact_dwell", "no contact-free 0.1 s precontact dwell")
+        return finish()
+    pre_index = dwell[1]
+    result["precontact_index"] = pre_index
+    result["precontact_window_start_s"] = ctx.times[dwell[0]] - ctx.times[0]
+    result["precontact_window_end_s"] = ctx.times[dwell[1]] - ctx.times[0]
+    result["pre_gate_time_s"] = result["precontact_window_end_s"]
+    result["precontact_error_m"] = _distance(positions[pre_index], precontact)
+    result["measured"]["precontact_error_m"] = result["precontact_error_m"]
+
+    first_contact_times = _first_contact_times(ctx)
+    first_target_contact = min(
+        (
+            time_s
+            for (geom1, geom2), time_s in first_contact_times.items()
+            if (geom1 in robot_geoms and geom2 in target_geoms)
+            or (geom2 in robot_geoms and geom1 in target_geoms)
+        ),
+        default=math.inf,
+    )
+    if math.isfinite(first_target_contact):
+        result["first_target_contact_s"] = first_target_contact - ctx.times[0]
+    if first_target_contact < ctx.times[pre_index] - 1.0e-12:
+        fail("contact_before_precontact_dwell")
+
+    contact_window = _window(
+        ctx,
+        lambda index: target_contact[index],
+        0.1,
+        after=pre_index + 1,
+    )
     if contact_window is None:
-        return False
-    if not _entry_within_request_budget(ctx, contact_window[0], 'max_duration_s'):
-        return False
-    contact_index = contact_window[0]
-    progress: list[float] = []
+        fail("contact_window", "no continuous 0.1 s target-contact window")
+        return finish()
+    contact_start, contact_end = contact_window
+    result["scored_contact_window_start_s"] = ctx.times[contact_start] - ctx.times[0]
+    result["scored_contact_window_end_s"] = ctx.times[contact_end] - ctx.times[0]
+    result["scored_contact_window_duration_s"] = (
+        ctx.times[contact_end] - ctx.times[contact_start]
+    )
+    result["contact_window"] = [contact_start, contact_end]
+    result["scored_contact_window_s"] = [
+        result["scored_contact_window_start_s"],
+        result["scored_contact_window_end_s"],
+    ]
+    result["longest_target_contact_s"] = (
+        _longest_true_window(ctx, target_contact) or (0, 0, 0.0)
+    )[2]
+    if not _entry_within_request_budget(ctx, contact_start, "max_duration_s"):
+        fail("contact_deadline")
+
+    first_contact_index = next(
+        (index for index in range(pre_index + 1, len(positions)) if target_contact[index]),
+        None,
+    )
+    if first_contact_index is None:
+        # A contact window cannot exist without this, but keep diagnostics
+        # explicit if trusted contact inputs disagree.
+        fail("contact_window", "target-contact window has no first contact sample")
+        return finish()
+    result["first_target_contact_index"] = first_contact_index
+
+    # The measured endpoint of the dwell is the ray origin.  The requested
+    # point is used only for the 15 mm dwell gate above.
+    ray_origin = positions[pre_index]
+    axial: list[float] = []
+    lateral: list[float] = []
     path_length = 0.0
-    for index in range(pre_index, contact_index + 1):
-        delta = _sub(positions[index], precontact)
-        axial = _dot(delta, ray)
-        lateral = _norm(_sub(delta, _scale(ray, axial)))
-        if axial < -0.002 - 1e-12 or axial > maximum_travel + 0.002 + 1e-12:
-            return False
-        if lateral > 0.01 + 1e-12:
-            return False
-        if progress and axial < progress[-1] - 0.002 - 1e-12:
-            return False
-        progress.append(axial)
+    running_max = -math.inf
+    maximum_backtrack = 0.0
+    for index in range(pre_index, contact_start + 1):
+        delta = _sub(positions[index], ray_origin)
+        progress = _dot(delta, ray)
+        lateral_error = _norm(_sub(delta, _scale(ray, progress)))
+        axial.append(progress)
+        lateral.append(lateral_error)
+        running_max = max(running_max, progress)
+        maximum_backtrack = max(maximum_backtrack, running_max - progress)
         if index > pre_index:
-            step_distance = _distance(positions[index], positions[index - 1])
-            path_length += step_distance
-            elapsed = ctx.times[index] - ctx.times[index - 1]
-            if elapsed <= 0.0 or step_distance / elapsed > maximum_speed + 0.01 + 1e-12:
-                return False
-    if path_length > 1.1 * maximum_travel + 1e-12:
-        return False
-    for index in range(contact_window[0] + 1, contact_window[1] + 1):
-        if _sample_speed(ctx, positions, index) > 0.02 + 1e-12:
-            return False
+            path_length += _distance(positions[index], positions[index - 1])
+    result["ray_axial_min_m"] = min(axial)
+    result["ray_axial_max_m"] = max(axial)
+    result["ray_lateral_error_m"] = max(lateral)
+    result["ray_backtrack_m"] = maximum_backtrack
+    result["ray_path_length_m"] = path_length
+    result["measured"].update(
+        ray_axial_min_m=result["ray_axial_min_m"],
+        ray_axial_max_m=result["ray_axial_max_m"],
+        ray_lateral_error_m=result["ray_lateral_error_m"],
+        ray_backtrack_m=result["ray_backtrack_m"],
+        ray_path_length_m=path_length,
+    )
+    if result["ray_axial_min_m"] < -0.002 - 1.0e-12 or result[
+        "ray_axial_max_m"
+    ] > maximum_travel + 0.002 + 1.0e-12:
+        fail("ray_axial_bounds")
+    if result["ray_lateral_error_m"] > 0.01 + 1.0e-12:
+        fail("ray_lateral")
+    if maximum_backtrack > 0.002 + 1.0e-12:
+        fail("ray_backtrack")
+    if path_length > 1.1 * maximum_travel + 1.0e-12:
+        fail("ray_path_length")
+
+    surface_speeds: list[float] = []
+    try:
+        surface_speeds = [
+            _a4_required_sample_value(ctx, index, "a4_surface_relative_speed_m_s")
+            for index in range(pre_index, first_contact_index)
+        ]
+    except B1ContractError as exc:
+        result["available"] = False
+        result["unavailable_measurements"] = ["a4_surface_relative_speed_m_s"]
+        fail("surface_relative_speed", str(exc))
+    if surface_speeds:
+        result["a4_surface_relative_speed_m_s"] = max(surface_speeds)
+        result["maximum_surface_relative_speed_m_s"] = max(surface_speeds)
+        result["measured"]["a4_surface_relative_speed_m_s"] = max(surface_speeds)
+        if max(surface_speeds) > maximum_speed + 0.01 + 1.0e-12:
+            fail("surface_relative_speed")
+
+    try:
+        closing_speed = _a4_required_sample_value(
+            ctx, first_contact_index, "a4_contact_normal_closing_speed_m_s"
+        )
+    except B1ContractError as exc:
+        result["available"] = False
+        result["unavailable_measurements"] = sorted(
+            set(result["unavailable_measurements"])
+            | {"a4_contact_normal_closing_speed_m_s"}
+        )
+        fail("contact_normal_closing_speed", str(exc))
+    else:
+        result["a4_contact_normal_closing_speed_m_s"] = closing_speed
+        result["contact_normal_closing_speed_m_s"] = closing_speed
+        result["measured"]["a4_contact_normal_closing_speed_m_s"] = closing_speed
+        if closing_speed > maximum_speed + 0.01 + 1.0e-12:
+            fail("contact_normal_closing_speed")
+
+    post_contact_speeds = [
+        _sample_speed(ctx, positions, index)
+        for index in range(contact_start + 1, contact_end + 1)
+    ]
+    post_contact_max = max(post_contact_speeds, default=0.0)
+    result["maximum_speed_after_contact_m_s"] = post_contact_max
+    result["scored_contact_window_max_speed_m_s"] = post_contact_max
+    result["measured"]["maximum_speed_after_contact_m_s"] = post_contact_max
+    if any(not math.isfinite(speed) for speed in post_contact_speeds) or post_contact_max > 0.02 + 1.0e-12:
+        fail("post_contact_speed")
+
+    unrelated_contact_count = 0
     for geom1, geom2 in _observed_contact_pairs(ctx):
-        if geom1 in robot_geoms and geom2 not in robot_geoms and (geom2 not in target_geoms) or (geom2 in robot_geoms and geom1 not in robot_geoms and (geom1 not in target_geoms)):
-            return False
-    return True
+        if (
+            (geom1 in robot_geoms and geom2 not in robot_geoms and geom2 not in target_geoms)
+            or (geom2 in robot_geoms and geom1 not in robot_geoms and geom1 not in target_geoms)
+        ):
+            unrelated_contact_count += 1
+    result["unrelated_contact_count"] = unrelated_contact_count
+    if unrelated_contact_count:
+        fail("unrelated_contact")
+    return finish()
+
+
+def _contact_approach(
+    ctx: _Context,
+    *,
+    positions: Sequence[Sequence[float]],
+    precontact: Sequence[float],
+    direction: Sequence[float],
+    robot_geoms: set[str],
+    target_geoms: set[str],
+    precontact_tolerance: float = 0.015,
+    stable_precontact: bool = False,
+) -> bool:
+    """Compatibility wrapper retaining the old private boolean helper."""
+    del stable_precontact
+    return bool(
+        _a4_contact_evaluator(
+            ctx,
+            positions=positions,
+            precontact=precontact,
+            direction=direction,
+            robot_geoms=robot_geoms,
+            target_geoms=target_geoms,
+            precontact_tolerance=precontact_tolerance,
+        )["passed"]
+    )
 
 def _maximum_contact_loss(ctx: _Context, active: Sequence[bool]) -> float:
     maximum = 0.0
@@ -621,7 +861,23 @@ def evaluate_b1_contract(parameters: Mapping[str, Any], *, evidence: Mapping[str
         opened = _limit(parameters, 'open_position', 1.0)
         passed = _aperture_contract(ctx, error_limit=0.1, hold_s=0.25, normalized=True, minimum_excursion=0.5 * abs(opened - closed))
     elif contract_id == 'A4':
-        passed = _contact_approach(ctx, positions=[ctx.point(index, _name(parameters, 'site_name')) for index in range(len(ctx.samples))], precontact=_vector(_request(ctx, 'precontact_position_m'), 3, 'precontact_position_m'), direction=_vector(_request(ctx, 'approach_direction_unit'), 3, 'approach_direction_unit'), robot_geoms=set(_names(parameters, 'tool_geom_names')), target_geoms=set(_names(parameters, 'target_geom_names')), stable_precontact=parameters.get('precontact_gate') == 'held_window_then_ray')
+        passed = _a4_contact_evaluator(
+            ctx,
+            positions=[
+                ctx.point(index, _name(parameters, 'site_name'))
+                for index in range(len(ctx.samples))
+            ],
+            precontact=_vector(
+                _request(ctx, 'precontact_position_m'), 3,
+                'precontact_position_m',
+            ),
+            direction=_vector(
+                _request(ctx, 'approach_direction_unit'), 3,
+                'approach_direction_unit',
+            ),
+            robot_geoms=set(_names(parameters, 'tool_geom_names')),
+            target_geoms=set(_names(parameters, 'target_geom_names')),
+        )["passed"]
     elif contract_id == 'A5':
         site = _name(parameters, 'site_name')
         base = parameters.get('base_body_name')
@@ -675,15 +931,24 @@ def describe_contract_measurements(parameters, *, evidence, request):
                           max_cross_track_error_m=max(min(_point_segment_distance(p, a, b)
                               for a, b in zip([positions[0], *targets], targets)) for p in positions))
         elif contract == 'A4':
-            tools, targets = set(parameters['tool_geom_names']), set(parameters['target_geom_names'])
-            active = [_pair_contact(ctx, i, tools, targets) for i in range(len(ctx.samples))]
-            first = next((i for i, present in enumerate(active) if present), None)
-            result.update(best_precontact_error_m=min(_distance(p, request['precontact_position_m']) for p in positions),
-                          longest_target_contact_s=longest_hold(active),
-                          first_target_contact_s=None if first is None else ctx.times[first] - ctx.times[0],
-                          minimum_contact_distance_m=evidence.get('minimum_contact_distance_m'),
-                          maximum_speed_after_contact_m_s=None if first is None else
-                              max(_sample_speed(ctx, positions, i) for i in range(first, len(positions))))
+            a4 = _a4_contact_evaluator(
+                ctx,
+                positions=positions,
+                precontact=_vector(
+                    request['precontact_position_m'], 3,
+                    'precontact_position_m',
+                ),
+                direction=_vector(
+                    request['approach_direction_unit'], 3,
+                    'approach_direction_unit',
+                ),
+                robot_geoms=set(_names(parameters, 'tool_geom_names')),
+                target_geoms=set(_names(parameters, 'target_geom_names')),
+            )
+            result.update(a4)
+            result['best_precontact_error_m'] = min(
+                _distance(p, request['precontact_position_m']) for p in positions
+            )
         elif contract == 'A5':
             offset = request['offset_robot_base_m']
             if parameters.get('base_body_name'):
