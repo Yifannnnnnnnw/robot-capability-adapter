@@ -1,0 +1,24 @@
+{
+  "contract_id": "A5",
+  "measurements": {
+    "best_outbound_error_m": 0.0009435935797718824,
+    "final_return_error_m": 0.0009781521048623574,
+    "maximum_displacement_fraction": 0.9572209945958625,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.8800000000000007,
+    "site_max_displacement_m": 0.01914441989191725
+  },
+  "parameters": {
+    "base_body_name": "base_link",
+    "contract_id": "A5",
+    "guarded_joint_names": [
+      "joint7"
+    ],
+    "guarded_joint_tolerances": [
+      0.00175
+    ],
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "ee_site"
+  },
+  "score": 1.0
+}

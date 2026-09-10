@@ -1,0 +1,163 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A4",
+  "case_id": "piper-a4-nominal",
+  "detail": "A4 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 746,
+    "body_max_displacement_from_reset": {
+      "base_link": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.023153996156630434,
+      "link4": 0.02310189983696652,
+      "link5": 0.02310189983696652,
+      "link6": 0.02312629650630037,
+      "link7": 0.023205908606521296,
+      "link8": 0.023205908617010235,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 1.8920000000000015,
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_84"
+      },
+      {
+        "first_time_s": 1.8920000000000015,
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_87"
+      },
+      {
+        "first_time_s": 0.5100000000000003,
+        "geom1": "geom_84",
+        "geom2": "geom_87"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_84",
+        "minimum_distance_m": -0.00019566800966068932
+      },
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_87",
+        "minimum_distance_m": -0.00019579118000864434
+      },
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "minimum_distance_m": -6.973620226359091e-09
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_84",
+        "step_count": 51
+      },
+      {
+        "geom1": "fixed_contact_geom",
+        "geom2": "geom_87",
+        "step_count": 51
+      },
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "step_count": 7
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 5.443538763722128e-06,
+      "joint2": 0.0812555433855704,
+      "joint3": 0.08381011753229473,
+      "joint4": 0.00011329412754213538,
+      "joint5": 0.005694911145840569,
+      "joint6": 1.58625972544507e-05,
+      "joint7": 1.4231268172632461e-06,
+      "joint8": 1.5086138205735857e-06
+    },
+    "minimum_contact_distance_m": -0.00019579118000864434,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "ee_site": 0.023202017349045
+    },
+    "step_count": 746
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "piper-a4-nominal",
+  "method_name": "approach_until_contact",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A4",
+    "measurements": {
+      "best_precontact_error_m": 1.893629992266385e-12,
+      "first_target_contact_s": 1.3920000000000012,
+      "longest_target_contact_s": 0.10000000000000009,
+      "maximum_speed_after_contact_m_s": 0.019985500186942243,
+      "minimum_contact_distance_m": -0.00019579118000864434,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 1.4920000000000013,
+      "site_max_displacement_m": 0.023202017349045
+    },
+    "parameters": {
+      "contract_id": "A4",
+      "guarded_joint_names": [
+        "joint7"
+      ],
+      "guarded_joint_tolerances": [
+        0.00175
+      ],
+      "max_penetration_m": 0.005,
+      "precontact_gate": "held_window_then_ray",
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "ee_site",
+      "target_geom_names": [
+        "fixed_contact_geom"
+      ],
+      "tool_geom_names": [
+        "geom_82",
+        "geom_84",
+        "geom_85",
+        "geom_87",
+        "geom_88"
+      ]
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 16,
+  "ok": true,
+  "physics_steps": 746,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 1.4920000000000013,
+  "test": "piper-a4-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/piper/capability_validation/piper-a4-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 16,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/piper/capability_validation/piper-a4-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/piper/capability_validation/piper-a4-nominal/video.mp4"
+}

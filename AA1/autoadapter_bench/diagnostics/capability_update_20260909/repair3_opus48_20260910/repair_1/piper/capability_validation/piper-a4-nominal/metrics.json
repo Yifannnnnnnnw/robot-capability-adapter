@@ -1,0 +1,37 @@
+{
+  "contract_id": "A4",
+  "measurements": {
+    "best_precontact_error_m": 1.893629992266385e-12,
+    "first_target_contact_s": 1.3920000000000012,
+    "longest_target_contact_s": 0.10000000000000009,
+    "maximum_speed_after_contact_m_s": 0.019985500186942243,
+    "minimum_contact_distance_m": -0.00019579118000864434,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 1.4920000000000013,
+    "site_max_displacement_m": 0.023202017349045
+  },
+  "parameters": {
+    "contract_id": "A4",
+    "guarded_joint_names": [
+      "joint7"
+    ],
+    "guarded_joint_tolerances": [
+      0.00175
+    ],
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "ee_site",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_geom_names": [
+      "geom_82",
+      "geom_84",
+      "geom_85",
+      "geom_87",
+      "geom_88"
+    ]
+  },
+  "score": 1.0
+}

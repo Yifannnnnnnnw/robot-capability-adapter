@@ -1,0 +1,14 @@
+{
+  "artifacts": [
+    "AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/piper/driver.py"
+  ],
+  "duration_sec": 123.63207197189331,
+  "error": null,
+  "ok": true,
+  "token_usage": {
+    "cache_read": 0,
+    "in": 418575,
+    "out": 8763
+  },
+  "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_1/piper/traces/03_repair_1.jsonl"
+}

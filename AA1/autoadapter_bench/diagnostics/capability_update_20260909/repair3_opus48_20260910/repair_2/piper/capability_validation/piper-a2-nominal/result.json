@@ -1,0 +1,119 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A2",
+  "case_id": "piper-a2-nominal",
+  "detail": "A2 trusted score=1.0",
+  "driver_origin": "real_model_generation",
+  "error": null,
+  "errors": [],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 2803,
+    "body_max_displacement_from_reset": {
+      "base_link": 0.0,
+      "fixed_contact_target": 0.0,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.06118568436742546,
+      "link4": 0.08421256885908276,
+      "link5": 0.08421256885908276,
+      "link6": 0.09777041387972958,
+      "link7": 0.12110207694842859,
+      "link8": 0.12110207694822371,
+      "world": 0.0
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [
+      {
+        "first_time_s": 0.5100000000000003,
+        "geom1": "geom_84",
+        "geom2": "geom_87"
+      }
+    ],
+    "contact_pair_min_distances": [
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "minimum_distance_m": -1.0891744210638962e-08
+      }
+    ],
+    "contact_pair_step_counts": [
+      {
+        "geom1": "geom_84",
+        "geom2": "geom_87",
+        "step_count": 31
+      }
+    ],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 5.29581392545231e-06,
+      "joint2": 0.21507739938614612,
+      "joint3": 0.004024254077246381,
+      "joint4": 2.5760834963156166e-05,
+      "joint5": 0.0009263400271789971,
+      "joint6": 4.190509357307737e-05,
+      "joint7": 1.2139211432702637e-07,
+      "joint8": 1.2193963949064035e-07
+    },
+    "minimum_contact_distance_m": -1.0891744210638962e-08,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "ee_site": 0.12018533209389547
+    },
+    "step_count": 2803
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "piper-a2-nominal",
+  "method_name": "trace_cartesian_path",
+  "metric": 1.0,
+  "metrics": {
+    "contract_id": "A2",
+    "measurements": {
+      "final_error_m": 0.0016862763770864736,
+      "max_cross_track_error_m": 0.000912089672504608,
+      "ordered_waypoints_reached": true,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 5.60599999999955,
+      "site_max_displacement_m": 0.12018533209389547
+    },
+    "parameters": {
+      "contract_id": "A2",
+      "guarded_joint_names": [
+        "joint7"
+      ],
+      "guarded_joint_tolerances": [
+        0.00175
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "ee_site"
+    },
+    "score": 1.0
+  },
+  "model_generated": true,
+  "n_frames": 58,
+  "ok": true,
+  "physics_steps": 2803,
+  "reference": false,
+  "score": 1.0,
+  "sim_elapsed_s": 5.60599999999955,
+  "test": "piper-a2-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_2/piper/capability_validation/piper-a2-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 58,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_2/piper/capability_validation/piper-a2-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_2/piper/capability_validation/piper-a2-nominal/video.mp4"
+}
