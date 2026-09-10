@@ -1,0 +1,860 @@
+{
+  "audit_kind": "offline_existing_physics_trace_review",
+  "created_utc": "2026-09-10T14:03:11.849186+00:00",
+  "code_commit": "cbf2dab58bb9e61af678cad8f4dc3be8e8952bc9",
+  "new_model_calls": 0,
+  "new_physics_runs": 0,
+  "scoring_changed": false,
+  "generated_cases_rescored": 18,
+  "stored_scores_all_reproduced": true,
+  "first_return_counts": {
+    "465": 3,
+    "459": 13,
+    "492": 1,
+    "496": 1
+  },
+  "return_line_meaning": {
+    "459": "no valid precontact dwell/ray entry",
+    "465": "no continuous 0.1 second target contact window",
+    "492": "speed over 0.02 m/s inside scored contact window",
+    "496": "contact approach passed"
+  },
+  "reference_cases_rescored": [
+    {
+      "robot": "franka",
+      "case": "franka_panda-a4-calibrated_boundary",
+      "reference": true,
+      "stored_ok": true,
+      "current_scorer_current_request_score": 1.0,
+      "result_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/franka/framework_reference/franka_panda-a4-calibrated_boundary/result.json",
+      "trace_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/franka/framework_reference/franka_panda-a4-calibrated_boundary/trace.json"
+    },
+    {
+      "robot": "franka",
+      "case": "franka_panda-a4-nominal",
+      "reference": true,
+      "stored_ok": true,
+      "current_scorer_current_request_score": 1.0,
+      "result_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/franka/framework_reference/franka_panda-a4-nominal/result.json",
+      "trace_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/franka/framework_reference/franka_panda-a4-nominal/trace.json"
+    },
+    {
+      "robot": "so101",
+      "case": "so101-a4-calibrated-boundary",
+      "reference": true,
+      "stored_ok": true,
+      "current_scorer_current_request_score": 1.0,
+      "result_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/so101/framework_reference/so101-a4-calibrated-boundary/result.json",
+      "trace_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/so101/framework_reference/so101-a4-calibrated-boundary/trace.json"
+    },
+    {
+      "robot": "so101",
+      "case": "so101-a4-nominal",
+      "reference": true,
+      "stored_ok": true,
+      "current_scorer_current_request_score": 1.0,
+      "result_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/so101/framework_reference/so101-a4-nominal/result.json",
+      "trace_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/so101/framework_reference/so101-a4-nominal/trace.json"
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "case": "kuka_iiwa_14-a4-calibrated_boundary",
+      "reference": true,
+      "stored_ok": true,
+      "current_scorer_current_request_score": 1.0,
+      "result_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a4-calibrated_boundary/result.json",
+      "trace_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a4-calibrated_boundary/trace.json"
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "case": "kuka_iiwa_14-a4-nominal",
+      "reference": true,
+      "stored_ok": true,
+      "current_scorer_current_request_score": 1.0,
+      "result_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a4-nominal/result.json",
+      "trace_path": "AA1/autoadapter_bench/diagnostics/capability_calibration/kuka_iiwa14/framework_reference/kuka_iiwa_14-a4-nominal/trace.json"
+    }
+  ],
+  "generated_cases": [
+    {
+      "robot": "franka",
+      "round": "initial",
+      "case": "franka_panda-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 465,
+        "source": "return False",
+        "passed": false,
+        "pre_index": 59,
+        "contact_window": null,
+        "index": 59,
+        "axial": 0.00011158928040222449,
+        "lateral": 0.009954278790315126,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 0.1180000000000001,
+        "speed_m_s": 0.039364370714359685,
+        "pre_gate_time_s": 0.1180000000000001
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006692810789250424,
+        "first_target_contact_s": null,
+        "longest_target_contact_s": 0.0,
+        "maximum_speed_after_contact_m_s": null,
+        "minimum_contact_distance_m": null,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 5.001999999999616,
+        "site_max_displacement_m": 0.00702800210201257
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/initial/franka/capability_validation/franka_panda-a4-calibrated_boundary/metrics.json"
+    },
+    {
+      "robot": "franka",
+      "round": "initial",
+      "case": "franka_panda-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 2001,
+        "axial": 0.0007470635474702281,
+        "lateral": 0.013470394540301618,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 4.001999999999726,
+        "speed_m_s": 0.00011482998124214565
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006692810789250424,
+        "first_target_contact_s": null,
+        "longest_target_contact_s": 0.0,
+        "maximum_speed_after_contact_m_s": null,
+        "minimum_contact_distance_m": null,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 4.001999999999726,
+        "site_max_displacement_m": 0.006809324858894499
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/initial/franka/capability_validation/franka_panda-a4-nominal/metrics.json"
+    },
+    {
+      "robot": "franka",
+      "round": "repair_1",
+      "case": "franka_panda-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 1051,
+        "axial": 0.008308108108136536,
+        "lateral": 0.012485253380615716,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 2.1019999999999346,
+        "speed_m_s": 0.013317066900272375
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006692810789250424,
+        "first_target_contact_s": 1.8519999999999621,
+        "longest_target_contact_s": 0.019999999999997797,
+        "maximum_speed_after_contact_m_s": 0.030650237577756027,
+        "minimum_contact_distance_m": -4.772433676569765e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.1019999999999346,
+        "site_max_displacement_m": 0.054744448359473154
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/franka/capability_validation/franka_panda-a4-calibrated_boundary/metrics.json"
+    },
+    {
+      "robot": "franka",
+      "round": "repair_1",
+      "case": "franka_panda-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 1147,
+        "axial": 0.009185925594952682,
+        "lateral": 0.011857599939453433,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 2.2939999999999134,
+        "speed_m_s": 0.012658884656191019
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006692810789250424,
+        "first_target_contact_s": 2.1839999999999256,
+        "longest_target_contact_s": 0.017999999999998018,
+        "maximum_speed_after_contact_m_s": 0.02745924841981066,
+        "minimum_contact_distance_m": -4.3616404934221364e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.2939999999999134,
+        "site_max_displacement_m": 0.043191402127011745
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/franka/capability_validation/franka_panda-a4-nominal/metrics.json"
+    },
+    {
+      "robot": "so101",
+      "round": "repair_1",
+      "case": "so101-a4-calibrated-boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 116,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.05,
+        "time_s": 0.2320000000000002,
+        "speed_m_s": 0.7457391992151856
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.0031564499335727555,
+        "first_target_contact_s": null,
+        "longest_target_contact_s": 0.0,
+        "maximum_speed_after_contact_m_s": null,
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 0.2320000000000002,
+        "site_max_displacement_m": 0.08317519957049095
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-calibrated-boundary/metrics.json"
+    },
+    {
+      "robot": "so101",
+      "round": "repair_1",
+      "case": "so101-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 112,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.04,
+        "time_s": 0.2240000000000002,
+        "speed_m_s": 0.7159801510874038
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.000636085713200516,
+        "first_target_contact_s": null,
+        "longest_target_contact_s": 0.0,
+        "maximum_speed_after_contact_m_s": null,
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 0.2240000000000002,
+        "site_max_displacement_m": 0.07231904707014797
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_1/so101/capability_validation/so101-a4-nominal/metrics.json"
+    },
+    {
+      "robot": "franka",
+      "round": "repair_2",
+      "case": "franka_panda-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 492,
+        "source": "return False",
+        "passed": false,
+        "pre_index": 50,
+        "contact_window": [
+          910,
+          960
+        ],
+        "index": 911,
+        "axial": 0.05454440945704653,
+        "lateral": 0.007171571749840869,
+        "path_length": 0.05251971820814951,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 1.8219999999999654,
+        "speed_m_s": 0.02885005139382134,
+        "pre_gate_time_s": 0.10000000000000009,
+        "scored_contact_window_s": [
+          1.8199999999999656,
+          1.9199999999999546
+        ],
+        "scored_contact_window_max_speed_m_s": 0.02885005139382134
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006618735470054879,
+        "first_target_contact_s": 1.8199999999999656,
+        "longest_target_contact_s": 0.16399999999998194,
+        "maximum_speed_after_contact_m_s": 0.030205971184824962,
+        "minimum_contact_distance_m": -0.0003320856695336342,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.9839999999999476,
+        "site_max_displacement_m": 0.05472017224456288
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_2/franka/capability_validation/franka_panda-a4-calibrated_boundary/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.4380000000000004,
+        "held_endpoint_samples": 170,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 0,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": 0.008259438071879385,
+        "request": {
+          "precontact_position_m": [
+            0.5544994780317353,
+            2.145579490919797e-17,
+            0.5175024294875894
+          ],
+          "approach_direction_unit": [
+            1,
+            0,
+            0
+          ],
+          "max_travel_m": 0.07,
+          "max_approach_speed_m_s": 0.03,
+          "max_duration_s": 5
+        }
+      }
+    },
+    {
+      "robot": "franka",
+      "round": "repair_2",
+      "case": "franka_panda-a4-nominal",
+      "stored_score": 1.0,
+      "rescored": 1.0,
+      "gate": {
+        "line": 496,
+        "source": "return True",
+        "passed": true,
+        "pre_index": 50,
+        "contact_window": [
+          1079,
+          1129
+        ],
+        "index": 1129,
+        "axial": 0.04319383870852833,
+        "lateral": 0.007011100184153203,
+        "path_length": 0.0418753731084729,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 2.2579999999999174,
+        "speed_m_s": 0.0041568434961946135,
+        "pre_gate_time_s": 0.10000000000000009,
+        "scored_contact_window_s": [
+          2.1579999999999284,
+          2.2579999999999174
+        ],
+        "scored_contact_window_max_speed_m_s": 0.012412640780344332
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006618735470054879,
+        "first_target_contact_s": 2.1579999999999284,
+        "longest_target_contact_s": 0.15999999999998238,
+        "maximum_speed_after_contact_m_s": 0.02009902198848136,
+        "minimum_contact_distance_m": -0.0002924758032769592,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.317999999999911,
+        "site_max_displacement_m": 0.04327097419962123
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_2/franka/capability_validation/franka_panda-a4-nominal/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.6500000000000005,
+        "held_endpoint_samples": 276,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 0,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": 0.007966882797596282,
+        "request": {
+          "precontact_position_m": [
+            0.5544994780317353,
+            2.145579490919797e-17,
+            0.5175024294875894
+          ],
+          "approach_direction_unit": [
+            1,
+            0,
+            0
+          ],
+          "max_travel_m": 0.06,
+          "max_approach_speed_m_s": 0.02,
+          "max_duration_s": 4
+        }
+      }
+    },
+    {
+      "robot": "so101",
+      "round": "repair_2",
+      "case": "so101-a4-calibrated-boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 577,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.05,
+        "time_s": 1.1540000000000008,
+        "speed_m_s": 0.0026254819498045066
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.00837872791370859,
+        "first_target_contact_s": 0.9560000000000007,
+        "longest_target_contact_s": 0.10000000000000009,
+        "maximum_speed_after_contact_m_s": 0.034581195082521825,
+        "minimum_contact_distance_m": -0.0002732551333187658,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.1540000000000008,
+        "site_max_displacement_m": 0.053353880836397756
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_2/so101/capability_validation/so101-a4-calibrated-boundary/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.09200000000000008,
+        "held_endpoint_samples": 0,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 0,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": null,
+        "request": {
+          "precontact_position_m": [
+            0.418,
+            0.015,
+            0.247
+          ],
+          "approach_direction_unit": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "max_travel_m": 0.05,
+          "max_approach_speed_m_s": 0.03,
+          "max_duration_s": 5.0
+        }
+      }
+    },
+    {
+      "robot": "so101",
+      "round": "repair_2",
+      "case": "so101-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 771,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.04,
+        "time_s": 1.5419999999999963,
+        "speed_m_s": 0.0005897087675802694
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.007725472799967138,
+        "first_target_contact_s": 1.3400000000000012,
+        "longest_target_contact_s": 0.1019999999999952,
+        "maximum_speed_after_contact_m_s": 0.020531172065011916,
+        "minimum_contact_distance_m": -0.00027283755538041674,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.5419999999999963,
+        "site_max_displacement_m": 0.05202958745906049
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_2/so101/capability_validation/so101-a4-nominal/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.09799999999999998,
+        "held_endpoint_samples": 0,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 0,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": null,
+        "request": {
+          "precontact_position_m": [
+            0.42,
+            -0.00018,
+            0.2496
+          ],
+          "approach_direction_unit": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "max_travel_m": 0.04,
+          "max_approach_speed_m_s": 0.02,
+          "max_duration_s": 4.0
+        }
+      }
+    },
+    {
+      "robot": "franka",
+      "round": "repair_3",
+      "case": "franka_panda-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 2501,
+        "axial": 0.006105144980461552,
+        "lateral": 0.013698844920636714,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 5.001999999999616,
+        "speed_m_s": 0.003227682424324434
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006618735470054879,
+        "first_target_contact_s": 4.69199999999965,
+        "longest_target_contact_s": 0.0019999999999997797,
+        "maximum_speed_after_contact_m_s": 0.06484912720575552,
+        "minimum_contact_distance_m": -2.5118234219327455e-06,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 5.001999999999616,
+        "site_max_displacement_m": 0.05720214070347016
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a4-calibrated_boundary/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.6240000000000004,
+        "held_endpoint_samples": 263,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 263,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": 0.010910356106865375,
+        "request": {
+          "precontact_position_m": [
+            0.5544994780317353,
+            2.145579490919797e-17,
+            0.5175024294875894
+          ],
+          "approach_direction_unit": [
+            1,
+            0,
+            0
+          ],
+          "max_travel_m": 0.07,
+          "max_approach_speed_m_s": 0.03,
+          "max_duration_s": 5
+        }
+      }
+    },
+    {
+      "robot": "franka",
+      "round": "repair_3",
+      "case": "franka_panda-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 2001,
+        "axial": 0.006105144980461552,
+        "lateral": 0.013698844920636714,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 4.001999999999726,
+        "speed_m_s": 0.005297225932972919
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.006618735470054879,
+        "first_target_contact_s": 3.7339999999997553,
+        "longest_target_contact_s": 0.007999999999999119,
+        "maximum_speed_after_contact_m_s": 0.062385690989452576,
+        "minimum_contact_distance_m": -2.2091141305293552e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 4.001999999999726,
+        "site_max_displacement_m": 0.045958239783058664
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T120531Z/repair_3/franka/capability_validation/franka_panda-a4-nominal/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.6240000000000004,
+        "held_endpoint_samples": 263,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 263,
+          "speed": 3
+        },
+        "best_held_endpoint_lateral_m": 0.010910356106865375,
+        "request": {
+          "precontact_position_m": [
+            0.5544994780317353,
+            2.145579490919797e-17,
+            0.5175024294875894
+          ],
+          "approach_direction_unit": [
+            1,
+            0,
+            0
+          ],
+          "max_travel_m": 0.06,
+          "max_approach_speed_m_s": 0.02,
+          "max_duration_s": 4
+        }
+      }
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "round": "initial",
+      "case": "kuka_iiwa_14-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 465,
+        "source": "return False",
+        "passed": false,
+        "pre_index": 118,
+        "contact_window": null,
+        "index": 118,
+        "axial": -0.0008641509878317688,
+        "lateral": 0.00758936674146655,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 0.2360000000000002,
+        "speed_m_s": 0.037081747370237,
+        "pre_gate_time_s": 0.2360000000000002
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.0008573839593711745,
+        "first_target_contact_s": 1.1060000000000008,
+        "longest_target_contact_s": 0.014000000000000012,
+        "maximum_speed_after_contact_m_s": 0.18837167726654383,
+        "minimum_contact_distance_m": -0.0001320414105479492,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.2060000000000008,
+        "site_max_displacement_m": 0.0468126142851643
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-calibrated_boundary/metrics.json"
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "round": "initial",
+      "case": "kuka_iiwa_14-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 465,
+        "source": "return False",
+        "passed": false,
+        "pre_index": 120,
+        "contact_window": null,
+        "index": 120,
+        "axial": -0.0009321571022316011,
+        "lateral": 0.007691421604713352,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 0.2400000000000002,
+        "speed_m_s": 0.024448199530262817,
+        "pre_gate_time_s": 0.2400000000000002
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.0008573839593711745,
+        "first_target_contact_s": 0.8700000000000007,
+        "longest_target_contact_s": 0.006000000000000005,
+        "maximum_speed_after_contact_m_s": 0.18537925703446692,
+        "minimum_contact_distance_m": -5.863781789988004e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 0.9700000000000008,
+        "site_max_displacement_m": 0.03756408625659761
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/initial/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-nominal/metrics.json"
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "round": "repair_2",
+      "case": "kuka_iiwa_14-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 769,
+        "axial": -0.002629575065925538,
+        "lateral": 0.014625871125596865,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 1.5379999999999967,
+        "speed_m_s": 0.011565947496260465
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.008027507677029137,
+        "first_target_contact_s": 1.4360000000000013,
+        "longest_target_contact_s": 0.006000000000000005,
+        "maximum_speed_after_contact_m_s": 0.04903836793557224,
+        "minimum_contact_distance_m": -4.096335169469917e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.5379999999999967,
+        "site_max_displacement_m": 0.03744687683032178
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-calibrated_boundary/metrics.json"
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "round": "repair_2",
+      "case": "kuka_iiwa_14-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 818,
+        "axial": -0.002933968503900153,
+        "lateral": 0.014655542052556291,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 1.635999999999986,
+        "speed_m_s": 0.002511602851111451
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.008033410639549628,
+        "first_target_contact_s": 1.5319999999999974,
+        "longest_target_contact_s": 0.0039999999999995595,
+        "maximum_speed_after_contact_m_s": 0.03944723656103581,
+        "minimum_contact_distance_m": -2.920511470210635e-05,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 1.635999999999986,
+        "site_max_displacement_m": 0.02677752095693069
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_2/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-nominal/metrics.json"
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "round": "repair_3",
+      "case": "kuka_iiwa_14-a4-calibrated_boundary",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 1898,
+        "maximum_speed": 0.03,
+        "maximum_travel": 0.07,
+        "time_s": 3.7959999999997485,
+        "speed_m_s": 0.012908711277163133
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.008537510398436518,
+        "first_target_contact_s": 3.673999999999762,
+        "longest_target_contact_s": 0.12199999999998656,
+        "maximum_speed_after_contact_m_s": 0.03831470584178126,
+        "minimum_contact_distance_m": -0.0006853093793884948,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 3.7959999999997485,
+        "site_max_displacement_m": 0.042520246581345414
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-calibrated_boundary/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.07600000000000007,
+        "held_endpoint_samples": 0,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 0,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": null,
+        "request": {
+          "precontact_position_m": [
+            0.6689216610421869,
+            1.9653493775345922e-18,
+            0.28504542429165386
+          ],
+          "approach_direction_unit": [
+            1,
+            0,
+            0
+          ],
+          "max_travel_m": 0.07,
+          "max_approach_speed_m_s": 0.03,
+          "max_duration_s": 5.0
+        }
+      }
+    },
+    {
+      "robot": "kuka_iiwa14",
+      "round": "repair_3",
+      "case": "kuka_iiwa_14-a4-nominal",
+      "stored_score": 0.0,
+      "rescored": 0.0,
+      "gate": {
+        "line": 459,
+        "source": "return False",
+        "passed": false,
+        "pre_index": null,
+        "index": 1422,
+        "maximum_speed": 0.02,
+        "maximum_travel": 0.06,
+        "time_s": 2.843999999999853,
+        "speed_m_s": 0.012149088398112512
+      },
+      "measurements": {
+        "best_precontact_error_m": 0.008537510398436518,
+        "first_target_contact_s": 2.7219999999998663,
+        "longest_target_contact_s": 0.12199999999998656,
+        "maximum_speed_after_contact_m_s": 0.036510460288785906,
+        "minimum_contact_distance_m": -0.0006861825316424111,
+        "side_effects_ok": true,
+        "sim_elapsed_s": 2.843999999999853,
+        "site_max_displacement_m": 0.031563684441684114
+      },
+      "metrics_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/repair_3/kuka_iiwa14/capability_validation/kuka_iiwa_14-a4-nominal/metrics.json",
+      "precontact_audit": {
+        "longest_precontact_within_15mm_no_contact_s": 0.07600000000000007,
+        "held_endpoint_samples": 0,
+        "endpoint_gate_rejections": {
+          "axial": 0,
+          "lateral": 0,
+          "speed": 0
+        },
+        "best_held_endpoint_lateral_m": null,
+        "request": {
+          "precontact_position_m": [
+            0.6689216610421869,
+            1.9653493775345922e-18,
+            0.28504542429165386
+          ],
+          "approach_direction_unit": [
+            1,
+            0,
+            0
+          ],
+          "max_travel_m": 0.06,
+          "max_approach_speed_m_s": 0.02,
+          "max_duration_s": 4.0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Re-evaluation uses saved physical evidence and current requests/scorer; this is not a new physics execution.",
+    "Return locations identify the first rejecting gate; later conditions can still fail after that gate is corrected.",
+    "Reference results demonstrate physical attainability in these fixed scenes, not model generation success.",
+    "These are existing diagnostic conditions, not a formal experiment denominator."
+  ]
+}
