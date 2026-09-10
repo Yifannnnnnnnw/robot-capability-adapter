@@ -36,27 +36,33 @@ configurations.
 
 \section[Background and Research Questions]{Background and Research Questions}
 
-Code-generation benchmarks commonly evaluate whether model-produced programs
-pass executable tests, whereas many LLM-based robot controllers assume that
-actions or tools are already available and assess planning or task completion
-\citep{chen2021codex,jimenez2024swebench,ahn2022saycan,
-singh2023progprompt}. Neither setting alone reveals how a model performs when
-constructing a robot-specific driver and when operating through an existing
-driver.
+\subsection[Comparability in Driver Synthesis]{Comparability in Driver Synthesis}
 
-\subsection[ReCAP]{ReCAP}
+Chapter 3 describes driver synthesis as an iterative process in which an LLM
+implements a specified capability interface. Development simulations expose
+the resulting robot state and execution errors, allowing the LLM to revise its
+implementation before submitting the driver. Later driver submissions can
+also incorporate diagnostic feedback from validation.
+
+Execution feedback guides development, while independent behavioural
+assessment establishes whether the resulting driver meets its requirements.
+Passing individual tests provides evidence about specific capabilities but
+does not establish conformance to the complete behavioural standard.
+
+\subsection[Closed-Loop Planning with ReCAP]{Closed-Loop Planning with ReCAP}
 \label{sec:recap}
 
-Recursive Context-Aware Reasoning and Planning (ReCAP) is a hierarchical
-framework for long-horizon LLM agents \citep{zhang2025recap}. It creates an
-ordered subtask list and recursively decomposes the first unresolved item until
-an executable action is reached.
-Figure~\ref{fig:chapter3-recap-backtracking} shows the context update after one
-such action finishes. The latest observation is appended to the previous
-context (step 1), the parent task's prior reasoning and remaining subtasks are
-restored (step 2), and the model generates revised reasoning and a refined next
-subtask (step 3). This update allows later actions to respond to execution
-feedback rather than follow an unchanged initial plan.
+Closed-loop task execution requires the LLM to interpret observations in
+relation to goals that remain unresolved. A failed grasp, for example, may
+require revising the next action while preserving the overall placement goal.
+AutoAdapter-Bench uses Recursive Context-Aware Reasoning and Planning (ReCAP)
+to organise this process. ReCAP generates an ordered subtask list and
+recursively decomposes the first unresolved item until an executable action is
+reached \citep{zhang2025recap}. In this chapter, these actions are capability
+calls executed through each robot's fixed, validated driver.
+Figure~\ref{fig:chapter3-recap-backtracking} shows how the parent plan is
+revisited after subtask execution, with the updated context guiding further
+refinement.
 
 \begin{figure}[htbp]
   \centering
@@ -64,20 +70,18 @@ feedback rather than follow an unchanged initial plan.
     {assets/recap_backtracking_refinement_zhang2025.png}
   \caption[ReCAP backtracking and plan refinement]
   {ReCAP backtracking and plan refinement.
-  The latest observation updates the previous context (1); prior parent reasoning
-  and remaining subtasks are restored (2); the model produces revised reasoning
-  and a refined next subtask (3).
-  Cropped reproduction of Figure~2 from \citet{zhang2025recap} under CC BY 4.0.}
+  The latest observation is appended to the shared context (1), and the parent
+  task's prior reasoning and remaining subtasks are restored (2). The LLM then
+  generates revised reasoning and subtasks from the updated context (3).
+  Cropped reproduction of Figure~2 from \citet{zhang2025recap}, under
+  \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0}.}
   \label{fig:chapter3-recap-backtracking}
 \end{figure}
 
-Experiment~2b adapts this pattern as a fixed high-level controller. Executable
-leaves become typed calls to the fixed robot capability interface, while
-bounded public observations support replanning within the same MuJoCo session.
-Controller-reported completion is not task success; only the trusted Harness
-provides the independent behavioural verdict. Because ReCAP is held fixed, the
-experiment compares model configurations within this controller rather than
-alternative planning architectures.
+ReCAP fixes the planning procedure and context updates, while the LLM
+determines the subgoals and how the remaining plan is revised. The Harness
+determines task success from independently recorded simulation state; the
+controller's declaration of completion is not sufficient.
 
 \subsection[Research Questions]{Research Questions}
 
