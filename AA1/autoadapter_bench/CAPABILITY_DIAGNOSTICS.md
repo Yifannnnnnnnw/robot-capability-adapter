@@ -44,9 +44,27 @@ real two-second `stand_balance` physics with its trace and video,
 `squat`, `humanoid_walk`, and the required structural checks. A missing or
 failed H1 walking method remains a failed check. Stage 2 is deferred.
 
+The 2026-09-10 A4 correction makes the existing public capability designs
+explicit about the precontact dwell and measured approach origin. Scoring
+uses that measured origin, nearest collision-surface relative velocity and
+first-contact normal closing velocity. Its failure measurements use the same
+gates and contact window as its verdict. The live A4 recorder supplies the two
+new velocity fields; it does not alter actuator settings or dynamics. This is
+a semantic correction to the earlier implementation, with the numerical
+thresholds retained, so older verdicts remain attached to their original code.
+
+Saved-state A4 rescoring is distinct from a fresh generation or physics run.
+Reconstruct velocity observations only when the saved qpos/qvel and canonical
+model reproduce the recorded poses and contacts at the same timestamps. Missing
+or inconsistent evidence is reported as unavailable; it is not silently treated
+as passing. Keep rescores beside the original evidence without overwriting the
+original driver, report, or completed repair budget. The correction review and
+real xArm7 reference checks are recorded in
+[A4 correction report](diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/a4_correction_20260910T142252Z/REPORT.md).
+
 Reference controls establish whether a trusted condition is physically
 reachable; they are not model-generated drivers and do not enter a generated
-result. The remaining reference gaps are Unitree A1 and ANYmal-C G1–G3
+result. Previously recorded reference gaps include Unitree A1 and ANYmal-C G1–G3
 (nominal and boundary). The earlier reports remain historical evidence:
 [FIRST_ROUND_RESULTS.md](diagnostics/capability_update_20260909/FIRST_ROUND_RESULTS.md),
 [HIGHER_MODEL_RESULTS.md](diagnostics/capability_update_20260909/HIGHER_MODEL_RESULTS.md),

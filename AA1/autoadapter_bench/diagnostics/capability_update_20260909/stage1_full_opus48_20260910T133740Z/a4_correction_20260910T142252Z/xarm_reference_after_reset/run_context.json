@@ -1,0 +1,12 @@
+{
+  "code_commit": "3160c289cd42fda60b68e3df4700b16c5fd1f71a",
+  "reference_control_working_diff": "diff --git a/AA1/autoadapter_bench/reference_controls/ufactory_xarm7/reference_arm.py b/AA1/autoadapter_bench/reference_controls/ufactory_xarm7/reference_arm.py\nindex d80cb9e6..96319c3d 100644\n--- a/AA1/autoadapter_bench/reference_controls/ufactory_xarm7/reference_arm.py\n+++ b/AA1/autoadapter_bench/reference_controls/ufactory_xarm7/reference_arm.py\n@@ -301,8 +301,12 @@ class ReferenceXArm7Driver:\n             raise ValueError(\"approach travel and speed are outside the public bounds\")\n \n         precontact_duration = min(1.0, max(0.5, 0.3 * duration_s))\n-        self._track_position(precontact, precontact_duration)\n+        # Preserve an already-valid measured pose as the public ray origin;\n+        # otherwise prepare the requested pose before taking the dwell sample.\n+        if float(np.linalg.norm(self._ee_position() - precontact)) > 0.015:\n+            self._track_position(precontact, precontact_duration)\n         self._hold(0.1)\n+        ray_origin = self._ee_position()\n         command_speed = min(max_speed, 0.018)\n         approach_duration = max(0.25, duration_s - precontact_duration)\n         approach_steps = self._steps(approach_duration)\n@@ -311,7 +315,7 @@ class ReferenceXArm7Driver:\n                 max_travel,\n                 command_speed * self._timestep * float(index + 1),\n             )\n-            desired = precontact + distance * direction\n+            desired = ray_origin + distance * direction\n             self._command_arm(self._solve_position_ik(desired))\n             self._command_gripper(self._gripper_target)\n             mujoco.mj_step(self.model, self.data)\n",
+  "started_at_utc": "2026-09-10T14:24:38.161080+00:00",
+  "reference": true,
+  "model_generated": false,
+  "model_calls": 0,
+  "controller_construction": "execute callback after Framework reset/settle; canonical model/data shared",
+  "finished_at_utc": "2026-09-10T14:24:41.461975+00:00",
+  "all_a4_pass": true,
+  "case_count": 2
+}
