@@ -121,6 +121,16 @@ def test_a4_reports_only_the_scored_contact_window_speed():
     assert description["passed"] is True
 
 
+def test_a4_reports_contact_duration_when_hold_is_too_short():
+    samples = _passing_samples()[:6]
+
+    description = _describe(samples)
+    assert _score(samples) == 0.0
+    assert description["first_failed_gate"] == "contact_window"
+    assert description["longest_target_contact_s"] == pytest.approx(0.05)
+    assert description["required"]["contact_hold_s"] == 0.1
+
+
 def test_a4_surface_speed_uses_required_trusted_measurement():
     samples = _passing_samples()
     # The point finite difference is intentionally too fast; the trusted

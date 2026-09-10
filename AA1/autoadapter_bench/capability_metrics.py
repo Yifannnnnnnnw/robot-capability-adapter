@@ -538,6 +538,9 @@ def _a4_contact_evaluator(
         _pair_contact(ctx, index, robot_geoms, target_geoms)
         for index in range(len(positions))
     ]
+    result["longest_target_contact_s"] = (
+        _longest_true_window(ctx, target_contact) or (0, 0, 0.0)
+    )[2]
     precontact_hold = [
         _distance(position, precontact) <= precontact_tolerance + 1.0e-12
         and not target_contact[index]
@@ -593,9 +596,6 @@ def _a4_contact_evaluator(
         result["scored_contact_window_start_s"],
         result["scored_contact_window_end_s"],
     ]
-    result["longest_target_contact_s"] = (
-        _longest_true_window(ctx, target_contact) or (0, 0, 0.0)
-    )[2]
     if not _entry_within_request_budget(ctx, contact_start, "max_duration_s"):
         fail("contact_deadline")
 
