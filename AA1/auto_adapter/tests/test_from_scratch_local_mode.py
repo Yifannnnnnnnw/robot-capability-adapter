@@ -1,6 +1,7 @@
 """Focused checks for the from-scratch local generation route."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -107,6 +108,9 @@ def test_h1_required_evidence_unavailable_cannot_pass(tmp_path, monkeypatch):
 
     class FakeTrace:
         def __init__(self, _robot, _state_refs):
+            self.model = SimpleNamespace(
+                opt=SimpleNamespace(timestep=0.002),
+            )
             self.samples = [
                 {"time": 0.0, "base_xyz": [0.0, 0.0, 1.0],
                  "base_upright": 1.0, "finite": True},
@@ -151,4 +155,68 @@ def test_h1_required_evidence_unavailable_cannot_pass(tmp_path, monkeypatch):
     )
 
     assert result["ok"] is False
+    assert result["sim_elapsed_s"] == 2.0
+    assert result["physics_steps"] == 1
+    assert (tmp_path / "stand.json").is_file()
+    assert result["video"]["errors"] == ["renderer unavailable"]
     assert "required stand_balance video unavailable" in result["detail"]
+
+
+def test_h1_stand_exception_keeps_partial_trace_duration(tmp_path, monkeypatch):
+    from auto_adapter import robot_catalog
+    from auto_adapter import orchestrator_from_scratch as module
+
+    expected_samples = [
+        {"time": 0.0, "base_xyz": [0.0, 0.0, 1.0],
+         "base_upright": 1.0, "finite": True},
+        {"time": 2.0, "base_xyz": [0.0, 0.0, 1.0],
+         "base_upright": 1.0, "finite": True},
+    ]
+
+    class ExplodingTrace:
+        def __init__(self, _robot, _state_refs):
+            self.model = SimpleNamespace(opt=SimpleNamespace(timestep=0.002))
+            self.samples = list(expected_samples)
+            self.tool = "initial"
+            self.idx = -1
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return None
+
+    class FinishedVideo:
+        def __init__(self, _robot, _path, **_kwargs):
+            pass
+
+        def capture(self, **_kwargs):
+            pass
+
+        def finish(self):
+            return {"ok": True, "frame_count": 1, "errors": []}
+
+    class ExplodingRobot:
+        def stand_balance(self, *, secs):
+            assert secs == 2.0
+            raise RuntimeError("driver stopped after real samples")
+
+    monkeypatch.setattr(
+        robot_catalog,
+        "find_robot_definition",
+        lambda *_args: {"state_refs": {"base_body": "pelvis"}},
+    )
+    monkeypatch.setattr("autoadapter_bench.physics.PhysicsTrace", ExplodingTrace)
+    monkeypatch.setattr("autoadapter_bench.capability_eval._VideoRecorder", FinishedVideo)
+
+    trace_path = tmp_path / "stand.json"
+    result = module._validate_humanoid_stand_balance(
+        ExplodingRobot(), "h1", tmp_path / "scene.xml", secs=2.0,
+        trace_path=trace_path, video_path=tmp_path / "stand.mp4",
+    )
+
+    assert result["ok"] is False
+    assert result["sim_elapsed_s"] == 2.0
+    assert result["physics_steps"] == 1
+    assert json.loads(trace_path.read_text())["samples"] == expected_samples
+    assert "RuntimeError" in result["detail"]

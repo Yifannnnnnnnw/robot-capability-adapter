@@ -168,7 +168,17 @@ def _validate_humanoid_stand_balance(
             # while the generated stand_balance method advances real mj_step.
             from autoadapter_bench.capability_eval import _VideoRecorder  # noqa: PLC0415
 
-            timestep = float(robot.model.opt.timestep)
+            class _EvidencePhysicsTrace(PhysicsTrace):
+                def snapshot(self):
+                    state = super().snapshot()
+                    step_count = max(0, len(self.samples) - 1)
+                    video.capture(force=step_count == 0, step_count=step_count)
+                    return state
+
+            # PhysicsTrace resolves the canonical model/data pair through
+            # find_mujoco(), including drivers that expose them as _model/_data.
+            trace = _EvidencePhysicsTrace(robot, {"base_body": base_body})
+            timestep = float(trace.model.opt.timestep)
             if not math.isfinite(timestep) or timestep <= 0.0:
                 raise ValueError("stand_balance evidence requires a positive model timestep")
             capture_every = max(1, round(1.0 / (30.0 * timestep)))
@@ -179,15 +189,6 @@ def _validate_humanoid_stand_balance(
                 fps=1.0 / (timestep * capture_every),
                 width=480, height=360, camera=-1,
             )
-
-            class _EvidencePhysicsTrace(PhysicsTrace):
-                def snapshot(self):
-                    state = super().snapshot()
-                    step_count = max(0, len(self.samples) - 1)
-                    video.capture(force=step_count == 0, step_count=step_count)
-                    return state
-
-            trace = _EvidencePhysicsTrace(robot, {"base_body": base_body})
         else:
             trace = PhysicsTrace(robot, {"base_body": base_body})
 
@@ -198,21 +199,11 @@ def _validate_humanoid_stand_balance(
         trace_samples = list(trace.samples)
         if not trace_samples:
             raise ValueError("stand_balance produced no physics samples")
-        elapsed = float(trace_samples[-1]["time"] - trace_samples[0]["time"])
-        heights = [float(sample["base_xyz"][2]) for sample in trace_samples]
-        upright = [float(sample["base_upright"]) for sample in trace_samples]
-        finite = all(bool(sample["finite"]) for sample in trace_samples)
-        min_height = min(heights)
-        min_upright = min(upright)
-        elapsed_ok = elapsed >= float(secs) - 1e-9
-        physics_ok = bool(
-            elapsed_ok
-            and finite
-            and min_height > 0.6
-            and min_upright > 0.7
-        )
     except Exception as exc:  # noqa: BLE001
         errors.append(f"{type(exc).__name__}: {exc}")
+        if trace is not None:
+            trace_samples = list(getattr(trace, "samples", ()))
+
     finally:
         if video is not None:
             try:
@@ -237,6 +228,31 @@ def _validate_humanoid_stand_balance(
                 )
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"trace finalization failed: {type(exc).__name__}: {exc}")
+
+    # Grade samples even when the driver raised after advancing part of the
+    # interval.  The exception still makes the result fail, while the report
+    # retains the actual simulated duration and step count.
+    if trace_samples:
+        try:
+            elapsed = float(trace_samples[-1]["time"] - trace_samples[0]["time"])
+            physics_steps = max(0, len(trace_samples) - 1)
+            heights = [float(sample["base_xyz"][2]) for sample in trace_samples]
+            upright = [float(sample["base_upright"]) for sample in trace_samples]
+            finite = all(bool(sample["finite"]) for sample in trace_samples)
+            min_height = min(heights)
+            min_upright = min(upright)
+            elapsed_ok = elapsed >= float(secs) - 1e-9
+            physics_ok = bool(
+                elapsed_ok
+                and finite
+                and min_height > 0.6
+                and min_upright > 0.7
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"stand_balance trace grading failed: {type(exc).__name__}: {exc}")
+            physics_steps = max(0, len(trace_samples) - 1)
+    else:
+        physics_steps = 0
 
     if trace_path is not None:
         if not trace_path.is_file() or trace_path.stat().st_size <= 0:
@@ -264,6 +280,8 @@ def _validate_humanoid_stand_balance(
         "ok": bool(physics_ok and not errors),
         "detail": detail,
         "metric": elapsed if physics_ok else 0.0,
+        "sim_elapsed_s": elapsed,
+        "physics_steps": physics_steps,
     }
     if trace_path is not None:
         result["trace_path"] = str(trace_path)
