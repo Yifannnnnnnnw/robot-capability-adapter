@@ -1,0 +1,59 @@
+{
+  "scope": "bounded integration diagnostic, not a formal experiment denominator",
+  "pipeline": "auto_adapter.orchestrator.run_stage1",
+  "launcher": "AA1/scripts/run/run_stage1.py",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "fresh_cohort_size": 10,
+  "fresh_runs_started": 2,
+  "fresh_runs_completed_through_budget": 1,
+  "fresh_full_framework_passes": 0,
+  "fresh_run_interrupted_by_external_error": [
+    "so101"
+  ],
+  "not_run_external_blocked": [
+    "kuka_iiwa14",
+    "ufactory_xarm7",
+    "kinova_gen3_robotiq_2f85",
+    "universal_robots_ur5e_robotiq_2f85",
+    "go2",
+    "unitree_a1",
+    "anymal_c",
+    "h1"
+  ],
+  "preserved_not_rerun": [
+    "piper",
+    "leap_hand",
+    "hello_robot_stretch_2",
+    "aloha_2",
+    "skydio_x2"
+  ],
+  "stage1_real_cohort_complete": false,
+  "code_checks": "31 focused tests passed; first real Study/Generate/Framework/three-repair path exercised",
+  "tokens_reported": {
+    "in": 6070976,
+    "out": 142987
+  },
+  "actual_generation_cost_usd": null,
+  "blocking_error": "holistic invoke failed after retries: URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+  "summaries": {
+    "franka": "summary_franka.json",
+    "so101": "summary_so101.json",
+    "kuka_iiwa14": "summary_kuka_iiwa14.json",
+    "ufactory_xarm7": "summary_ufactory_xarm7.json",
+    "kinova_gen3_robotiq_2f85": "summary_kinova_gen3_robotiq_2f85.json",
+    "universal_robots_ur5e_robotiq_2f85": "summary_universal_robots_ur5e_robotiq_2f85.json",
+    "go2": "summary_go2.json",
+    "unitree_a1": "summary_unitree_a1.json",
+    "anymal_c": "summary_anymal_c.json",
+    "h1": "summary_h1.json"
+  },
+  "evidence_commits": {
+    "franka": "e50a52c7",
+    "so101": "024b08b5"
+  },
+  "known_limitations": [
+    "A1/ANYmal-C G1-G3 reference gaps remain unchanged; no conditions or thresholds were removed.",
+    "The SO101 third repair candidate has no Framework verdict; the last validated candidate is repair_2 at 8/10.",
+    "SO101 original wall and monotonic durations diverged; both raw records are preserved in review_so101.json."
+  ]
+}
