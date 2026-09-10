@@ -1,0 +1,17 @@
+{
+  "contract_id": "G2",
+  "measurements": {
+    "final_height_m": 0.36643721222348097,
+    "final_planar_error_m": 0.02372791124560636,
+    "final_yaw_error_rad": 0.053675559377798,
+    "max_abs_roll_pitch_rad": 0.03003291722894521,
+    "max_planar_displacement_m": 0.05680649041561349,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.8600000000000007
+  },
+  "parameters": {
+    "body_name": "base_link",
+    "contract_id": "G2"
+  },
+  "score": 1.0
+}

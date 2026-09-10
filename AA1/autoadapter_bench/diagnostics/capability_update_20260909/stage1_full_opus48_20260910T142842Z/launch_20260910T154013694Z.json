@@ -1,0 +1,28 @@
+{
+  "all_stage1_ok": false,
+  "batch": "stage1_full_opus48_20260910T142842Z",
+  "duration_sec": 1103.128,
+  "exit_code": 1,
+  "finished_at_utc": "2026-09-10T15:58:36.821Z",
+  "launch_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/launch_20260910T154013694Z.json",
+  "max_repairs": 3,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "output_root": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z",
+  "results": [
+    {
+      "duration_sec": 1103.123,
+      "error": "Framework validation failed",
+      "finished_at_utc": "2026-09-10T15:58:36.818Z",
+      "monotonic_duration_sec": 1103.129,
+      "robot_id": "go2",
+      "started_at_utc": "2026-09-10T15:40:13.695Z",
+      "status": "failed",
+      "summary_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/summary_go2.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/go2"
+    }
+  ],
+  "selected_robots": [
+    "go2"
+  ],
+  "started_at_utc": "2026-09-10T15:40:13.694Z"
+}
