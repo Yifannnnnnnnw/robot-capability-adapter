@@ -1,0 +1,52 @@
+{
+  "contract_id": "A4",
+  "measurements": {
+    "best_precontact_error_m": 0.010467672910042657,
+    "first_target_contact_s": 0.5460000000000004,
+    "longest_target_contact_s": 0.10000000000000009,
+    "maximum_speed_after_contact_m_s": 0.023254276604670755,
+    "minimum_contact_distance_m": -4.9369222327440496e-05,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.6460000000000005,
+    "site_max_displacement_m": 0.015116724041802554
+  },
+  "parameters": {
+    "contract_id": "A4",
+    "guarded_joint_names": [
+      "left_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.0425
+    ],
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "link_tcp",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_body_names": [
+      "left_finger",
+      "left_inner_knuckle",
+      "left_outer_knuckle",
+      "right_finger",
+      "right_inner_knuckle",
+      "right_outer_knuckle",
+      "xarm_gripper_base_link"
+    ],
+    "tool_geom_names": [
+      "left_finger_pad_1",
+      "left_finger_pad_2",
+      "left_finger_visual_geom",
+      "left_inner_knuckle_geom",
+      "left_outer_knuckle_geom",
+      "right_finger_pad_1",
+      "right_finger_pad_2",
+      "right_finger_visual_geom",
+      "right_inner_knuckle_geom",
+      "right_outer_knuckle_geom",
+      "xarm_gripper_base_geom"
+    ]
+  },
+  "score": 0.0
+}

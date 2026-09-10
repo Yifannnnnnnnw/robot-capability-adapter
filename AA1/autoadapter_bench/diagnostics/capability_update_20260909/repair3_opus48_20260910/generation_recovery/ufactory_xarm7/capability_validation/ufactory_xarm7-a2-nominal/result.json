@@ -1,0 +1,114 @@
+{
+  "action_return": {
+    "type": "dict"
+  },
+  "capability_id": "A2",
+  "case_id": "ufactory_xarm7-a2-nominal",
+  "detail": "trusted metric contract did not pass (score=0); observed={\"final_error_m\": 0.011126480787333335, \"max_cross_track_error_m\": 0.011100079976545454, \"ordered_waypoints_reached\": true, \"side_effects_ok\": true, \"sim_elapsed_s\": 0.8160000000000006, \"site_max_displacement_m\": 0.10579483936835232}",
+  "driver_origin": "real_model_generation",
+  "error": "trusted metric contract did not pass (score=0)",
+  "errors": [
+    "trusted metric contract did not pass (score=0)"
+  ],
+  "evidence_summary": {
+    "actuator_force_nonzero_step_count": 408,
+    "body_max_displacement_from_reset": {
+      "fixed_contact_target": 0.0,
+      "left_finger": 0.09647456983452324,
+      "left_inner_knuckle": 0.09176563770311652,
+      "left_outer_knuckle": 0.08975128331299208,
+      "link1": 0.0,
+      "link2": 0.0,
+      "link3": 0.011221728843531942,
+      "link4": 0.0022689103712556697,
+      "link5": 0.0587155706710898,
+      "link6": 0.0587155706710898,
+      "link7": 0.08101534986970635,
+      "link_base": 0.0,
+      "right_finger": 0.09637159214512572,
+      "right_inner_knuckle": 0.09174669645609082,
+      "right_outer_knuckle": 0.0897413330046678,
+      "world": 0.0,
+      "xarm_gripper_base_link": 0.08101534986970635
+    },
+    "canonical_model_data": true,
+    "contact_monitoring_complete": true,
+    "contact_pair_first_times_s": [],
+    "contact_pair_min_distances": [],
+    "contact_pair_step_counts": [],
+    "control_range_monitoring_complete": true,
+    "control_range_violation_actuators": [],
+    "control_range_violation_detected": false,
+    "ctrl_changed_from_reset": true,
+    "ctrl_observed_before_step": true,
+    "direct_state_write_detected": false,
+    "direct_state_write_fields": [],
+    "joint_max_abs_deviation_from_reset": {
+      "joint1": 0.08033571326949268,
+      "joint2": 0.0015671023528342487,
+      "joint3": 0.10359179556697594,
+      "joint4": 0.014392793263748205,
+      "joint5": 0.023399390403664427,
+      "joint6": 0.005668005636032314,
+      "joint7": 8.114892758923087e-06,
+      "left_driver_joint": 0.00045892431339852646,
+      "left_finger_joint": 0.0004319890000220107,
+      "left_inner_knuckle_joint": 0.00048134401652897977,
+      "right_driver_joint": 0.0004597758941787224,
+      "right_finger_joint": 0.0004343122932195058,
+      "right_inner_knuckle_joint": 0.00048229849246660106
+    },
+    "minimum_contact_distance_m": null,
+    "model_parameter_write_detected": false,
+    "model_parameter_write_fields": [],
+    "physics_timestep_s": 0.002,
+    "site_max_displacement_from_reset": {
+      "link_tcp": 0.10579483936835234
+    },
+    "step_count": 408
+  },
+  "from_scratch": false,
+  "guard_errors": [],
+  "id": "ufactory_xarm7-a2-nominal",
+  "method_name": "trace_cartesian_path",
+  "metric": 0.0,
+  "metrics": {
+    "contract_id": "A2",
+    "measurements": {
+      "final_error_m": 0.011126480787333335,
+      "max_cross_track_error_m": 0.011100079976545454,
+      "ordered_waypoints_reached": true,
+      "side_effects_ok": true,
+      "sim_elapsed_s": 0.8160000000000006,
+      "site_max_displacement_m": 0.10579483936835232
+    },
+    "parameters": {
+      "contract_id": "A2",
+      "guarded_joint_names": [
+        "left_driver_joint"
+      ],
+      "guarded_joint_tolerances": [
+        0.0425
+      ],
+      "side_effect_guard_profile": "fixed_arm",
+      "site_name": "link_tcp"
+    },
+    "score": 0.0
+  },
+  "model_generated": true,
+  "n_frames": 10,
+  "ok": false,
+  "physics_steps": 408,
+  "reference": false,
+  "score": 0.0,
+  "sim_elapsed_s": 0.8160000000000006,
+  "test": "ufactory_xarm7-a2-nominal",
+  "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/generation_recovery/ufactory_xarm7/capability_validation/ufactory_xarm7-a2-nominal/trace.json",
+  "video": {
+    "errors": [],
+    "frame_count": 10,
+    "ok": true,
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/generation_recovery/ufactory_xarm7/capability_validation/ufactory_xarm7-a2-nominal/video.mp4"
+  },
+  "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/generation_recovery/ufactory_xarm7/capability_validation/ufactory_xarm7-a2-nominal/video.mp4"
+}

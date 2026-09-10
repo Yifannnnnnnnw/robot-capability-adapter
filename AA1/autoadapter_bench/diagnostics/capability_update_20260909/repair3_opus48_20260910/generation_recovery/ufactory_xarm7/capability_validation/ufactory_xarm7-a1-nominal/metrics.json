@@ -1,0 +1,23 @@
+{
+  "contract_id": "A1",
+  "measurements": {
+    "best_error_m": 0.00955980629593312,
+    "final_error_m": 0.010674625972757904,
+    "longest_target_hold_s": 0.49800000000000033,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 0.5380000000000004,
+    "site_max_displacement_m": 0.021337476433170802
+  },
+  "parameters": {
+    "contract_id": "A1",
+    "guarded_joint_names": [
+      "left_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.0425
+    ],
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "link_tcp"
+  },
+  "score": 0.0
+}

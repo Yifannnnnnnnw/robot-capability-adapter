@@ -1,0 +1,11 @@
+{
+  "robot_id": "ufactory_xarm7",
+  "provider": "holistic",
+  "requested_model": "eu.anthropic.claude-opus-4-8",
+  "kind": "generation_recovery_from_saved_study",
+  "source_study": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/generated_resume1/ufactory_xarm7/study.json",
+  "max_generation_turns": 22,
+  "framework_repairs_used": 0,
+  "actual_generation_cost_usd": null,
+  "started_at_unix": 1789036359.288329
+}
