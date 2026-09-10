@@ -1,6 +1,13 @@
-# AutoAdapter 2.0 Mainline Evidence Status
+# AutoAdapter 2.0 Historical Evidence
 
-## Current Qualification
+This index preserves earlier run and verification records under their original
+design and software assumptions. References below to Authority revisions,
+qualification, admission or a 22-cell shakedown describe that historical
+programme. They do not define a current protocol, cohort or experiment result.
+See the [component README](../README.md) for current execution boundaries and
+the [repository map](../../README.md) for the separate AA1 integration records.
+
+## Historical Qualification
 
 The real-model Direct-MuJoCo orchestration is operational. Authority `0.19.24`
 qualifies robot construction through complete canonical packages, source-backed
@@ -40,7 +47,7 @@ physical success or runnable admission under Authority `0.19.24`. Hidden
 reference drivers remain useful diagnostic oracles, but their planner success
 is not a mainline gate.
 
-## Current Simulator-Integrity Verification
+## Historical Simulator-Integrity Verification (2026-08-21)
 
 The Authority `0.19.24` construction checks were rerun on 2026-08-21 after the
 11-robot runnable index and LEAP package were integrated:

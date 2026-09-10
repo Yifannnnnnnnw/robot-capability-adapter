@@ -148,9 +148,10 @@ formal experiment. Focused single-robot package checks use an explicit canary th
 `--config configs/experiments/<canary-name>.json`; the existing SO-101 and Go2
 canaries are diagnostics, not a definition of mainline scope.
 
-The real-model command reads credentials only from environment variables. From
-the repository root, the manifest-selected provider configuration can be loaded
-without putting a secret inside the mainline:
+The command below documents the existing real-model diagnostic entrypoint; it
+is not an approved formal experiment launch. A diagnostic run requires its own
+confirmed scope and model budget. From the repository root, credentials can be
+loaded into environment variables without putting a secret inside the mainline:
 
 ```bash
 set -a
@@ -165,8 +166,9 @@ pyenv exec python -m autoadapter2 full --run-id <run-id>
 ```
 
 To skip the optional hidden reference diagnostics and start with the generated
-dynamic cells, add `--skip-reference-calibration`. The report records the skip;
-formal success still depends on the generated cells and shared Harness verdicts.
+dynamic cells, add `--skip-reference-calibration`. The report records the skip.
+This option does not qualify a diagnostic as formal evidence; formal claims
+require a separately approved protocol and its required evidence.
 
 After an API interruption,
 `--reuse-sealed-inputs-from autoadapter/runs/<prior-run>` reuses that run's
@@ -188,5 +190,5 @@ Demo reports, per-case videos, cell reports, and the final cohort
 `experiment_report.json`. These fields keep pipeline completion, capability
 admission, Task Demo, physical execution, and both video outcomes separate.
 
-See `evidence/README.md` for the historical complete run, current local
-verification, and the latest real-model launch result.
+See [`evidence/README.md`](evidence/README.md) for historical run and verification
+records. Those records do not establish current experiment approval or success.

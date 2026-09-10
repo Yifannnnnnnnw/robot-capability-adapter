@@ -1,5 +1,18 @@
 # Auto-Adapter
 
+This is our maintained copy of the imported Auto-Adapter code, tracked as a
+normal `AA1/` directory in the parent AutoAdapter 2.0 repository. Changes belong
+to the parent repository and must never be pushed to AA1's original upstream.
+See the [repository map](../README.md) for the other components. Commands and
+paths below are relative to `AA1/` unless stated otherwise.
+
+For the recent capability integration work, start with the
+[diagnostic guide](autoadapter_bench/CAPABILITY_DIAGNOSTICS.md) and
+[15-robot diagnostic report, 2026-09-10](autoadapter_bench/diagnostics/capability_update_20260909/FULL_REPORT_20260910.md).
+The paper, quick facts and reproduction instructions below describe the earlier
+AA1 research artifact; they are separate from the MSc thesis and its future
+formal experiments.
+
 **An LLM agent that synthesizes deployable robot drivers from a formal
 specification (MJCF/URDF), validated in physics simulation.**
 

@@ -70,6 +70,8 @@ Accept the work once the requested real path works, the minimum checks pass, and
 
 ## Boundaries
 
+- `AA1/` is our own maintained copy of the imported code, managed as a normal directory in this parent repository. It may be edited within the authorized task scope; it is not a read-only upstream reference.
+- Never push to AA1's original/upstream repository. This is a hard user rule and applies through every remote, direct URL, worktree, or retained AA1 Git metadata. Permission to work on or publish this parent repository never authorizes a push to AA1's original repository.
 - Preserve user changes and unrelated dirty-worktree files.
 - Do not recreate deleted Authority files or create a new experiment workspace, manifest, protocol, or runner without explicit user instruction. Any change to the project objective, main research question, or formal evidence claim requires explicit user instruction or confirmation before editing.
 - Dynamic mainline runs must not replace the real model or MuJoCo path with fixtures or reference drivers. SDK-extension evidence must not replace the real SDK, Translation, or MuJoCo path with mocks. Test doubles are allowed only in explicitly named tests or fixtures.

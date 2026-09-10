@@ -37,6 +37,9 @@ test_hardware.py
 **/recordings/
 **/task_traces/
 **/traces/
+# Per-case raw physics traces from integration diagnostics stay local.
+# Keep compact results, metrics, generated drivers and model-call records visible.
+/autoadapter_bench/diagnostics/**/trace.json
 *.mp4
 # Keep ONLY curated showcase/verified demos in git (a few dozen); the ~1090
 # per-task eval videos (model_axis/, self_axis/) go to the HuggingFace dataset.
