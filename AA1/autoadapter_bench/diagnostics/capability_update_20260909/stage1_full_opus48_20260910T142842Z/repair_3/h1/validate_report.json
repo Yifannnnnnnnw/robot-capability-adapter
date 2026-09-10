@@ -1,0 +1,74 @@
+{
+  "all_ok": false,
+  "n_passed": 7,
+  "n_total": 8,
+  "source_metrics": {
+    "has_mujoco": true,
+    "has_numpy": true,
+    "ik_method_hint": "unknown",
+    "n_chars": 15102,
+    "n_lines": 388
+  },
+  "structural_ok": false,
+  "tests": [
+    {
+      "detail": "OK — zero skeleton imports",
+      "metric": 1.0,
+      "ok": true,
+      "test": "no_skeleton_import"
+    },
+    {
+      "detail": "OK",
+      "metric": 1.0,
+      "ok": true,
+      "test": "robot_class_present"
+    },
+    {
+      "detail": "OK",
+      "metric": 1.0,
+      "ok": true,
+      "test": "build_from_mjcf"
+    },
+    {
+      "detail": "OK",
+      "metric": 1.0,
+      "ok": true,
+      "test": "home"
+    },
+    {
+      "detail": "elapsed=2.000s (need >=2.000), steps=1000, min_h=0.950m (need >0.6), min_up=0.998 (need >0.7), finite=True",
+      "metric": 1.9999999999998905,
+      "n_frames": 59,
+      "ok": true,
+      "physics_steps": 1000,
+      "sim_elapsed_s": 1.9999999999998905,
+      "test": "stand_balance",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/stand_balance_2s_physics_trace.json",
+      "video": {
+        "errors": [],
+        "frame_count": 59,
+        "ok": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/recordings/stand_balance_2s.mp4"
+      },
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/recordings/stand_balance_2s.mp4"
+    },
+    {
+      "detail": "stand h=0.96, dip=0.110m (need >=0.05), post-squat h=0.95, up=1.00",
+      "metric": 0.1096095877648473,
+      "ok": true,
+      "test": "squat"
+    },
+    {
+      "detail": "fwd=+1.316m (need >0.05), lat=-0.127 (|.|<0.08), dyaw=179deg (<20), min_h=0.95, min_up=0.98",
+      "metric": 1.3158334057420633,
+      "ok": false,
+      "test": "humanoid_walk"
+    },
+    {
+      "detail": "dict keys=['class', 'model', 'dof', 'n_actuators', 'actuator_type', 'control', 'torso_height', 'base_xyz']",
+      "metric": 1.0,
+      "ok": true,
+      "test": "describe"
+    }
+  ]
+}

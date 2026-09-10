@@ -1,0 +1,117 @@
+{
+  "robot_id": "h1",
+  "scope": "Fresh Holistic from-scratch Stage 1 diagnostic; no export/demo/task/ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "generation_ok": false,
+      "generation_error": "max_iters=40 exhausted",
+      "candidate": null,
+      "framework_ok": false,
+      "checks_executed": 0,
+      "checks_passed": 0,
+      "error": "driver_from_scratch.py missing",
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/h1/validate_report.json"
+    },
+    {
+      "round": "repair_1",
+      "generation_ok": false,
+      "generation_error": "max_iters=20 exhausted",
+      "candidate": null,
+      "framework_ok": false,
+      "checks_executed": 0,
+      "checks_passed": 0,
+      "error": "driver_from_scratch.py missing",
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/h1/validate_report.json"
+    },
+    {
+      "round": "repair_2",
+      "generation_ok": false,
+      "generation_error": "max_iters=20 exhausted",
+      "candidate": null,
+      "framework_ok": false,
+      "checks_executed": 0,
+      "checks_passed": 0,
+      "error": "driver_from_scratch.py missing",
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/h1/validate_report.json"
+    },
+    {
+      "round": "repair_3",
+      "generation_ok": true,
+      "generation_error": "max_iters=20 exhausted",
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/driver_from_scratch.py",
+      "framework_ok": false,
+      "checks_executed": 8,
+      "checks_passed": 7,
+      "error": null,
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/validate_report.json"
+    }
+  ],
+  "generation_ok": true,
+  "framework_ok": false,
+  "stage1_ok": false,
+  "repair_calls_attempted": 3,
+  "effective_repairs_as_recorded": 1,
+  "external_blocked": false,
+  "error": "Framework validation failed",
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 3026553,
+    "out": 113998
+  },
+  "wall_seconds": 3994.2013001441956,
+  "recorded_framework_physics_seconds": 1.9999999999998905,
+  "actual_cost_usd": null,
+  "stand_balance": {
+    "detail": "elapsed=2.000s (need >=2.000), steps=1000, min_h=0.950m (need >0.6), min_up=0.998 (need >0.7), finite=True",
+    "metric": 1.9999999999998905,
+    "n_frames": 59,
+    "ok": true,
+    "physics_steps": 1000,
+    "sim_elapsed_s": 1.9999999999998905,
+    "test": "stand_balance",
+    "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/stand_balance_2s_physics_trace.json",
+    "video": {
+      "errors": [],
+      "frame_count": 59,
+      "ok": true,
+      "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/recordings/stand_balance_2s.mp4"
+    },
+    "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/recordings/stand_balance_2s.mp4"
+  },
+  "failed_checks": [
+    {
+      "detail": "fwd=+1.316m (need >0.05), lat=-0.127 (|.|<0.08), dyaw=179deg (<20), min_h=0.95, min_up=0.98",
+      "metric": 1.3158334057420633,
+      "ok": false,
+      "test": "humanoid_walk"
+    }
+  ],
+  "imports": [
+    "import os",
+    "import numpy as np",
+    "import mujoco"
+  ],
+  "checks": [
+    "All four actual rounds have distinct generation traces, run contexts and official Framework subprocess reports; all subprocesses completed normally.",
+    "Initial and repair_1/2 contain no official candidate and execute no physics checks; repair_3 contains all eight existing humanoid checks.",
+    "Stand trace has 1001 samples / 1000 canonical MuJoCo steps and records two actual simulation seconds; trace/video exist and are nonempty.",
+    "Final source reviewed: PD writes actuator controls and calls mj_step on its canonical model/data. State reset is confined to build/home, with no direct state edits in stand_balance/squat/walk_forward and no dynamics edits.",
+    "Only os, NumPy and MuJoCo imports; no skeleton, policy, reference or generated helper dependency.",
+    "Final stand video independently decoded in full with ffmpeg; returncode 0, no decode errors."
+  ],
+  "limitations": [
+    "All three repair calls ran to their iteration limit. The pipeline effective_repairs field is 1 because only repair_3 produced an official candidate; this is not a request for two extra repair calls.",
+    "Initial and all repairs report max_iters exhausted. Final generation_ok means the required artifact exists; the loop error remains recorded.",
+    "A 2628-second LLM-call wall-clock interval recovered without invoke_error. Available evidence cannot distinguish provider wait from an environment pause; it is not claimed as pure inference time.",
+    "Recorded Framework physics total covers the instrumented two-second stand. It does not sum model local_exec probes, home settling, squat or walking.",
+    "Generation and repair consistently request driver_from_scratch.py. Earlier rounds spent their budget on local control probes; missing artifacts are generation failures, not stand failures.",
+    "This run ends with full Framework failure; passing stand_balance alone does not admit the driver."
+  ],
+  "video_decode": {
+    "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/h1/recordings/stand_balance_2s.mp4",
+    "returncode": 0,
+    "stderr": ""
+  }
+}
