@@ -5,7 +5,18 @@ integration check, not a formal experiment protocol, manifest, or governance
 record. The parent repository tracks AA1; the original AA1 upstream is never a
 push destination.
 
-Stage 1 runs fresh generation for the remaining canonical robots in this
+The 2026-09-10 diagnostic is finished: six robots passed within their recorded
+validation scopes, nine failed, and no robot remains pending or interrupted.
+The final [15-robot report](diagnostics/capability_update_20260909/stage1_full_opus48_20260910T180406Z/REPORT.md)
+and [aggregate JSON](diagnostics/capability_update_20260909/stage1_full_opus48_20260910T180406Z/batch_summary.json)
+link each final candidate, verdict, trace/video index, and evidence commit.
+SO-101's interrupted third repair was retried from its last validated candidate
+using the existing pipeline repair and full-Framework functions; it finished
+at 8/10, with both A4 conditions failing. Original interruption records remain
+unchanged. The fresh-only public entrypoint has no resume mode. The differing
+historical validation scopes do not define a uniform formal pass-rate denominator.
+
+The completed batch ran fresh generation for the remaining canonical robots in this
 order: `franka`, `so101`, `kuka_iiwa14`, `ufactory_xarm7`,
 `kinova_gen3_robotiq_2f85`, `universal_robots_ur5e_robotiq_2f85`, `go2`,
 `unitree_a1`, `anymal_c`, and `h1`. The robot catalog marks the thirteen
@@ -78,8 +89,9 @@ stand evidence is written under its pipeline workspace as
 `stand_balance_2s_physics_trace.json` and
 `recordings/stand_balance_2s.mp4`.
 
-Run from `AA1` with the project virtual environment. For a shared batch root,
-review and commit each remaining robot as a separate invocation:
+The following commands document fresh invocations from `AA1` with the project
+virtual environment. They do not request rerunning the completed batch. Each
+selected robot is reviewed and committed separately:
 
 ```sh
 BATCH="autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_$(date -u +%Y%m%dT%H%M%SZ)"
