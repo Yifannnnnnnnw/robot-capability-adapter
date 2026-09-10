@@ -153,14 +153,9 @@ class SelfAssembleConfig:
     max_iters_export: int = 8
     max_iters_demo: int = 18
 
-    # Outer GEN←VAL retry loop. If VALIDATE structural tests fail, the
-    # orchestrator can re-enter GENERATE with the previous failure-detail
-    # injected into the prompt context. This implements the "until perfect"
-    # semantics over the physical-environment feedback signal at the
-    # outer-loop level. In practice GENERATE's inner exec_python loop
-    # usually catches its own mistakes, so this outer loop fires rarely.
-    # Set to 1 to disable (single GEN+VAL pass).
-    max_outer_gen_val_iters: int = 3
+    # Total submissions: initial generation plus at most three Framework
+    # repairs. Set to 1 for an initial submission with no repair.
+    max_outer_gen_val_iters: int = 4
 
     # 8000 fits Sonnet's longest reasonable single-turn output (a ~500-line
     # code block + commentary). Bumping above this saves few real cases but

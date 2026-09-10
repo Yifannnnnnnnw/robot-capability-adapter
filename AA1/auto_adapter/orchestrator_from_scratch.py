@@ -197,7 +197,7 @@ class FromScratchConfig:
     max_iters_study: int = 14
     max_iters_gen_algo: int = 40         # algorithm synthesis needs many iters
     max_iters_gen_repair: int = 20       # repair passes are shorter than first gen
-    max_outer_retries: int = 2           # outer VAL→GEN repair attempts after first validate
+    max_outer_retries: int = 3           # repairs after the initial generation/validation
     max_tokens_per_turn: int = 8000
 
 

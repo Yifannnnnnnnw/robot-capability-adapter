@@ -9,6 +9,7 @@ from auto_adapter.orchestrator import (
     validate_failure_feedback,
 )
 from auto_adapter.orchestrator_from_scratch import (
+    FromScratchConfig,
     FromScratchOrchestrator,
 )
 
@@ -122,10 +123,7 @@ def test_from_scratch_all_ok_failure_gets_three_repairs_after_initial_gen(
     tmp_path, monkeypatch
 ):
     runner = object.__new__(FromScratchOrchestrator)
-    runner.cfg = SimpleNamespace(
-        robot_id="h1",
-        max_outer_retries=3,
-    )
+    runner.cfg = FromScratchConfig("h1", tmp_path / "scene.xml", tmp_path)
     runner.workspace = tmp_path / "workspace"
     runner.workspace.mkdir()
     (runner.workspace / "study.json").write_text("{}\n")
@@ -158,3 +156,21 @@ def test_from_scratch_all_ok_failure_gets_three_repairs_after_initial_gen(
     assert [attempt for _, attempt in repairs] == [1, 2, 3]
     assert all(isinstance(feedback, str) for feedback, _ in repairs)
     assert all("structural_ok" not in feedback for feedback, _ in repairs)
+
+
+def test_standard_default_budget_is_initial_generation_plus_three_repairs(tmp_path, monkeypatch):
+    scene = tmp_path / "fixture.xml"
+    scene.write_text("<mujoco/>")
+    runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "output"))
+    calls = []
+    monkeypatch.setattr(runner, "_phase_study", lambda: PhaseResult("study", True, 0.0))
+    monkeypatch.setattr(runner, "_phase_generate", lambda: PhaseResult("generate", True, 0.0))
+
+    def repair(feedback, attempt):
+        calls.append(attempt)
+        return PhaseResult(f"repair_{attempt}", True, 0.0)
+
+    monkeypatch.setattr(runner, "_phase_repair", repair)
+    monkeypatch.setattr(runner, "_phase_validate", lambda: PhaseResult("validate", False, 0.0))
+    runner.run(stop_after="validate")
+    assert calls == [1, 2, 3]
