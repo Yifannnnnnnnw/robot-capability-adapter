@@ -104,57 +104,50 @@ The first question concerns generation of the robot-facing software layer. The
 second concerns downstream use of that already fixed layer. Neither experiment
 compares alternative synthesis frameworks or controller architectures.
 
-\section[Auto-Adapter Benchmark]{Auto-Adapter Benchmark}
+\section[AutoAdapter-Bench]{AutoAdapter-Bench}
 
-\subsection{LLM and Robot Cohorts}
+AutoAdapter-Bench compares LLMs in driver synthesis and task execution through
+supplied drivers. Its coverage spans fifteen platforms across seven embodiment
+types (Figure~\ref{fig:robot-platform-taxonomy};
+Table~\ref{tab:robot-platform-embodiment-types}), with SO-101 and Unitree Go2
+used for the comparisons in this chapter.
 
-The seven evaluated model configurations form a purposive comparison cohort
-rather than a representative sample of available LLMs. Three Anthropic
-configurations provide a within-provider comparison across model tiers. Nova
-Pro, DeepSeek V4 Pro, Ministral 3 8B, and GPT-5.6 Sol extend the comparison
-across four other providers. Appendix
-Table~\ref{tab:appendix-model-pricing} records the exact runtime identities,
-configured limits, and public reference prices. These rates contextualise
-resource use but do not establish actual billed cost.
+Test selection follows the task-grounded capability design in
+Section~\ref{sec:task-grounded-capability-design}. Reaching and placing, for
+example, motivate Cartesian positioning, assessed through target error and
+sustained holding. Each capability receives nominal and calibrated-boundary
+cases. A separately prepared reference implementation must pass the suite to
+establish feasibility; an independent evaluator then judges candidate behaviour
+from recorded MuJoCo state.
 
-The declared robot cohort comprises eleven configurations across five robot
-types, as summarised in Table~\ref{tab:chapter3-robot-cohort}. Seven are fixed
-serial arms; the remaining configurations provide one quadruped, one
-dexterous hand, one mobile manipulator, and one bimanual manipulator. The table
-describes benchmark coverage and does not imply that every configuration
-enters every experiment.
+For each robot, models implement the same capability interface using the
+supplied documentation and simulation assets. Skeleton-assisted generation
+provides DLS inverse kinematics and joint-motion control for SO-101, and a
+pretrained velocity-control policy for Go2. The model supplies robot-specific
+bindings and implements the required capability methods. From-scratch
+generation provides textual algorithmic guidance but requires the model to
+write its own control code. Both conditions permit bounded development and
+revision and use the same behavioural tests. The skeleton comparison assesses
+the effect of supplied control implementations within each robot, since the
+arm controller and the pretrained Go2 policy provide different forms of
+assistance.
 
-\begin{table}[htbp]
-  \centering
-  \begingroup
-  \small
-  \setstretch{1.0}
-  \renewcommand{\arraystretch}{1.08}
-  \caption{Declared AutoAdapter-Bench robot cohort.}
-  \label{tab:chapter3-robot-cohort}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{92mm}X@{}}
-    \toprule
-    \textbf{Robot configuration} & \textbf{Robot type} \\
-    \midrule
-    The Robot Studio SO-101 & Fixed serial arm \\
-    Unitree Go2, stock twelve-degree-of-freedom configuration & Quadruped \\
-    Franka Panda & Fixed serial arm \\
-    Kinova Gen3 with Robotiq 2F-85 & Fixed serial arm \\
-    UFACTORY xArm7 & Fixed serial arm \\
-    Universal Robots UR5e with Robotiq 2F-85 & Fixed serial arm \\
-    AgileX PiPER & Fixed serial arm \\
-    KUKA LBR iiwa 14 & Fixed serial arm \\
-    LEAP Hand, right-hand configuration & Dexterous hand \\
-    Hello Robot Stretch 2 & Mobile manipulator \\
-    ALOHA 2 & Bimanual manipulator \\
-    \bottomrule
-  \end{tabularx}
-  \endgroup
-\end{table}
+The driver-use experiment varies the LLM within the ReCAP procedure described
+in Section~\ref{sec:recap}. Each robot's capability-validated driver and task
+conditions remain fixed, removing differences between generated
+implementations from the comparison. The model selects capability calls and
+revises its plan to achieve the task goal.
 
-
+Synthesis success is the proportion of trials whose final submitted driver
+passes the complete suite. Driver-use success is the proportion of episodes
+satisfying the task completion criterion. Partial case coverage provides
+diagnostic detail about synthesis failures. Runtime, token usage and estimated
+cost describe resource requirements.
+Section~\ref{sec:benchmark-experiment-design} specifies the model
+configurations, budgets and repetitions.
 
 \section[Experiment design]{Experiment design}
+\label{sec:benchmark-experiment-design}
 
 Experiment~2a compares driver synthesis for SO-101 and Unitree Go2. The
 deployed model factor has seven configurations: Sonnet 4.6, Opus 5, Haiku 4.5,
