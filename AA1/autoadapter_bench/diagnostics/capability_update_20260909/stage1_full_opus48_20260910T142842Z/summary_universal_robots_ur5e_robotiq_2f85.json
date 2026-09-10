@@ -1,0 +1,239 @@
+{
+  "actual_generation_cost_usd": null,
+  "attempts": 4,
+  "effective_repairs": 3,
+  "error": "Framework validation failed",
+  "external_blocked": false,
+  "final_candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/driver.py",
+  "final_candidate_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/driver.py",
+  "final_framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+  "final_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+  "final_report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+  "framework_duration_sec": 92.47972202301025,
+  "framework_ok": false,
+  "generation_duration_sec": 941.7071678638458,
+  "generation_ok": true,
+  "git_commit": "3fb31734d94abefa564542021cd8829cd7438110",
+  "max_repairs": 3,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "physics_duration_sec": 54.59599999999794,
+  "physics_time_sec": 54.59599999999794,
+  "provider": "holistic",
+  "robot_id": "universal_robots_ur5e_robotiq_2f85",
+  "rounds": [
+    {
+      "attempt": 0,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/driver.py",
+      "copied_files": [],
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"universal_robots_ur5e_robotiq_2f85\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"universal_robots_ur5e_robotiq_2f85\", \"mjcf\": \"assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml\", \"generation_route\": \"skeleton\", \"capability_mjcf\": \"assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"state_refs\": {\"ee_site\": \"pinch_site\"}, \"class\": \"arm\", \"dof\": 6, \"vendor\": \"Universal Robots\", \"gripper\": \"Robotiq_2F-85\", \"ee_ref\": \"site\", \"notes\": \"Fixed-base 6-DoF UR5e with a tendon/equality-coupled Robotiq 2F-85\\nattachment. The public end-effector site is `pinch_site`; native\\narm and gripper actuators remain directly addressable.\\n\", \"source\": \"local AutoAdapter composite (UR5e + MuJoCo Menagerie Robotiq 2F-85)\"}}"
+        ],
+        "duration_sec": 24.511449813842773,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 11}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/driver.py"
+        ],
+        "duration_sec": 204.0725781917572,
+        "error": null,
+        "metadata": {},
+        "name": "02_generate",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 934496,
+          "out": 15081
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/traces/02_generate.jsonl"
+      },
+      "round": "initial",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/run_context.json",
+      "study": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/study.json"
+        ],
+        "duration_sec": 37.862854957580566,
+        "error": null,
+        "metadata": {},
+        "name": "01_study",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 81527,
+          "out": 2948
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/traces/01_study.jsonl"
+      },
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85"
+    },
+    {
+      "attempt": 1,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/driver.py",
+      "copied_files": [
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/driver.py",
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/study.json"
+      ],
+      "feedback_input": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/feedback_input.json",
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"universal_robots_ur5e_robotiq_2f85\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"universal_robots_ur5e_robotiq_2f85\", \"mjcf\": \"assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml\", \"generation_route\": \"skeleton\", \"capability_mjcf\": \"assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"state_refs\": {\"ee_site\": \"pinch_site\"}, \"class\": \"arm\", \"dof\": 6, \"vendor\": \"Universal Robots\", \"gripper\": \"Robotiq_2F-85\", \"ee_ref\": \"site\", \"notes\": \"Fixed-base 6-DoF UR5e with a tendon/equality-coupled Robotiq 2F-85\\nattachment. The public end-effector site is `pinch_site`; native\\narm and gripper actuators remain directly addressable.\\n\", \"source\": \"local AutoAdapter composite (UR5e + MuJoCo Menagerie Robotiq 2F-85)\"}}"
+        ],
+        "duration_sec": 0.46173524856567383,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 1}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/driver.py"
+        ],
+        "duration_sec": 300.1016309261322,
+        "error": null,
+        "metadata": {},
+        "name": "03_repair_1",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 962728,
+          "out": 24030
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/traces/03_repair_1.jsonl"
+      },
+      "round": "repair_1",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/run_context.json",
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85"
+    },
+    {
+      "attempt": 2,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/driver.py",
+      "copied_files": [
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/driver.py",
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/study.json"
+      ],
+      "feedback_input": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/feedback_input.json",
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"universal_robots_ur5e_robotiq_2f85\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"universal_robots_ur5e_robotiq_2f85\", \"mjcf\": \"assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml\", \"generation_route\": \"skeleton\", \"capability_mjcf\": \"assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"state_refs\": {\"ee_site\": \"pinch_site\"}, \"class\": \"arm\", \"dof\": 6, \"vendor\": \"Universal Robots\", \"gripper\": \"Robotiq_2F-85\", \"ee_ref\": \"site\", \"notes\": \"Fixed-base 6-DoF UR5e with a tendon/equality-coupled Robotiq 2F-85\\nattachment. The public end-effector site is `pinch_site`; native\\narm and gripper actuators remain directly addressable.\\n\", \"source\": \"local AutoAdapter composite (UR5e + MuJoCo Menagerie Robotiq 2F-85)\"}}"
+        ],
+        "duration_sec": 38.10316491127014,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 11}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/driver.py"
+        ],
+        "duration_sec": 106.08441495895386,
+        "error": null,
+        "metadata": {},
+        "name": "03_repair_2",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 268910,
+          "out": 8215
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/traces/03_repair_2.jsonl"
+      },
+      "round": "repair_2",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/run_context.json",
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85"
+    },
+    {
+      "attempt": 3,
+      "candidate": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/driver.py",
+      "copied_files": [
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/driver.py",
+        "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/study.json"
+      ],
+      "feedback_input": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/feedback_input.json",
+      "framework_ok": false,
+      "framework_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "framework_subprocess": {
+        "child_ok": true,
+        "command": [
+          "/Users/wangyifan/Projects/auto_adapter2.0/AA1/.venv/bin/python",
+          "-c",
+          "import json, sys; from auto_adapter.orchestrator import _stage1_framework_child; raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))",
+          "{\"robot_id\": \"universal_robots_ur5e_robotiq_2f85\", \"workspace\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85\", \"mjcf_path\": \"/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"route\": \"skeleton\", \"model\": \"eu.anthropic.claude-opus-4-8\", \"robot_definition\": {\"id\": \"universal_robots_ur5e_robotiq_2f85\", \"mjcf\": \"assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml\", \"generation_route\": \"skeleton\", \"capability_mjcf\": \"assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml\", \"capability_profile\": \"autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85\", \"capability_skeleton\": \"ArmSerialDLSSkeleton\", \"state_refs\": {\"ee_site\": \"pinch_site\"}, \"class\": \"arm\", \"dof\": 6, \"vendor\": \"Universal Robots\", \"gripper\": \"Robotiq_2F-85\", \"ee_ref\": \"site\", \"notes\": \"Fixed-base 6-DoF UR5e with a tendon/equality-coupled Robotiq 2F-85\\nattachment. The public end-effector site is `pinch_site`; native\\narm and gripper actuators remain directly addressable.\\n\", \"source\": \"local AutoAdapter composite (UR5e + MuJoCo Menagerie Robotiq 2F-85)\"}}"
+        ],
+        "duration_sec": 29.403372049331665,
+        "model": "eu.anthropic.claude-opus-4-8",
+        "report_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+        "returncode": 0,
+        "route": "skeleton",
+        "stderr_tail": "",
+        "stdout_tail": "{\"all_ok\": false, \"n_tests\": 11}\n",
+        "timeout_sec": 900
+      },
+      "generation": {
+        "artifacts": [
+          "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/driver.py"
+        ],
+        "duration_sec": 293.585688829422,
+        "error": null,
+        "metadata": {},
+        "name": "03_repair_3",
+        "ok": true,
+        "token_usage": {
+          "cache_read": 0,
+          "in": 855230,
+          "out": 23099
+        },
+        "trace_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/traces/03_repair_3.jsonl"
+      },
+      "round": "repair_3",
+      "run_context": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/run_context.json",
+      "validate_report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85"
+    }
+  ],
+  "route": "skeleton",
+  "stage1_ok": false,
+  "summary_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/summary_universal_robots_ur5e_robotiq_2f85.json",
+  "total_duration_sec": 1034.689786195755,
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 3102891,
+    "out": 73373
+  },
+  "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85"
+}

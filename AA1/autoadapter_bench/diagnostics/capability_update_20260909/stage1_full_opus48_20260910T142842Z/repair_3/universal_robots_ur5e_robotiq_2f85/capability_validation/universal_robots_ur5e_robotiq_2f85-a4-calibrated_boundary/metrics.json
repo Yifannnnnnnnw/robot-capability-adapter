@@ -1,0 +1,130 @@
+{
+  "contract_id": "A4",
+  "measurements": {
+    "a4_contact_normal_closing_speed_m_s": 0.015323136797445368,
+    "a4_surface_relative_speed_m_s": 0.05092610576045258,
+    "available": true,
+    "best_precontact_error_m": 0.00892199108524817,
+    "contact_normal_closing_speed_m_s": 0.015323136797445368,
+    "contact_window": [
+      1204,
+      1254
+    ],
+    "error": null,
+    "first_failed_gate": "surface_relative_speed",
+    "first_target_contact_index": 1204,
+    "first_target_contact_s": 2.407999999999901,
+    "longest_precontact_hold_s": 0.49400000000000044,
+    "longest_target_contact_s": 2.5939999999997148,
+    "maximum_speed_after_contact_m_s": 0.016207063838999475,
+    "maximum_surface_relative_speed_m_s": 0.05092610576045258,
+    "measured": {
+      "a4_contact_normal_closing_speed_m_s": 0.015323136797445368,
+      "a4_surface_relative_speed_m_s": 0.05092610576045258,
+      "maximum_speed_after_contact_m_s": 0.016207063838999475,
+      "precontact_error_m": 0.010305198980603229,
+      "ray_axial_max_m": 0.022372581292718782,
+      "ray_axial_min_m": -2.4572303176567667e-05,
+      "ray_backtrack_m": 2.5496906442212808e-05,
+      "ray_lateral_error_m": 0.009567010620508755,
+      "ray_path_length_m": 0.03437082697217928
+    },
+    "minimum_contact_distance_m": -0.001780298849014853,
+    "passed": false,
+    "pre_gate_time_s": 0.10000000000000009,
+    "precontact_error_m": 0.010305198980603229,
+    "precontact_index": 50,
+    "precontact_window_end_s": 0.10000000000000009,
+    "precontact_window_start_s": 0.0,
+    "ray_axial_max_m": 0.022372581292718782,
+    "ray_axial_min_m": -2.4572303176567667e-05,
+    "ray_backtrack_m": 2.5496906442212808e-05,
+    "ray_lateral_error_m": 0.009567010620508755,
+    "ray_path_length_m": 0.03437082697217928,
+    "required": {
+      "approach_surface_relative_speed_max_m_s": 0.04,
+      "contact_hold_s": 0.1,
+      "contact_normal_closing_speed_max_m_s": 0.04,
+      "max_duration_s": 5.0,
+      "post_contact_speed_max_m_s": 0.02,
+      "precontact_hold_s": 0.1,
+      "precontact_tolerance_m": 0.015,
+      "ray_axial_max_m": 0.07200000000000001,
+      "ray_axial_min_m": -0.002,
+      "ray_backtrack_tolerance_m": 0.002,
+      "ray_lateral_tolerance_m": 0.01,
+      "ray_path_length_max_m": 0.07700000000000001
+    },
+    "scored_contact_window_duration_s": 0.09999999999998899,
+    "scored_contact_window_end_s": 2.50799999999989,
+    "scored_contact_window_max_speed_m_s": 0.016207063838999475,
+    "scored_contact_window_s": [
+      2.407999999999901,
+      2.50799999999989
+    ],
+    "scored_contact_window_start_s": 2.407999999999901,
+    "side_effects_ok": false,
+    "sim_elapsed_s": 5.001999999999616,
+    "site_max_displacement_m": 0.044353816967191886,
+    "unavailable_measurements": [],
+    "unrelated_contact_count": 0
+  },
+  "parameters": {
+    "contract_id": "A4",
+    "guarded_joint_names": [
+      "right_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.04000000000000001
+    ],
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "pinch_site",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_body_names": [
+      "left_coupler",
+      "left_driver",
+      "left_follower",
+      "left_pad",
+      "left_spring_link",
+      "right_coupler",
+      "right_driver",
+      "right_follower",
+      "right_pad",
+      "right_spring_link",
+      "robotiq_base"
+    ],
+    "tool_geom_names": [
+      "geom_32",
+      "geom_33",
+      "geom_34",
+      "geom_35",
+      "geom_36",
+      "geom_37",
+      "geom_38",
+      "geom_39",
+      "geom_40",
+      "geom_41",
+      "geom_44",
+      "geom_45",
+      "geom_46",
+      "geom_47",
+      "geom_48",
+      "geom_49",
+      "geom_50",
+      "geom_51",
+      "geom_52",
+      "geom_53",
+      "geom_56",
+      "geom_57",
+      "left_pad1",
+      "left_pad2",
+      "right_pad1",
+      "right_pad2"
+    ]
+  },
+  "score": 0.0
+}

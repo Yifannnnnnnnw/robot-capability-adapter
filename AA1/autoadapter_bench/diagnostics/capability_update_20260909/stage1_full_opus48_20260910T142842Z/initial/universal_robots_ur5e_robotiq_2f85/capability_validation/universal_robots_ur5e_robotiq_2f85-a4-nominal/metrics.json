@@ -1,0 +1,130 @@
+{
+  "contract_id": "A4",
+  "measurements": {
+    "a4_contact_normal_closing_speed_m_s": 0.011250008479060047,
+    "a4_surface_relative_speed_m_s": 0.05395904047097367,
+    "available": true,
+    "best_precontact_error_m": 0.010163644575706949,
+    "contact_normal_closing_speed_m_s": 0.011250008479060047,
+    "contact_window": [
+      1047,
+      1097
+    ],
+    "error": null,
+    "first_failed_gate": "ray_lateral",
+    "first_target_contact_index": 1047,
+    "first_target_contact_s": 2.0939999999999355,
+    "longest_precontact_hold_s": 0.20600000000000018,
+    "longest_target_contact_s": 1.9079999999997903,
+    "maximum_speed_after_contact_m_s": 0.01094400957660009,
+    "maximum_surface_relative_speed_m_s": 0.05395904047097367,
+    "measured": {
+      "a4_contact_normal_closing_speed_m_s": 0.011250008479060047,
+      "a4_surface_relative_speed_m_s": 0.05395904047097367,
+      "maximum_speed_after_contact_m_s": 0.01094400957660009,
+      "precontact_error_m": 0.010495801978834565,
+      "ray_axial_max_m": 0.021462451689513842,
+      "ray_axial_min_m": -2.0139988955614196e-05,
+      "ray_backtrack_m": 2.0139988955614196e-05,
+      "ray_lateral_error_m": 0.010887036806644506,
+      "ray_path_length_m": 0.029249421461403875
+    },
+    "minimum_contact_distance_m": -0.0007061002958637407,
+    "passed": false,
+    "pre_gate_time_s": 0.10000000000000009,
+    "precontact_error_m": 0.010495801978834565,
+    "precontact_index": 50,
+    "precontact_window_end_s": 0.10000000000000009,
+    "precontact_window_start_s": 0.0,
+    "ray_axial_max_m": 0.021462451689513842,
+    "ray_axial_min_m": -2.0139988955614196e-05,
+    "ray_backtrack_m": 2.0139988955614196e-05,
+    "ray_lateral_error_m": 0.010887036806644506,
+    "ray_path_length_m": 0.029249421461403875,
+    "required": {
+      "approach_surface_relative_speed_max_m_s": 0.03,
+      "contact_hold_s": 0.1,
+      "contact_normal_closing_speed_max_m_s": 0.03,
+      "max_duration_s": 4.0,
+      "post_contact_speed_max_m_s": 0.02,
+      "precontact_hold_s": 0.1,
+      "precontact_tolerance_m": 0.015,
+      "ray_axial_max_m": 0.062,
+      "ray_axial_min_m": -0.002,
+      "ray_backtrack_tolerance_m": 0.002,
+      "ray_lateral_tolerance_m": 0.01,
+      "ray_path_length_max_m": 0.066
+    },
+    "scored_contact_window_duration_s": 0.09999999999998899,
+    "scored_contact_window_end_s": 2.1939999999999245,
+    "scored_contact_window_max_speed_m_s": 0.01094400957660009,
+    "scored_contact_window_s": [
+      2.0939999999999355,
+      2.1939999999999245
+    ],
+    "scored_contact_window_start_s": 2.0939999999999355,
+    "side_effects_ok": false,
+    "sim_elapsed_s": 4.001999999999726,
+    "site_max_displacement_m": 0.024342328261310147,
+    "unavailable_measurements": [],
+    "unrelated_contact_count": 0
+  },
+  "parameters": {
+    "contract_id": "A4",
+    "guarded_joint_names": [
+      "right_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.04000000000000001
+    ],
+    "max_penetration_m": 0.005,
+    "precontact_gate": "held_window_then_ray",
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "pinch_site",
+    "target_geom_names": [
+      "fixed_contact_geom"
+    ],
+    "tool_body_names": [
+      "left_coupler",
+      "left_driver",
+      "left_follower",
+      "left_pad",
+      "left_spring_link",
+      "right_coupler",
+      "right_driver",
+      "right_follower",
+      "right_pad",
+      "right_spring_link",
+      "robotiq_base"
+    ],
+    "tool_geom_names": [
+      "geom_32",
+      "geom_33",
+      "geom_34",
+      "geom_35",
+      "geom_36",
+      "geom_37",
+      "geom_38",
+      "geom_39",
+      "geom_40",
+      "geom_41",
+      "geom_44",
+      "geom_45",
+      "geom_46",
+      "geom_47",
+      "geom_48",
+      "geom_49",
+      "geom_50",
+      "geom_51",
+      "geom_52",
+      "geom_53",
+      "geom_56",
+      "geom_57",
+      "left_pad1",
+      "left_pad2",
+      "right_pad1",
+      "right_pad2"
+    ]
+  },
+  "score": 0.0
+}

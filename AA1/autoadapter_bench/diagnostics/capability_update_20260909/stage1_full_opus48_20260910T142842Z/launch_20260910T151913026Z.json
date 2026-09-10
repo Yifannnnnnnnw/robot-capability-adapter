@@ -1,0 +1,28 @@
+{
+  "all_stage1_ok": false,
+  "batch": "stage1_full_opus48_20260910T142842Z",
+  "duration_sec": 1035.069,
+  "exit_code": 1,
+  "finished_at_utc": "2026-09-10T15:36:28.095Z",
+  "launch_path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/launch_20260910T151913026Z.json",
+  "max_repairs": 3,
+  "model": "eu.anthropic.claude-opus-4-8",
+  "output_root": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z",
+  "results": [
+    {
+      "duration_sec": 1035.067,
+      "error": "Framework validation failed",
+      "finished_at_utc": "2026-09-10T15:36:28.094Z",
+      "monotonic_duration_sec": 1035.096,
+      "robot_id": "universal_robots_ur5e_robotiq_2f85",
+      "started_at_utc": "2026-09-10T15:19:13.028Z",
+      "status": "failed",
+      "summary_path": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/summary_universal_robots_ur5e_robotiq_2f85.json",
+      "workspace": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85"
+    }
+  ],
+  "selected_robots": [
+    "universal_robots_ur5e_robotiq_2f85"
+  ],
+  "started_at_utc": "2026-09-10T15:19:13.026Z"
+}

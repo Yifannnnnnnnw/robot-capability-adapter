@@ -1,0 +1,161 @@
+{
+  "robot_id": "universal_robots_ur5e_robotiq_2f85",
+  "scope": "fresh Holistic Stage 1 diagnostic; no export/demo/task/ReCAP",
+  "model": "eu.anthropic.claude-opus-4-8",
+  "rounds": [
+    {
+      "round": "initial",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 1,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a1-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a1-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a2-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a2-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a3-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+          "error": "capability execution failed: timeout: approach did not complete in duration"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+          "error": "capability execution failed: timeout: approach did not complete in duration"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a5-nominal",
+          "error": "trusted metric contract did not pass (score=0)"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a5-calibrated_boundary",
+          "error": "trusted metric contract did not pass (score=0)"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/initial/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "physics_seconds": 16.227999999999348
+    },
+    {
+      "round": "repair_1",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 0,
+      "capability_executed": 0,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "driver_build",
+          "error": "AttributeError: module 'driver' has no attribute 'build'"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_1/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "physics_seconds": 0
+    },
+    {
+      "round": "repair_2",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 8,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+          "error": "capability execution failed: travel_exhausted: travel exhausted before contact"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+          "error": "capability execution failed: travel_exhausted: travel exhausted before contact"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_2/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "physics_seconds": 18.599999999999362
+    },
+    {
+      "round": "repair_3",
+      "framework_ran": true,
+      "framework_ok": false,
+      "subprocess_ok": true,
+      "capability_passed": 8,
+      "capability_executed": 10,
+      "capability_required": 10,
+      "failed_checks": [
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+          "error": "capability execution failed: no_contact: no contact within duration/travel"
+        },
+        {
+          "check": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+          "error": "capability execution failed: no_contact: no contact within duration/travel"
+        }
+      ],
+      "report": "AA1/autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_20260910T142842Z/repair_3/universal_robots_ur5e_robotiq_2f85/validate_report.json",
+      "physics_seconds": 19.767999999999233
+    }
+  ],
+  "generation_ok": true,
+  "framework_ok": false,
+  "stage1_ok": false,
+  "effective_repairs": 3,
+  "external_blocked": false,
+  "error": "Framework validation failed",
+  "total_tokens": {
+    "cache_read": 0,
+    "in": 3102891,
+    "out": 73373
+  },
+  "wall_seconds": 1034.689786195755,
+  "physics_seconds": 54.59599999999794,
+  "actual_cost_usd": null,
+  "checks": [
+    "All executed physical suites have the full expected case count and distinct IDs",
+    "Per-case trace/video paths exist and are nonempty; canonical Framework recording checks retained",
+    "Subprocess success is distinct from driver acceptance; build failures do not claim physical case execution",
+    "Every candidate, Study, generation/repair trace and failure report is retained separately",
+    "All executed suites exactly match the trusted 10 case IDs; all candidate imports are numpy and AA1 skeleton/base only.",
+    "Final round: all 10 videos decode with ffmpeg; trace steps/time agree with reports; canonical model/data and no detected live-state/model writes; scratch data only used for Jacobian kinematics."
+  ],
+  "final_failure_measurements": [
+    {
+      "case": "universal_robots_ur5e_robotiq_2f85-a4-calibrated_boundary",
+      "driver_reported_error": "no_contact: no contact within duration/travel",
+      "first_failed_gate": "surface_relative_speed",
+      "surface_relative_speed_m_s": 0.05092610576045258,
+      "required_max_speed_m_s": 0.04,
+      "measured_longest_contact_s": 2.5939999999997148,
+      "side_effects_ok": false
+    },
+    {
+      "case": "universal_robots_ur5e_robotiq_2f85-a4-nominal",
+      "driver_reported_error": "no_contact: no contact within duration/travel",
+      "first_failed_gate": "surface_relative_speed",
+      "surface_relative_speed_m_s": 0.05092610576045258,
+      "required_max_speed_m_s": 0.03,
+      "measured_longest_contact_s": 1.1739999999998711,
+      "side_effects_ok": true
+    }
+  ],
+  "limitations": [
+    "Driver self-reported no_contact, but canonical MuJoCo observations show sustained target contact. The trusted A4 scorer first fails surface relative speed in both cases; do not describe the physical outcome as no contact.",
+    "Candidate contact detector includes only four named pads, while canonical contacts involve geom_37 and geom_41 in the wider trusted tool geometry set; this likely explains its erroneous no_contact exception."
+  ]
+}

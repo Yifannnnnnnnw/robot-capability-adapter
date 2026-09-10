@@ -1,0 +1,23 @@
+{
+  "contract_id": "A1",
+  "measurements": {
+    "best_error_m": 0.00363461946878622,
+    "final_error_m": 0.005059137056287714,
+    "longest_target_hold_s": 0.7219999999999618,
+    "side_effects_ok": true,
+    "sim_elapsed_s": 1.8479999999999626,
+    "site_max_displacement_m": 0.1324097548879349
+  },
+  "parameters": {
+    "contract_id": "A1",
+    "guarded_joint_names": [
+      "right_driver_joint"
+    ],
+    "guarded_joint_tolerances": [
+      0.04000000000000001
+    ],
+    "side_effect_guard_profile": "fixed_arm",
+    "site_name": "pinch_site"
+  },
+  "score": 1.0
+}
