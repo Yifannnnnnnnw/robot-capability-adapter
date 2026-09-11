@@ -403,6 +403,17 @@ Robot capabilities and validation criteria are detailed in the appendix.
 
 \subsection{Results}
 
+Drivers for 6 of the 15 robot configurations passed all checks in their assigned validation suites: PiPER, xArm7, LEAP Hand, Stretch 2, ALOHA 2 and Skydio X2.
+Of the remaining 9 configurations, 8 failed behavioural validation.
+
+Controlled contact was the most common failed capability among the serial arms.
+SO-101 failed to establish contact under the permitted approach travel of 4--5~cm and time limits of 4--5~s.
+Franka Panda sustained contact for only 0.008~s and 0.002~s under nominal and boundary conditions, respectively, below the required 0.1~s.
+After initial contact, the generated driver held a fixed joint target but did not adjust it when contact was lost, preventing sustained contact.
+KUKA held the pre-contact position for 0.076~s, also below the required 0.1~s.
+UR5e reached a surface-relative speed of 5.09~cm/s, exceeding the nominal and boundary limits of 3 and 4~cm/s.
+These failures indicate that reaching or touching the target was insufficient without the required timing, speed control and sustained contact.
+
 \section{Interpretation and Limitations}
 
 
