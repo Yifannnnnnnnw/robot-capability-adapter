@@ -156,6 +156,7 @@ class SelfAssembleConfig:
     max_iters_validate: int = 25
     max_iters_export: int = 8
     max_iters_demo: int = 18
+    demo_task: str = "Demonstrate a short sequence of the available validated capabilities, using their documented request bounds and observing the robot between actions."
 
     # Total submissions: initial generation plus at most three Framework
     # repairs. Set to 1 for an initial submission with no repair.
@@ -1352,6 +1353,8 @@ class SelfAssemble:
         )
 
     def _phase_demo(self) -> PhaseResult:
+        if self.cfg.mode == "local" and self.capability_design:
+            return self._phase_recap_demo()
         tools = self._local_tools() + self._runtime_tools()
         if self.cfg.mode == "local":
             system = _DEMO_SYSTEM_LOCAL
@@ -1375,6 +1378,39 @@ class SelfAssemble:
             max_iters=self.cfg.max_iters_demo,
             expected_artifacts=["demo.mp4"],
         )
+
+    def _phase_recap_demo(self) -> PhaseResult:
+        """Run the canonical controller in a bounded local diagnostic process."""
+        started = time.monotonic()
+        report_path = self.workspace / "recap_demo_report.json"
+        report_path.unlink(missing_ok=True)
+        env = dict(os.environ)
+        env["PYTHONPATH"] = os.pathsep.join(filter(None, (
+            str(REPO_ROOT), str(REPO_ROOT.parent / "autoadapter" / "src"),
+            env.get("PYTHONPATH"))))
+        command = [sys.executable, "-m", "auto_adapter.agent.recap_demo",
+                   "--workspace", str(self.workspace), "--robot-id", self.cfg.robot_id,
+                   "--task", self.cfg.demo_task, "--model", self.cfg.bedrock_model,
+                   "--provider", self.cfg.model_provider, "--region", self.cfg.aws_region,
+                   "--max-tokens", str(self.cfg.max_tokens_per_turn)]
+        log_path = self.workspace / "traces" / "recap_demo_process.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with log_path.open("w") as log:
+                process = subprocess.run(command, env=env, cwd=REPO_ROOT,
+                                         stdout=log, stderr=subprocess.STDOUT, timeout=600)
+            report = json.loads(report_path.read_text()) if report_path.exists() else {}
+            ok = process.returncode == 0 and report.get("ok") is True
+            return PhaseResult(
+                name="05_demo", ok=ok, duration_sec=time.monotonic() - started,
+                trace_path=Path(report["trace_path"]) if report.get("trace_path") else log_path,
+                artifact_paths=[p for p in (report_path, self.workspace / "demo.mp4") if p.exists()],
+                final_text="ReCAP diagnostic demo; physical task success has not been evaluated.",
+                error=None if ok else "ReCAP demo failed; inspect recap_demo_report.json and process log",
+                metadata=report)
+        except subprocess.TimeoutExpired:
+            return PhaseResult(name="05_demo", ok=False, duration_sec=time.monotonic() - started,
+                               trace_path=log_path, error="ReCAP demo exceeded 600 seconds")
 
     # ─── Top-level entrypoint ─────────────────────────────────────────────
 
