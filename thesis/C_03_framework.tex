@@ -345,21 +345,44 @@ Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms groupe
 
 \begin{table}[htbp]
   \centering
-  \caption{Robot platforms grouped by embodiment type.}
+  \caption{Robot platforms and controller skeletons by embodiment type.}
   \label{tab:robot-platform-embodiment-types}
   \small
   \renewcommand{\arraystretch}{1.15}
-  \begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+  \begin{tabularx}{\linewidth}{
+    @{}
+    >{\raggedright\arraybackslash}p{0.20\linewidth}
+    >{\raggedright\arraybackslash}X
+    >{\raggedright\arraybackslash}X
+    @{}
+  }
     \toprule
-    \textbf{Robot type} & \textbf{Robot platforms} \\
+    \textbf{Robot type} & \textbf{Robot platforms} & \textbf{Skeleton} \\
     \midrule
-    Fixed serial arm & SO-101; AgileX PiPER; UR5e; Franka Panda; KUKA LBR iiwa 14; Kinova Gen3; UFACTORY xArm7 \\
-    Quadruped & Unitree Go2; Unitree A1; ANYmal-C \\
-    Aerial quadrotor & Skydio X2 \\
-    Humanoid biped & Unitree H1 \\
-    Dexterous hand & LEAP Hand \\
-    Mobile manipulator & Hello Robot Stretch 2 \\
-    Bimanual manipulator & ALOHA 2 \\
+    Fixed serial arm &
+    SO-101; AgileX PiPER; Franka Panda; KUKA LBR iiwa 14;
+    UFACTORY xArm7; Kinova Gen3 + Robotiq 2F-85;
+    UR5e + Robotiq 2F-85 &
+    DLS inverse kinematics, joint control and gripper control
+    where applicable \\
+    \addlinespace
+    Quadruped & Unitree Go2 &
+    Pretrained locomotion policy with PD torque control \\
+    Quadruped & Unitree A1; ANYmal-C &
+    Periodic trot and posture control through native position actuators \\
+    \addlinespace
+    Aerial quadrotor & Skydio X2 & None (from scratch) \\
+    \addlinespace
+    Humanoid biped & Unitree H1 & None (from scratch) \\
+    \addlinespace
+    Dexterous hand & LEAP Hand &
+    Fingertip DLS and joint-position control \\
+    \addlinespace
+    Mobile manipulator & Hello Robot Stretch 2 &
+    Base feedback, lift and telescopic-arm control \\
+    \addlinespace
+    Bimanual manipulator & ALOHA 2 &
+    Two DLS arm controllers operating in one MuJoCo world \\
     \bottomrule
   \end{tabularx}
 \end{table}
