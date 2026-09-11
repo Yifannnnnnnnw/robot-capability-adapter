@@ -335,28 +335,13 @@ Robot capabilities and validation criteria are detailed in the appendix.
 % TODO: Add the robot-model/capability/validation-criteria table
 % to the appendix and replace the generic reference with its numbered reference.
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\linewidth]{assets/robot_platform_taxonomy_15_print.pdf}
-  \caption[Fifteen robot platforms grouped into seven embodiment types]
-  {Fifteen robot platforms grouped into seven embodiment types.
-  \textbf{Fixed arms:} SO-101, AgileX PiPER, UR5e, Franka Panda, KUKA LBR iiwa 14,
-  Kinova Gen3 and UFACTORY xArm7.
-  \textbf{Quadrupeds:} Unitree Go2, Unitree A1 and ANYmal-C.
-  \textbf{Aerial quadrotor:} Skydio X2.
-  \textbf{Humanoid biped:} Unitree H1.
-  \textbf{Dexterous hand:} LEAP Hand.
-  \textbf{Mobile manipulator:} Hello Robot Stretch 2.
-  \textbf{Bimanual manipulator:} ALOHA 2.}
-  \label{fig:robot-platform-taxonomy}
-\end{figure}
-
-\begin{table}[htbp]
+\begin{table}[!htbp]
   \centering
   \caption{Robot platforms and controller skeletons by embodiment type.}
   \label{tab:robot-platform-embodiment-types}
-  \small
-  \renewcommand{\arraystretch}{1.15}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.05}
+  \setlength{\tabcolsep}{4pt}
   \begin{tabularx}{\linewidth}{
     @{}
     >{\raggedright\arraybackslash}p{0.20\linewidth}
@@ -373,27 +358,43 @@ Robot capabilities and validation criteria are detailed in the appendix.
     UR5e + Robotiq 2F-85 &
     DLS inverse kinematics, joint control and gripper control
     where applicable \\
-    \addlinespace
+    \addlinespace[2pt]
     Quadruped & Unitree Go2 &
     Pretrained locomotion policy with PD torque control \\
     Quadruped & Unitree A1; ANYmal-C &
     Periodic trot and posture control through native position actuators \\
-    \addlinespace
+    \addlinespace[2pt]
     Aerial quadrotor & Skydio X2 & None (from scratch) \\
-    \addlinespace
+    \addlinespace[2pt]
     Humanoid biped & Unitree H1 & None (from scratch) \\
-    \addlinespace
+    \addlinespace[2pt]
     Dexterous hand & LEAP Hand &
     Fingertip DLS and joint-position control \\
-    \addlinespace
+    \addlinespace[2pt]
     Mobile manipulator & Hello Robot Stretch 2 &
     Base feedback, lift and telescopic-arm control \\
-    \addlinespace
+    \addlinespace[2pt]
     Bimanual manipulator & ALOHA 2 &
     Two DLS arm controllers operating in one MuJoCo world \\
     \bottomrule
   \end{tabularx}
 \end{table}
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\linewidth]{assets/robot_platform_taxonomy_15_print.pdf}
+  \caption[Fifteen robot platforms grouped into seven embodiment types]
+  {Fifteen robot platforms grouped into seven embodiment types.
+  \textbf{Fixed arms:} SO-101, AgileX PiPER, UR5e, Franka Panda, KUKA LBR iiwa 14,
+  Kinova Gen3 and UFACTORY xArm7.
+  \textbf{Quadrupeds:} Unitree Go2, Unitree A1 and ANYmal-C.
+  \textbf{Aerial quadrotor:} Skydio X2.
+  \textbf{Humanoid biped:} Unitree H1.
+  \textbf{Dexterous hand:} LEAP Hand.
+  \textbf{Mobile manipulator:} Hello Robot Stretch 2.
+  \textbf{Bimanual manipulator:} ALOHA 2.}
+  \label{fig:robot-platform-taxonomy}
+\end{figure}
 
 
 
