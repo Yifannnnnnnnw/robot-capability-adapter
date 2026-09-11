@@ -325,7 +325,15 @@ deployment safety, or sim-to-real transfer.
 \subsection{Experimental Configuration}
 
 
-Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms grouped by embodiment type.
+The experiment evaluated 15 robot configurations in MuJoCo using Claude Opus 4.8 for driver generation.
+13 configurations used skeleton-assisted generation; Unitree H1 and Skydio X2 used from-scratch generation.
+Figure~\ref{fig:robot-platform-taxonomy} shows the 15 robot platforms,
+and Table~\ref{tab:robot-platform-embodiment-types} summarises their controller skeletons. Each arm and quadruped capability was tested under one nominal and one boundary condition.
+Following initial generation, up to three repair attempts were allowed, with the complete assigned validation suite repeated after each repair.
+The Framework assessed behaviour using MuJoCo state and simulation time.
+Robot capabilities and validation criteria are detailed in the appendix.
+% TODO: Add the robot-model/capability/validation-criteria table
+% to the appendix and replace the generic reference with its numbered reference.
 
 \begin{figure}[htbp]
   \centering
@@ -386,6 +394,8 @@ Figure~\ref{fig:robot-platform-taxonomy} presents fifteen robot platforms groupe
     \bottomrule
   \end{tabularx}
 \end{table}
+
+
 
 
 
