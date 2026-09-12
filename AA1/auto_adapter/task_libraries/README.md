@@ -39,6 +39,13 @@ records stay in the run directory. Task-support links describe the proposed
 design; they do not demonstrate task completion. Proposed numerical requirements
 have not been physically calibrated by this stage.
 
+TGCD starts with file references in its user message. It reads
+`capability_inputs/authoring_brief.json` through the existing `read_file` tool;
+the file contains the study, task requirements, sources and task-library
+identity. `public_inputs.json` retains the fuller public records. The TGCD reader
+only exposes these two inputs, and a design cannot be submitted before the
+brief has been read in the current loop.
+
 Dynamic designs currently stop after study or generation. They have no associated
 private executable suite and must not be judged by an old catalog suite. The
 from-scratch route exposes the same preparation through `phase_study()` followed

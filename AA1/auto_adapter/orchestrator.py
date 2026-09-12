@@ -199,6 +199,16 @@ def _capability_options_enabled(cfg: Any) -> bool:
     )
 
 
+def _actual_mjcf_context(cfg: Any) -> str:
+    if not _capability_options_enabled(cfg):
+        return ""
+    return (
+        f"\nActual MJCF source: {Path(cfg.mjcf_path).resolve()}\n"
+        "Resolve the workspace symlink before locating relative includes "
+        "and meshes; inspect this model directory rather than searching the filesystem."
+    )
+
+
 def _trusted_skeleton_context(robot: dict | None, expected_class: str | None) -> str:
     """Return a compact public low-level skeleton summary for TGCD.
 
@@ -1042,12 +1052,7 @@ class SelfAssemble:
             f"MJCF file (workspace-relative): {self.mjcf_workspace_path}\n"
             "Produce study.json per the procedure."
         )
-        if getattr(self, "_dynamic_capabilities", False):
-            user_msg += (
-                f"\nActual MJCF source: {Path(self.cfg.mjcf_path).resolve()}\n"
-                "Resolve the workspace symlink before locating relative includes "
-                "and meshes; inspect this model directory rather than searching the filesystem."
-            )
+        user_msg += _actual_mjcf_context(self.cfg)
         result = self._run_phase(
             name="01_study",
             system=system,
@@ -1111,6 +1116,7 @@ class SelfAssemble:
             f"study.json is in the workspace. MJCF is at {self.mjcf_workspace_path}.\n"
             "Produce driver.py per the procedure."
         )
+        user_msg += _actual_mjcf_context(self.cfg)
         user_msg += capability_generation_context(
             self.robot_definition, design=self.capability_design
         )
@@ -1192,6 +1198,7 @@ class SelfAssemble:
             "the existing public interface intact; do not hard-code a test.\n"
             "Finish after writing the corrected driver.py."
         )
+        user_msg += _actual_mjcf_context(self.cfg)
         user_msg += capability_generation_context(
             self.robot_definition, design=self.capability_design
         )

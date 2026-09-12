@@ -141,11 +141,15 @@ class _FakeLoop:
     last_kwargs = {}
 
     def __init__(self, *, tools, **kwargs):
-        self.tool = tools[0]
+        self.tool = next(tool for tool in tools if tool.name == "submit_design")
+        self.reader = next(tool for tool in tools if tool.name == "read_file")
         type(self).last_kwargs = kwargs
 
     def run(self, prompt):
         type(self).last_prompt = prompt
+        brief = json.loads(self.reader.handler({"path": "authoring_brief.json"})["content"])
+        assert brief["task_library_identity"]["source_robot_configuration_id"] == "fixture-source"
+        assert "fixture-source-record" not in prompt
         if self.mode == "invoke_error":
             accepted = self.tool.handler({"design": _design()})
             return SimpleNamespace(

@@ -21,6 +21,7 @@ from typing import Any
 import yaml
 
 from .agent.react_loop import ReactLoop, ToolSpec
+from .agent.tools import make_read_file_tool
 
 
 TASK_LIBRARY_ROOT = Path(__file__).resolve().parent / "task_libraries"
@@ -728,9 +729,29 @@ def generate_capability_design(
         }
         _write_json(output / "public_inputs.json", public_inputs)
         brief = _authoring_brief(public_inputs, task_ids)
+        _write_json(output / "authoring_brief.json", brief)
+        reader = make_read_file_tool(output)
+        public_paths = {
+            output / "authoring_brief.json",
+            output / "public_inputs.json",
+        }
+        brief_read = False
+
+        def read_public_input(payload: dict[str, Any]) -> dict[str, Any]:
+            nonlocal brief_read
+            path = Path(payload["path"])
+            path = (output / path).resolve() if not path.is_absolute() else path.resolve()
+            if path not in public_paths:
+                raise ValueError("read_file may read only authoring_brief.json or public_inputs.json")
+            content = reader.handler(payload)
+            if path.name == "authoring_brief.json":
+                brief_read = True
+            return content
 
         def submit_handler(payload: dict[str, Any]) -> dict[str, Any]:
             nonlocal submitted
+            if not brief_read:
+                raise ValueError("read authoring_brief.json with read_file before submitting a design")
             if not isinstance(payload, Mapping):
                 raise ValueError(
                     "submit_design received no design object; send one compact JSON "
@@ -802,7 +823,13 @@ def generate_capability_design(
                         "additionalProperties": False,
                     },
                     handler=submit_handler,
-                )
+                ),
+                ToolSpec(
+                    name="read_file",
+                    description="Read authoring_brief.json for design inputs, or public_inputs.json for the full public records.",
+                    input_schema=reader.input_schema,
+                    handler=read_public_input,
+                ),
             ],
             system=TGCD_SYSTEM_PROMPT,
             model=model,
@@ -813,11 +840,12 @@ def generate_capability_design(
             trace_path=trace_path,
         )
         user_prompt = (
-            "Author the complete TGCD design from this public authoring brief. "
-            "The full public input is also saved as public_inputs.json for review. "
-            "Use submit_design after checking every capability, criterion, and "
-            "task-support pair.\n\n"
-            + json.dumps(brief, ensure_ascii=True, separators=(",", ":"))
+            "Read authoring_brief.json using read_file. It contains the completed "
+            "study, public task requirements and sources, task-library identity, "
+            "and any low-level skeleton context. Full public records are available "
+            "in public_inputs.json.\n\n"
+            "Then use submit_design to submit the complete capability design. "
+            "Copy the brief's artifact_header fields onto the root design object."
         )
         result = loop.run(user_prompt)
         token_usage = getattr(result, "total_tokens", {}) or {}

@@ -49,6 +49,7 @@ from .agent.tools import (
     make_write_file_tool,
 )
 from .orchestrator import (
+    _actual_mjcf_context,
     _capability_design_metadata,
     _capability_options_enabled,
     _merge_numeric_usage,
@@ -876,12 +877,7 @@ class FromScratchOrchestrator:
             "MJCF (workspace-relative): mjcf.xml\n"
             "Produce study.json per the procedure."
         )
-        if getattr(self, "_dynamic_capabilities", False):
-            user += (
-                f"\nActual MJCF source: {Path(self.cfg.mjcf_path).resolve()}\n"
-                "Resolve the workspace symlink before locating relative includes "
-                "and meshes; inspect this model directory rather than searching the filesystem."
-            )
+        user += _actual_mjcf_context(self.cfg)
         result = self._run_loop(
             name="01_study", system=system, user_msg=user,
             tools=tools, max_iters=self.cfg.max_iters_study,
@@ -927,6 +923,7 @@ class FromScratchOrchestrator:
             "FK / IK / motion / gripper code, no auto_adapter.skeletons imports."
         )
         from .robot_catalog import capability_generation_context
+        user += _actual_mjcf_context(self.cfg)
         user += capability_generation_context(
             self.robot_definition, from_scratch=True, design=self.capability_design
         )
@@ -981,6 +978,7 @@ class FromScratchOrchestrator:
             "complete validation signal for this repair."
         )
         from .robot_catalog import capability_generation_context
+        user += _actual_mjcf_context(self.cfg)
         user += capability_generation_context(
             self.robot_definition, from_scratch=True, design=self.capability_design
         )
