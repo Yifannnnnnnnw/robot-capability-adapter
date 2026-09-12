@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "google_barkour_vb",
+  "package_version": "1.0.0",
+  "sources": [
+    {
+      "source_id": "SRC-LEE-2020",
+      "title": "Learning Quadrupedal Locomotion over Challenging Terrain",
+      "organization": "Science Robotics",
+      "version_or_date": "2020, Science Robotics 5(47), eabc5986; DOI 10.1126/scirobotics.abc5986",
+      "locator": "https://doi.org/10.1126/scirobotics.abc5986",
+      "specific_reference": "Main text Fig. 3D-G and Results pp. 4-5: ten 10 s trials per step height, with success defined as both front and hind legs traversing the step; 0.2 m/s and 0.6 m/s step commands; eight-direction 0.4 m/s flat-ground tracking; average heading error within 10 degrees with and without a 10 kg payload that is 22.7% of total robot mass."
+    },
+    {
+      "source_id": "SRC-MIKI-2022",
+      "title": "Learning robust perceptive locomotion for quadrupedal robots in the wild",
+      "organization": "Science Robotics",
+      "version_or_date": "2022, Science Robotics 7(62), eabk2822; DOI 10.1126/scirobotics.abk2822",
+      "locator": "https://doi.org/10.1126/scirobotics.abk2822",
+      "specific_reference": "Results Fig. 4 and text: ten trials for each fixed-height step from 12 cm to 36.5 cm, successful when overcome within 5 s; a fixed pure-pursuit path over an inclined platform, 20 cm raised platform, stairs 17 cm high by 29 cm deep, and 20 cm block pile; measured 1.2 m/s forward/lateral and 3 rad/s turning commands."
+    },
+    {
+      "source_id": "SRC-BARKOUR-2023",
+      "title": "Barkour: Benchmarking Animal-level Agility with Quadruped Robots",
+      "organization": "Google DeepMind",
+      "version_or_date": "2023-05-24, arXiv:2305.14654v1",
+      "locator": "https://arxiv.org/abs/2305.14654v1",
+      "specific_reference": "Section III, Table I, Fig. 2, and Appendix B-C: 1 x 1 x 0.1 m pause tables, five weave poles spaced 0.5-0.8 m with 0.1 m torso clearance, a 30 degree 1 m-high A-frame, and a 0.5 x 1 m broad-jump board that must not be touched; full-course score and 10.64 s allotted time; a valid run ends with 5 s standing on the end table."
+    },
+    {
+      "source_id": "SRC-ANYMAL-2016",
+      "title": "ANYmal - a Highly Mobile and Dynamic Quadrupedal Robot",
+      "organization": "IEEE/RSJ International Conference on Intelligent Robots and Systems",
+      "version_or_date": "2016; DOI 10.1109/IROS.2016.7758092",
+      "locator": "https://doi.org/10.1109/IROS.2016.7758092",
+      "specific_reference": "Abstract and platform description: the source ANYmal platform is 0.5 m tall. This dimension is used only to make the recorded 0.56 morphology scale conversion to the local Barkour vB package's 0.28 m home base height."
+    },
+    {
+      "source_id": "SRC-MENAGERIE-BARKOUR-VB",
+      "title": "MuJoCo Menagerie: Google Barkour vB model",
+      "organization": "Google DeepMind",
+      "version_or_date": "commit da76818e269b82289eba39808e2fb91d679d6994",
+      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/google_barkour_vb",
+      "specific_reference": "Pinned google_barkour_vb model directory: free-base Barkour vB body, four three-joint legs, twelve direct joint-position general actuators with affine servo bias, joint limits, named foot sites, and base/joint sensors used by the complete local MJCF closure."
+    },
+    {
+      "source_id": "SRC-ROBEL-DKITTY",
+      "title": "ROBEL D'Kitty locomotion task protocols",
+      "organization": "Google Research",
+      "version_or_date": "commit 5b0fd3704629931712c6e0f7268ace1c2154dc83; Apache-2.0",
+      "locator": "https://github.com/google-research/robel/tree/5b0fd3704629931712c6e0f7268ace1c2154dc83/robel/dkitty",
+      "specific_reference": "robel/dkitty/__init__.py, stand.py, orient.py, and walk.py: task horizons, fixed-pose stand, heading-orientation, and goal-walking protocols."
+    },
+    {
+      "source_id": "SRC-SAFETY-GYM",
+      "title": "Safety Gym",
+      "organization": "OpenAI",
+      "version_or_date": "commit f31042f2f9ee61b9034dd6a416955972911544f5; MIT",
+      "locator": "https://github.com/openai/safety-gym/tree/f31042f2f9ee61b9034dd6a416955972911544f5/safety_gym",
+      "specific_reference": "safety_gym/envs/engine.py and suite.py: flat-world dimensions, goal_met contact/distance predicates, and Button0/Push0 registrations."
+    },
+    {
+      "source_id": "SRC-GYMNASIUM-ROBOTICS",
+      "title": "Gymnasium-Robotics AntMaze",
+      "organization": "Farama Foundation",
+      "version_or_date": "v1.4.2, commit 42eae53b2b27321d29090c219ce2f675c596de77; repository MIT; AntMaze source file Apache-2.0",
+      "locator": "https://github.com/Farama-Foundation/Gymnasium-Robotics/tree/42eae53b2b27321d29090c219ce2f675c596de77/gymnasium_robotics",
+      "specific_reference": "gymnasium_robotics/envs/maze/maps.py, maze/maze_v4.py, ant_maze_v5.py, and package __init__.py: U_MAZE geometry, 0.45 m implementation success distance, and 700-step registration."
+    },
+    {
+      "source_id": "SRC-RRW-PAPER",
+      "title": "Robust Robot Walker",
+      "organization": "Robust Robot Walker authors",
+      "version_or_date": "arXiv:2409.07409v2, Section IV-B PDF p.4; CC BY 4.0",
+      "locator": "https://arxiv.org/pdf/2409.07409v2",
+      "specific_reference": "Section IV-B, PDF p.4: Tiny Trap bar, pit, and pole terrain protocols and the 300 s evaluation horizon."
+    },
+    {
+      "source_id": "SRC-RRW-CODE",
+      "title": "Robust Robot Walker reference implementation",
+      "organization": "Robust Robot Walker authors",
+      "version_or_date": "commit 4ed5ddb20d1261bb08f9081736c0b049a1306069; MIT",
+      "locator": "https://github.com/zst1406217/robust_robot_walker/tree/4ed5ddb20d1261bb08f9081736c0b049a1306069",
+      "specific_reference": "legged_gym/envs/a1/a1_bar_track_config.py, utils/terrain/stumble_bar_track.py, and scripts/track.py: Tiny Trap fixture constants, obstacle generation, and evaluation rule."
+    },
+    {
+      "source_id": "SRC-DM-CONTROL",
+      "title": "dm_control quadruped Escape task",
+      "organization": "Google DeepMind",
+      "version_or_date": "1.0.34, commit 3831fa523c160fe653d83a829d0a0c59715f5725; Apache-2.0",
+      "locator": "https://github.com/google-deepmind/dm_control/tree/3831fa523c160fe653d83a829d0a0c59715f5725/dm_control",
+      "specific_reference": "suite/quadruped.py, suite/quadruped.xml, and utils/rewards.py: Escape reward condition, 201 x 201 hfield dimensions, elevation scale, and tolerance semantics."
+    }
+  ]
+}

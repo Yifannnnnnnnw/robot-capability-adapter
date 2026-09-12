@@ -1,0 +1,32 @@
+# Public task inputs for Auto-Adapter capability design.
+# Paths are relative to this file; source package identities remain unchanged.
+libraries:
+  piper: piper/1.0.0
+  robotstudio_so101: robotstudio_so101/1.0.4
+  unitree-go2-stock-12dof: unitree-go2-stock-12dof/1.0.2
+  franka_panda: franka_panda/1.0.0
+  kuka_iiwa_14: kuka_iiwa_14/1.0.0
+  ufactory_xarm7: ufactory_xarm7/1.0.0
+  kinova_gen3_robotiq_2f85: kinova_gen3_robotiq_2f85/1.0.0
+  universal_robots_ur5e_robotiq_2f85: universal_robots_ur5e_robotiq_2f85/1.0.0
+  leap_hand: leap_hand/1.0.0
+  hello_robot_stretch_2: hello_robot_stretch_2/1.0.0
+  aloha_2: aloha_2/1.0.0
+  unitree_a1: unitree_a1/1.0.0
+  anybotics_anymal_c: anybotics_anymal_c/1.0.0
+  google_barkour_vb: google_barkour_vb/1.0.0
+  unitree_g1: unitree_g1/1.0.0
+robots:
+  piper: piper
+  menagerie_so101: robotstudio_so101
+  go2: unitree-go2-stock-12dof
+  franka: franka_panda
+  kuka_iiwa14: kuka_iiwa_14
+  ufactory_xarm7: ufactory_xarm7
+  kinova_gen3_robotiq_2f85: kinova_gen3_robotiq_2f85
+  universal_robots_ur5e_robotiq_2f85: universal_robots_ur5e_robotiq_2f85
+  leap_hand: leap_hand
+  hello_robot_stretch_2: hello_robot_stretch_2
+  aloha_2: aloha_2
+  unitree_a1: unitree_a1
+  anymal_c: anybotics_anymal_c

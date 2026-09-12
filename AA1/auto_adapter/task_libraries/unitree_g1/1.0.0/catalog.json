@@ -1,0 +1,766 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree_g1",
+  "package_version": "1.0.0",
+  "snapshot_id": "unitree-g1-public-source-contracts-2026-08-20-v1",
+  "tasks": [
+    {
+      "task_id": "humanoidbench_walk",
+      "name": "HumanoidBench level-ground walk",
+      "description": "Walk forward on level ground under the source 1000-step episode and meet its episode-return success line.",
+      "source_task_or_operation": "HumanoidBench walk: sustain forward locomotion near the source 1 m/s walking regime without falling.",
+      "applicability": "The canonical Unitree G1 is a free-base biped with two six-joint legs, foot sites, IMU observations, and 29 position-controlled hinges. Level-ground walking uses those leg and base degrees of freedom and does not require articulated fingers. This establishes physical applicability only, not achieved performance.",
+      "adaptation": "Adapt the benchmark operation to canonical G1 while retaining the source 1000-control-step horizon, per-step reward formula, and success_bar 700. Rebind source body and sensor semantics. The pinned repository's auxiliary G1 adaptation has 37 task actuators, including fourteen articulated-hand motors, and is not the canonical model; this exact package has 29 actuators, including six differing waist/wrist channels and no articulated hands. Compute force tolerances for all 29 canonical actuators, append eight zero tolerance entries, and take the source-sized 37-term mean. This preserves the source denominator, penalizes every canonical actuator, and cannot gain control reward from the actuator-count reduction. The canonical position-actuator interface remains unchanged.",
+      "scene_assumptions": ["A level rigid floor provides unobstructed travel along the requested world-frame direction for the full source horizon."],
+      "observation_assumptions": ["The evaluator samples canonical free-base state, joint state, foot contacts, IMU orientation, actuator force, and simulation time from MuJoCo.", "Episode return is recomputed from the pinned source formula after the recorded canonical-name and 37-term force-mean substitutions."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_walk_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 16-18 and 21-102: Walk uses 1 m/s, success_bar=700, the repository's auxiliary G1 branch sets stand height to 1.28 m, and the code defines standing/upright/control/move reward; tasks.py sets 1000 steps. Paper Section IV-A names walk as a distinct 1 m/s task and Figure 3 defines episode return as the reward sum.",
+          "support": "adapted",
+          "adaptation": "Keep 700 and 1000 steps. Rebind state names; average all 29 canonical actuator-force tolerances with eight zero padding entries, preserving the source 37-term denominator and preventing an actuator-count reward increase."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_walk", "task_parameters": {
+          "type": "object", "required": ["travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Requested level-ground travel direction; the source +x axis is rotated to this unit vector without changing distances or speeds.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_stand",
+      "name": "HumanoidBench stationary stand",
+      "description": "Maintain a standing pose on level ground for the source 1000-step episode and meet its episode-return success line.",
+      "source_task_or_operation": "HumanoidBench stand: maintain standing throughout the episode rather than translating.",
+      "applicability": "The free-base canonical G1 has two actuated legs, feet, pelvis and torso IMUs, and complete base-state observation, so whole-body stationary balance is physically applicable without finger articulation. This records applicability only.",
+      "adaptation": "Retain the source Stand reward, 1000-control-step horizon, G1 1.28 m stand-height substitution, and success_bar 800. Rebind canonical names and average all 29 canonical force tolerances with eight zero padding entries over the source 37-term denominator, so actuator-count substitution cannot raise the control score.",
+      "scene_assumptions": ["A level rigid floor supports both feet with clearance for arm motion throughout the episode."],
+      "observation_assumptions": ["The evaluator samples canonical head-equivalent body height, torso upright projection, planar center-of-mass velocity, actuator force, contacts, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_stand_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 800,
+        "threshold_provenance": "source success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 46-76 and 100-102: Stand sets move speed to zero, uses the standing, upright, control, and no-motion reward, and declares success_bar=800; tasks.py sets 1000 steps. Paper Section IV-A defines standing for the provided duration.",
+          "support": "adapted",
+          "adaptation": "Keep 800 and 1000 steps; use canonical body names and the non-weakening 29-plus-eight-zero, 37-term force-mean substitution."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_stand", "task_parameters": {
+          "type": "object", "required": ["max_control_steps"],
+          "properties": {"max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}},
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_run",
+      "name": "HumanoidBench forward run",
+      "description": "Run forward in the source 5 m/s regime for 1000 control steps and meet its episode-return success line.",
+      "source_task_or_operation": "HumanoidBench run: high-speed forward locomotion at the source 5 m/s target.",
+      "applicability": "The canonical G1 is a dynamically simulated free-base biped with independently actuated hips, knees, ankles, waist, and arms. Running is a distinct dynamic gait operation that requires no finger motion. Applicability does not imply that a running policy exists.",
+      "adaptation": "Retain the source Run 5 m/s target, inherited success_bar 700, reward formula, and 1000-step horizon. Rebind canonical names and average all 29 canonical force tolerances with eight zero padding entries over the source 37-term denominator, preventing an actuator-count reward increase.",
+      "scene_assumptions": ["A level rigid runway provides unobstructed travel in the requested direction for the source horizon."],
+      "observation_assumptions": ["The evaluator samples canonical center-of-mass velocity, base and torso orientation, joint state, foot contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_run_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source inherited success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 16-18, 21-97, and 105-106: Run inherits Walk success_bar=700 and reward while changing the move target to 5 m/s; tasks.py sets 1000 steps. Paper Section IV-A separately defines run at 5 m/s.",
+          "support": "adapted",
+          "adaptation": "Keep 5 m/s, 700, and 1000 steps; rotate only the travel frame and apply the 29-plus-eight-zero, 37-term force-mean substitution."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_run", "task_parameters": {
+          "type": "object", "required": ["travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Requested runway direction; source +x is rigidly rotated to this unit vector.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_reach",
+      "name": "HumanoidBench distal-wrist reach",
+      "description": "Move the left distal wrist reference point to a requested three-dimensional target with less than 0.05 m Euclidean error.",
+      "source_task_or_operation": "HumanoidBench reach: bring the source left-hand point within 0.05 m of a sampled 3D goal.",
+      "applicability": "The canonical G1 has seven actuated joints from each shoulder through each wrist. Its rubber-hand variant has no finger joints, but reaching a Cartesian point uses the distal wrist chain and does not require grasping or hand contact. This establishes physical reachability as a task family, not target-specific reachability.",
+      "adaptation": "Replace the source articulated left-hand site with a reference point rigidly attached to canonical body left_wrist_yaw_link. Preserve the Euclidean metric, strict comparator, 0.05 m threshold, and 1000-step horizon. Require the source endpoint event at the final control step rather than crediting a transient event; this is a recorded non-weakening temporal adaptation and introduces no grasp requirement.",
+      "scene_assumptions": ["The requested target is selected inside the source sampling box x and y in [-2,2] m and z in [0.2,2.0] m, after restricting it to a collision-free point in the canonical left distal-wrist workspace."],
+      "observation_assumptions": ["The evaluator obtains the canonical left_wrist_yaw_link pose by MuJoCo forward kinematics and the target in the same world frame."],
+      "scoring": [{
+        "clause_id": "distal_wrist_target_error",
+        "metric": "left_distal_wrist_target_euclidean_error",
+        "unit": "m",
+        "comparator": "<",
+        "threshold": 0.05,
+        "threshold_provenance": "source endpoint threshold retained unchanged",
+        "temporal": {"kind": "at_final_control_step", "max_control_steps": 1000},
+        "aggregation": {"kind": "final_sample"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/reach.py lines 35-37 and 52-84: the goal is a sampled 3D point, hand_dist is Euclidean distance, and reward_success is issued when hand_dist < 0.05; tasks.py supplies the 1000-step default. Paper Section IV-A defines the left-hand reach operation.",
+          "support": "adapted",
+          "adaptation": "Use the canonical left distal-wrist body reference point in place of the unavailable articulated-hand site; retain <0.05 m and 1000 steps, and require the event at the final sample rather than accepting any transient source reward event."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_reach", "task_parameters": {
+          "type": "object", "required": ["target_position_m", "end_effector_body", "max_control_steps"],
+          "properties": {
+            "target_position_m": {"type": "array", "unit": "m", "frame": "world", "description": "Requested 3D target position: source bounds x and y in [-2,2] m and z in [0.2,2.0] m, further restricted to the canonical collision-free distal-wrist workspace.", "items": {"type": "number"}, "length": 3},
+            "end_effector_body": {"type": "string", "unit": "body_name", "frame": "canonical_model", "description": "Required public semantic value: left_wrist_yaw_link."},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_hurdle",
+      "name": "HumanoidBench hurdle traversal",
+      "description": "Traverse the source hurdle course in its 5 m/s locomotion regime and meet the episode-return success line.",
+      "source_task_or_operation": "HumanoidBench hurdle: run forward while overcoming the source barrier sequence.",
+      "applicability": "The free-base canonical G1 has actuated hips, knees, ankles, feet, and inertial sensing needed for dynamic stepping and flight. Hurdle traversal is leg-only and does not depend on articulated hands. No traversal success is claimed here.",
+      "adaptation": "Retain the source hurdle fixture semantics, 5 m/s move target, side/rear boundary-contact discount, 1000-step horizon, and inherited success_bar 700. Rebind model names and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, a straight rigid runway contains ten 0.06 by 10 by 0.375 m collision hurdles centered at x = 7,14,...,70 m and z = 0.1875 m; side barriers bound y at +/-4.45 m internally and a rear barrier bounds x at -0.475 m, matching the pinned source fixture up to one rigid world-frame transform."],
+      "observation_assumptions": ["The evaluator samples canonical body state, forward center-of-mass velocity, barrier contacts, foot contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_hurdle_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source inherited success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 228-293: Hurdle sets the 5 m/s target, computes standing/upright/control/move reward, and applies a 0.1 side/rear boundary-contact discount; it inherits Walk success_bar=700 and the 1000-step Task horizon. assets/locomotion/generated_xml_hurdles.xml lines 3-13 and 698-707 fixes the boundaries and ten collision hurdles. Paper Section IV-A identifies hurdle as a distinct course task.",
+          "support": "adapted",
+          "adaptation": "Preserve fixture meaning, collision discount, 5 m/s, 700, and 1000 steps; rebind names and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_hurdle", "task_parameters": {
+          "type": "object", "required": ["course_id", "travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "course_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_hurdles."},
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Course forward direction.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_crawl",
+      "name": "HumanoidBench tunnel crawl",
+      "description": "Crawl through the source tunnel while moving forward in the 1 m/s regime and meet the episode-return success line.",
+      "source_task_or_operation": "HumanoidBench crawl: lower the body and progress inside a bounded tunnel.",
+      "applicability": "The canonical G1 has a free base, articulated waist, arms, and legs, allowing low-profile whole-body locomotion. The operation uses body support and translation rather than finger articulation. This is an applicability statement only.",
+      "adaptation": "Adapt crawl to canonical G1 while retaining the pinned repository's auxiliary G1 crawl-height value of 0.6 m, source height band, tunnel lateral band, 1 m/s target, 1000-step horizon, and inherited success_bar 700. Rebind canonical names and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, the rigid source tunnel body is translated +2.2 m along x; its 16 m-long side walls have centers (8,+/-1.35,0.775) m and half-sizes (8,0.2,0.775) m, while its ceiling has center (8,0,1.35) m and half-size (8,1.15,0.2) m. The reward's stricter lateral admissible band remains [-1,1] m."],
+      "observation_assumptions": ["The evaluator samples canonical torso and pelvis heights and orientation, center-of-mass velocity, tunnel-frame lateral position, contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_crawl_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source inherited success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 33-38 and 109-169: the repository's auxiliary G1 branch sets crawl height to 0.6 m; Crawl uses 1 m/s, +/-0.2 m head and IMU height bands, tunnel lateral bounds [-1,1], and inherited success_bar=700; tasks.py sets 1000 steps. assets/tasks/crawl.xml lines 3-10 fixes the tunnel geometry. Paper Section IV-A defines crawl through a tunnel.",
+          "support": "adapted",
+          "adaptation": "Keep all source numeric bands, 700, and 1000 steps; rotate the tunnel frame, rebind names, and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_crawl", "task_parameters": {
+          "type": "object", "required": ["tunnel_id", "travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "tunnel_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_crawl_tunnel."},
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Tunnel forward direction.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_maze",
+      "name": "HumanoidBench multi-turn maze",
+      "description": "Navigate the ordered source maze checkpoints, including its multiple turns, and meet the episode-return success line.",
+      "source_task_or_operation": "HumanoidBench maze: progress through ordered intersections to the final goal.",
+      "applicability": "The canonical G1 is a free-base walking platform with base pose, velocity, foot contacts, and IMU observations. Ordered planar navigation is physically applicable and requires no grasping. This does not assert that a navigation policy is present.",
+      "adaptation": "Retain the five source checkpoint entries, 0.4 m checkpoint transition radius, wall-contact discount, 1000-step horizon, and success_bar 1200. Rigidly transform checkpoint coordinates into the requested world frame, rebind canonical names, and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["The task-frame maze uses 1.5 m square cells and 1.2 m-high rigid wall blocks with half-size (0.75,0.75,0.6) m under body offset (-2.25,-2.25,0) m. Cell rc has local center (0.75+1.5*c, 9.75-1.5*r, 0.6) m. Occupied source cells are 00-06, 10, 16, 20-22, 24, 26, 30, 36, 40, 42, 44-46, 50, 56, and 60-66; wall contacts remain measurable."],
+      "observation_assumptions": ["The evaluator samples canonical pelvis position, IMU position and orientation, center-of-mass velocity, wall contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_maze_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 1200,
+        "threshold_provenance": "source success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/maze.py lines 51-130 and 133-200: Maze uses ordered checkpoints [0,0], [3,0], [3,6], [6,6], [6,6], a 0.4 m transition radius, wall-contact discount 0.1, staged bonuses, and success_bar=1200; tasks.py sets 1000 steps. assets/tasks/maze.xml lines 3-14 fixes checkpoint sites and assets/locomotion/generated_xml_maze.xml fixes the 1.5 m wall grid. Paper Section IV-A describes multi-turn goal navigation.",
+          "support": "adapted",
+          "adaptation": "Keep checkpoint geometry up to a rigid frame transform, 0.4 m, collision discount, 1200, and 1000 steps; rebind names and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_maze", "task_parameters": {
+          "type": "object", "required": ["checkpoint_positions_m", "max_control_steps"],
+          "properties": {
+            "checkpoint_positions_m": {"type": "array", "unit": "m", "frame": "world", "description": "Five ordered 3D checkpoints obtained by one rigid task-to-world transform of source values (0,0,1), (3,0,1), (3,6,1), (6,6,1), and (6,6,1) m.", "items": {"type": "array", "items": {"type": "number"}, "length": 3}, "length": 5},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_sit",
+      "name": "HumanoidBench chair sit",
+      "description": "Move from standing to the source chair-centered seated posture and meet its 1000-step episode-return success line.",
+      "source_task_or_operation": "HumanoidBench sit_simple: sit onto a chair positioned behind the robot.",
+      "applicability": "The canonical G1 has a free pelvis, actuated hips, knees, ankles, and waist, and can make support contact with a chair. Sitting is a posture transition and support task that requires no articulated fingers. Applicability is not a claim of execution success.",
+      "adaptation": "Retain the source pelvis-height band 0.68-0.72 m, chair-relative x band [-0.19,0.19] m, torso-upright lower bound 0.95, 1000-step horizon, and success_bar 750. Rebind canonical bodies and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, the fixed chair body is at (-0.25,0,0) m. Its collision seat/leg envelope has local center (0,0,0.2375) m and half-size (0.21,0.21,0.2375) m; its back has local center (-0.23,0,0.65) m and half-size (0.02,0.21,0.2) m."],
+      "observation_assumptions": ["The evaluator samples canonical pelvis pose, torso orientation, center-of-mass velocity, chair pose, contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_sit_simple_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 750,
+        "threshold_provenance": "source success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 296-357: Sit declares success_bar=750 and scores pelvis z in [0.68,0.72] m, chair-relative x in [-0.19,0.19] m, centered y, head-to-IMU posture in [0.35,0.45] m, upright >=0.95, control, and low motion; tasks.py sets 1000 steps. assets/tasks/sit_simple.xml lines 7-20 fixes chair pose and collision geometry. Paper Section IV-A defines chair sitting.",
+          "support": "adapted",
+          "adaptation": "Keep every cited numeric bound, 750, and 1000 steps; use canonical body names and the non-weakening 29-plus-eight-zero, 37-term force-mean substitution."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_sit", "task_parameters": {
+          "type": "object", "required": ["chair_id", "max_control_steps"],
+          "properties": {
+            "chair_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_sit_simple_chair."},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_balance",
+      "name": "HumanoidBench pivot-board balance",
+      "description": "Remain balanced on the source single-pivot unstable board and meet its 1000-step episode-return success line.",
+      "source_task_or_operation": "HumanoidBench balance_simple: stabilize the humanoid on an unstable board over a spherical pivot.",
+      "applicability": "The canonical G1 has two independently actuated feet, ankle roll and pitch, a free base, and IMU and foot observations. Dynamic balance on a moving support is physically applicable without finger articulation. This does not assert a stabilizing policy.",
+      "adaptation": "Adapt the source simple one-board/one-pivot operation to canonical G1 while retaining the repository's auxiliary G1 stand-height constant, contact termination semantics, 1000-step horizon, and success_bar 800. Rebind names and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, a free rigid board centered at (0,0,0.37) m has half-size (0.15,0.55,0.03) m and rests on one fixed spherical pivot centered at (0,0,0.17) m with radius 0.17 m; the surrounding floor remains separately contact-observable."],
+      "observation_assumptions": ["The evaluator samples canonical head-equivalent height, torso upright projection, planar center-of-mass velocity, board and floor contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_balance_simple_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 800,
+        "threshold_provenance": "source success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/balance.py lines 11-82 and 85-117: BalanceBase declares success_bar=800; its repository auxiliary-G1 branch sets the stand-height constant to 1.28 m and the elevated standing bound to 1.65 m; it scores standing/upright/control/no-motion and terminates on pelvis height or forbidden pivot/floor contacts. BalanceSimple supplies one board and pivot; assets/tasks/balance_simple.xml lines 3-10 fixes their poses and dimensions; tasks.py sets 1000 steps.",
+          "support": "adapted",
+          "adaptation": "Keep the simple fixture semantics, source termination, 800, and 1000 steps; rebind names and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_balance", "task_parameters": {
+          "type": "object", "required": ["support_board_id", "max_control_steps"],
+          "properties": {
+            "support_board_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_balance_simple_board."},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_stair",
+      "name": "HumanoidBench alternating stair traversal",
+      "description": "Traverse the source repeating upward and downward stair sequence in its 1 m/s regime and meet the episode-return success line.",
+      "source_task_or_operation": "HumanoidBench stair: walk across alternating ascending and descending stairs.",
+      "applicability": "The canonical G1 has actuated hips, knees, two-axis ankles, named feet, and a free base. Alternating stair ascent and descent is a legged traversal operation with no hand requirement. Physical applicability does not establish course completion.",
+      "adaptation": "Retain the source stair fixture semantics, 1 m/s target, climbing posture reward, 1000-step horizon, and inherited success_bar 700. Rebind canonical body and foot names and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, four rigid five-level stair mounds are centered at x = 3,9,15,21 m on a 6 m pitch under a +0.2 m parent offset. Each is 10 m wide; its stacked box layers are 5.4,4.2,3.0,1.8,0.6 m long, rise in 0.18 m increments to 0.9 m, and produce 0.6 m horizontal step runs, matching the pinned source fixture up to a rigid world-frame transform."],
+      "observation_assumptions": ["The evaluator samples canonical head-to-foot height, torso upright projection, center-of-mass velocity, foot contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_stair_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source inherited success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 172-224: ClimbingUpwards scores 1.2 m head-to-each-foot height, torso upright >=0.5, control, and 1 m/s movement; Stair inherits this reward and Walk success_bar=700. tasks.py sets 1000 steps. assets/tasks/stair.xml and assets/locomotion/generated_xml_stairs.xml lines 2-94 fix four five-level stair mounds. Paper Section IV-A specifies repeating upward and downward stairs at 1 m/s.",
+          "support": "adapted",
+          "adaptation": "Keep source course meaning, all reward bounds, 1 m/s, 700, and 1000 steps; rebind names and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_stair", "task_parameters": {
+          "type": "object", "required": ["stair_course_id", "travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "stair_course_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_stairs."},
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Course forward direction.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_slide",
+      "name": "HumanoidBench alternating ramp traversal",
+      "description": "Walk across the source repeating upward and downward slide ramps in its 1 m/s regime and meet the episode-return success line.",
+      "source_task_or_operation": "HumanoidBench slide: traverse alternating ascending and descending continuous ramps.",
+      "applicability": "The canonical G1 has two-axis ankles, knees, hips, foot contact sites, and inertial sensing suited to continuous-slope traversal. The operation is physically distinct from discrete stairs and requires no fingers. No success is claimed.",
+      "adaptation": "Retain the source slide-ramp fixture semantics, 1 m/s target, climbing reward, 1000-step horizon, and inherited success_bar 700. Rebind canonical names and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, each rigid ramp module spans x = 0.3 to 10.3 m and y = -5 to +5 m, rises linearly to 1.75 m at x = 5.3 m, and descends linearly to zero; nine identical modules are offset at x = 0,10,...,80 m, matching the pinned source fixture up to a rigid world-frame transform."],
+      "observation_assumptions": ["The evaluator samples canonical head-to-foot height, torso upright projection, center-of-mass velocity, contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_slide_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source inherited success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/basic_locomotion_envs.py lines 172-225: Slide inherits ClimbingUpwards, which scores 1.2 m head-to-foot height, torso upright >=0.5, control, and 1 m/s movement, plus Walk success_bar=700. tasks.py sets 1000 steps. assets/tasks/slide.xml lines 2-30 fixes the inline six-vertex ramp and nine module offsets. Paper Section IV-A defines repeating upward and downward slides at 1 m/s.",
+          "support": "adapted",
+          "adaptation": "Keep source continuous-ramp meaning, reward bounds, 1 m/s, 700, and 1000 steps; rebind names and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_slide", "task_parameters": {
+          "type": "object", "required": ["ramp_course_id", "travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "ramp_course_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_slides."},
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Course forward direction.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_pole",
+      "name": "HumanoidBench dense-pole traversal",
+      "description": "Travel through the source dense field of thin poles while avoiding contact penalties and meet the episode-return success line.",
+      "source_task_or_operation": "HumanoidBench pole: forward locomotion through a dense pole field with contact penalties.",
+      "applicability": "The canonical G1 is a narrow free-base biped with articulated waist and arms, foot and IMU observations, and collision geometry, so whole-body collision-free passage among poles is physically applicable without hand dexterity. This is not a completion claim.",
+      "adaptation": "Instantiate the source pole-field operation for the exact canonical G1, retaining 0.5 m/s target, pole-contact discount 0.1, 1000-step horizon, and success_bar 700. Rebind canonical names and use the 29-plus-eight-zero, 37-term force-mean substitution.",
+      "scene_assumptions": ["In the task frame, 41 pole rows are spaced 1 m apart at x = 1,...,41 m. Odd rows place poles at y = +/-2.25 and +/-0.75 m; even rows use y = +/-1.5 and 0 m. Every pole is a vertical cylinder of radius 0.05 m and height 2 m centered at z = 1 m; side barriers bound the corridor internally at y = +/-3 m."],
+      "observation_assumptions": ["The evaluator samples canonical body and base state, forward center-of-mass velocity, all pole contacts, actuator force, and time."],
+      "scoring": [{
+        "clause_id": "source_episode_return",
+        "metric": "humanoidbench_pole_episode_return",
+        "unit": "reward",
+        "comparator": ">=",
+        "threshold": 700,
+        "threshold_provenance": "source success_bar retained unchanged",
+        "temporal": {"kind": "fixed_horizon", "max_control_steps": 1000},
+        "aggregation": {"kind": "sum_over_control_steps"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/pole.py lines 15-99: Pole declares 0.5 m/s and success_bar=700; its repository auxiliary-G1 branch sets stand height to 1.28 m; it defines standing/upright/control/move reward, pole collision discount 0.1, and fallen termination. tasks.py sets 1000 steps; assets/tasks/pole.xml and assets/locomotion/generated_xml_poles.xml fix 41 alternating pole rows and corridor barriers. Paper Section IV-A defines forward travel through dense high thin poles without collision.",
+          "support": "adapted",
+          "adaptation": "Keep source operation, 0.5 m/s, collision discount, 700, and 1000 steps; rebind canonical names and average 29 canonical force-tolerance entries plus eight zeros over the source 37-term denominator."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_pole", "task_parameters": {
+          "type": "object", "required": ["pole_field_id", "travel_direction_xyz", "max_control_steps"],
+          "properties": {
+            "pole_field_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Required public fixture value: humanoidbench_cb118903_poles."},
+            "travel_direction_xyz": {"type": "array", "unit": "unit_vector", "frame": "world", "description": "Field forward direction.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "humanoidbench_push",
+      "name": "HumanoidBench tabletop box push",
+      "description": "Use non-prehensile distal-arm contact to move a free box to less than 0.05 m Euclidean error from a requested tabletop goal.",
+      "source_task_or_operation": "HumanoidBench push: move a free tabletop box to a sampled 3D goal.",
+      "applicability": "The canonical G1 has seven actuated joints per arm and collision geometry on each distal wrist chain. A tabletop box can be translated by non-prehensile wrist or forearm contact; grasping and articulated fingers are neither required nor credited. This establishes physical applicability only.",
+      "adaptation": "Replace the source articulated hand with canonical distal-arm collision geometry and permit only non-prehensile contact. Preserve the free-box Euclidean goal metric, strict < comparator, 0.05 m threshold, and source 500-step horizon.",
+      "scene_assumptions": ["In the task frame, the fixed table body is at (0.9,0,0.45) m and its top has local center (0,0,0.4) m and half-size (0.5,1,0.05) m. A free 0.2 m cube begins from the source tabletop region, remains externally unactuated, and the requested goal has x in [0.7,1.0] m, y in [-0.5,0.5] m, and z = 1.0 m."],
+      "observation_assumptions": ["The evaluator samples canonical distal-arm body poses, box pose and velocity, goal pose, contacts, joint state, and time in MuJoCo."],
+      "scoring": [{
+        "clause_id": "box_goal_error",
+        "metric": "box_goal_euclidean_position_error",
+        "unit": "m",
+        "comparator": "<",
+        "threshold": 0.05,
+        "threshold_provenance": "source endpoint threshold retained unchanged",
+        "temporal": {"kind": "within", "max_control_steps": 500},
+        "aggregation": {"kind": "any_control_step"},
+        "source_refs": [{
+          "source_id": "SRC-HUMANOIDBENCH-CB118903",
+          "specific_reference": "envs/push.py lines 19-26, 46, 61-79, and 88-108: the task horizon is 500, the goal samples x in [0.7,1.0] m and y in [-0.5,0.5] m at z=1.0 m, goal_dist is Euclidean free-box-to-goal distance, and the episode terminates when goal_dist < 0.05. assets/tasks/push.xml lines 13-29 fixes table and box geometry. Paper Section IV-B defines moving a box to a sampled tabletop point.",
+          "support": "adapted",
+          "adaptation": "Use canonical distal-arm contact instead of articulated fingers; retain the free box, Euclidean metric, <0.05 m, and 500 steps."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "humanoidbench_push", "task_parameters": {
+          "type": "object", "required": ["object_id", "goal_position_m", "max_control_steps"],
+          "properties": {
+            "object_id": {"type": "string", "unit": "semantic_object_id", "frame": "task_scene", "description": "Required public semantic value: tabletop_box."},
+            "goal_position_m": {"type": "array", "unit": "m", "frame": "task_scene", "description": "Requested box-center goal with source bounds x in [0.7,1.0] m, y in [-0.5,0.5] m, and z = 1.0 m.", "items": {"type": "number"}, "length": 3},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode horizon; required value is 500."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "robocup_parkour",
+      "name": "RoboCup platform parkour",
+      "description": "Step onto a raised platform, jump down with both feet airborne, avoid falling or non-leg platform contact, and remain still upright for 5 seconds in two consecutive runs.",
+      "source_task_or_operation": "RoboCup Humanoid League Parkour: step up, dwell, jump down, and stabilize.",
+      "applicability": "The canonical G1 has a free base, articulated legs with ankle pitch and roll, and foot and IMU observations. Stepping up, a two-foot flight phase, landing, and standing are physically applicable and do not require hands. This task record makes no success claim.",
+      "adaptation": "Classify the 1.219 m canonical stand model as AdultSize, but retain the source morphology-relative minimum platform height of one fifth robot height, 0.05 m height increments, approximately 0.6 by 0.6 m top, 5 s dwell, jump definition, and two-consecutive-success rule.",
+      "scene_assumptions": ["One rigid platform has an approximately 0.6 by 0.6 m top and a declared height at least one fifth of canonical robot height in 0.05 m increments.", "Only leg-platform contacts are allowed; ground and platform contacts and both-foot flight are separately observable."],
+      "observation_assumptions": ["The evaluator samples all body contacts, both foot contacts, free-base pose, IMU state, platform pose, and time for the complete run."],
+      "scoring": [{
+        "clause_id": "two_consecutive_full_successes",
+        "metric": "consecutive_step_up_jump_down_dwell_success_count",
+        "unit": "run",
+        "comparator": ">=",
+        "threshold": 2,
+        "threshold_provenance": "source successful-trial rule",
+        "temporal": {"kind": "consecutive_runs", "run_count": 2, "post_landing_dwell_s": 5, "max_trial_duration_s": 1500},
+        "aggregation": {"kind": "consecutive_full_successes"},
+        "source_refs": [{
+          "source_id": "SRC-ROBOCUP-HL-2025-78D6EE85",
+          "specific_reference": "Section_III/parkour.tex lines 9-16 and 40-74: platform height is at least one fifth robot height in 5 cm increments, top is about 60 x 60 cm, non-leg contact or falling fails, full success steps up and jumps down with both feet airborne and includes a 5 s still dwell, and a successful trial needs two consecutive successful runs.",
+          "support": "adapted",
+          "adaptation": "Use canonical leg/body contact groups and measured height while retaining every source dimension, relative minimum, dwell, jump predicate, and consecutive-run obligation."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "robocup_parkour", "task_parameters": {
+          "type": "object", "required": ["platform_height_m", "platform_top_size_m", "post_landing_dwell_s", "required_consecutive_runs", "max_trial_duration_s"],
+          "properties": {
+            "platform_height_m": {"type": "number", "unit": "m", "frame": "task_fixture", "description": "Declared height, at least one fifth canonical robot height and an integer multiple of 0.05 m."},
+            "platform_top_size_m": {"type": "array", "unit": "m", "frame": "task_fixture", "description": "Approximate source top size; required value is [0.6, 0.6].", "items": {"type": "number"}, "length": 2},
+            "post_landing_dwell_s": {"type": "number", "unit": "s", "frame": "none", "description": "Required still upright dwell; required value is 5."},
+            "required_consecutive_runs": {"type": "integer", "unit": "run", "frame": "none", "description": "Required consecutive full successes; required value is 2."},
+            "max_trial_duration_s": {"type": "number", "unit": "s", "frame": "none", "description": "Source technical-challenge limit; required value is 1500."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "robocup_dynamic_kick",
+      "name": "RoboCup moving-ball goal kick",
+      "description": "Intercept a moving ball with a deliberate kick and score a goal in at least two of three counted runs.",
+      "source_task_or_operation": "RoboCup Humanoid League Dynamic Kick from Moving Ball.",
+      "applicability": "The canonical G1 is an AdultSize free-base biped with articulated hips, knees, ankles, and feet. Intercepting and kicking a rolling ball is a leg-only dynamic operation and is physically applicable without finger joints. No scoring performance is claimed.",
+      "adaptation": "The canonical 1.219 m stand model selects the source AdultSize branch. Use one externally launched FIFA size 5 rolling ball and a rigid AdultSize goal. Preserve the source counted-run logic: retakes do not count, success requires the G1 to execute a kick and score, and at least two successes are required in a batch of three. Preserve the 25 minute overall limit.",
+      "scene_assumptions": ["An approximately 14 by 9 m AdultSize field contains one FIFA size 5 rolling ball and a goal with a 2.6 m-wide by 1.8 m-high opening. G1 starts at the 2.1 m penalty mark; a launcher or second actor starts at least 1 m from a corner-placed ball and contacts it once."],
+      "observation_assumptions": ["The evaluator samples ball pose and contacts, goal-plane crossing, G1 foot and body contacts, free-base state, and time to distinguish retake, failure, partial success, and success."],
+      "scoring": [{
+        "clause_id": "two_of_three_goals",
+        "metric": "moving_ball_goal_successful_run_count",
+        "unit": "run",
+        "comparator": ">=",
+        "threshold": 2,
+        "threshold_provenance": "source successful-trial rule",
+        "temporal": {"kind": "fixed_counted_runs", "run_count": 3, "max_trial_duration_s": 1500},
+        "aggregation": {"kind": "at_least_two_successes", "retakes_excluded": true},
+        "source_refs": [{
+          "source_id": "SRC-ROBOCUP-HL-2025-78D6EE85",
+          "specific_reference": "Section_III/moving-ball.tex lines 11-46 and 48-93: the moving ball is passed from a corner, the kicker starts at the penalty mark, the passer starts at least 1 m from the ball, success is a deliberate kick that scores, retakes are excluded, and a successful trial requires at least two successes among three counted runs. law1.tex lines 98-103, 155-158, and 192-207 and law2.tex lines 15-21 define the AdultSize field, penalty mark, goal, and ball; general-rules.tex supplies the 25 minute limit.",
+          "support": "adapted",
+          "adaptation": "The measured canonical 1.219 m stand height selects AdultSize. Implement the passer as an external physical launcher or second actor while leaving the field, one-touch, deliberate-kick, goal, retake, two-of-three, and time obligations unchanged."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "robocup_dynamic_kick", "task_parameters": {
+          "type": "object", "required": ["ball_id", "goal_id", "passer_start_distance_m", "counted_run_count", "required_success_count", "max_trial_duration_s"],
+          "properties": {
+            "ball_id": {"type": "string", "unit": "semantic_object_id", "frame": "task_scene", "description": "Required public semantic value: rolling_soccer_ball."},
+            "goal_id": {"type": "string", "unit": "fixture_id", "frame": "task_scene", "description": "Rigid goal identifier."},
+            "passer_start_distance_m": {"type": "number", "unit": "m", "frame": "ball_initial", "description": "Initial passer-to-ball distance; minimum value is 1."},
+            "counted_run_count": {"type": "integer", "unit": "run", "frame": "none", "description": "Counted batch size excluding retakes; required value is 3."},
+            "required_success_count": {"type": "integer", "unit": "run", "frame": "none", "description": "Required scored-goal runs; required value is 2."},
+            "max_trial_duration_s": {"type": "number", "unit": "s", "frame": "none", "description": "Source technical-challenge limit; required value is 1500."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "robocup_high_kick",
+      "name": "RoboCup high kick",
+      "description": "Kick a stationary ball from the ground into the goal at or above a declared minimum crossing height.",
+      "source_task_or_operation": "RoboCup Humanoid League High-Kick Challenge.",
+      "applicability": "The canonical G1 has independently actuated legs and feet and a free base, making a height-directed stationary-ball kick physically applicable. The task uses no hands. This task record does not assert that the goal can be scored.",
+      "adaptation": "The canonical 1.219 m stand model selects the source AdultSize field and FIFA size 5 ball. Preserve the declaration rule: minimum height is at least two thirds ball diameter and a 0.01 m increment, initial robot distance is at least 0.3 m, and only a goal crossing at or above the declaration counts. Preserve the 25 minute limit.",
+      "scene_assumptions": ["An approximately 14 by 9 m AdultSize field contains a FIFA size 5 free ball on the 2.1 m penalty mark and a rigid goal obstacle with a 2.6 m-wide by 1.8 m-high opening, observable goal plane, and crossing height."],
+      "observation_assumptions": ["The evaluator samples ball trajectory and contacts, goal-plane crossing position, robot-to-ball initial distance, G1 contacts, and time."],
+      "scoring": [{
+        "clause_id": "declared_height_goal",
+        "metric": "declared_height_valid_goal_count",
+        "unit": "run",
+        "comparator": ">=",
+        "threshold": 1,
+        "threshold_provenance": "source valid-kick definition",
+        "temporal": {"kind": "best_run_within", "max_trial_duration_s": 1500},
+        "aggregation": {"kind": "best_valid_goal"},
+        "source_refs": [{
+          "source_id": "SRC-ROBOCUP-HL-2025-78D6EE85",
+          "specific_reference": "Section_III/high-kick.tex lines 10-24: declared height is at least two thirds ball diameter in 1 cm increments, the robot starts at least 30 cm away, the kick begins from the ground, only a goal at or above the declaration counts, and obstacle/field violations fail. law1.tex lines 98-103, 155-158, and 192-207 and law2.tex lines 15-21 define the AdultSize field, penalty mark, goal, and ball; general-rules.tex supplies the 25 minute limit.",
+          "support": "adapted",
+          "adaptation": "The measured canonical 1.219 m stand height selects AdultSize; measure crossing height mechanically while retaining the source field, ball, ratio, increment, distance, valid-goal condition, and time limit."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "robocup_high_kick", "task_parameters": {
+          "type": "object", "required": ["ball_diameter_m", "declared_min_height_m", "height_increment_m", "minimum_start_distance_m", "max_trial_duration_s"],
+          "properties": {
+            "ball_diameter_m": {"type": "number", "unit": "m", "frame": "ball", "description": "Physical ball diameter."},
+            "declared_min_height_m": {"type": "number", "unit": "m", "frame": "goal", "description": "Declared crossing height, at least two thirds ball_diameter_m and an integer multiple of height_increment_m."},
+            "height_increment_m": {"type": "number", "unit": "m", "frame": "none", "description": "Source declaration increment; required value is 0.01."},
+            "minimum_start_distance_m": {"type": "number", "unit": "m", "frame": "ball_initial", "description": "Minimum initial robot-to-ball distance; required value is 0.3."},
+            "max_trial_duration_s": {"type": "number", "unit": "s", "frame": "none", "description": "Source technical-challenge limit; required value is 1500."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "robocup_obstacle_navigation",
+      "name": "RoboCup collision-free obstacle navigation",
+      "description": "Cross the AdultSize field strip without touching or knocking over any of five obstacles and without leaving the strip.",
+      "source_task_or_operation": "RoboCup Humanoid League Obstacle Navigation Challenge.",
+      "applicability": "The 1.219 m canonical G1 falls in the source AdultSize height class and is a steerable free-base biped with collision and base-state observations. Navigating around full-height obstacles is physically applicable and independent of hand articulation. No crossing result is claimed.",
+      "adaptation": "Select source AdultSize values unchanged: 3 m strip width across the 9 m field width, five obstacles, each 1 m high and 0.6 m wide, and randomized legal placement. Preserve full success as reaching the opposite sideline with no obstacle contact and no partial or full strip exit.",
+      "scene_assumptions": ["A 3 m-wide by approximately 9 m-long AdultSize field strip contains five rigid colored obstacles, each 1 m high and 0.6 m wide. Candidate centers form the source 3 by 3 grid at one-quarter increments of strip width and length; no more than two obstacles share a longitudinal row, and outer placements leave less than canonical robot width to the boundary so a passable interior route remains."],
+      "observation_assumptions": ["The evaluator samples canonical base and body poses, obstacle and boundary contacts, strip-boundary crossing, opposite-sideline contact, and time."],
+      "scoring": [{
+        "clause_id": "collision_free_strip_crossing",
+        "metric": "fully_successful_obstacle_navigation_run_count",
+        "unit": "run",
+        "comparator": ">=",
+        "threshold": 1,
+        "threshold_provenance": "source full-success definition",
+        "temporal": {"kind": "best_run_within", "max_trial_duration_s": 1500},
+        "aggregation": {"kind": "best_full_success"},
+        "source_refs": [{
+          "source_id": "SRC-ROBOCUP-HL-2025-78D6EE85",
+          "specific_reference": "Section_III/obstacle_navigation.tex lines 15-28 and 31-66: AdultSize strip width is 3 m; five obstacles are 1 m high and 0.6 m wide; nine candidate locations use quarter-width and quarter-length increments with a passable route; success reaches the opposite sideline without obstacle contact or partial/full strip exit. law1.tex lines 98-103 fixes the approximately 9 m AdultSize field width; general-rules.tex supplies the 25 minute limit.",
+          "support": "adapted",
+          "adaptation": "The canonical 1.219 m model selects AdultSize. Preserve all source dimensions, obstacle count, legal-placement condition, contact/boundary exclusions, completion event, and time limit."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "robocup_obstacle_navigation", "task_parameters": {
+          "type": "object", "required": ["strip_width_m", "obstacle_count", "obstacle_height_m", "obstacle_width_m", "max_trial_duration_s"],
+          "properties": {
+            "strip_width_m": {"type": "number", "unit": "m", "frame": "task_scene", "description": "AdultSize source strip width; required value is 3."},
+            "obstacle_count": {"type": "integer", "unit": "obstacle", "frame": "task_scene", "description": "Source obstacle count; required value is 5."},
+            "obstacle_height_m": {"type": "number", "unit": "m", "frame": "task_scene", "description": "AdultSize obstacle height; required value is 1."},
+            "obstacle_width_m": {"type": "number", "unit": "m", "frame": "task_scene", "description": "AdultSize obstacle width; required value is 0.6."},
+            "max_trial_duration_s": {"type": "number", "unit": "s", "frame": "none", "description": "Source technical-challenge limit; required value is 1500."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "robocup_long_stride",
+      "name": "RoboCup long stride",
+      "description": "Step both feet completely across a declared ground gap without either foot touching the center line, gap interior, or far string.",
+      "source_task_or_operation": "RoboCup Humanoid League Long Stride Challenge.",
+      "applicability": "The canonical G1 has articulated legs, two named feet, and sufficient free-base motion to take a measured stride. The operation is entirely leg-based and physically applicable without finger joints. This does not assert any particular attainable gap distance.",
+      "adaptation": "Represent the center line and string as contact-observable narrow fixtures. Preserve the source full-success definition that both feet finish beyond the string without touching either boundary or the intervening region, the best-run aggregation, and the 25 minute limit. The requested gap is not claimed reachable in advance.",
+      "scene_assumptions": ["A center line and parallel far string delimit a declared ground gap; both boundaries and the gap interior are separately contact-observable."],
+      "observation_assumptions": ["The evaluator samples both canonical foot poses and contacts, boundary and gap contacts, free-base state, and time."],
+      "scoring": [{
+        "clause_id": "both_feet_clear_gap",
+        "metric": "fully_successful_long_stride_run_count",
+        "unit": "run",
+        "comparator": ">=",
+        "threshold": 1,
+        "threshold_provenance": "source full-success definition",
+        "temporal": {"kind": "best_run_within", "max_trial_duration_s": 1500},
+        "aggregation": {"kind": "best_full_success"},
+        "source_refs": [{
+          "source_id": "SRC-ROBOCUP-HL-2025-78D6EE85",
+          "specific_reference": "Section_III/long-stride.tex lines 10-49: a string and center line delimit the measured distance; failure contacts the interior, partial success touches a boundary, and full success places both feet beyond the string without either boundary contact; ranking uses the best run and distance normalized by leg length. general-rules.tex supplies the 25 minute limit.",
+          "support": "adapted",
+          "adaptation": "Use MuJoCo contact and foot-position predicates for the same source boundaries and both-feet completion. Preserve best-run and time rules; leave gap distance as a declared task parameter rather than inventing a pass distance."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "robocup_long_stride", "task_parameters": {
+          "type": "object", "required": ["gap_distance_m", "leg_length_m", "max_trial_duration_s"],
+          "properties": {
+            "gap_distance_m": {"type": "number", "unit": "m", "frame": "task_fixture", "description": "Declared center-line-to-string distance; it must be positive."},
+            "leg_length_m": {"type": "number", "unit": "m", "frame": "canonical_model", "description": "Canonical leg length used only for the source ranking ratio; it must be positive."},
+            "max_trial_duration_s": {"type": "number", "unit": "s", "frame": "none", "description": "Source technical-challenge limit; required value is 1500."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "safety_gym_goal0",
+      "name": "Safety Gym open-field point goal",
+      "description": "Navigate on a flat open field until the canonical robot is within 0.3 m planar distance of the selected goal within 1000 steps.",
+      "source_task_or_operation": "Safety Gym Goal0: unconstrained point-goal navigation in a [-1,1] by [-1,1] placement region.",
+      "applicability": "The canonical G1 is a free-base walking robot with observable planar base pose and no need for manipulation in this task. Open-field point-goal navigation is physically applicable and operationally distinct from the multi-turn maze. This is not a navigation-success claim.",
+      "adaptation": "Replace the source mobile base with canonical G1 while preserving the flat [-1,1]^2 placement region, planar robot-to-goal metric, <= comparator, 0.3 m goal radius, and 1000-step episode limit.",
+      "scene_assumptions": ["A flat obstacle-free world uses the source [-1,1] by [-1,1] placement region and one planar goal center."],
+      "observation_assumptions": ["The evaluator samples canonical planar base position, selected goal center, contacts, and time from MuJoCo."],
+      "scoring": [{
+        "clause_id": "point_goal_distance",
+        "metric": "robot_goal_planar_distance",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.3,
+        "threshold_provenance": "source goal_size retained unchanged",
+        "temporal": {"kind": "within", "max_control_steps": 1000},
+        "aggregation": {"kind": "any_control_step"},
+        "source_refs": [{
+          "source_id": "SRC-SAFETY-GYM-F31042F2",
+          "specific_reference": "envs/suite.py lines 99 and 108-152 defines Goal0 with placements_extents [-1,-1,1,1] and goal_size 0.3; envs/engine.py lines 98 and 1196-1201 defines 1000 steps and goal_met as dist_goal() <= goal_size.",
+          "support": "adapted",
+          "adaptation": "Substitute canonical G1 planar base position for the source robot position; retain the world extent, Euclidean planar metric, <=0.3 m, and 1000 steps."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "safety_gym_goal0", "task_parameters": {
+          "type": "object", "required": ["goal_center_xy_m", "max_control_steps"],
+          "properties": {
+            "goal_center_xy_m": {"type": "array", "unit": "m", "frame": "world", "description": "Selected planar goal center inside the source [-1,1]^2 region.", "items": {"type": "number"}, "length": 2},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode limit; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    },
+    {
+      "task_id": "safety_gym_button0",
+      "name": "Safety Gym target button contact",
+      "description": "Navigate to the selected one of four fixed buttons and create canonical robot-button contact within 1000 steps.",
+      "source_task_or_operation": "Safety Gym Button0: contact the selected button in an unconstrained four-button field.",
+      "applicability": "The canonical G1 can walk and has collision geometry on its feet, body, and distal wrist chains. The source success predicate accepts contact by any robot geom, so the operation requires no articulated fingers or grasp. Physical applicability does not imply contact success.",
+      "adaptation": "Replace the source robot geom set with all canonical G1 collision geoms. Preserve four buttons, 0.1 m button radius, 0.2 m keepout, [-1,1]^2 placement extent, selected-button robot-contact predicate, and 1000-step limit.",
+      "scene_assumptions": ["A flat [-1,1] by [-1,1] world contains four immovable spherical buttons of radius 0.1 m with 0.2 m placement keepout."],
+      "observation_assumptions": ["The evaluator samples the selected button identity, all canonical collision contacts, base and joint state, and time from MuJoCo."],
+      "scoring": [{
+        "clause_id": "selected_button_contact",
+        "metric": "selected_button_robot_contact",
+        "unit": "binary",
+        "comparator": "==",
+        "threshold": 1,
+        "threshold_provenance": "source contact predicate",
+        "temporal": {"kind": "within", "max_control_steps": 1000},
+        "aggregation": {"kind": "any_control_step"},
+        "source_refs": [{
+          "source_id": "SRC-SAFETY-GYM-F31042F2",
+          "specific_reference": "envs/suite.py lines 99 and 164-214 defines Button0 with four buttons, size 0.1, keepout 0.2, and [-1,1]^2 placement; envs/engine.py lines 98 and 1196-1209 defines 1000 steps and success as contact between the selected button and any robot geom.",
+          "support": "adapted",
+          "adaptation": "Use canonical G1 collision geoms as the robot geom set and retain all source fixture dimensions, selected-contact predicate, binary success, and 1000 steps."
+        }]
+      }],
+      "invocation_schema": {
+        "envelope": "request", "required": ["request"],
+        "request": {"type": "object", "required": ["task_id", "task_parameters"], "task_id": "safety_gym_button0", "task_parameters": {
+          "type": "object", "required": ["goal_button_index", "max_control_steps"],
+          "properties": {
+            "goal_button_index": {"type": "integer", "unit": "index", "frame": "button_set", "description": "Selected source button index in the allowed range [0,3]."},
+            "max_control_steps": {"type": "integer", "unit": "control_step", "frame": "none", "description": "Source episode limit; required value is 1000."}
+          },
+          "additional_properties": false
+        }}
+      }
+    }
+  ]
+}

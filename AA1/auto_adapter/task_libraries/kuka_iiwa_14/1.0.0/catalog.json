@@ -1,0 +1,2554 @@
+{
+  "robot_configuration_id": "kuka_iiwa_14",
+  "package_version": "1.0.0",
+  "snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
+  "request_envelope": {
+    "envelope": "request",
+    "required": [
+      "request"
+    ],
+    "request": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "task_parameters"
+      ],
+      "task_id": "one of catalog.tasks[].task_id",
+      "task_parameters": "validated by the selected task invocation_schema.request.task_parameters"
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "mw_reach_target",
+      "name": "Reach a target pose",
+      "description": "Move the KUKA iiwa 14 attachment_site to a specified tabletop target position without manipulating an object.",
+      "source_task_or_operation": "Meta-World sawyer_reach_v3 reach",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. It can place attachment_site at reachable tabletop target positions without manipulating an object.",
+      "adaptation": "Replace the Sawyer body and benchmark scene with the canonical KUKA iiwa 14 Direct MuJoCo model and a private tabletop target. Measure attachment_site against the target in the common world metre frame and preserve the source Euclidean metric, comparator, and 0.05 m threshold.",
+      "scene_assumptions": [
+        "A fixed target body is placed in the reachable tabletop workspace.",
+        "The private scene provides collision-free free space for the end effector to approach the target."
+      ],
+      "observation_assumptions": [
+        "The observation exposes attachment_site position and target position in a common metre frame.",
+        "The private measurement binding can evaluate the terminal Euclidean position error."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_endpoint",
+          "metric": "end_effector_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state lines 82-98 and compute_reward lines 140-162 at pinned commit: tcp_to_target is the Euclidean attachment-point-to-target norm and success is reach_dist <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Replace the Sawyer body and benchmark scene with the canonical KUKA iiwa 14 Direct MuJoCo model and a private tabletop target. Measure attachment_site against the target in the common world metre frame and preserve the source Euclidean metric, comparator, and 0.05 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_reach_target",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "name": "Push an object to a goal",
+      "description": "Use end-effector contact to push a tabletop object until its position is within the goal region.",
+      "source_task_or_operation": "Meta-World sawyer_push_v3 push",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can make planar contact with a small rigid object and push it across a tabletop using contact only.",
+      "adaptation": "Use a private rigid object and goal fixture with the canonical KUKA iiwa 14 model. Drive object motion only through link7 sphere contact and preserve the source Euclidean object-to-goal metric and 0.05 m threshold.",
+      "scene_assumptions": [
+        "A small rigid object and a planar goal marker are placed on the tabletop within the arm workspace.",
+        "The object has enough clearance for a planar pushing motion and does not require lifting."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions in the same metre frame.",
+        "The private measurement binding can distinguish object motion caused by contact from the initial state."
+      ],
+      "scoring": [
+        {
+          "clause_id": "object_goal_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_push"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_v3.py, TARGET_RADIUS line 31, evaluate_state lines 85-114, and compute_reward line 179 at pinned commit: target_to_obj is Euclidean object-to-target distance and success is target_to_obj <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Use a private rigid object and goal fixture with the canonical KUKA iiwa 14 model. Drive object motion only through link7 sphere contact and preserve the source Euclidean object-to-goal metric and 0.05 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_push_to_goal",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_push_wall",
+      "name": "Push an object around a wall",
+      "description": "Push an object around a tabletop wall until it reaches the goal region.",
+      "source_task_or_operation": "Meta-World sawyer_push_wall_v3 push-wall",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can repeatedly contact a small rigid object and drive it along a physical route around a fixed obstacle.",
+      "adaptation": "Use a private wall, object, and goal with the canonical KUKA iiwa 14 model. Preserve the physical wall-routing obligation, Euclidean object-to-goal metric, and 0.07 m threshold.",
+      "scene_assumptions": [
+        "A tabletop wall occupies the nominal start-to-goal corridor while the selected reset leaves a narrow continuous route around its left end.",
+        "The object remains stable on the tabletop during planar contact."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions in metres.",
+        "The private binding can evaluate the terminal object-to-goal error after contact-driven motion."
+      ],
+      "scoring": [
+        {
+          "clause_id": "object_goal_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_push_route"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_wall_v3.py, evaluate_state lines 89-119 and compute_reward line 193 at pinned commit: obj_to_target is Euclidean object-to-target distance and success is obj_to_target <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Use a private wall, object, and goal with the canonical KUKA iiwa 14 model. Preserve the physical wall-routing obligation, Euclidean object-to-goal metric, and 0.07 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_push_wall",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "name": "Sweep an object into a goal",
+      "description": "Use a sweeping contact motion to move a tabletop object into a goal region.",
+      "source_task_or_operation": "Meta-World sawyer_sweep_into_goal_v3 sweep-into-goal",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can make lateral sweeping contact with a small tabletop object without retaining it.",
+      "adaptation": "Use a private free object, collidable tabletop opening, and lower catch surface. Preserve the source contact-based sweep operation, Euclidean object-to-goal metric, and 0.05 m threshold.",
+      "scene_assumptions": [
+        "A small movable object starts on the upper tabletop and the goal lies inside a physical opening with a lower catch surface.",
+        "The opening has collidable edges, and the object can enter it only after a lateral contact sweep."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the object and goal positions in the tabletop frame.",
+        "The private binding can measure the terminal object-to-goal distance."
+      ],
+      "scoring": [
+        {
+          "clause_id": "swept_object_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_sweep"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_sweep_into_goal_v3.py, model_name lines 63-66, evaluate_state lines 68-92, and compute_reward line 230 at pinned commit: the source uses sawyer_table_with_hole.xml, the metric is Euclidean object-to-target distance, and success is <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Use a private free object, collidable tabletop opening, and lower catch surface. Preserve the source contact-based sweep operation, Euclidean object-to-goal metric, and 0.05 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_sweep_into_goal",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "name": "Open a drawer",
+      "description": "Pull a drawer handle until the drawer reaches the source open-state tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_drawer_open_v3 drawer-open",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can open a constrained drawer when a collidable handle face is reachable from the side opposite the opening direction, allowing sustained contact to drive the slide.",
+      "adaptation": "Use a private sliding drawer whose opposite handle face is reachable by the link7 sphere. Preserve the source Euclidean handle-to-open-target metric and 0.03 m threshold; no retained object hold is substituted.",
+      "scene_assumptions": [
+        "A drawer with a rigid handle is mounted on the tabletop and moves along one constrained axis.",
+        "The opposite handle face is reachable by the 0.06 m-radius link7 sphere with clearance for sustained opening contact."
+      ],
+      "observation_assumptions": [
+        "The observation exposes handle position and the private open target position.",
+        "The private binding can measure handle error in metres along the drawer task frame."
+      ],
+      "scoring": [
+        {
+          "clause_id": "open_handle_error",
+          "metric": "drawer_handle_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.03,
+          "temporal": {
+            "kind": "terminal_state_after_pull"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_drawer_open_v3.py, evaluate_state lines 66-88 and compute_reward line 125 at pinned commit: handle_error is Euclidean handle-to-target distance and success is handle_error <= 0.03.",
+              "support": "adapted",
+              "adaptation": "Use a private sliding drawer whose opposite handle face is reachable by the link7 sphere. Preserve the source Euclidean handle-to-open-target metric and 0.03 m threshold; no retained object hold is substituted."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_drawer_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "name": "Close a drawer",
+      "description": "Push a drawer to its closed target position.",
+      "source_task_or_operation": "Meta-World sawyer_drawer_close_v3 drawer-close",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can contact a drawer front or handle and push the constrained slide toward its closed stop.",
+      "adaptation": "Use a private drawer fixture and preserve the source expression TARGET_RADIUS + 0.015, where inherited TARGET_RADIUS is 0.05 m; encode only the resulting 0.065 m threshold.",
+      "scene_assumptions": [
+        "A drawer has a fixed closed stop and a reachable front surface or handle.",
+        "The drawer can be closed by a planar link7 sphere push without object retention."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the drawer object position and the closed target position.",
+        "The private binding can measure the source object-to-target distance in metres."
+      ],
+      "scoring": [
+        {
+          "clause_id": "closed_drawer_distance",
+          "metric": "drawer_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.065,
+          "temporal": {
+            "kind": "terminal_state_after_close"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_drawer_close_v3.py, evaluate_state lines 68-90 and compute_reward lines 132-133 at pinned commit: target_to_obj is Euclidean distance and success is target_to_obj <= self.TARGET_RADIUS + 0.015.",
+              "support": "adapted",
+              "adaptation": "Use a private drawer fixture and preserve the source expression TARGET_RADIUS + 0.015, where inherited TARGET_RADIUS is 0.05 m; encode only the resulting 0.065 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/sawyer_xyz_env.py, class SawyerXYZEnv line 156 at pinned commit: TARGET_RADIUS = 0.05.",
+              "support": "adapted",
+              "adaptation": "Resolve the inherited source constant to 0.05 m before adding the source 0.015 m margin; no tolerance is invented."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_drawer_close",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_button_press",
+      "name": "Press a button",
+      "description": "Move the end effector to a button and press it until the button reaches the source target position.",
+      "source_task_or_operation": "Meta-World sawyer_button_press_v3 button-press",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can press a reachable front-facing constrained button.",
+      "adaptation": "Use a private y-slide button and preserve the source absolute y-axis error metric and 0.02 m threshold.",
+      "scene_assumptions": [
+        "A spring or position-constrained button is mounted on the tabletop within reach.",
+        "The button can be actuated by end-effector contact without requiring force sensing."
+      ],
+      "observation_assumptions": [
+        "The observation exposes button and target positions in the same metre frame.",
+        "The private binding can detect the terminal button state after contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "pressed_button_distance",
+          "metric": "button_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "terminal_state_after_contact"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_button_press_v3.py, evaluate_state lines 61-83 and compute_reward line 139 at pinned commit: obj_to_target is absolute y-axis error and success is obj_to_target <= 0.02.",
+              "support": "adapted",
+              "adaptation": "Use a private y-slide button and preserve the source absolute y-axis error metric and 0.02 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_button_press",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "name": "Press a button from above",
+      "description": "Approach a tabletop button from above and press it to the target state.",
+      "source_task_or_operation": "Meta-World sawyer_button_press_topdown_v3 button-press-topdown",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can approach and press a reachable constrained button from above.",
+      "adaptation": "Use a private z-slide button with overhead clearance and preserve the source absolute z-axis error metric and 0.024 m threshold.",
+      "scene_assumptions": [
+        "A button with a clear overhead approach is mounted on a horizontal tabletop fixture.",
+        "The fixture height and target leave a collision-free overhead approach for the KUKA iiwa 14."
+      ],
+      "observation_assumptions": [
+        "The observation exposes button and target positions in the tabletop frame.",
+        "The private binding can evaluate terminal button-to-target distance after the top-down contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "topdown_button_distance",
+          "metric": "button_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.024,
+          "temporal": {
+            "kind": "terminal_state_after_topdown_contact"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_button_press_topdown_v3.py, evaluate_state lines 62-83 and compute_reward line 135 at pinned commit: obj_to_target is absolute z-axis error and success is obj_to_target <= 0.024.",
+              "support": "adapted",
+              "adaptation": "Use a private z-slide button with overhead clearance and preserve the source absolute z-axis error metric and 0.024 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_button_press_topdown",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_handle_press",
+      "name": "Press a handle",
+      "description": "Press a hinged or spring-loaded handle until it reaches its target position.",
+      "source_task_or_operation": "Meta-World sawyer_handle_press_v3 handle-press",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can press a reachable face on a constrained vertical handle.",
+      "adaptation": "Use a private vertical sliding handle and preserve the source absolute z-axis error metric and 0.02 m threshold.",
+      "scene_assumptions": [
+        "A constrained handle is mounted on a tabletop fixture with a reachable pressing face.",
+        "The handle travel and clearance accommodate the 0.06 m-radius link7 sphere."
+      ],
+      "observation_assumptions": [
+        "The observation exposes handle and target positions in metres.",
+        "The private binding can evaluate handle target error after contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "handle_target_distance",
+          "metric": "handle_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "terminal_state_after_press"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_handle_press_v3.py, TARGET_RADIUS line 16, evaluate_state lines 65-87, and compute_reward lines 133-134 at pinned commit: target_to_obj is absolute z-axis error and success is <= 0.02.",
+              "support": "adapted",
+              "adaptation": "Use a private vertical sliding handle and preserve the source absolute z-axis error metric and 0.02 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_handle_press",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_door_open",
+      "name": "Open a door",
+      "description": "Move a door handle or door mechanism to the source open target.",
+      "source_task_or_operation": "Meta-World sawyer_door_v3 door-open",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can open a hinged door when a reachable contact face permits sustained contact along the hinge arc.",
+      "adaptation": "Use a private hinged door with an accessible contact face. Preserve the source absolute door-handle x-axis error and 0.08 m threshold; require contact-driven hinge motion.",
+      "scene_assumptions": [
+        "A small hinged door with a reachable handle is fixed to the tabletop.",
+        "The hinge axis and contact-face placement permit the link7 sphere to follow the opening arc without fixture interpenetration."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the source door coordinate and its target coordinate.",
+        "The private binding preserves the source task axis and computes absolute coordinate error in metres."
+      ],
+      "scoring": [
+        {
+          "clause_id": "door_open_axis_error",
+          "metric": "door_x_axis_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "temporal": {
+            "kind": "terminal_state_after_open"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_door_v3.py, evaluate_state lines 68-91, especially line 79 at pinned commit: success is abs(obs[4] - self._target_pos[0]) <= 0.08.",
+              "support": "adapted",
+              "adaptation": "Use a private hinged door with an accessible contact face. Preserve the source absolute door-handle x-axis error and 0.08 m threshold; require contact-driven hinge motion."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_door_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_door_close",
+      "name": "Close a door",
+      "description": "Move a hinged door to its closed target position.",
+      "source_task_or_operation": "Meta-World sawyer_door_close_v3 door-close",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can push a reachable door edge or handle toward a closed stop.",
+      "adaptation": "Use a private hinged door and preserve the source Euclidean door-object-to-target metric and 0.08 m threshold.",
+      "scene_assumptions": [
+        "A small hinged door has a reachable edge or handle and a defined closed target.",
+        "The fixture permits closing through one continuous link7 sphere contact sequence."
+      ],
+      "observation_assumptions": [
+        "The observation exposes door object and target positions in metres.",
+        "The private binding can measure terminal object-to-target distance."
+      ],
+      "scoring": [
+        {
+          "clause_id": "closed_door_distance",
+          "metric": "door_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "temporal": {
+            "kind": "terminal_state_after_close"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_door_close_v3.py, evaluate_state lines 105-118 and compute_reward lines 120-134 at pinned commit: obj_to_target is Euclidean distance and success is obj_to_target <= 0.08.",
+              "support": "adapted",
+              "adaptation": "Use a private hinged door and preserve the source Euclidean door-object-to-target metric and 0.08 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_door_close",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "name": "Open a faucet",
+      "description": "Turn a faucet handle to the source open target.",
+      "source_task_or_operation": "Meta-World sawyer_faucet_open_v3 faucet-open",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can rotate a faucet when an accessible radial feature permits sustained tangential contact through the opening arc.",
+      "adaptation": "Use a private rotary faucet with a collidable radial feature and preserve the source Euclidean handle-to-target metric and 0.07 m threshold.",
+      "scene_assumptions": [
+        "A rotary faucet exposes a collidable radial feature within the KUKA workspace.",
+        "The handle torque, travel, and clearance permit sustained tangential link7 sphere contact through the opening arc."
+      ],
+      "observation_assumptions": [
+        "The observation exposes faucet handle and target positions.",
+        "The private binding can evaluate the terminal handle-to-target distance after rotation."
+      ],
+      "scoring": [
+        {
+          "clause_id": "faucet_target_distance",
+          "metric": "faucet_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_rotation"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_faucet_open_v3.py, evaluate_state lines 63-85 and compute_reward lines 137-138 at pinned commit: target_to_obj is Euclidean handle-to-target distance and success is <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Use a private rotary faucet with a collidable radial feature and preserve the source Euclidean handle-to-target metric and 0.07 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_faucet_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "name": "Turn a dial",
+      "description": "Rotate a dial to its target position using contact from the KUKA iiwa 14 link7 spherical flange.",
+      "source_task_or_operation": "Meta-World sawyer_dial_turn_v3 dial-turn",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can rotate a dial when an accessible rim or tab permits sustained tangential contact.",
+      "adaptation": "Use a private dial with a collidable radial feature and preserve the source Euclidean dial-tip-to-target metric and 0.07 m threshold.",
+      "scene_assumptions": [
+        "A rotary dial exposes a collidable rim or tab within the KUKA workspace.",
+        "The dial resistance, travel, and clearance permit sustained tangential link7 sphere contact."
+      ],
+      "observation_assumptions": [
+        "The observation exposes dial object and target positions.",
+        "The private binding can measure terminal dial-to-target distance in metres."
+      ],
+      "scoring": [
+        {
+          "clause_id": "dial_target_distance",
+          "metric": "dial_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_turn"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_dial_turn_v3.py, TARGET_RADIUS line 16, evaluate_state lines 63-85, and compute_reward lines 134-135 at pinned commit: target_to_obj is Euclidean dial-tip-to-target distance and success is target_to_obj <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Use a private dial with a collidable radial feature and preserve the source Euclidean dial-tip-to-target metric and 0.07 m threshold."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_dial_turn",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "name": "Pull a lever to the target angle",
+      "description": "Engage a lever and pull it until its angular error is within the benchmark target.",
+      "source_task_or_operation": "Meta-World sawyer_lever_pull_v3 lever-pull",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can drive a hinged lever through its required arc when the lever exposes a reachable collidable contact feature.",
+      "adaptation": "Use a private hinged lever and preserve the exact source angular error bound pi/24 radians, encoded as 0.1308996939 rad.",
+      "scene_assumptions": [
+        "A hinged lever exposes a reachable collidable contact feature and has a defined target angle.",
+        "The lever resistance, travel, and clearance permit the link7 sphere to drive the required arc."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the lever angle and target angle in radians.",
+        "The private binding computes absolute angular error with the source task convention."
+      ],
+      "scoring": [
+        {
+          "clause_id": "lever_angle_error",
+          "metric": "lever_angle_error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.1308996939,
+          "temporal": {
+            "kind": "terminal_state_after_pull"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_lever_pull_v3.py, evaluate_state lines 80-101 and compute_reward line 168 at pinned commit: lever_error is abs(current joint angle - pi/2) and success is lever_error <= np.pi / 24.",
+              "support": "adapted",
+              "adaptation": "Use a private hinged lever and preserve the exact source angular error bound pi/24 radians, encoded as 0.1308996939 rad."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_lever_pull",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "target_angle",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_door_lock",
+      "name": "Lock a door",
+      "description": "Press a door lock control along its locking axis until it reaches the source target tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_door_lock_v3 door-lock",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can press a constrained lock feature when it exposes a reachable collidable face along the locking axis.",
+      "adaptation": "Use a private constrained lock feature with a reachable pressing face. Preserve the source absolute lock z-axis target error and 0.02 m threshold; require contact-driven lock motion and do not substitute door motion.",
+      "scene_assumptions": [
+        "A constrained lock feature exposes a collidable face reachable by the 0.06 m-radius link7 sphere and moves along the task z axis.",
+        "The reset places the lock outside the 0.02 m tolerance and leaves clearance for contact without cabinet or door interpenetration."
+      ],
+      "observation_assumptions": [
+        "The observation exposes lock-feature and target positions in a common metre frame.",
+        "The private binding can evaluate terminal absolute z-axis error and distinguish lock motion from door-body motion."
+      ],
+      "scoring": [
+        {
+          "clause_id": "door_lock_axis_error",
+          "metric": "door_lock_z_axis_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "terminal_state_after_lock_press"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_door_lock_v3.py, evaluate_state lines 65-87 and compute_reward line 138 at pinned commit: obj_to_target is abs(target_z - lock_z) and success is obj_to_target <= 0.02.",
+              "support": "adapted",
+              "adaptation": "Use a private constrained lock feature with a reachable pressing face. Preserve the source absolute lock z-axis target error and 0.02 m threshold; require contact-driven lock motion and do not substitute door motion."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_door_lock",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_door_unlock",
+      "name": "Unlock a door",
+      "description": "Press a door lock control along its unlocking axis until it reaches the source target tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_door_unlock_v3 door-unlock",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can press a constrained lock feature when it exposes a reachable collidable face along the unlocking axis.",
+      "adaptation": "Use a private constrained lock feature with a reachable pressing face. Preserve the source absolute lock x-axis target error and 0.02 m threshold; require contact-driven lock motion and do not substitute door motion.",
+      "scene_assumptions": [
+        "A constrained lock feature exposes a collidable face reachable by the 0.06 m-radius link7 sphere and moves along the task x axis.",
+        "The reset places the lock outside the 0.02 m tolerance and leaves clearance for contact without cabinet or door interpenetration."
+      ],
+      "observation_assumptions": [
+        "The observation exposes lock-feature and target positions in a common metre frame.",
+        "The private binding can evaluate terminal absolute x-axis error and distinguish lock motion from door-body motion."
+      ],
+      "scoring": [
+        {
+          "clause_id": "door_unlock_axis_error",
+          "metric": "door_unlock_x_axis_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "terminal_state_after_unlock_press"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_door_unlock_v3.py, evaluate_state lines 63-85 and compute_reward line 154 at pinned commit: obj_to_target is abs(target_x - lock_x) and success is obj_to_target <= 0.02.",
+              "support": "adapted",
+              "adaptation": "Use a private constrained lock feature with a reachable pressing face. Preserve the source absolute lock x-axis target error and 0.02 m threshold; require contact-driven lock motion and do not substitute door motion."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_door_unlock",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_faucet_close",
+      "name": "Close a faucet",
+      "description": "Use sustained tangential contact to rotate a faucet handle to the source closed target.",
+      "source_task_or_operation": "Meta-World sawyer_faucet_close_v3 faucet-close",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can rotate a faucet when an accessible radial feature permits sustained tangential contact through the closing arc.",
+      "adaptation": "Use a private rotary faucet with a collidable radial feature. Preserve the source Euclidean handle-to-target metric and 0.07 m threshold; fixture geometry may change but the target obligation may not.",
+      "scene_assumptions": [
+        "A rotary faucet exposes a collidable radial feature within the KUKA workspace.",
+        "The reset starts outside the 0.07 m tolerance, and handle torque, travel, and clearance permit sustained tangential link7 sphere contact through the closing arc."
+      ],
+      "observation_assumptions": [
+        "The observation exposes faucet-handle and target positions in a common metre frame.",
+        "The private binding can evaluate terminal Euclidean handle-to-target distance after contact-driven rotation."
+      ],
+      "scoring": [
+        {
+          "clause_id": "faucet_close_target_distance",
+          "metric": "faucet_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_rotation"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_faucet_close_v3.py, evaluate_state lines 64-86 and compute_reward lines 138-139 at pinned commit: target_to_obj is Euclidean handle-to-target distance and success is target_to_obj <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Use a private rotary faucet with a collidable radial feature. Preserve the source Euclidean handle-to-target metric and 0.07 m threshold; fixture geometry may change but the target obligation may not."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_faucet_close",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_soccer",
+      "name": "Push a ball into a goal",
+      "description": "Use link7 sphere contact to move a free rolling ball until its centre is within the source goal tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_soccer_v3 soccer",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can contact and move a free rolling ball toward a physical goal fixture without retaining the ball.",
+      "adaptation": "Use a private free rolling ball and physical goal fixture. Preserve the unweighted Euclidean ball-centre-to-goal metric returned for success and the 0.07 m threshold; do not substitute the x-scaled reward-shaping distance.",
+      "scene_assumptions": [
+        "A free rolling ball and physical goal fixture preserve the source soccer operation and are placed within the KUKA workspace.",
+        "The reset starts outside the 0.07 m tolerance and the tabletop permits contact-only ball motion without lifting."
+      ],
+      "observation_assumptions": [
+        "The observation exposes ball-centre and goal positions in a common world metre frame.",
+        "The private binding can evaluate terminal unweighted Euclidean ball-to-goal distance and confirm contact-driven ball motion."
+      ],
+      "scoring": [
+        {
+          "clause_id": "soccer_ball_goal_distance",
+          "metric": "ball_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_ball_contact"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_soccer_v3.py, evaluate_state lines 69-100 and compute_reward lines 227-267, especially line 264, at pinned commit: evaluate_state receives the unweighted Euclidean ball-to-target norm and success is <= 0.07; line 236's x-scaled distance is reward shaping only. metaworld/assets/sawyer_xyz/sawyer_soccer.xml lines 12-23 define the free ball and goal fixture.",
+              "support": "adapted",
+              "adaptation": "Use a private free rolling ball and physical goal fixture. Preserve the unweighted Euclidean ball-centre-to-goal metric returned for success and the 0.07 m threshold; do not substitute the x-scaled reward-shaping distance."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_soccer",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_window_open",
+      "name": "Open a sliding window",
+      "description": "Drive a sliding window handle along its opening axis until it reaches the source target tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_window_open_v3 window-open",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can open a constrained sliding window when the handle exposes a reachable face opposite the opening direction.",
+      "adaptation": "Use a private constrained sliding window whose opposite handle face is reachable. Preserve the source absolute handle x-axis target error and 0.05 m threshold; require contact-driven positive-axis slide motion.",
+      "scene_assumptions": [
+        "A sliding window exposes an opposite handle face reachable by the 0.06 m-radius link7 sphere and moves along the task x axis.",
+        "The reset starts outside the 0.05 m tolerance and provides clearance for sustained opening contact without frame interpenetration."
+      ],
+      "observation_assumptions": [
+        "The observation exposes window-handle and target positions in a common metre frame.",
+        "The private binding can evaluate terminal absolute x-axis error and confirm opening-direction slider displacement."
+      ],
+      "scoring": [
+        {
+          "clause_id": "window_open_axis_error",
+          "metric": "window_handle_x_axis_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_open"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_window_open_v3.py, TARGET_RADIUS line 27, evaluate_state lines 79-101, and compute_reward lines 136-137 at pinned commit: target_to_obj is absolute handle x-axis error and success is <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Use a private constrained sliding window whose opposite handle face is reachable. Preserve the source absolute handle x-axis target error and 0.05 m threshold; require contact-driven positive-axis slide motion."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_window_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_window_close",
+      "name": "Close a sliding window",
+      "description": "Push a sliding window handle along its closing axis until it reaches the source target tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_window_close_v3 window-close",
+      "applicability": "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with attachment_site on link7, one contact-enabled link7 sphere of radius 0.06 m, and no gripper. The link7 sphere can push a reachable sliding-window handle toward its closed stop.",
+      "adaptation": "Use a private constrained sliding window with a reachable closing face. Preserve the source absolute handle x-axis target error and 0.05 m threshold; require contact-driven closing-axis slide motion.",
+      "scene_assumptions": [
+        "A sliding window has a reachable collidable handle face and moves along the task x axis toward a closed stop.",
+        "The reset starts outside the 0.05 m tolerance and provides clearance for sustained closing contact without frame interpenetration."
+      ],
+      "observation_assumptions": [
+        "The observation exposes window-handle and target positions in a common metre frame.",
+        "The private binding can evaluate terminal absolute x-axis error and confirm closing-direction slider displacement."
+      ],
+      "scoring": [
+        {
+          "clause_id": "window_close_axis_error",
+          "metric": "window_handle_x_axis_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_close"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_window_close_v3.py, TARGET_RADIUS line 28, evaluate_state lines 83-105, and compute_reward lines 143-144 at pinned commit: target_to_obj is absolute handle x-axis error and success is <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Use a private constrained sliding window with a reachable closing face. Preserve the source absolute handle x-axis target error and 0.05 m threshold; require contact-driven closing-axis slide motion."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate but require it at the terminal state of one private trial. This terminal-state rule is stricter than Meta-World's any-point episode rule; single_trial replaces the benchmark's 50-goal average and must not be reported as Meta-World success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_window_close",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial world-frame position of the affected task entity or fixture feature; it is not an end-effector waypoint."
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; it is an attachment_site waypoint only for mw_reach_target."
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture; it is not a KUKA joint target."
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    }
+  ]
+}
