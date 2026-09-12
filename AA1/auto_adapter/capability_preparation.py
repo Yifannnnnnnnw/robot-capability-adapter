@@ -20,8 +20,8 @@ from typing import Any
 
 import yaml
 
-from .agent.react_loop import ReactLoop, ToolSpec
-from .agent.tools import make_read_file_tool
+from .agent.react_loop import ReactLoop
+from .agent.tools import make_read_file_tool, make_write_file_tool
 
 
 TASK_LIBRARY_ROOT = Path(__file__).resolve().parent / "task_libraries"
@@ -506,18 +506,6 @@ def _authoring_brief(public_inputs: Mapping[str, Any], task_ids: Sequence[str]) 
         if scores:
             entry["scoring"] = scores
         compact_tasks.append(entry)
-    source_entries = public_inputs.get("sources", {}).get("sources", [])
-    compact_sources = []
-    for source in source_entries if isinstance(source_entries, list) else []:
-        if not isinstance(source, Mapping):
-            continue
-        compact_sources.append(
-            {
-                key: source[key]
-                for key in ("source_id", "title", "organization", "version_or_date", "specific_reference")
-                if key in source
-            }
-        )
     mjcf = public_inputs.get("mjcf", {})
     mjcf = {
         key: value
@@ -529,7 +517,6 @@ def _authoring_brief(public_inputs: Mapping[str, Any], task_ids: Sequence[str]) 
         "task_library_identity": public_inputs["task_library_identity"],
         "study": public_inputs["study"],
         "tasks": compact_tasks,
-        "sources": compact_sources,
         "mjcf_metadata": mjcf,
         "skeleton_context": public_inputs.get("skeleton_context"),
         "rules": {
@@ -585,12 +572,13 @@ def _ensure_trace_file(trace_path: Path) -> None:
 
 TGCD_SYSTEM_PROMPT = """You are AA1 Task-Grounded Capability Design (TGCD).
 The original public STUDY completed before this turn. Use only the supplied
-study, public task catalogue/source records, actual MJCF metadata, and optional
+study, public task catalogue and task-local scoring/source_refs, actual MJCF metadata, and optional
 public skeleton context. Do not open private task instances, validation suites,
 IVC/evaluation files, reference contracts/drivers, or archived experiment data.
 
-Reply with one compact capability-v2 JSON object through submit_design. Prefer
-three to six compact reusable package-bound, task-neutral single-effect
+Read authoring_brief.json with read_file before writing. Then write one compact
+capability-v2 JSON object to draft/capability_design.json with write_file.
+Prefer three to six compact reusable package-bound, task-neutral single-effect
 capabilities (the allowed range is three to ten when task coverage needs more).
 Each needs a unique capability_id and Python method_name for method(request),
 and must not shadow a low-level skeleton method. Include description, effect,
@@ -626,8 +614,10 @@ reset data, or task-specific request fields. Cite public scoring for known
 numeric standards. If a standard is unknown, make a finite bounded proposal and
 say proposed in the rationale; this stage does not establish calibration.
 Preserve the supplied identity and exact capability-v2 request ABI. Keep
-prose short and target a complete JSON object below 6000 output tokens. Send
-the complete object in one tool payload only; keep narrative out of the payload."""
+prose short and target a complete JSON object below 6000 output tokens. Start
+with append=false; append=true may add remaining chunks (each write is at most
+150 lines), and Python reports incomplete JSON until the final chunk. Read the
+current draft when correcting it. Do not write any other path or narrative."""
 
 
 def generate_capability_design(
@@ -644,14 +634,14 @@ def generate_capability_design(
     max_tokens_per_turn: int = 8000,
     skeleton_context: Any = None,
 ) -> dict[str, Any]:
-    """Run bounded TGCD and return the design accepted by submit_design."""
+    """Run bounded TGCD and return the design accepted from the draft file."""
 
     started = time.time()
     output = Path(output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
     trace_path = output / "trace.jsonl"
     token_usage: Mapping[str, Any] = {}
-    submitted: dict[str, Any] | None = None
+    accepted_design: dict[str, Any] | None = None
     result: Any = None
     try:
         if not isinstance(robot_id, str) or not robot_id.strip():
@@ -680,9 +670,6 @@ def generate_capability_design(
         library = Path(task_library_dir).resolve()
         catalog = _read_object(
             _public_file(library, "catalog.json"), label="task catalogue"
-        )
-        sources = _read_object(
-            _public_file(library, "sources.json"), label="source records"
         )
         task_ids = _task_ids(catalog)
         catalog_robot_id = _nonempty_text(
@@ -719,7 +706,6 @@ def generate_capability_design(
                 "snapshot_id": task_snapshot_id,
                 "tasks": _public_tasks(catalog),
             },
-            "sources": _json_copy(sources, label="source records"),
             "mjcf": _extract_mjcf_metadata(mjcf),
             "skeleton_context": (
                 _json_copy(skeleton_context, label="skeleton_context")
@@ -731,53 +717,32 @@ def generate_capability_design(
         brief = _authoring_brief(public_inputs, task_ids)
         _write_json(output / "authoring_brief.json", brief)
         reader = make_read_file_tool(output)
+        writer = make_write_file_tool(output)
+        read_handler = reader.handler
+        write_handler = writer.handler
         public_paths = {
             output / "authoring_brief.json",
             output / "public_inputs.json",
+            output / "draft" / "capability_design.json",
         }
         brief_read = False
+        draft_written = False
 
         def read_public_input(payload: dict[str, Any]) -> dict[str, Any]:
             nonlocal brief_read
             path = Path(payload["path"])
             path = (output / path).resolve() if not path.is_absolute() else path.resolve()
             if path not in public_paths:
-                raise ValueError("read_file may read only authoring_brief.json or public_inputs.json")
-            content = reader.handler(payload)
+                raise ValueError(
+                    "read_file may read only authoring_brief.json, public_inputs.json, "
+                    "or draft/capability_design.json"
+                )
+            content = read_handler(payload)
             if path.name == "authoring_brief.json":
                 brief_read = True
             return content
 
-        def submit_handler(payload: dict[str, Any]) -> dict[str, Any]:
-            nonlocal submitted
-            if not brief_read:
-                raise ValueError("read authoring_brief.json with read_file before submitting a design")
-            if not isinstance(payload, Mapping):
-                raise ValueError(
-                    "submit_design received no design object; send one compact JSON "
-                    "object in the design field"
-                )
-            candidate = payload.get("design")
-            if candidate is None:
-                raise ValueError(
-                    "submit_design received no design object; send one compact "
-                    "capability_design JSON object in the design field, without narrative text"
-                )
-            _write_json(output / "draft" / "capability_design.json", candidate)
-            try:
-                validated = _validate_generated_design(
-                    candidate,
-                    expected_robot_id=robot_id,
-                    task_ids=task_ids,
-                    package_version=package_version,
-                    task_snapshot_id=task_snapshot_id,
-                )
-            except (CapabilityPreparationError, ValueError) as exc:
-                raise ValueError(
-                    "submit_design rejected the draft; correct every listed issue and "
-                    f"submit one complete replacement: {exc}"
-                ) from None
-            submitted = validated
+        def _write_accepted(validated: Mapping[str, Any]) -> None:
             _write_json(output / "capability_design.json", validated)
             _write_json(
                 output / "criteria.json",
@@ -796,41 +761,70 @@ def generate_capability_design(
                     ],
                 },
             )
+
+        def write_draft(payload: dict[str, Any]) -> dict[str, Any]:
+            nonlocal accepted_design, draft_written
+            if not brief_read:
+                raise ValueError("read authoring_brief.json with read_file before writing a design")
+            if not isinstance(payload, Mapping):
+                raise ValueError("write_file needs a draft path and string content")
+            if payload.get("path") != "draft/capability_design.json":
+                raise ValueError("write_file may write only draft/capability_design.json")
+            content = payload.get("content")
+            if not isinstance(content, str):
+                raise ValueError("write_file content must be a JSON text string")
+            append = bool(payload.get("append", False))
+            if append and not draft_written:
+                raise ValueError(
+                    "write a replacement draft first; append cannot extend a stale draft"
+                )
+            # Every accepted design must follow a write made during this run.
+            # A later replacement or append must validate the complete current file.
+            accepted_design = None
+            write_handler(dict(payload))
+            draft_written = True
+            draft_path = output / "draft" / "capability_design.json"
+            try:
+                candidate = json.loads(draft_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ValueError(
+                    "draft is incomplete or malformed JSON; write a complete replacement "
+                    f"or append the remaining JSON chunk: {exc}"
+                ) from None
+            try:
+                validated = _validate_generated_design(
+                    candidate,
+                    expected_robot_id=robot_id,
+                    task_ids=task_ids,
+                    package_version=package_version,
+                    task_snapshot_id=task_snapshot_id,
+                )
+            except (CapabilityPreparationError, ValueError) as exc:
+                raise ValueError(
+                    "draft validation failed; correct the draft and write it again "
+                    f"(append only after the replacement write): {exc}"
+                ) from None
+            accepted_design = validated
+            _write_accepted(validated)
             return {
                 "accepted": True,
                 "capability_count": len(validated["capabilities"]),
-                "path": str(output / "capability_design.json"),
+                "path": str(draft_path),
             }
 
+        reader.description = (
+            "Read authoring_brief.json or public_inputs.json, and the current "
+            "draft/capability_design.json for correction."
+        )
+        writer.description = (
+            "Write or append the TGCD draft at exactly "
+            "draft/capability_design.json. Other paths are rejected."
+        )
+        reader.handler = read_public_input
+        writer.handler = write_draft
+
         loop = ReactLoop(
-            tools=[
-                ToolSpec(
-                    name="submit_design",
-                    description=(
-                        "Submit one complete capability-v2 JSON design as "
-                        "{design: object}. Validation errors are returned for "
-                        "correction within the remaining bounded turns."
-                    ),
-                    input_schema={
-                        "type": "object",
-                        "properties": {
-                            "design": {
-                                "type": "object",
-                                "description": "Complete capability_design.json object",
-                            }
-                        },
-                        "required": ["design"],
-                        "additionalProperties": False,
-                    },
-                    handler=submit_handler,
-                ),
-                ToolSpec(
-                    name="read_file",
-                    description="Read authoring_brief.json for design inputs, or public_inputs.json for the full public records.",
-                    input_schema=reader.input_schema,
-                    handler=read_public_input,
-                ),
-            ],
+            tools=[reader, writer],
             system=TGCD_SYSTEM_PROMPT,
             model=model,
             provider=provider,
@@ -841,10 +835,11 @@ def generate_capability_design(
         )
         user_prompt = (
             "Read authoring_brief.json using read_file. It contains the completed "
-            "study, public task requirements and sources, task-library identity, "
+            "study, public task requirements and scoring/source_refs, task-library identity, "
             "and any low-level skeleton context. Full public records are available "
             "in public_inputs.json.\n\n"
-            "Then use submit_design to submit the complete capability design. "
+            "Then use write_file with path draft/capability_design.json to write the "
+            "complete JSON design. Use append=true only after a replacement write. "
             "Copy the brief's artifact_header fields onto the root design object."
         )
         result = loop.run(user_prompt)
@@ -852,7 +847,7 @@ def generate_capability_design(
         _ensure_trace_file(trace_path)
         if "invoke_error" in _trace_stop_reasons(result):
             raise CapabilityPreparationError(
-                "TGCD transport ended with invoke_error; a submitted design is "
+                "TGCD transport ended with invoke_error; a written design is "
                 "not a successful run"
             )
         if not bool(getattr(result, "ok", False)):
@@ -860,9 +855,9 @@ def generate_capability_design(
                 getattr(result, "error", None)
                 or "TGCD ReactLoop did not complete successfully"
             )
-        if submitted is None:
+        if accepted_design is None:
             raise CapabilityPreparationError(
-                "TGCD completed without a valid submit_design submission; "
+                "TGCD completed without a valid current draft write; "
                 "stale output is ignored"
             )
         _write_preparation_metadata(
@@ -872,7 +867,7 @@ def generate_capability_design(
             trace_path=trace_path,
             error=None,
         )
-        return submitted
+        return accepted_design
     except Exception as exc:
         _ensure_trace_file(trace_path)
         if not trace_path.exists():

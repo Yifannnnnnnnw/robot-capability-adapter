@@ -19,9 +19,51 @@ def _library(tmp_path: Path) -> Path:
                 "package_version": "1.0.0",
                 "snapshot_id": "fixture-snapshot",
                 "tasks": [
-                    {"task_id": "task-a", "name": "Reach", "description": "reach"},
-                    {"task_id": "task-b", "name": "Move", "description": "move"},
-                    {"task_id": "task-c", "name": "Hold", "description": "hold"},
+                    {
+                        "task_id": "task-a",
+                        "name": "Reach",
+                        "description": "reach",
+                        "scoring": [{
+                            "metric": "terminal_error",
+                            "unit": "m",
+                            "comparator": "<=",
+                            "threshold": 0.05,
+                            "source_refs": [{
+                                "source_id": "fixture-source-record",
+                                "specific_reference": "fixture scoring",
+                            }],
+                        }],
+                    },
+                    {
+                        "task_id": "task-b",
+                        "name": "Move",
+                        "description": "move",
+                        "scoring": [{
+                            "metric": "terminal_error",
+                            "unit": "m",
+                            "comparator": "<=",
+                            "threshold": 0.05,
+                            "source_refs": [{
+                                "source_id": "fixture-source-record",
+                                "specific_reference": "fixture scoring",
+                            }],
+                        }],
+                    },
+                    {
+                        "task_id": "task-c",
+                        "name": "Hold",
+                        "description": "hold",
+                        "scoring": [{
+                            "metric": "terminal_error",
+                            "unit": "m",
+                            "comparator": "<=",
+                            "threshold": 0.05,
+                            "source_refs": [{
+                                "source_id": "fixture-source-record",
+                                "specific_reference": "fixture scoring",
+                            }],
+                        }],
+                    },
                 ],
             }
         ),
@@ -139,26 +181,57 @@ class _FakeLoop:
     mode = "success"
     last_prompt = ""
     last_kwargs = {}
+    tool_names = []
+    write_errors = []
 
     def __init__(self, *, tools, **kwargs):
-        self.tool = next(tool for tool in tools if tool.name == "submit_design")
+        self.writer = next(tool for tool in tools if tool.name == "write_file")
         self.reader = next(tool for tool in tools if tool.name == "read_file")
+        type(self).tool_names = [tool.name for tool in tools]
+        type(self).write_errors = []
         type(self).last_kwargs = kwargs
 
     def run(self, prompt):
         type(self).last_prompt = prompt
         brief = json.loads(self.reader.handler({"path": "authoring_brief.json"})["content"])
         assert brief["task_library_identity"]["source_robot_configuration_id"] == "fixture-source"
+        assert "sources" not in brief
+        assert brief["tasks"][0]["scoring"][0]["source_refs"]
         assert "fixture-source-record" not in prompt
+        valid_write = {
+            "path": "draft/capability_design.json",
+            "content": json.dumps(_design()),
+        }
         if self.mode == "invoke_error":
-            accepted = self.tool.handler({"design": _design()})
+            self.writer.handler(valid_write)
             return SimpleNamespace(
                 ok=False,
                 error="gateway failed",
                 total_tokens={"in": 2, "out": 3},
                 trace=[SimpleNamespace(stop_reason="invoke_error")],
             )
-        self.tool.handler({"design": _design()})
+        if self.mode == "invalid_then_success":
+            raw_design = valid_write["content"]
+            try:
+                self.writer.handler(
+                    {
+                        "path": "draft/capability_design.json",
+                        "content": raw_design[:-1],
+                    }
+                )
+            except ValueError as exc:
+                type(self).write_errors.append(str(exc))
+            else:
+                raise AssertionError("malformed draft was accepted")
+            self.writer.handler(
+                {
+                    "path": "draft/capability_design.json",
+                    "content": raw_design[-1:],
+                    "append": True,
+                }
+            )
+        else:
+            self.writer.handler(valid_write)
         return SimpleNamespace(
             ok=True,
             error=None,
@@ -229,7 +302,7 @@ def test_loader_rejects_identity_duplicates_missing_criteria_and_bad_links(
         )
 
 
-def test_invoke_error_rejects_submission_and_stale_output(
+def test_invoke_error_rejects_current_write_and_stale_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -271,7 +344,7 @@ def test_invoke_error_rejects_submission_and_stale_output(
     ] == "move_effect_1"
 
 
-def test_valid_submission_writes_main_draft_and_criteria(
+def test_valid_write_writes_main_draft_and_criteria(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -294,6 +367,9 @@ def test_valid_submission_writes_main_draft_and_criteria(
     assert design["robot_configuration_id"] == "fixture-aa1"
     assert (output / "capability_design.json").exists()
     assert (output / "draft" / "capability_design.json").exists()
+    public_inputs = json.loads((output / "public_inputs.json").read_text())
+    assert "sources" not in public_inputs
+    assert public_inputs["task_catalog"]["tasks"][0]["scoring"][0]["source_refs"]
     derived = json.loads((output / "criteria.json").read_text())
     assert len(derived["criteria"]) == 3
     metadata = json.loads((output / "capability_preparation.json").read_text())
@@ -302,3 +378,32 @@ def test_valid_submission_writes_main_draft_and_criteria(
     assert "\n\n" in _FakeLoop.last_prompt
     assert _FakeLoop.last_kwargs["max_iters"] == 6
     assert _FakeLoop.last_kwargs["max_tokens_per_turn"] == 8000
+    assert _FakeLoop.tool_names == ["read_file", "write_file"]
+
+
+def test_invalid_draft_gets_feedback_then_corrected_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    library = _library(tmp_path)
+    mjcf = tmp_path / "scene.xml"
+    mjcf.write_text("<mujoco/>", encoding="utf-8")
+    _FakeLoop.mode = "invalid_then_success"
+    monkeypatch.setattr(preparation, "ReactLoop", _FakeLoop)
+    output = tmp_path / "output"
+    design = preparation.generate_capability_design(
+        robot_id="fixture-aa1",
+        study={"robot_id": "fixture-aa1", "dof": 1},
+        mjcf_path=mjcf,
+        task_library_dir=library,
+        output_dir=output,
+        model="fixture-model",
+        provider="holistic",
+        region="fixture-region",
+    )
+    assert design["robot_configuration_id"] == "fixture-aa1"
+    assert _FakeLoop.write_errors
+    assert "malformed JSON" in _FakeLoop.write_errors[0]
+    assert json.loads((output / "draft" / "capability_design.json").read_text())[
+        "capabilities"
+    ]
