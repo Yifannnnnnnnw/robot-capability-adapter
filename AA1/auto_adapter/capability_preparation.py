@@ -125,6 +125,15 @@ def _validate_request_schema(schema: Any, *, where: str) -> None:
         raise ValueError(f"{where} must be an object")
     if "type" in schema and schema["type"] != "object":
         raise ValueError(f"{where}.type must be object")
+    # The Piper canary exposed task macros addressed to private scene bodies.
+    # Reject these observed scene-entity arguments at the public ABI boundary.
+    properties = schema.get("properties", {})
+    scene_fields = {"object_body", "handle_body", "target_body"}
+    if isinstance(properties, Mapping) and scene_fields.intersection(properties):
+        raise ValueError(
+            f"{where} must not select a scene entity; use robot-owned physical "
+            "targets such as end-effector pose, gripper aperture, or contact force"
+        )
 
 
 def _validate_evidence_refs(value: Any, *, where: str, required: bool = True) -> None:
@@ -585,6 +594,21 @@ small task-neutral object with one or two finite bounded numeric fields where
 needed; do not add per-node evidence or elaborate nested structures. Criteria
 need metric, unit, comparator, finite threshold, non-empty temporal and
 aggregation objects, and source_refs.
+
+Capabilities control the ROBOT, not a complete task or an external scene
+entity. Requests must not name object bodies, handles, fixtures, private sites,
+or task goals. Do not author grasp-and-place, move-object-to-goal, open-fixture,
+or press-target macros. Decompose such requirements into reusable robot effects
+(for example end-effector positioning, orientation, gripper aperture, or bounded
+contact force/displacement); choose the actual set from this robot and its tasks.
+Task object-to-goal scoring is motivation, not automatically a robot capability
+criterion. Measure the robot effect; label a newly derived tolerance proposed.
+This is not a task executor and cannot assume a private scene or task evaluator.
+
+Copy the artifact_header fields directly onto the ROOT design object, including
+robot_configuration_id; do not nest them under artifact_header. preconditions
+and invariants are arrays; temporal_semantics is a non-empty object (e.g.
+{"kind":"bounded_terminal_effect"}); failure_behavior is text or an object.
 
 task_support contains only task_id, capability_id, rationale pairs and covers
 every task and capability. It has no ordered calls, waypoints, macros, plans,

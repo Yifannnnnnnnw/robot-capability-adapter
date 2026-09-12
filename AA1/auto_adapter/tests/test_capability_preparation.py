@@ -190,6 +190,12 @@ def test_valid_generated_style_design_loads(tmp_path: Path) -> None:
         ),
         (lambda d: d["capabilities"][0].update(criteria=[]), "criteria"),
         (
+            lambda d: d["capabilities"][0]["request_schema"]["properties"].update(
+                object_body={"type": "string"}
+            ),
+            "scene entity",
+        ),
+        (
             lambda d: d["task_support"][0].update(task_id="unknown"),
             "unknown task",
         ),
