@@ -851,6 +851,7 @@ class SelfAssemble:
                 result = generate_capability_design(
                     robot_id=self.cfg.robot_id,
                     study=dict(study),
+                    study_path=self.workspace / "study.json",
                     mjcf_path=Path(self.cfg.mjcf_path),
                     task_library_dir=Path(task_library_dir),
                     output_dir=input_dir,

@@ -126,6 +126,7 @@ def test_study_handoff_runs_one_design_and_passes_memory_design_to_generate(
     assert runner.capability_design == design
     assert len(calls) == 1
     assert calls[0]["output_dir"] == runner.workspace / "capability_inputs"
+    assert calls[0]["study_path"] == runner.workspace / "study.json"
     assert calls[0]["skeleton_context"]
     assert study_result.metadata["capability_design_path"].endswith(
         "capability_inputs/capability_design.json"
@@ -170,6 +171,7 @@ def test_scratch_study_handoff_uses_no_skeleton_context(tmp_path, monkeypatch):
     assert result.ok is True
     assert runner.capability_design is not None
     assert calls[0]["skeleton_context"] is None
+    assert calls[0]["study_path"] == runner.workspace / "study.json"
 
 
 def test_supplied_design_is_loaded_with_robot_id_and_criteria_preserved(tmp_path, monkeypatch):

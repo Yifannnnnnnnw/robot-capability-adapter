@@ -182,21 +182,38 @@ class _FakeLoop:
     last_prompt = ""
     last_kwargs = {}
     tool_names = []
+    read_paths = []
     write_errors = []
 
     def __init__(self, *, tools, **kwargs):
         self.writer = next(tool for tool in tools if tool.name == "write_file")
         self.reader = next(tool for tool in tools if tool.name == "read_file")
         type(self).tool_names = [tool.name for tool in tools]
+        type(self).read_paths = []
         type(self).write_errors = []
         type(self).last_kwargs = kwargs
 
     def run(self, prompt):
         type(self).last_prompt = prompt
-        brief = json.loads(self.reader.handler({"path": "authoring_brief.json"})["content"])
-        assert brief["task_library_identity"]["source_robot_configuration_id"] == "fixture-source"
-        assert "sources" not in brief
-        assert brief["tasks"][0]["scoring"][0]["source_refs"]
+        paths = {
+            line.split(":", 1)[0]: line.split(":", 1)[1].strip()
+            for line in prompt.splitlines()
+            if ":" in line
+        }
+        study_path = paths["study_path"]
+        catalog_path = paths["catalog_path"]
+        assert Path(study_path).is_absolute()
+        assert Path(catalog_path).is_absolute()
+        study = json.loads(self.reader.handler({"path": study_path})["content"])
+        catalog = json.loads(self.reader.handler({"path": catalog_path})["content"])
+        relative_catalog = json.loads(
+            self.reader.handler({"path": "catalog.json"})["content"]
+        )
+        type(self).read_paths = [study_path, catalog_path]
+        assert study["robot_id"] == "fixture-aa1"
+        assert catalog["tasks"][0]["scoring"][0]["source_refs"]
+        assert relative_catalog["robot_configuration_id"] == "fixture-source"
+        assert relative_catalog["tasks"][0]["task_id"] == catalog["tasks"][0]["task_id"]
         assert "fixture-source-record" not in prompt
         valid_write = {
             "path": "draft/capability_design.json",
@@ -352,11 +369,16 @@ def test_valid_write_writes_main_draft_and_criteria(
     mjcf = tmp_path / "scene.xml"
     mjcf.write_text("<mujoco/>", encoding="utf-8")
     output = tmp_path / "output"
+    output.mkdir()
+    (output / "catalog.json").write_text(
+        json.dumps({"robot_configuration_id": "shadow", "tasks": []}),
+        encoding="utf-8",
+    )
     _FakeLoop.mode = "success"
     monkeypatch.setattr(preparation, "ReactLoop", _FakeLoop)
     design = preparation.generate_capability_design(
         robot_id="fixture-aa1",
-        study={"robot_id": "fixture-aa1", "dof": 1},
+        study={"robot_id": "fixture-aa1", "dof": 1, "caller_field": "preserved"},
         mjcf_path=mjcf,
         task_library_dir=library,
         output_dir=output,
@@ -367,15 +389,18 @@ def test_valid_write_writes_main_draft_and_criteria(
     assert design["robot_configuration_id"] == "fixture-aa1"
     assert (output / "capability_design.json").exists()
     assert (output / "draft" / "capability_design.json").exists()
-    public_inputs = json.loads((output / "public_inputs.json").read_text())
-    assert "sources" not in public_inputs
-    assert public_inputs["task_catalog"]["tasks"][0]["scoring"][0]["source_refs"]
+    assert (output / "study.json").exists()
+    assert json.loads((output / "study.json").read_text())["caller_field"] == "preserved"
+    assert not (output / "authoring_brief.json").exists()
+    assert not (output / "public_inputs.json").exists()
+    assert _FakeLoop.read_paths[0].endswith("/study.json")
+    assert _FakeLoop.read_paths[1].endswith("/library/catalog.json")
     derived = json.loads((output / "criteria.json").read_text())
     assert len(derived["criteria"]) == 3
     metadata = json.loads((output / "capability_preparation.json").read_text())
     assert metadata["error"] is None
     assert metadata["token_usage"] == {"in": 4, "out": 5}
-    assert "\n\n" in _FakeLoop.last_prompt
+    assert "\n" in _FakeLoop.last_prompt
     assert _FakeLoop.last_kwargs["max_iters"] == 6
     assert _FakeLoop.last_kwargs["max_tokens_per_turn"] == 8000
     assert _FakeLoop.tool_names == ["read_file", "write_file"]
@@ -407,3 +432,33 @@ def test_invalid_draft_gets_feedback_then_corrected_write(
     assert json.loads((output / "draft" / "capability_design.json").read_text())[
         "capabilities"
     ]
+
+
+def test_actual_study_path_is_read_without_duplicate_snapshot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    library = _library(tmp_path)
+    mjcf = tmp_path / "scene.xml"
+    mjcf.write_text("<mujoco/>", encoding="utf-8")
+    study_path = tmp_path / "study.json"
+    study_path.write_text(
+        json.dumps({"robot_id": "fixture-aa1", "dof": 1}),
+        encoding="utf-8",
+    )
+    _FakeLoop.mode = "success"
+    monkeypatch.setattr(preparation, "ReactLoop", _FakeLoop)
+    output = tmp_path / "output"
+    preparation.generate_capability_design(
+        robot_id="fixture-aa1",
+        study={"robot_id": "fixture-aa1", "dof": 1},
+        study_path=study_path,
+        mjcf_path=mjcf,
+        task_library_dir=library,
+        output_dir=output,
+        model="fixture-model",
+        provider="holistic",
+        region="fixture-region",
+    )
+    assert not (output / "study.json").exists()
+    assert _FakeLoop.read_paths[0] == str(study_path.resolve())

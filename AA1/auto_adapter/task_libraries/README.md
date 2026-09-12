@@ -39,12 +39,21 @@ records stay in the run directory. Task-support links describe the proposed
 design; they do not demonstrate task completion. Proposed numerical requirements
 have not been physically calibrated by this stage.
 
-TGCD starts with file references in its user message. It reads
-`capability_inputs/authoring_brief.json` through the existing `read_file` tool;
-the file contains the study, task requirements, sources and task-library
-identity. `public_inputs.json` retains the fuller public records. The TGCD reader
-only exposes these two inputs, and a design cannot be submitted before the
-brief has been read in the current loop.
+TGCD starts with paths to the actual `study.json`, the bound robot package's
+`catalog.json`, and optional `capability_inputs/skeleton_context.json`. It reads
+these files through the existing `read_file` tool. Task-library identity and
+task-local scoring references come from the catalog; a separate `sources.json`
+is not a model input. Legacy task invocation schemas are not instructions for
+the new capability interface. No combined authoring brief or public-input copy
+is generated.
+
+The model uses the existing `write_file` tool to write
+`draft/capability_design.json`, optionally in chunks. Python validates the
+current draft, returns errors for correction, and saves the main design and
+derived criteria. Both study and catalog must be read before the first write;
+an old artifact cannot establish success after a failed model call. The model
+cannot overwrite its input files. TGCD currently exposes only `read_file` and
+`write_file`; it does not generate or execute MuJoCo test cases.
 
 Dynamic designs currently stop after study or generation. They have no associated
 private executable suite and must not be judged by an old catalog suite. The

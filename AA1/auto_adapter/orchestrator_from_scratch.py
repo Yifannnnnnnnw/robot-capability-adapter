@@ -765,6 +765,7 @@ class FromScratchOrchestrator:
                 result = generate_capability_design(
                     robot_id=self.cfg.robot_id,
                     study=study,
+                    study_path=self.workspace / "study.json",
                     mjcf_path=Path(self.cfg.mjcf_path),
                     task_library_dir=Path(task_library_for_robot(self.cfg.robot_id)),
                     output_dir=input_dir,

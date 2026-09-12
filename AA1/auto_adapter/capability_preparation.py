@@ -404,46 +404,6 @@ def load_capability_design_file(
     return result
 
 
-def _extract_mjcf_metadata(path: Path) -> dict[str, Any]:
-    try:
-        raw = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise CapabilityPreparationError(f"cannot read MJCF file: {exc}") from None
-    return {
-        "path": str(path),
-        "size_bytes": len(raw.encode("utf-8")),
-        "xml_snapshot": raw[:20000],
-    }
-
-
-def _public_tasks(catalog: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Project descriptions without forwarding task invocation contracts."""
-
-    projected: list[dict[str, Any]] = []
-    for task in catalog.get("tasks", []):
-        if not isinstance(task, Mapping):
-            continue
-        fields = (
-            "task_id",
-            "name",
-            "description",
-            "source_task_or_operation",
-            "applicability",
-            "adaptation",
-            "scene_assumptions",
-            "observation_assumptions",
-            "scoring",
-        )
-        projected.append(
-            {
-                field: _json_copy(task[field], label=f"task.{field}")
-                for field in fields
-                if field in task
-            }
-        )
-    return projected
-
-
 def _public_study(study: Mapping[str, Any]) -> dict[str, Any]:
     copied = _json_copy(dict(study), label="study")
     forbidden = {
@@ -470,60 +430,6 @@ def _public_study(study: Mapping[str, Any]) -> dict[str, Any]:
         return value
 
     return clean(copied)
-
-
-def _authoring_brief(public_inputs: Mapping[str, Any], task_ids: Sequence[str]) -> dict[str, Any]:
-    """Keep the first model message small while saving the full public input."""
-    catalog = public_inputs["task_catalog"]
-    compact_tasks: list[dict[str, Any]] = []
-    for task in catalog.get("tasks", []):
-        if not isinstance(task, Mapping):
-            continue
-        entry = {
-            key: task[key]
-            for key in ("task_id", "name", "description", "source_task_or_operation")
-            if key in task
-        }
-        scores = []
-        for clause in task.get("scoring", []) if isinstance(task.get("scoring"), list) else []:
-            if not isinstance(clause, Mapping):
-                continue
-            scores.append(
-                {
-                    key: clause[key]
-                    for key in (
-                        "metric",
-                        "unit",
-                        "comparator",
-                        "threshold",
-                        "temporal",
-                        "aggregation",
-                        "source_refs",
-                    )
-                    if key in clause
-                }
-            )
-        if scores:
-            entry["scoring"] = scores
-        compact_tasks.append(entry)
-    mjcf = public_inputs.get("mjcf", {})
-    mjcf = {
-        key: value
-        for key, value in mjcf.items()
-        if key != "xml_snapshot"
-    } if isinstance(mjcf, Mapping) else {}
-    return {
-        "artifact_header": public_inputs["artifact_header"],
-        "task_library_identity": public_inputs["task_library_identity"],
-        "study": public_inputs["study"],
-        "tasks": compact_tasks,
-        "mjcf_metadata": mjcf,
-        "skeleton_context": public_inputs.get("skeleton_context"),
-        "rules": {
-            "capability_count": [MIN_CAPABILITIES, MAX_CAPABILITIES],
-            "task_ids": list(task_ids),
-        },
-    }
 
 
 def _write_json(path: Path, value: Any) -> None:
@@ -572,11 +478,12 @@ def _ensure_trace_file(trace_path: Path) -> None:
 
 TGCD_SYSTEM_PROMPT = """You are AA1 Task-Grounded Capability Design (TGCD).
 The original public STUDY completed before this turn. Use only the supplied
-study, public task catalogue and task-local scoring/source_refs, actual MJCF metadata, and optional
-public skeleton context. Do not open private task instances, validation suites,
+study, the corresponding public robot catalog's task descriptions and scoring
+source_refs, and optional public skeleton context. Do not open private task
+instances, validation suites,
 IVC/evaluation files, reference contracts/drivers, or archived experiment data.
 
-Read authoring_brief.json with read_file before writing. Then write one compact
+Read the supplied study and catalog paths with read_file before writing. Then write one compact
 capability-v2 JSON object to draft/capability_design.json with write_file.
 Prefer three to six compact reusable package-bound, task-neutral single-effect
 capabilities (the allowed range is three to ten when task coverage needs more).
@@ -603,8 +510,9 @@ Task object-to-goal scoring is motivation, not automatically a robot capability
 criterion. Measure the robot effect; label a newly derived tolerance proposed.
 This is not a task executor and cannot assume a private scene or task evaluator.
 
-Copy the artifact_header fields directly onto the ROOT design object, including
-robot_configuration_id; do not nest them under artifact_header. preconditions
+Set the ROOT robot_configuration_id to the AA1 robot ID supplied in the user
+message; do not use the catalog's source robot ID. Python supplies and checks
+package_version and task_snapshot_id from the catalog. preconditions
 and invariants are arrays; temporal_semantics is a non-empty object (e.g.
 {"kind":"bounded_terminal_effect"}); failure_behavior is text or an object.
 
@@ -633,6 +541,7 @@ def generate_capability_design(
     max_iters: int = 6,
     max_tokens_per_turn: int = 8000,
     skeleton_context: Any = None,
+    study_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Run bounded TGCD and return the design accepted from the draft file."""
 
@@ -668,14 +577,9 @@ def generate_capability_design(
         if not mjcf.is_file():
             raise CapabilityPreparationError(f"MJCF path does not exist: {mjcf_path}")
         library = Path(task_library_dir).resolve()
-        catalog = _read_object(
-            _public_file(library, "catalog.json"), label="task catalogue"
-        )
+        catalog_path = _public_file(library, "catalog.json").resolve()
+        catalog = _read_object(catalog_path, label="task catalogue")
         task_ids = _task_ids(catalog)
-        catalog_robot_id = _nonempty_text(
-            catalog.get("robot_configuration_id"),
-            where="catalog.robot_configuration_id",
-        )
         package_version = _nonempty_text(
             catalog.get("package_version"), where="catalog.package_version"
         )
@@ -683,63 +587,67 @@ def generate_capability_design(
             catalog.get("snapshot_id", catalog.get("task_snapshot_id")),
             where="catalog.snapshot_id",
         )
-        public_inputs = {
-            "artifact_header": {
-                "artifact_type": "capability_design",
-                "schema_version": "2.0",
-                "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
-                "robot_configuration_id": robot_id,
-                "package_version": package_version,
-                "task_snapshot_id": task_snapshot_id,
-                "invocation_abi": copy.deepcopy(CAPABILITY_INVOCATION_ABI),
-            },
-            "task_library_identity": {
-                "source_robot_configuration_id": catalog_robot_id,
-                "package_version": package_version,
-                "task_snapshot_id": task_snapshot_id,
-            },
-            "study_completed_before_tgcd": True,
-            "study": _public_study(study),
-            "task_catalog": {
-                "robot_configuration_id": catalog_robot_id,
-                "package_version": package_version,
-                "snapshot_id": task_snapshot_id,
-                "tasks": _public_tasks(catalog),
-            },
-            "mjcf": _extract_mjcf_metadata(mjcf),
-            "skeleton_context": (
-                _json_copy(skeleton_context, label="skeleton_context")
-                if skeleton_context is not None
-                else None
-            ),
-        }
-        _write_json(output / "public_inputs.json", public_inputs)
-        brief = _authoring_brief(public_inputs, task_ids)
-        _write_json(output / "authoring_brief.json", brief)
-        reader = make_read_file_tool(output)
+        study_input_path = (
+            Path(study_path).expanduser().resolve()
+            if study_path is not None
+            else output / "study.json"
+        )
+        if study_path is None:
+            _write_json(study_input_path, _public_study(study))
+        else:
+            if not study_input_path.is_file():
+                raise CapabilityPreparationError(
+                    f"study_path does not exist: {study_path}"
+                )
+            supplied_study = _read_object(study_input_path, label="study")
+            if _public_study(supplied_study) != _public_study(study):
+                raise CapabilityPreparationError(
+                    "study_path does not match the completed study supplied to TGCD"
+                )
+        skeleton_path: Path | None = None
+        if skeleton_context is not None:
+            skeleton_path = output / "skeleton_context.json"
+            _write_json(skeleton_path, _json_copy(skeleton_context, label="skeleton_context"))
+
+        reader_roots = [library]
+        if study_input_path.parent != output:
+            reader_roots.append(study_input_path.parent)
+        reader = make_read_file_tool(output, extra_roots=reader_roots)
         writer = make_write_file_tool(output)
         read_handler = reader.handler
         write_handler = writer.handler
-        public_paths = {
-            output / "authoring_brief.json",
-            output / "public_inputs.json",
-            output / "draft" / "capability_design.json",
-        }
-        brief_read = False
+        draft_path = output / "draft" / "capability_design.json"
+        read_paths = {catalog_path, study_input_path, draft_path}
+        if skeleton_path is not None:
+            read_paths.add(skeleton_path)
+        study_read = False
+        catalog_read = False
         draft_written = False
 
         def read_public_input(payload: dict[str, Any]) -> dict[str, Any]:
-            nonlocal brief_read
-            path = Path(payload["path"])
-            path = (output / path).resolve() if not path.is_absolute() else path.resolve()
-            if path not in public_paths:
+            nonlocal study_read, catalog_read
+            raw_path = payload.get("path")
+            if not isinstance(raw_path, str) or not raw_path.strip():
+                raise ValueError("read_file needs an input path")
+            path = Path(raw_path)
+            if path.is_absolute():
+                path = path.resolve()
+            elif path == Path("catalog.json"):
+                path = catalog_path
+            elif path == Path("study.json") and study_input_path.name == "study.json":
+                path = study_input_path
+            else:
+                path = (output / path).resolve()
+            if path not in read_paths:
                 raise ValueError(
-                    "read_file may read only authoring_brief.json, public_inputs.json, "
-                    "or draft/capability_design.json"
+                    "read_file may read only the supplied study.json, the exact "
+                    "catalog.json, optional skeleton_context.json, or the current draft"
                 )
-            content = read_handler(payload)
-            if path.name == "authoring_brief.json":
-                brief_read = True
+            content = read_handler({**payload, "path": str(path)})
+            if path == study_input_path:
+                study_read = True
+            if path == catalog_path:
+                catalog_read = True
             return content
 
         def _write_accepted(validated: Mapping[str, Any]) -> None:
@@ -764,8 +672,10 @@ def generate_capability_design(
 
         def write_draft(payload: dict[str, Any]) -> dict[str, Any]:
             nonlocal accepted_design, draft_written
-            if not brief_read:
-                raise ValueError("read authoring_brief.json with read_file before writing a design")
+            if not study_read or not catalog_read:
+                raise ValueError(
+                    "read study.json and the exact catalog.json with read_file before writing a design"
+                )
             if not isinstance(payload, Mapping):
                 raise ValueError("write_file needs a draft path and string content")
             if payload.get("path") != "draft/capability_design.json":
@@ -783,7 +693,6 @@ def generate_capability_design(
             accepted_design = None
             write_handler(dict(payload))
             draft_written = True
-            draft_path = output / "draft" / "capability_design.json"
             try:
                 candidate = json.loads(draft_path.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -813,8 +722,8 @@ def generate_capability_design(
             }
 
         reader.description = (
-            "Read authoring_brief.json or public_inputs.json, and the current "
-            "draft/capability_design.json for correction."
+            "Read the supplied study input, exact robot catalog.json, optional "
+            "skeleton_context.json, or current draft/capability_design.json."
         )
         writer.description = (
             "Write or append the TGCD draft at exactly "
@@ -833,15 +742,25 @@ def generate_capability_design(
             max_tokens_per_turn=max_tokens_per_turn,
             trace_path=trace_path,
         )
-        user_prompt = (
-            "Read authoring_brief.json using read_file. It contains the completed "
-            "study, public task requirements and scoring/source_refs, task-library identity, "
-            "and any low-level skeleton context. Full public records are available "
-            "in public_inputs.json.\n\n"
-            "Then use write_file with path draft/capability_design.json to write the "
-            "complete JSON design. Use append=true only after a replacement write. "
-            "Copy the brief's artifact_header fields onto the root design object."
+        prompt_lines = [
+            "Read both inputs with read_file before writing:",
+            f"robot_configuration_id: {robot_id}",
+            f"study_path: {study_input_path}",
+            f"catalog_path: {catalog_path}",
+        ]
+        if skeleton_path is not None:
+            prompt_lines.append(f"skeleton_context_path: {skeleton_path}")
+        prompt_lines.extend(
+            [
+                "Use the catalog task descriptions, scoring, and task-local source_refs.",
+                "Ignore legacy task invocation_schema and request_envelope when defining the capability interface.",
+                "Write the complete JSON design with write_file at "
+                "draft/capability_design.json. Start append=false; use append=true "
+                "only for remaining chunks. Keep the root robot_configuration_id "
+                "equal to the AA1 ID above.",
+            ]
         )
+        user_prompt = "\n".join(prompt_lines)
         result = loop.run(user_prompt)
         token_usage = getattr(result, "total_tokens", {}) or {}
         _ensure_trace_file(trace_path)
