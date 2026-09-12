@@ -125,6 +125,11 @@ def _validate_request_schema(schema: Any, *, where: str) -> None:
         raise ValueError(f"{where} must be an object")
     if "type" in schema and schema["type"] != "object":
         raise ValueError(f"{where}.type must be object")
+    if schema.get("additionalProperties") is not False:
+        raise ValueError(
+            f"{where}.additionalProperties must be false; declare all effect "
+            "inputs in properties instead of leaving targets implicit"
+        )
     # The Piper canary exposed task macros addressed to private scene bodies.
     # Reject these observed scene-entity arguments at the public ABI boundary.
     properties = schema.get("properties", {})
@@ -589,9 +594,13 @@ capabilities (the allowed range is three to ten when task coverage needs more).
 Each needs a unique capability_id and Python method_name for method(request),
 and must not shadow a low-level skeleton method. Include description, effect,
 request_schema, preconditions, temporal_semantics, invariants,
-failure_behavior, and exactly one criteria item. Keep each request schema a
-small task-neutral object with one or two finite bounded numeric fields where
-needed; do not add per-node evidence or elaborate nested structures. Criteria
+failure_behavior, and exactly one criteria item. Each request schema is a
+task-neutral object with additionalProperties=false. Declare EVERY input needed
+for the effect in properties and mark mandatory targets in required. Positions
+and orientations may use bounded numeric arrays with explicit length and frame.
+Never omit target position/quaternion fields or hide them in prose to shorten
+the output. Timing inputs alone cannot specify a requested position/orientation.
+Keep descriptions concise; per-node evidence is unnecessary. Criteria
 need metric, unit, comparator, finite threshold, non-empty temporal and
 aggregation objects, and source_refs.
 
