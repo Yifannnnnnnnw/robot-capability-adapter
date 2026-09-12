@@ -1,0 +1,646 @@
+<div id="aa1-piper-flow" aria-labelledby="aa1-piper-flow-title">
+  <style>
+    #aa1-piper-flow {
+      color: var(--foreground);
+      width: 100%;
+    }
+
+    #aa1-piper-flow .flow-panel[hidden],
+    #aa1-piper-flow .flow-turn-control[hidden] {
+      display: none;
+    }
+
+    #aa1-piper-flow .flow-wrap {
+      display: grid;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    #aa1-piper-flow .flow-heading {
+      display: grid;
+      gap: .25rem;
+    }
+
+    #aa1-piper-flow .flow-heading h2,
+    #aa1-piper-flow .flow-detail h3,
+    #aa1-piper-flow .flow-section h4,
+    #aa1-piper-flow .flow-value-block h4 {
+      margin: 0;
+    }
+
+    #aa1-piper-flow .flow-meta {
+      overflow-wrap: anywhere;
+    }
+
+    #aa1-piper-flow .flow-pipeline {
+      display: grid;
+      gap: .5rem;
+      grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+    }
+
+    #aa1-piper-flow .flow-stage-item {
+      display: grid;
+      gap: .25rem;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-stage-label {
+      overflow-wrap: anywhere;
+    }
+
+    #aa1-piper-flow .flow-stage-meta,
+    #aa1-piper-flow .flow-detail-status,
+    #aa1-piper-flow .flow-record-status {
+      color: var(--muted-foreground);
+      overflow-wrap: anywhere;
+    }
+
+    #aa1-piper-flow .flow-detail {
+      display: grid;
+      gap: 1rem;
+    }
+
+    #aa1-piper-flow .flow-detail-heading {
+      align-items: end;
+      display: flex;
+      gap: 1rem;
+      justify-content: space-between;
+    }
+
+    #aa1-piper-flow .flow-detail-heading > div:first-child {
+      display: grid;
+      gap: .25rem;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-turn-control {
+      flex: 0 1 15rem;
+      margin: 0;
+      min-width: 10rem;
+    }
+
+    #aa1-piper-flow .flow-panel {
+      display: grid;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-section {
+      display: grid;
+      gap: .5rem;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-records {
+      display: grid;
+      gap: .75rem;
+      margin: 0;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-record {
+      display: grid;
+      gap: .25rem;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-record dt {
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    #aa1-piper-flow .flow-record dd {
+      margin: 0;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-value-block,
+    #aa1-piper-flow .flow-message {
+      display: grid;
+      gap: .35rem;
+      min-width: 0;
+    }
+
+    #aa1-piper-flow .flow-value,
+    #aa1-piper-flow .flow-message pre {
+      border-inline-start: 2px solid var(--border);
+      margin: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: .25rem 0 .25rem .75rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #aa1-piper-flow .flow-message-list {
+      display: grid;
+      gap: .75rem;
+    }
+
+    #aa1-piper-flow .flow-message-head {
+      color: var(--muted-foreground);
+      overflow-wrap: anywhere;
+    }
+
+    #aa1-piper-flow .flow-raw-record {
+      margin-top: .35rem;
+    }
+
+    #aa1-piper-flow .flow-long-value {
+      margin: 0;
+    }
+
+    #aa1-piper-flow .flow-raw-record summary {
+      cursor: pointer;
+    }
+
+    #aa1-piper-flow .flow-empty {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 36rem) {
+      #aa1-piper-flow .flow-detail-heading {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      #aa1-piper-flow .flow-turn-control {
+        flex-basis: auto;
+        min-width: 0;
+      }
+    }
+  </style>
+
+  <div class="flow-wrap">
+    <div class="flow-heading">
+      <h2 id="aa1-piper-flow-title">AA1 Piper · STUDY → TGCD → GENERATE</h2>
+      <div id="aa1-piper-flow-meta" class="text-small" aria-live="polite"></div>
+    </div>
+
+    <div id="aa1-piper-flow-pipeline" class="flow-pipeline" role="list" aria-label="处理阶段"></div>
+
+    <section class="flow-detail" aria-labelledby="aa1-piper-flow-selection">
+      <div class="flow-detail-heading">
+        <div>
+          <div class="text-small">当前阶段</div>
+          <h3 id="aa1-piper-flow-selection">未选择阶段</h3>
+          <div id="aa1-piper-flow-status" class="flow-detail-status text-small" aria-live="polite"></div>
+        </div>
+        <label id="aa1-piper-flow-turn-label" class="form-label flow-turn-control" hidden>
+          选择轮次
+          <select id="aa1-piper-flow-turn" class="form-select" aria-label="选择当前阶段轮次"></select>
+        </label>
+      </div>
+
+      <div class="nav nav-pills" role="tablist" aria-label="阶段详情">
+        <button id="aa1-piper-flow-tab-inputs" class="nav-link active" role="tab" aria-controls="aa1-piper-flow-panel-inputs" aria-selected="true" type="button">输入</button>
+        <button id="aa1-piper-flow-tab-prompts" class="nav-link" role="tab" aria-controls="aa1-piper-flow-panel-prompts" aria-selected="false" type="button">Prompt 与消息</button>
+        <button id="aa1-piper-flow-tab-outputs" class="nav-link" role="tab" aria-controls="aa1-piper-flow-panel-outputs" aria-selected="false" type="button">输出</button>
+        <button id="aa1-piper-flow-tab-checks" class="nav-link" role="tab" aria-controls="aa1-piper-flow-panel-checks" aria-selected="false" type="button">检查</button>
+      </div>
+
+      <div id="aa1-piper-flow-panel-inputs" class="flow-panel" role="tabpanel" aria-labelledby="aa1-piper-flow-tab-inputs" aria-live="polite"></div>
+      <div id="aa1-piper-flow-panel-prompts" class="flow-panel" role="tabpanel" aria-labelledby="aa1-piper-flow-tab-prompts" aria-live="polite" hidden></div>
+      <div id="aa1-piper-flow-panel-outputs" class="flow-panel" role="tabpanel" aria-labelledby="aa1-piper-flow-tab-outputs" aria-live="polite" hidden></div>
+      <div id="aa1-piper-flow-panel-checks" class="flow-panel" role="tabpanel" aria-labelledby="aa1-piper-flow-tab-checks" aria-live="polite" hidden></div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const root = document.getElementById("aa1-piper-flow");
+      if (!root) return;
+
+      const DATA = __FLOW_DATA__;
+      const stages = Array.isArray(DATA.stages) ? DATA.stages : [];
+      const stageButtons = root.querySelector("#aa1-piper-flow-pipeline");
+      const title = root.querySelector("#aa1-piper-flow-title");
+      const meta = root.querySelector("#aa1-piper-flow-meta");
+      const selection = root.querySelector("#aa1-piper-flow-selection");
+      const status = root.querySelector("#aa1-piper-flow-status");
+      const turnLabel = root.querySelector("#aa1-piper-flow-turn-label");
+      const turnSelect = root.querySelector("#aa1-piper-flow-turn");
+      const tabs = {
+        inputs: {
+          button: root.querySelector("#aa1-piper-flow-tab-inputs"),
+          panel: root.querySelector("#aa1-piper-flow-panel-inputs"),
+        },
+        prompts: {
+          button: root.querySelector("#aa1-piper-flow-tab-prompts"),
+          panel: root.querySelector("#aa1-piper-flow-panel-prompts"),
+        },
+        outputs: {
+          button: root.querySelector("#aa1-piper-flow-tab-outputs"),
+          panel: root.querySelector("#aa1-piper-flow-panel-outputs"),
+        },
+        checks: {
+          button: root.querySelector("#aa1-piper-flow-tab-checks"),
+          panel: root.querySelector("#aa1-piper-flow-panel-checks"),
+        },
+      };
+
+      let selectedStage = Math.max(0, stages.findIndex((stage) => stage.id === "tgcd"));
+      let selectedTurn = 0;
+      let selectedTab = "inputs";
+      const COLLAPSE_THRESHOLD = 1200;
+
+      function isObject(value) {
+        return value !== null && typeof value === "object" && !Array.isArray(value);
+      }
+
+      function pretty(value) {
+        if (typeof value === "string") return value;
+        if (value === undefined) return "未提供";
+        const encoded = JSON.stringify(value, null, 2);
+        return encoded === undefined ? String(value) : encoded;
+      }
+
+      function asRecords(value) {
+        return Array.isArray(value) ? value : [];
+      }
+
+      function labelFor(record, index) {
+        if (isObject(record) && record.label !== undefined) return String(record.label);
+        return `项 ${index + 1}`;
+      }
+
+      function valueFor(record) {
+        if (isObject(record) && Object.prototype.hasOwnProperty.call(record, "value")) {
+          return record.value;
+        }
+        return record;
+      }
+
+      function hasExtraFields(record) {
+        if (!isObject(record)) return false;
+        return Object.keys(record).some((key) => !["label", "value", "status"].includes(key));
+      }
+
+      function addEmpty(parent, text = "当前没有该类记录") {
+        const empty = document.createElement("p");
+        empty.className = "flow-empty";
+        empty.textContent = text;
+        parent.append(empty);
+      }
+
+      function inspectable(value, summaryText) {
+        const text = pretty(value);
+        const pre = document.createElement("pre");
+        pre.className = "flow-value";
+        pre.textContent = text;
+        if (text.length <= COLLAPSE_THRESHOLD) return pre;
+        const details = document.createElement("details");
+        details.className = "flow-long-value";
+        const summary = document.createElement("summary");
+        summary.textContent = `${summaryText}（${text.length} 字符）`;
+        details.append(summary, pre);
+        return details;
+      }
+
+      function addValue(parent, label, value) {
+        const block = document.createElement("div");
+        block.className = "flow-value-block";
+        const heading = document.createElement("h4");
+        heading.textContent = label;
+        block.append(heading, inspectable(value, "展开完整内容"));
+        parent.append(block);
+      }
+
+      function addRecords(parent, headingText, records) {
+        const values = asRecords(records);
+        if (!values.length) return false;
+        const section = document.createElement("section");
+        section.className = "flow-section";
+        const heading = document.createElement("h4");
+        heading.textContent = headingText;
+        const list = document.createElement("dl");
+        list.className = "flow-records";
+        values.forEach((record, index) => {
+          const row = document.createElement("div");
+          row.className = "flow-record";
+          const term = document.createElement("dt");
+          term.textContent = labelFor(record, index);
+          const definition = document.createElement("dd");
+          if (isObject(record) && record.status !== undefined) {
+            const recordStatus = document.createElement("div");
+            recordStatus.className = "flow-record-status text-small";
+            recordStatus.textContent = `状态：${String(record.status)}`;
+            definition.append(recordStatus);
+          }
+          definition.append(inspectable(valueFor(record), "展开完整值"));
+          if (hasExtraFields(record)) {
+            const details = document.createElement("details");
+            details.className = "flow-raw-record";
+            const summary = document.createElement("summary");
+            summary.textContent = "查看该记录完整 JSON";
+            const raw = document.createElement("pre");
+            raw.className = "flow-value";
+            raw.textContent = pretty(record);
+            details.append(summary, raw);
+            definition.append(details);
+          }
+          row.append(term, definition);
+          list.append(row);
+        });
+        section.append(heading, list);
+        parent.append(section);
+        return true;
+      }
+
+      function addMessages(parent, headingText, messages) {
+        const values = asRecords(messages);
+        if (!values.length) return false;
+        const section = document.createElement("section");
+        section.className = "flow-section";
+        const heading = document.createElement("h4");
+        heading.textContent = headingText;
+        const list = document.createElement("div");
+        list.className = "flow-message-list";
+        values.forEach((message, index) => {
+          const item = document.createElement("article");
+          item.className = "flow-message";
+          const messageHead = document.createElement("div");
+          messageHead.className = "flow-message-head text-small";
+          const role = isObject(message) && message.role !== undefined ? String(message.role) : "未标注 role";
+          messageHead.textContent = `消息 ${index + 1} · ${role}`;
+          const content = isObject(message) && Object.prototype.hasOwnProperty.call(message, "content")
+            ? pretty(message.content)
+            : pretty(message);
+          item.append(messageHead, inspectable(content, "展开完整消息内容"));
+          if (isObject(message) && Object.keys(message).some((key) => !["role", "content"].includes(key))) {
+            const details = document.createElement("details");
+            details.className = "flow-raw-record";
+            const summary = document.createElement("summary");
+            summary.textContent = "查看该消息完整 JSON";
+            const full = document.createElement("pre");
+            full.className = "flow-value";
+            full.textContent = pretty(message);
+            details.append(summary, full);
+            item.append(details);
+          }
+          list.append(item);
+        });
+        section.append(heading, list);
+        parent.append(section);
+        return true;
+      }
+
+      function addRequest(parent, request) {
+        if (!isObject(request)) return false;
+        const section = document.createElement("section");
+        section.className = "flow-section";
+        const heading = document.createElement("h4");
+        heading.textContent = "request（原始）";
+        section.append(heading, inspectable(request, "展开完整 request"));
+        parent.append(section);
+        let shown = true;
+        if (Object.prototype.hasOwnProperty.call(request, "system")) addValue(parent, "system prompt", request.system);
+        if (Object.prototype.hasOwnProperty.call(request, "user")) addValue(parent, "user prompt", request.user);
+        if (Object.prototype.hasOwnProperty.call(request, "system_prompt")) addValue(parent, "system prompt", request.system_prompt);
+        if (Object.prototype.hasOwnProperty.call(request, "user_prompt")) addValue(parent, "user prompt", request.user_prompt);
+        if (Object.prototype.hasOwnProperty.call(request, "prompt")) addValue(parent, "prompt", request.prompt);
+        shown = addMessages(parent, "request.messages", request.messages) || shown;
+        shown = addMessages(parent, "request.gateway_messages", request.gateway_messages) || shown;
+        return shown;
+      }
+
+      function countFor(value) {
+        return Number.isInteger(value) && value >= 0 ? value : undefined;
+      }
+
+      function requestFor(stage, turn) {
+        if (!isObject(stage)) return null;
+        const stageRequest = isObject(stage.request) ? stage.request : {};
+        const turnRequest = isObject(turn) && isObject(turn.request) ? turn.request : {};
+        const request = { ...stageRequest, ...turnRequest };
+        if (!isObject(turn)) return Object.keys(request).length ? request : null;
+
+        const frameworkConversation = Array.isArray(stage.conversation)
+          ? stage.conversation
+          : (Array.isArray(turnRequest.messages)
+            ? turnRequest.messages
+            : (Array.isArray(stageRequest.messages)
+              ? stageRequest.messages
+              : (Array.isArray(turn.messages) ? turn.messages : undefined)));
+        const messageCount = countFor(turn.message_count);
+        if (frameworkConversation) {
+          request.messages = messageCount === undefined
+            ? frameworkConversation.slice()
+            : frameworkConversation.slice(0, messageCount);
+        }
+
+        const gatewayConversation = Array.isArray(stage.gateway_conversation)
+          ? stage.gateway_conversation
+          : (Array.isArray(turnRequest.gateway_messages)
+            ? turnRequest.gateway_messages
+            : (Array.isArray(stageRequest.gateway_messages)
+              ? stageRequest.gateway_messages
+              : (Array.isArray(turn.gateway_messages) ? turn.gateway_messages : undefined)));
+        const gatewayCount = countFor(turn.gateway_message_count);
+        if (gatewayConversation) {
+          request.gateway_messages = gatewayCount === undefined
+            ? gatewayConversation.slice()
+            : gatewayConversation.slice(0, gatewayCount);
+        }
+        return Object.keys(request).length ? request : null;
+      }
+
+      function stageAndTurn() {
+        const stage = stages[selectedStage];
+        if (!isObject(stage)) return { stage: null, turn: null };
+        const turns = asRecords(stage.turns);
+        const turn = turns.length ? turns[Math.min(selectedTurn, turns.length - 1)] : null;
+        return { stage, turn };
+      }
+
+      function renderMeta() {
+        title.textContent = DATA.title === undefined ? "AA1 Piper · STUDY → TGCD → GENERATE" : String(DATA.title);
+        const run = isObject(DATA.run) ? DATA.run : {};
+        const parts = Object.entries(run)
+          .filter(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value))
+          .map(([key, value]) => `${key}：${pretty(value)}`);
+        meta.textContent = parts.join(" · ");
+      }
+
+      function renderPipeline() {
+        stageButtons.replaceChildren();
+        if (!stages.length) {
+          addEmpty(stageButtons, "当前片段未嵌入阶段记录");
+          return;
+        }
+        stages.forEach((stage, index) => {
+          const item = document.createElement("div");
+          item.className = "flow-stage-item";
+          item.setAttribute("role", "listitem");
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "btn btn-ghost";
+          button.setAttribute("aria-pressed", String(index === selectedStage));
+          const label = document.createElement("span");
+          label.className = "flow-stage-label";
+          label.textContent = isObject(stage) && stage.label !== undefined
+            ? String(stage.label)
+            : (isObject(stage) && stage.id !== undefined ? String(stage.id) : `阶段 ${index + 1}`);
+          const stageMeta = document.createElement("span");
+          stageMeta.className = "flow-stage-meta text-small";
+          const turnCount = isObject(stage) && Array.isArray(stage.turns) ? stage.turns.length : 0;
+          const parts = [`${turnCount} 轮`];
+          if (isObject(stage) && stage.status !== undefined) parts.unshift(String(stage.status));
+          stageMeta.textContent = parts.join(" · ");
+          button.addEventListener("click", () => {
+            selectedStage = index;
+            selectedTurn = 0;
+            renderAll();
+          });
+          button.append(label);
+          item.append(button, stageMeta);
+          stageButtons.append(item);
+        });
+      }
+
+      function renderTurnControl(stage) {
+        turnSelect.replaceChildren();
+        const turns = isObject(stage) ? asRecords(stage.turns) : [];
+        if (!turns.length) {
+          turnLabel.hidden = true;
+          return;
+        }
+        turns.forEach((turn, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          const parts = [
+            isObject(turn) && turn.label !== undefined ? String(turn.label) : `第 ${index + 1} 轮`,
+          ];
+          if (isObject(turn) && turn.id !== undefined) parts.push(String(turn.id));
+          if (isObject(turn) && turn.status !== undefined) parts.push(String(turn.status));
+          if (isObject(turn) && countFor(turn.message_count) !== undefined) parts.push(`messages ${turn.message_count}`);
+          if (isObject(turn) && countFor(turn.gateway_message_count) !== undefined) parts.push(`gateway messages ${turn.gateway_message_count}`);
+          option.textContent = parts.join(" · ");
+          turnSelect.append(option);
+        });
+        turnSelect.value = String(Math.min(selectedTurn, turns.length - 1));
+        turnLabel.hidden = false;
+      }
+
+      function renderInputs(stage, turn) {
+        const panel = tabs.inputs.panel;
+        panel.replaceChildren();
+        let rendered = false;
+        rendered = addRecords(panel, "运行级输入", DATA.inputs) || rendered;
+        rendered = addRecords(panel, "阶段级输入", isObject(stage) ? stage.inputs : undefined) || rendered;
+        rendered = addRecords(panel, "当前轮输入", isObject(turn) ? turn.inputs : undefined) || rendered;
+        if (!rendered) addEmpty(panel);
+      }
+
+      function renderPrompts(stage, turn) {
+        const panel = tabs.prompts.panel;
+        panel.replaceChildren();
+        let rendered = false;
+        if (isObject(stage) && Object.prototype.hasOwnProperty.call(stage, "prompt")) {
+          addValue(panel, "阶段 prompt", stage.prompt);
+          rendered = true;
+        }
+        if (isObject(stage) && !Array.isArray(stage.conversation)) {
+          rendered = addMessages(panel, "阶段 messages", stage.messages) || rendered;
+        }
+        const request = requestFor(stage, turn);
+        if (request) rendered = addRequest(panel, request) || rendered;
+        if (isObject(turn) && Object.prototype.hasOwnProperty.call(turn, "prompt")) {
+          addValue(panel, "当前轮 prompt", turn.prompt);
+          rendered = true;
+        }
+        if (!request && isObject(turn)) {
+          rendered = addMessages(panel, "当前轮 messages", turn.messages) || rendered;
+          rendered = addMessages(panel, "当前轮 gateway_messages", turn.gateway_messages) || rendered;
+        }
+        if (!rendered) addEmpty(panel);
+      }
+
+      function renderOutputs(stage, turn) {
+        const panel = tabs.outputs.panel;
+        panel.replaceChildren();
+        let rendered = false;
+        rendered = addRecords(panel, "阶段 outputs", isObject(stage) ? stage.outputs : undefined) || rendered;
+        rendered = addRecords(panel, "当前轮 outputs", isObject(turn) ? turn.outputs : undefined) || rendered;
+        if (isObject(turn) && Object.prototype.hasOwnProperty.call(turn, "response")) {
+          addValue(panel, "response（原始）", turn.response);
+          rendered = true;
+        }
+        if (isObject(turn)) rendered = addRecords(panel, "tool_calls", turn.tool_calls) || rendered;
+        if (isObject(turn)) rendered = addRecords(panel, "observations", turn.observations) || rendered;
+        if (isObject(turn)) rendered = addRecords(panel, "当前轮 artifacts", turn.artifacts) || rendered;
+        if (isObject(stage)) rendered = addRecords(panel, "阶段 artifacts", stage.artifacts) || rendered;
+        if (!rendered) addEmpty(panel);
+      }
+
+      function renderChecks(stage, turn) {
+        const panel = tabs.checks.panel;
+        panel.replaceChildren();
+        let rendered = false;
+        rendered = addRecords(panel, "运行级检查", DATA.checks) || rendered;
+        rendered = addRecords(panel, "阶段 checks", isObject(stage) ? stage.checks : undefined) || rendered;
+        rendered = addRecords(panel, "当前轮 checks", isObject(turn) ? turn.checks : undefined) || rendered;
+        if (!rendered) addEmpty(panel);
+      }
+
+      function renderDetail() {
+        if (!stages.length) {
+          selection.textContent = "未选择阶段";
+          status.textContent = "";
+          turnLabel.hidden = true;
+          Object.values(tabs).forEach(({ panel }) => {
+            panel.replaceChildren();
+            panel.hidden = panel !== tabs[selectedTab].panel;
+            if (!panel.hidden) addEmpty(panel, "当前片段未嵌入阶段记录");
+          });
+          return;
+        }
+        const { stage, turn } = stageAndTurn();
+        const label = stage.label !== undefined ? String(stage.label) : (stage.id !== undefined ? String(stage.id) : `阶段 ${selectedStage + 1}`);
+        selection.textContent = label;
+        status.textContent = stage.status === undefined
+          ? (stage.summary === undefined ? "" : String(stage.summary))
+          : (stage.summary === undefined ? String(stage.status) : `${String(stage.status)} · ${String(stage.summary)}`);
+        renderTurnControl(stage);
+        renderInputs(stage, turn);
+        renderPrompts(stage, turn);
+        renderOutputs(stage, turn);
+        renderChecks(stage, turn);
+      }
+
+      function renderTabs() {
+        Object.entries(tabs).forEach(([key, { button, panel }]) => {
+          const active = key === selectedTab;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-selected", String(active));
+          panel.hidden = !active;
+        });
+      }
+
+      function renderAll() {
+        renderMeta();
+        renderPipeline();
+        renderDetail();
+        renderTabs();
+      }
+
+      Object.entries(tabs).forEach(([key, { button }]) => {
+        button.addEventListener("click", () => {
+          selectedTab = key;
+          renderTabs();
+        });
+      });
+
+      turnSelect.addEventListener("change", () => {
+        selectedTurn = Number.parseInt(turnSelect.value, 10) || 0;
+        renderDetail();
+        renderTabs();
+      });
+
+      renderAll();
+    })();
+  </script>
+</div>

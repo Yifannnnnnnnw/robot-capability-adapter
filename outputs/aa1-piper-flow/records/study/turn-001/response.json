@@ -1,0 +1,21 @@
+{
+  "event": "response",
+  "response": {
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_01J4Y4JeD6zq1AVJaQdmkW2L",
+        "name": "read_file",
+        "input": {
+          "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/piper.xml"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 2513,
+      "output_tokens": 86,
+      "cache_read_input_tokens": 0
+    }
+  }
+}

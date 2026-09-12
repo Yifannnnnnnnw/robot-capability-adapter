@@ -1,0 +1,12 @@
+{
+  "stage": "study",
+  "turn": 6,
+  "source": "none",
+  "next_request_available": false,
+  "next_request_framework_prefix_match": false,
+  "next_request_gateway_prefix_match": false,
+  "framework_tool_results": [],
+  "gateway_tool_results": [],
+  "trace_observations": [],
+  "trace_observations_may_be_truncated": true
+}

@@ -1,0 +1,65 @@
+{
+  "event": "request",
+  "model": "eu.anthropic.claude-sonnet-4-6",
+  "system": "You are AA1 Task-Grounded Capability Design (TGCD).\nThe original public STUDY completed before this turn. Use only the supplied\nstudy, the corresponding public robot catalog's task descriptions and scoring\nsource_refs, and optional public skeleton context. Do not open private task\ninstances, validation suites,\nIVC/evaluation files, reference contracts/drivers, or archived experiment data.\n\nRead the supplied study and catalog paths with read_file before writing. Then write one compact\ncapability-v2 JSON object to draft/capability_design.json with write_file.\nPrefer three to six compact reusable package-bound, task-neutral single-effect\ncapabilities (the allowed range is three to ten when task coverage needs more).\nEach needs a unique capability_id and Python method_name for method(request),\nand must not shadow a low-level skeleton method. Include description, effect,\nrequest_schema, preconditions, temporal_semantics, invariants,\nfailure_behavior, and exactly one criteria item. Each request schema is a\ntask-neutral object with additionalProperties=false. Declare EVERY input needed\nfor the effect in properties and mark mandatory targets in required. Positions\nand orientations may use bounded numeric arrays with explicit length and frame.\nNever omit target position/quaternion fields or hide them in prose to shorten\nthe output. Timing inputs alone cannot specify a requested position/orientation.\nKeep descriptions concise; per-node evidence is unnecessary. Criteria\nneed metric, unit, comparator, finite threshold, non-empty temporal and\naggregation objects, and source_refs.\n\nCapabilities control the ROBOT, not a complete task or an external scene\nentity. Requests must not name object bodies, handles, fixtures, private sites,\nor task goals. Do not author grasp-and-place, move-object-to-goal, open-fixture,\nor press-target macros. Decompose such requirements into reusable robot effects\n(for example end-effector positioning, orientation, gripper aperture, or bounded\ncontact force/displacement); choose the actual set from this robot and its tasks.\nTask object-to-goal scoring is motivation, not automatically a robot capability\ncriterion. Measure the robot effect; label a newly derived tolerance proposed.\nThis is not a task executor and cannot assume a private scene or task evaluator.\n\nSet the ROOT robot_configuration_id to the AA1 robot ID supplied in the user\nmessage; do not use the catalog's source robot ID. Python supplies and checks\npackage_version and task_snapshot_id from the catalog. preconditions\nand invariants are arrays; temporal_semantics is a non-empty object (e.g.\n{\"kind\":\"bounded_terminal_effect\"}); failure_behavior is text or an object.\n\ntask_support contains only task_id, capability_id, rationale pairs and covers\nevery task and capability. It has no ordered calls, waypoints, macros, plans,\nreset data, or task-specific request fields. Cite public scoring for known\nnumeric standards. If a standard is unknown, make a finite bounded proposal and\nsay proposed in the rationale; this stage does not establish calibration.\nPreserve the supplied identity and exact capability-v2 request ABI. Keep\nprose short and target a complete JSON object below 6000 output tokens. Start\nwith append=false; append=true may add remaining chunks (each write is at most\n150 lines), and Python reports incomplete JSON until the final chunk. Read the\ncurrent draft when correcting it. Do not write any other path or narrative.",
+  "tools": [
+    {
+      "name": "read_file",
+      "description": "Read the supplied study input, exact robot catalog.json, optional skeleton_context.json, or current draft/capability_design.json.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "write_file",
+      "description": "Write or append the TGCD draft at exactly draft/capability_design.json. Other paths are rejected.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "workspace-relative file path"
+          },
+          "content": {
+            "type": "string",
+            "description": "complete text chunk, at most 150 lines"
+          },
+          "append": {
+            "type": "boolean",
+            "description": "append a chunk instead of replacing the file",
+            "default": false
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    }
+  ],
+  "max_tokens": 12000,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Read both inputs with read_file before writing:\nrobot_configuration_id: piper\nstudy_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/study.json\ncatalog_path: /Users/wangyifan/Projects/auto_adapter2.0/AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json\nskeleton_context_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/skeleton_context.json\nUse the catalog task descriptions, scoring, and task-local source_refs.\nIgnore legacy task invocation_schema and request_envelope when defining the capability interface.\nWrite the complete JSON design with write_file at draft/capability_design.json. Start append=false; use append=true only for remaining chunks. Keep the root robot_configuration_id equal to the AA1 ID above."
+    }
+  ],
+  "gateway_messages": [
+    {
+      "role": "system",
+      "content": "You are AA1 Task-Grounded Capability Design (TGCD).\nThe original public STUDY completed before this turn. Use only the supplied\nstudy, the corresponding public robot catalog's task descriptions and scoring\nsource_refs, and optional public skeleton context. Do not open private task\ninstances, validation suites,\nIVC/evaluation files, reference contracts/drivers, or archived experiment data.\n\nRead the supplied study and catalog paths with read_file before writing. Then write one compact\ncapability-v2 JSON object to draft/capability_design.json with write_file.\nPrefer three to six compact reusable package-bound, task-neutral single-effect\ncapabilities (the allowed range is three to ten when task coverage needs more).\nEach needs a unique capability_id and Python method_name for method(request),\nand must not shadow a low-level skeleton method. Include description, effect,\nrequest_schema, preconditions, temporal_semantics, invariants,\nfailure_behavior, and exactly one criteria item. Each request schema is a\ntask-neutral object with additionalProperties=false. Declare EVERY input needed\nfor the effect in properties and mark mandatory targets in required. Positions\nand orientations may use bounded numeric arrays with explicit length and frame.\nNever omit target position/quaternion fields or hide them in prose to shorten\nthe output. Timing inputs alone cannot specify a requested position/orientation.\nKeep descriptions concise; per-node evidence is unnecessary. Criteria\nneed metric, unit, comparator, finite threshold, non-empty temporal and\naggregation objects, and source_refs.\n\nCapabilities control the ROBOT, not a complete task or an external scene\nentity. Requests must not name object bodies, handles, fixtures, private sites,\nor task goals. Do not author grasp-and-place, move-object-to-goal, open-fixture,\nor press-target macros. Decompose such requirements into reusable robot effects\n(for example end-effector positioning, orientation, gripper aperture, or bounded\ncontact force/displacement); choose the actual set from this robot and its tasks.\nTask object-to-goal scoring is motivation, not automatically a robot capability\ncriterion. Measure the robot effect; label a newly derived tolerance proposed.\nThis is not a task executor and cannot assume a private scene or task evaluator.\n\nSet the ROOT robot_configuration_id to the AA1 robot ID supplied in the user\nmessage; do not use the catalog's source robot ID. Python supplies and checks\npackage_version and task_snapshot_id from the catalog. preconditions\nand invariants are arrays; temporal_semantics is a non-empty object (e.g.\n{\"kind\":\"bounded_terminal_effect\"}); failure_behavior is text or an object.\n\ntask_support contains only task_id, capability_id, rationale pairs and covers\nevery task and capability. It has no ordered calls, waypoints, macros, plans,\nreset data, or task-specific request fields. Cite public scoring for known\nnumeric standards. If a standard is unknown, make a finite bounded proposal and\nsay proposed in the rationale; this stage does not establish calibration.\nPreserve the supplied identity and exact capability-v2 request ABI. Keep\nprose short and target a complete JSON object below 6000 output tokens. Start\nwith append=false; append=true may add remaining chunks (each write is at most\n150 lines), and Python reports incomplete JSON until the final chunk. Read the\ncurrent draft when correcting it. Do not write any other path or narrative."
+    },
+    {
+      "role": "user",
+      "content": "Read both inputs with read_file before writing:\nrobot_configuration_id: piper\nstudy_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/study.json\ncatalog_path: /Users/wangyifan/Projects/auto_adapter2.0/AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json\nskeleton_context_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/skeleton_context.json\nUse the catalog task descriptions, scoring, and task-local source_refs.\nIgnore legacy task invocation_schema and request_envelope when defining the capability interface.\nWrite the complete JSON design with write_file at draft/capability_design.json. Start append=false; use append=true only for remaining chunks. Keep the root robot_configuration_id equal to the AA1 ID above."
+    }
+  ]
+}

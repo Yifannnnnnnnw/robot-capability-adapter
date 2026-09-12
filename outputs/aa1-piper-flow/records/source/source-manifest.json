@@ -1,0 +1,146 @@
+[
+  {
+    "name": "task-catalog.json",
+    "source": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json",
+    "diagnostic_path": "AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json",
+    "copied": true,
+    "destination": "records/source/task-catalog.json",
+    "bytes": 125861
+  },
+  {
+    "name": "scene-construction-smoke.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/scene_construction_smoke.json",
+    "diagnostic_path": "scene_construction_smoke.json",
+    "copied": true,
+    "destination": "records/source/scene-construction-smoke.json",
+    "bytes": 353
+  },
+  {
+    "name": "focused-checks.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/focused_checks.json",
+    "diagnostic_path": "focused_checks.json",
+    "copied": true,
+    "destination": "records/source/focused-checks.json",
+    "bytes": 427
+  },
+  {
+    "name": "study.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/study.json",
+    "diagnostic_path": "workspace/piper/study.json",
+    "copied": true,
+    "destination": "records/source/study.json",
+    "bytes": 1655
+  },
+  {
+    "name": "study-reuse.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/study_reuse.json",
+    "diagnostic_path": "study_reuse.json",
+    "copied": true,
+    "destination": "records/source/study-reuse.json",
+    "bytes": 420
+  },
+  {
+    "name": "original-recording-runner.py",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/original_recording_runner.py",
+    "diagnostic_path": "original_recording_runner.py",
+    "copied": true,
+    "destination": "records/source/original-recording-runner.py",
+    "bytes": 3800
+  },
+  {
+    "name": "skeleton-context.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/skeleton_context.json",
+    "diagnostic_path": "workspace/piper/capability_inputs/skeleton_context.json",
+    "copied": true,
+    "destination": "records/source/skeleton-context.json",
+    "bytes": 1265
+  },
+  {
+    "name": "design-raw.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/draft/capability_design.json",
+    "diagnostic_path": "workspace/piper/capability_inputs/draft/capability_design.json",
+    "copied": true,
+    "destination": "records/source/design-raw.json",
+    "bytes": 26134
+  },
+  {
+    "name": "design-main.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/capability_design.json",
+    "diagnostic_path": "workspace/piper/capability_inputs/capability_design.json",
+    "copied": true,
+    "destination": "records/source/design-main.json",
+    "bytes": 27561
+  },
+  {
+    "name": "criteria.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/criteria.json",
+    "diagnostic_path": "workspace/piper/capability_inputs/criteria.json",
+    "copied": true,
+    "destination": "records/source/criteria.json",
+    "bytes": 4314
+  },
+  {
+    "name": "capability-preparation.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/capability_preparation.json",
+    "diagnostic_path": "workspace/piper/capability_inputs/capability_preparation.json",
+    "copied": true,
+    "destination": "records/source/capability-preparation.json",
+    "bytes": 603
+  },
+  {
+    "name": "driver.py",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/driver.py",
+    "diagnostic_path": "workspace/piper/driver.py",
+    "copied": true,
+    "destination": "records/source/driver.py",
+    "bytes": 14265
+  },
+  {
+    "name": "canary-result.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/canary_result.json",
+    "diagnostic_path": "canary_result.json",
+    "copied": true,
+    "destination": "records/source/canary-result.json",
+    "bytes": 1529
+  },
+  {
+    "name": "parent-interface-review.json",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/parent_interface_review.json",
+    "diagnostic_path": "parent_interface_review.json",
+    "copied": true,
+    "destination": "records/source/parent-interface-review.json",
+    "bytes": 852
+  },
+  {
+    "name": "run-canary.py",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/run_canary.py",
+    "diagnostic_path": "run_canary.py",
+    "copied": true,
+    "destination": "records/source/run-canary.py",
+    "bytes": 2845
+  },
+  {
+    "name": "run.log",
+    "source": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/run.log",
+    "diagnostic_path": "run.log",
+    "copied": true,
+    "destination": "records/source/run.log",
+    "bytes": 1529
+  },
+  {
+    "name": "scene.xml",
+    "source": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml",
+    "diagnostic_path": "AA1/assets/mjcf/piper/scene.xml",
+    "copied": true,
+    "destination": "records/source/scene.xml",
+    "bytes": 865
+  },
+  {
+    "name": "piper.xml",
+    "source": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/piper.xml",
+    "diagnostic_path": "AA1/assets/mjcf/piper/piper.xml",
+    "copied": true,
+    "destination": "records/source/piper.xml",
+    "bytes": 14980
+  }
+]

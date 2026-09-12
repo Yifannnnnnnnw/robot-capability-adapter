@@ -1,0 +1,29 @@
+{
+  "event": "response",
+  "response": {
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_01EsCBoN1ngS7viFU4SyKUsC",
+        "name": "inspect_skeleton",
+        "input": {
+          "skeleton_name": "ArmSerialDLSSkeleton"
+        }
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_01Q79tQpFvQ6ewgBB2Yyu8a1",
+        "name": "read_file",
+        "input": {
+          "path": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 10590,
+      "output_tokens": 131,
+      "cache_read_input_tokens": 0
+    }
+  }
+}

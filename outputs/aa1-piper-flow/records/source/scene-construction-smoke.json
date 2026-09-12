@@ -1,0 +1,12 @@
+{
+  "kind": "scene-construction smoke, not a capability test case",
+  "mujoco_version": "3.13.0",
+  "source_mjcf": "/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml",
+  "nq_before": 8,
+  "nq_after": 8,
+  "nu_before": 7,
+  "nu_after": 7,
+  "added_fixture_found": true,
+  "steps": 10,
+  "capability_reachability_checked": false
+}

@@ -1,0 +1,25 @@
+{
+  "event": "response",
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Now let's validate the driver:"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_013qDnhQPNTNtUxwWwgQ9a1C",
+        "name": "local_exec",
+        "input": {
+          "command": "cd /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper && python - <<'EOF'\nimport driver\nr = driver.build()\nprint(\"Robot built:\", type(r).__name__)\nprint(\"describe:\", r.describe())\nEOF\n"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 24748,
+      "output_tokens": 158,
+      "cache_read_input_tokens": 0
+    }
+  }
+}

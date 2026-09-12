@@ -1,0 +1,116 @@
+{
+  "robot_configuration_id": "piper",
+  "capability_protocol_version": "capability-v2",
+  "criteria": [
+    {
+      "capability_id": "move_end_effector",
+      "method_name": "move_end_effector",
+      "metric": "end_effector_target_distance",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal_state"
+      },
+      "aggregation": {
+        "kind": "single_trial"
+      },
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 74-98: success is reach_dist <= 0.05.",
+          "support": "adapted",
+          "adaptation": "Retain the 0.05 m Euclidean endpoint obligation and apply it to the Piper ee_site in the canonical MuJoCo metre frame."
+        }
+      ]
+    },
+    {
+      "capability_id": "set_gripper_aperture",
+      "method_name": "set_gripper_aperture",
+      "metric": "gripper_aperture_error",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.003,
+      "temporal": {
+        "kind": "terminal_state"
+      },
+      "aggregation": {
+        "kind": "single_trial"
+      },
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, task_parameters grasp_gripper: native slide-position control in [0, 0.035] m; 0 m closed, 0.035 m open.",
+          "support": "adapted",
+          "adaptation": "Proposed 0.003 m aperture settling tolerance for the Piper joint7 slide actuator; no source numeric gripper-settling bound is published. This stage does not establish calibration."
+        }
+      ]
+    },
+    {
+      "capability_id": "move_end_effector_with_wrist",
+      "method_name": "move_end_effector_with_wrist",
+      "metric": "end_effector_target_distance",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal_state"
+      },
+      "aggregation": {
+        "kind": "single_trial"
+      },
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, evaluate_state lines 84-114: success is obj_to_target <= 0.07; grasp_wrist_roll is joint6 target in radians.",
+          "support": "adapted",
+          "adaptation": "Retain the 0.05 m EE positioning tolerance (from reach) as the robot-effect criterion; wrist-roll accuracy is a proposed 0.05 rad tolerance at this stage."
+        }
+      ]
+    },
+    {
+      "capability_id": "apply_contact_displacement",
+      "method_name": "apply_contact_displacement",
+      "metric": "end_effector_terminal_position_error",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal_state"
+      },
+      "aggregation": {
+        "kind": "single_trial"
+      },
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_push_v3.py, line 31 and evaluate_state lines 88-112: TARGET_RADIUS is 0.05 and success is target_to_obj <= TARGET_RADIUS.",
+          "support": "adapted",
+          "adaptation": "Measure the robot EE terminal position error (not object-to-goal); 0.05 m is the source contact-task positioning bound applied to the Piper ee_site."
+        }
+      ]
+    },
+    {
+      "capability_id": "move_end_effector_via_waypoint",
+      "method_name": "move_end_effector_via_waypoint",
+      "metric": "end_effector_target_distance",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal_state"
+      },
+      "aggregation": {
+        "kind": "single_trial"
+      },
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_pick_place_wall_v3.py, evaluate_state lines 85-116: obj_to_target is Euclidean norm and success is obj_to_target <= 0.07; route_position is the intermediate EE waypoint.",
+          "support": "adapted",
+          "adaptation": "Apply the 0.05 m EE positioning tolerance (from reach) to the final_xyz terminal position of the Piper ee_site; waypoint passage is a robot-effect ordering invariant."
+        }
+      ]
+    }
+  ]
+}

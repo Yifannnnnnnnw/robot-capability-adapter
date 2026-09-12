@@ -1,0 +1,5 @@
+Robot ID: piper
+MJCF file (workspace-relative): mjcf.xml
+Produce study.json per the procedure.
+Actual MJCF source: /Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml
+Resolve the workspace symlink before locating relative includes and meshes; inspect this model directory rather than searching the filesystem.

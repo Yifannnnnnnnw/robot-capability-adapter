@@ -1,0 +1,19 @@
+{
+  "check": "Actual model import/build and signature binding; no capability requests executed",
+  "robot_type": "Robot",
+  "nq": 8,
+  "nu": 7,
+  "request_keyword_accepted": {
+    "move_end_effector": true,
+    "set_gripper_aperture": true,
+    "move_end_effector_with_wrist": true,
+    "apply_contact_displacement": true,
+    "move_end_effector_via_waypoint": true
+  },
+  "physical_criteria_checked": false,
+  "observed_implementation_limitations": [
+    "The wrist capability criterion measures endpoint position only; it does not measure the requested wrist angle.",
+    "The contact-displacement criterion measures terminal EE position only; no independent contact fixture/case has been prepared.",
+    "The waypoint capability criterion measures final position only; it does not independently verify passage through the requested waypoint."
+  ]
+}

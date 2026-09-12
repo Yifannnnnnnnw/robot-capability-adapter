@@ -1,0 +1,646 @@
+{
+  "capability_version": "2",
+  "robot_configuration_id": "piper",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "piper-metaworld-source-protocols-2026-08-20-v1",
+  "capabilities": [
+    {
+      "capability_id": "move_end_effector",
+      "method_name": "move_end_effector",
+      "description": "Move the Piper ee_site to a commanded world-frame Cartesian position. Single-effect: terminal EE position. Does not change gripper aperture or wrist roll.",
+      "effect": "ee_site reaches target_xyz within a position tolerance in the world frame.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_xyz"
+        ],
+        "properties": {
+          "target_xyz": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "Desired world-frame position [x, y, z] of ee_site in metres.",
+            "unit": "m",
+            "frame": "world"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "description": "Motion duration in seconds. Optional; default chosen by implementation.",
+            "unit": "s"
+          }
+        }
+      },
+      "preconditions": [
+        "target_xyz is within the Piper reachable workspace.",
+        "No active grasp or contact force that would prevent free EE motion."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect",
+        "note": "EE reaches target_xyz and holds at end of motion."
+      },
+      "invariants": [
+        "Gripper aperture is unchanged throughout the motion.",
+        "Joint limits [joint1-joint6] are not violated."
+      ],
+      "failure_behavior": "Returns False and halts motion if IK is infeasible or joint limits are exceeded; EE position is undefined on failure.",
+      "criteria": [
+        {
+          "metric": "end_effector_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 74-98: success is reach_dist <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.05 m Euclidean endpoint obligation and apply it to the Piper ee_site in the canonical MuJoCo metre frame."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "set_gripper_aperture",
+      "method_name": "set_gripper_aperture",
+      "description": "Set the Piper parallel-jaw gripper to a commanded slide-position value. Single-effect: gripper joint7 position. Does not move the arm.",
+      "effect": "Gripper actuator 'gripper' (joint7) reaches the commanded slide position in [0.0, 0.035] m; joint8 mirrors via equality constraint.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "aperture_m"
+        ],
+        "properties": {
+          "aperture_m": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 0.035,
+            "description": "Target gripper slide position in metres. 0.0 = fully closed, 0.035 = fully open.",
+            "unit": "m",
+            "frame": "gripper"
+          },
+          "settle_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Number of simulation steps to settle after commanding. Optional."
+          }
+        }
+      },
+      "preconditions": [
+        "aperture_m is in [0.0, 0.035].",
+        "Arm joints are stationary or near-stationary."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect",
+        "note": "Gripper reaches commanded aperture and holds."
+      },
+      "invariants": [
+        "Arm joint positions are unchanged during gripper actuation.",
+        "joint8 mirrors joint7 via the polycoef equality constraint at all times."
+      ],
+      "failure_behavior": "If aperture_m is out of range, clamps to [0.0, 0.035] and logs a warning; returns False if settle fails.",
+      "criteria": [
+        {
+          "metric": "gripper_aperture_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.003,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, task_parameters grasp_gripper: native slide-position control in [0, 0.035] m; 0 m closed, 0.035 m open.",
+              "support": "adapted",
+              "adaptation": "Proposed 0.003 m aperture settling tolerance for the Piper joint7 slide actuator; no source numeric gripper-settling bound is published. This stage does not establish calibration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "move_end_effector_with_wrist",
+      "method_name": "move_end_effector_with_wrist",
+      "description": "Move the Piper ee_site to a commanded world-frame position while commanding a specific joint6 wrist-roll angle. Single-effect: terminal EE position + wrist orientation. Does not change gripper aperture.",
+      "effect": "ee_site reaches target_xyz and joint6 reaches wrist_roll_rad at end of motion.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_xyz",
+          "wrist_roll_rad"
+        ],
+        "properties": {
+          "target_xyz": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "Desired world-frame position [x, y, z] of ee_site in metres.",
+            "unit": "m",
+            "frame": "world"
+          },
+          "wrist_roll_rad": {
+            "type": "number",
+            "minimum": -3.14159265,
+            "maximum": 3.14159265,
+            "description": "Target joint6 wrist-roll angle in radians. Range [-pi, pi].",
+            "unit": "rad",
+            "frame": "joint6"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "description": "Motion duration in seconds. Optional.",
+            "unit": "s"
+          }
+        }
+      },
+      "preconditions": [
+        "target_xyz is within the Piper reachable workspace.",
+        "wrist_roll_rad is within joint6 ctrlrange [-3.14, 3.14]."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect",
+        "note": "EE reaches target_xyz and joint6 reaches wrist_roll_rad at end of motion."
+      },
+      "invariants": [
+        "Gripper aperture is unchanged throughout the motion.",
+        "Joint limits for joint1-joint6 are not violated."
+      ],
+      "failure_behavior": "Returns False and halts if IK is infeasible or wrist_roll_rad is out of range.",
+      "criteria": [
+        {
+          "metric": "end_effector_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, evaluate_state lines 84-114: success is obj_to_target <= 0.07; grasp_wrist_roll is joint6 target in radians.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.05 m EE positioning tolerance (from reach) as the robot-effect criterion; wrist-roll accuracy is a proposed 0.05 rad tolerance at this stage."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "apply_contact_displacement",
+      "method_name": "apply_contact_displacement",
+      "description": "Move the Piper ee_site to a contact approach position, then translate it to a terminal push/press position in a single continuous motion. Single-effect: EE traverses from approach to terminal position under potential contact. Does not change gripper aperture.",
+      "effect": "ee_site moves from contact_xyz to terminal_xyz, applying contact force to any surface encountered along the path.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contact_xyz",
+          "terminal_xyz"
+        ],
+        "properties": {
+          "contact_xyz": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "World-frame position [x, y, z] where the EE first makes or approaches contact, in metres.",
+            "unit": "m",
+            "frame": "world"
+          },
+          "terminal_xyz": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "World-frame terminal EE position [x, y, z] after the push/press displacement, in metres.",
+            "unit": "m",
+            "frame": "world"
+          },
+          "approach_duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "description": "Duration in seconds for the approach segment to contact_xyz. Optional.",
+            "unit": "s"
+          },
+          "push_duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "description": "Duration in seconds for the push/press segment from contact_xyz to terminal_xyz. Optional.",
+            "unit": "s"
+          }
+        }
+      },
+      "preconditions": [
+        "contact_xyz and terminal_xyz are within the Piper reachable workspace.",
+        "The path from contact_xyz to terminal_xyz is kinematically feasible."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect",
+        "note": "EE reaches terminal_xyz at end of motion; contact force is applied during the push segment."
+      },
+      "invariants": [
+        "Gripper aperture is unchanged throughout the motion.",
+        "Joint limits for joint1-joint6 are not violated."
+      ],
+      "failure_behavior": "Returns False if IK is infeasible at either waypoint; partial motion may occur if contact blocks terminal_xyz.",
+      "criteria": [
+        {
+          "metric": "end_effector_terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_v3.py, line 31 and evaluate_state lines 88-112: TARGET_RADIUS is 0.05 and success is target_to_obj <= TARGET_RADIUS.",
+              "support": "adapted",
+              "adaptation": "Measure the robot EE terminal position error (not object-to-goal); 0.05 m is the source contact-task positioning bound applied to the Piper ee_site."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "move_end_effector_via_waypoint",
+      "method_name": "move_end_effector_via_waypoint",
+      "description": "Move the Piper ee_site through an intermediate waypoint position and then to a final position. Single-effect: EE traverses waypoint_xyz then reaches final_xyz. Does not change gripper aperture or wrist roll.",
+      "effect": "ee_site passes through waypoint_xyz and terminates at final_xyz in the world frame.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "waypoint_xyz",
+          "final_xyz"
+        ],
+        "properties": {
+          "waypoint_xyz": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "Intermediate world-frame position [x, y, z] of ee_site in metres.",
+            "unit": "m",
+            "frame": "world"
+          },
+          "final_xyz": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "Terminal world-frame position [x, y, z] of ee_site in metres.",
+            "unit": "m",
+            "frame": "world"
+          },
+          "waypoint_duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "description": "Duration in seconds for the segment to waypoint_xyz. Optional.",
+            "unit": "s"
+          },
+          "final_duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10.0,
+            "description": "Duration in seconds for the segment from waypoint_xyz to final_xyz. Optional.",
+            "unit": "s"
+          }
+        }
+      },
+      "preconditions": [
+        "waypoint_xyz and final_xyz are within the Piper reachable workspace.",
+        "Both segments are kinematically feasible without joint-limit violation."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect",
+        "note": "EE visits waypoint_xyz then reaches final_xyz; ordering is enforced."
+      },
+      "invariants": [
+        "Gripper aperture is unchanged throughout the motion.",
+        "Joint limits for joint1-joint6 are not violated.",
+        "waypoint_xyz is reached before final_xyz."
+      ],
+      "failure_behavior": "Returns False if IK is infeasible at either position; motion halts at the last feasible position.",
+      "criteria": [
+        {
+          "metric": "end_effector_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_wall_v3.py, evaluate_state lines 85-116: obj_to_target is Euclidean norm and success is obj_to_target <= 0.07; route_position is the intermediate EE waypoint.",
+              "support": "adapted",
+              "adaptation": "Apply the 0.05 m EE positioning tolerance (from reach) to the final_xyz terminal position of the Piper ee_site; waypoint passage is a robot-effect ordering invariant."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "task_support": [
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "move_end_effector",
+      "rationale": "mw_reach_target requires moving ee_site to a tabletop target position; move_end_effector provides the single EE positioning effect. Source threshold 0.05 m (sawyer_reach_v3.py line 74-98) is the capability criterion."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_push_to_goal requires EE contact at contact_position then push to tool_target_position; apply_contact_displacement maps contact_xyz\u2192contact_position and terminal_xyz\u2192tool_target_position."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "move_end_effector",
+      "rationale": "Initial EE approach to the contact region before contact is established uses move_end_effector."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "move_end_effector_with_wrist",
+      "rationale": "mw_pick_place requires EE positioning at grasp_position with a specific joint6 wrist-roll (grasp_wrist_roll); move_end_effector_with_wrist provides both effects."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Closing the gripper to grasp_gripper and opening to release requires set_gripper_aperture."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "move_end_effector",
+      "rationale": "Transport and release waypoints (tool_target_position, release_position) use move_end_effector after grasp is established."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "move_end_effector_with_wrist",
+      "rationale": "mw_pick_place_wall requires grasp at grasp_position with grasp_wrist_roll; move_end_effector_with_wrist provides EE + wrist positioning."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Gripper close at grasp and open at release use set_gripper_aperture."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_pick_place_wall requires routing through route_position before tool_target_position to clear the wall; move_end_effector_via_waypoint maps waypoint_xyz\u2192route_position, final_xyz\u2192tool_target_position."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_push_wall requires EE contact at contact_position then push; apply_contact_displacement covers the contact-to-terminal push segment."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "The wall-routing push requires passing through route_position before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_sweep_into_goal requires a lateral contact sweep from contact_position to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "move_end_effector",
+      "rationale": "Initial EE approach to contact_position uses move_end_effector."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_drawer_open requires EE contact at the handle (contact_position) then pull to tool_target_position; apply_contact_displacement covers the contact-to-terminal pull."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "move_end_effector",
+      "rationale": "Approach to contact_position before handle engagement uses move_end_effector."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_drawer_close requires EE contact at the drawer front (contact_position) then push to tool_target_position; apply_contact_displacement provides the push effect."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "move_end_effector",
+      "rationale": "Approach to contact_position uses move_end_effector."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_button_press requires EE contact at contact_position then press to tool_target_position along the button axis; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "move_end_effector",
+      "rationale": "Approach to contact_position uses move_end_effector."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_button_press_topdown requires a top-down EE approach to contact_position then vertical press to tool_target_position; apply_contact_displacement covers the contact-to-terminal press."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "move_end_effector",
+      "rationale": "Overhead approach to contact_position uses move_end_effector."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_handle_press requires EE contact at the handle face (contact_position) then press to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "move_end_effector",
+      "rationale": "Approach to contact_position uses move_end_effector."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_handle_pull requires EE contact at the handle (contact_position) then pull to tool_target_position; apply_contact_displacement covers the contact-to-terminal pull."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "move_end_effector",
+      "rationale": "Approach to contact_position uses move_end_effector."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_door_open requires EE contact at the door handle (contact_position) then arc to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_door_open requires routing through route_position before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_door_close requires EE contact at the door edge (contact_position) then push to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_door_close requires routing through route_position before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_faucet_open requires EE contact at the faucet handle (contact_position) then rotation to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_faucet_open requires routing through route_position before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_dial_turn requires EE contact at the dial rim (contact_position) then rotation to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_dial_turn requires routing through route_position before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "mw_lever_pull requires EE contact at the lever (contact_position) then pull to tool_target_position; apply_contact_displacement provides the contact-then-displace effect."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_lever_pull requires routing through route_position before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "move_end_effector_with_wrist",
+      "rationale": "mw_peg_insertion_side requires precise EE positioning with wrist orientation for peg alignment; move_end_effector_with_wrist provides EE + wrist-roll control."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Grasping the peg and maintaining grip during insertion use set_gripper_aperture."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_peg_insertion_side requires routing through route_position before the insertion terminal position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "move_end_effector_with_wrist",
+      "rationale": "mw_bin_picking requires EE positioning at grasp_position inside the bin with grasp_wrist_roll; move_end_effector_with_wrist provides both effects."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Closing the gripper to grasp_gripper and opening to release use set_gripper_aperture."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_bin_picking requires routing through route_position after extraction before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "move_end_effector_with_wrist",
+      "rationale": "mw_pick_out_of_hole requires EE positioning at grasp_position inside the recess with grasp_wrist_roll; move_end_effector_with_wrist provides both effects."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Closing the gripper to grasp_gripper and opening to release use set_gripper_aperture."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "move_end_effector_via_waypoint",
+      "rationale": "mw_pick_out_of_hole requires routing through route_position after extraction before tool_target_position; move_end_effector_via_waypoint provides the ordered two-segment motion."
+    }
+  ],
+  "artifact_type": "capability_design",
+  "schema_version": "2.0",
+  "capability_protocol_version": "capability-v2",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)",
+    "request_required": [
+      "request"
+    ]
+  },
+  "task_ids": [
+    "mw_reach_target",
+    "mw_push_to_goal",
+    "mw_pick_place",
+    "mw_pick_place_wall",
+    "mw_push_wall",
+    "mw_sweep_into_goal",
+    "mw_drawer_open",
+    "mw_drawer_close",
+    "mw_button_press",
+    "mw_button_press_topdown",
+    "mw_handle_press",
+    "mw_handle_pull",
+    "mw_door_open",
+    "mw_door_close",
+    "mw_faucet_open",
+    "mw_dial_turn",
+    "mw_lever_pull",
+    "mw_peg_insertion_side",
+    "mw_bin_picking",
+    "mw_pick_out_of_hole"
+  ]
+}

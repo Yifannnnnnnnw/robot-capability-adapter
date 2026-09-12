@@ -1,0 +1,43 @@
+[
+  {
+    "name": "read_file",
+    "description": "Read the supplied study input, exact robot catalog.json, optional skeleton_context.json, or current draft/capability_design.json.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  },
+  {
+    "name": "write_file",
+    "description": "Write or append the TGCD draft at exactly draft/capability_design.json. Other paths are rejected.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "workspace-relative file path"
+        },
+        "content": {
+          "type": "string",
+          "description": "complete text chunk, at most 150 lines"
+        },
+        "append": {
+          "type": "boolean",
+          "description": "append a chunk instead of replacing the file",
+          "default": false
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ]
+    }
+  }
+]

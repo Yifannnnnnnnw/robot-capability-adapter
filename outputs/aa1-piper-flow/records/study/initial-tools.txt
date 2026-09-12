@@ -1,0 +1,62 @@
+[
+  {
+    "name": "write_file",
+    "description": "Write a text file under the workspace. Use this to save driver.py, skills.py, mcp_server.py, etc. Keep each chunk under 150 lines; use append=true for subsequent chunks. `path` is workspace-relative; .. is rejected.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "workspace-relative file path"
+        },
+        "content": {
+          "type": "string",
+          "description": "complete text chunk, at most 150 lines"
+        },
+        "append": {
+          "type": "boolean",
+          "description": "append a chunk instead of replacing the file",
+          "default": false
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ]
+    }
+  },
+  {
+    "name": "read_file",
+    "description": "Read a UTF-8 text file. Use to inspect the MJCF, the URDF, framework skeleton source, or files you previously wrote. `path` may be workspace-relative or absolute under an allowed root.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  },
+  {
+    "name": "local_exec",
+    "description": "Run a shell command locally in the workspace (/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readfile-by5yjqbk/workspace/piper). Returns {exit_code, stdout, stderr}. Use to run `python validate.py`, `python demo.py`, etc. The workspace and the auto_adapter repo are on PYTHONPATH, so scripts can `import auto_adapter.skeletons` and `import driver` without managing sys.path. The `python` command is wired to the orchestrator's venv — mujoco, numpy, etc. are already installed; DO NOT run `pip install`.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "timeout_sec": {
+          "type": "number",
+          "default": 120.0
+        }
+      },
+      "required": [
+        "command"
+      ]
+    }
+  }
+]

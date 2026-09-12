@@ -1,0 +1,6 @@
+[
+  {
+    "role": "user",
+    "content": "Read both inputs with read_file before writing:\nrobot_configuration_id: piper\nstudy_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/study.json\ncatalog_path: /Users/wangyifan/Projects/auto_adapter2.0/AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json\nskeleton_context_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/capability_inputs/skeleton_context.json\nUse the catalog task descriptions, scoring, and task-local source_refs.\nIgnore legacy task invocation_schema and request_envelope when defining the capability interface.\nWrite the complete JSON design with write_file at draft/capability_design.json. Start append=false; use append=true only for remaining chunks. Keep the root robot_configuration_id equal to the AA1 ID above."
+  }
+]

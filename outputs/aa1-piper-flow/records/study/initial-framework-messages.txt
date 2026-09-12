@@ -1,0 +1,6 @@
+[
+  {
+    "role": "user",
+    "content": "Robot ID: piper\nMJCF file (workspace-relative): mjcf.xml\nProduce study.json per the procedure.\nActual MJCF source: /Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml\nResolve the workspace symlink before locating relative includes and meshes; inspect this model directory rather than searching the filesystem."
+  }
+]

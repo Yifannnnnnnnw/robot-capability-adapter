@@ -1,0 +1,21 @@
+{
+  "event": "response",
+  "response": {
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_01CreBU1D9uaAJMJktMZdVz1",
+        "name": "local_exec",
+        "input": {
+          "command": "ls /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper/"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 52764,
+      "output_tokens": 110,
+      "cache_read_input_tokens": 0
+    }
+  }
+}

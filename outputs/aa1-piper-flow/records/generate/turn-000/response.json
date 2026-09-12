@@ -1,0 +1,31 @@
+{
+  "event": "response",
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll systematically build the driver by reading the study, inspecting the skeleton, and examining the MJCF model."
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_017e4JwPTAR6gUZRj1Yo3pUy",
+        "name": "read_file",
+        "input": {
+          "path": "study.json"
+        }
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_018iXcA3p93Nj8XFB1tRMUja",
+        "name": "list_skeletons",
+        "input": {}
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 8702,
+      "output_tokens": 103,
+      "cache_read_input_tokens": 0
+    }
+  }
+}

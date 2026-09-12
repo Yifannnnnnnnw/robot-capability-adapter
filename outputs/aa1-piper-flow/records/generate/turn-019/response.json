@@ -1,0 +1,25 @@
+{
+  "event": "response",
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[{\"type\":\"text\",\"text\":\"All five capabilities work correctly. Let me run the formal validate.py:\"}]"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_bdrk_01UMyhLXq5kEPHiSCMHZRkQ8",
+        "name": "local_exec",
+        "input": {
+          "command": "cd /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper && python validate.py 2>&1 | head -80"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 52443,
+      "output_tokens": 149,
+      "cache_read_input_tokens": 0
+    }
+  }
+}

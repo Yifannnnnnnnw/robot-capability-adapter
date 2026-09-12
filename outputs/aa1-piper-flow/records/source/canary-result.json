@@ -1,0 +1,48 @@
+{
+  "model": "eu.anthropic.claude-sonnet-4-6",
+  "workspace": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readwrite-pz7rqgpy/workspace/piper",
+  "code_commit": "7f37f27e67cd0fb10856b2d957df96cbcfd32ccf",
+  "study_reuse": {
+    "source_run": "/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readfile-by5yjqbk",
+    "source_study": "/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-tgcd-piper-readfile-by5yjqbk/workspace/piper/study.json",
+    "reason": "Reuse the already completed real Piper MJCF study. Only the TGCD file-tool delivery changed; this continuation does not rerun STUDY.",
+    "copied_trace_is_historical": true
+  },
+  "phases": [
+    {
+      "name": "capability_preparation",
+      "ok": true,
+      "error": null,
+      "tokens": {
+        "in": 92509,
+        "out": 9309,
+        "cache_read": 0
+      },
+      "duration_sec": 81.99573302268982
+    },
+    {
+      "name": "02_generate",
+      "ok": true,
+      "error": null,
+      "tokens": {
+        "in": 788694,
+        "out": 19603,
+        "cache_read": 0
+      },
+      "duration_sec": 192.07544684410095
+    }
+  ],
+  "physical_validation_executed": false,
+  "diagnostic_complete": true,
+  "capability_count": 5,
+  "supported_task_count": 20,
+  "required_methods": [
+    "move_end_effector",
+    "set_gripper_aperture",
+    "move_end_effector_with_wrist",
+    "apply_contact_displacement",
+    "move_end_effector_via_waypoint"
+  ],
+  "missing_methods": [],
+  "request_keyword_incompatible_methods": []
+}

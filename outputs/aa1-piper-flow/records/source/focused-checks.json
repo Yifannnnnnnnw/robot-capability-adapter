@@ -1,0 +1,13 @@
+{
+  "code_commit": "7f37f27e",
+  "passed": 36,
+  "test_files": [
+    "test_capability_preparation.py",
+    "test_task_grounded_pipeline.py",
+    "test_orchestrator_local_mode.py",
+    "test_from_scratch_local_mode.py",
+    "test_capability_interface.py",
+    "test_stop_after_validate.py"
+  ],
+  "scope": "Framework file IO, design validation, default/dynamic handoff and failure checks; not generated-driver physics tests."
+}
