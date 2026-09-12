@@ -55,21 +55,37 @@ def load_capability_suite(robot: dict) -> dict:
     return suite
 
 
-def capability_generation_context(robot: dict | None, *, from_scratch: bool = False) -> str:
-    """Public generation input; never include the validation suite or references."""
-    design = load_capability_design(robot)
+def capability_generation_context(
+    robot: dict | None,
+    *,
+    from_scratch: bool = False,
+    design: dict | None = None,
+) -> str:
+    """Public generation input; never include the validation suite or references.
+
+    ``design`` is supplied by the orchestrator after TGCD (or an explicit
+    design-file load).  Keeping that object in memory avoids accidentally
+    falling back to a trusted legacy contract after a dynamic design has been
+    selected.  Calls that do not pass it retain the historical catalog path.
+    """
+    design = design if design is not None else load_capability_design(robot)
     if design is None:
         return ""
     signatures = "\n".join(
         f"def {cap['method_name']}(self, request): ..."
         for cap in design["capabilities"]
     )
+    skeleton_name = None
+    if robot:
+        skeleton_name = robot.get("capability_skeleton")
+        if not skeleton_name:
+            skeleton_name = SKELETON_FOR_CLASS.get(robot.get("class"))
     implementation = (
         "Implement the required methods using your own MuJoCo/NumPy control code. "
         "Do not import supplied skeletons, retained policies, or reference drivers. "
         "Retain Robot.build_from_mjcf(mjcf_path)."
         if from_scratch else
-        f"Define a generated Robot subclass of {robot['capability_skeleton']}. "
+        f"Define a generated Robot subclass of {skeleton_name or 'the trusted low-level skeleton'}. "
         "Fill its robot bindings AND implement every capability method below. "
         "A Spec-only driver is incomplete. The skeleton supplies low-level control, "
         "not these complete capabilities. Retain module-level build() returning "

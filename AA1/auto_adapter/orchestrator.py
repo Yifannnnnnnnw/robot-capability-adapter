@@ -170,6 +170,95 @@ class SelfAssembleConfig:
     # generated study.json never determines which morphology must pass.
     expected_robot_class: Optional[str] = None
 
+    # Optional task-grounded capability preparation.  The historical path
+    # remains the default; a prepared design is deliberately a local-only
+    # diagnostic input and is selected after the public STUDY artifact.
+    prepare_capabilities: bool = False
+    capability_design_path: Path | None = None
+    max_iters_capability_design: int = 6
+
+    def __post_init__(self) -> None:
+        if self.prepare_capabilities and self.capability_design_path is not None:
+            raise ValueError(
+                "prepare_capabilities and capability_design_path are mutually exclusive"
+            )
+        if (self.prepare_capabilities or self.capability_design_path is not None) \
+                and self.mode != "local":
+            raise ValueError("task-grounded capability preparation is local-only")
+        if (isinstance(self.max_iters_capability_design, bool)
+                or not isinstance(self.max_iters_capability_design, int)
+                or not 1 <= self.max_iters_capability_design <= 6):
+            raise ValueError("max_iters_capability_design must be between one and six")
+
+
+def _capability_options_enabled(cfg: Any) -> bool:
+    """Whether this run uses a post-STUDY capability design."""
+    return bool(
+        getattr(cfg, "prepare_capabilities", False)
+        or getattr(cfg, "capability_design_path", None) is not None
+    )
+
+
+def _trusted_skeleton_context(robot: dict | None, expected_class: str | None) -> str:
+    """Return a compact public low-level skeleton summary for TGCD.
+
+    TGCD may use this to avoid authoring capabilities that the selected
+    implementation route cannot expose.  It receives names/signatures only;
+    the fixed capability contract remains a later Generate input.
+    """
+    skeleton_name = (robot or {}).get("capability_skeleton")
+    if not skeleton_name:
+        skeleton_name = SKELETON_FOR_CLASS.get((robot or {}).get("class") or expected_class)
+    if not skeleton_name:
+        return ""
+    lines = [f"Trusted low-level skeleton: {skeleton_name}"]
+    try:
+        import inspect
+        from . import skeletons
+
+        skeleton = getattr(skeletons, skeleton_name)
+        methods = []
+        for name in dir(skeleton):
+            if name.startswith("_"):
+                continue
+            member = getattr(skeleton, name, None)
+            if callable(member):
+                try:
+                    methods.append((name, str(inspect.signature(member))))
+                except (TypeError, ValueError):
+                    methods.append((name, "(...)"))
+        for name, signature in sorted(methods):
+            lines.append(f"- {name}{signature}")
+    except Exception:  # noqa: BLE001 - context is advisory, not a gate
+        pass
+    return "\n".join(lines)
+
+
+def _capability_design_metadata(path: Path) -> dict:
+    """Read the small TGCD resource record when the preparation helper wrote it."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _numeric_token_usage(value: Any) -> dict:
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        str(key): number
+        for key, number in value.items()
+        if not isinstance(number, bool) and isinstance(number, (int, float))
+    }
+
+
+def _merge_numeric_usage(left: Mapping[str, Any], right: Mapping[str, Any]) -> dict:
+    merged = _numeric_token_usage(left)
+    for key, value in _numeric_token_usage(right).items():
+        merged[key] = merged.get(key, 0) + value
+    return merged
+
 
 @dataclass
 class PhaseResult:
@@ -355,7 +444,7 @@ vs open per your probe.
 
 
 _CAPABILITY_GENERATE_SYSTEM = """\
-You are Phase 2 GENERATE for a catalogued capability profile.
+You are Phase 2 GENERATE for the provided capability design.
 Read study.json, list_skeletons and inspect_skeleton to examine the required
 low-level skeleton and its public methods. Re-open the real MJCF where needed.
 Write driver.py with a Robot subclass of the catalogued skeleton and build()
@@ -554,14 +643,22 @@ class SelfAssemble:
 
     def __init__(self, cfg: SelfAssembleConfig) -> None:
         self.cfg = cfg
+        self._dynamic_capabilities = _capability_options_enabled(cfg)
         self.robot_definition = find_robot_definition(cfg.robot_id, cfg.mjcf_path)
         catalog_class = self.robot_definition["class"] if self.robot_definition else None
         if catalog_class and cfg.expected_robot_class and catalog_class != cfg.expected_robot_class:
             raise ValueError("expected_robot_class conflicts with robot zoo")
         self.expected_robot_class = catalog_class or cfg.expected_robot_class
-        self.capability_design = load_capability_design(self.robot_definition)
-        if self.capability_design and self.robot_definition.get("capability_mjcf"):
-            cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
+        # Dynamic/supplied designs are selected only after a successful public
+        # STUDY.  In particular, do not replace the caller's MJCF with the
+        # catalog capability scene on this route.  The default path retains
+        # the historical catalog behavior verbatim.
+        self.capability_design = None
+        self._last_capability_preparation: dict | None = None
+        if not self._dynamic_capabilities:
+            self.capability_design = load_capability_design(self.robot_definition)
+            if self.capability_design and self.robot_definition.get("capability_mjcf"):
+                cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         (self.workspace / "traces").mkdir(parents=True, exist_ok=True)
@@ -673,6 +770,173 @@ class SelfAssemble:
     def _runtime_tools(self) -> list[ToolSpec]:
         return self._local_runtime_tools() if self.cfg.mode == "local" else self._dgx_tools()
 
+    # ─── Task-grounded capability preparation ────────────────────────────
+
+    def _require_capability_design(self, phase: str) -> None:
+        if getattr(self, "_dynamic_capabilities", False) \
+                and not isinstance(self.capability_design, dict):
+            raise RuntimeError(
+                f"dynamic {phase} requires a successful STUDY and capability design; "
+                "catalog fallback is disabled"
+            )
+
+    def _prepare_capability_design(self, study: Mapping[str, Any]) -> dict:
+        """Run TGCD or load an explicit design after STUDY.
+
+        The helper owns the file boundary and writes only under the current
+        workspace.  Success is admitted from the current helper return and
+        preparation record, so an invocation failure cannot be made successful
+        by a stale artifact from an earlier diagnostic.
+        """
+        if not getattr(self, "_dynamic_capabilities", False):
+            return {}
+        if not isinstance(study, Mapping):
+            raise ValueError("STUDY artifact must be one JSON object")
+        robot_id = str(study.get("robot_id", self.cfg.robot_id))
+        if robot_id != self.cfg.robot_id:
+            raise ValueError(
+                f"STUDY robot_id {robot_id!r} does not match {self.cfg.robot_id!r}"
+            )
+        input_dir = self.workspace / "capability_inputs"
+        input_dir.mkdir(parents=True, exist_ok=True)
+        design_output = input_dir / "capability_design.json"
+        preparation_path = input_dir / "capability_preparation.json"
+        metadata_before = (
+            preparation_path.stat().st_mtime_ns
+            if preparation_path.is_file()
+            else None
+        )
+        started = time.time()
+        preparation: dict[str, Any] = {}
+        try:
+            from .capability_preparation import (  # noqa: PLC0415
+                generate_capability_design,
+                load_capability_design_file,
+                task_library_for_robot,
+            )
+
+            supplied = self.cfg.capability_design_path
+            if supplied is not None:
+                supplied_path = Path(supplied).expanduser().resolve()
+                design = load_capability_design_file(
+                    supplied_path, expected_robot_id=self.cfg.robot_id
+                )
+                if not isinstance(design, dict):
+                    design = dict(design)
+                design_path = supplied_path
+                preparation = {
+                    "mode": "supplied",
+                    "token_usage": {},
+                    "duration_sec": 0.0,
+                    "trace_path": None,
+                    "error": None,
+                }
+            else:
+                task_library_dir = task_library_for_robot(self.cfg.robot_id)
+                skeleton_context = _trusted_skeleton_context(
+                    self.robot_definition, self.expected_robot_class
+                ) if self.robot_definition and self.robot_definition.get(
+                    "generation_route", "skeleton"
+                ) == "skeleton" else None
+                result = generate_capability_design(
+                    robot_id=self.cfg.robot_id,
+                    study=dict(study),
+                    mjcf_path=Path(self.cfg.mjcf_path),
+                    task_library_dir=Path(task_library_dir),
+                    output_dir=input_dir,
+                    model=self.cfg.bedrock_model,
+                    provider=self.cfg.model_provider,
+                    region=self.cfg.aws_region,
+                    max_iters=self.cfg.max_iters_capability_design,
+                    max_tokens_per_turn=self.cfg.max_tokens_per_turn,
+                    skeleton_context=skeleton_context,
+                )
+                design = result
+                if not isinstance(design, Mapping):
+                    raise ValueError("TGCD did not return a capability design object")
+                design = dict(design)
+                design_path = design_output
+
+                metadata_changed = (
+                    preparation_path.is_file()
+                    and preparation_path.stat().st_mtime_ns != metadata_before
+                )
+                preparation = (
+                    _capability_design_metadata(preparation_path)
+                    if metadata_changed else {}
+                )
+                if preparation.get("error"):
+                    raise RuntimeError(str(preparation["error"]))
+                preparation.setdefault("token_usage", {})
+                preparation.setdefault("duration_sec", time.time() - started)
+                preparation.setdefault("trace_path", None)
+                preparation.setdefault("error", None)
+
+            if design.get("robot_configuration_id") not in (None, self.cfg.robot_id):
+                raise ValueError(
+                    "capability design robot_configuration_id does not match the run robot"
+                )
+            capabilities = design.get("capabilities")
+            if not isinstance(capabilities, list) or not capabilities:
+                raise ValueError("capability design has no capabilities")
+            preparation.setdefault("duration_sec", time.time() - started)
+            preparation.setdefault("token_usage", {})
+            preparation.setdefault("trace_path", None)
+            preparation.setdefault("error", None)
+            preparation["design_path"] = str(design_path)
+            preparation["output_dir"] = str(input_dir)
+            preparation_path.write_text(
+                json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            self.capability_design = design
+            self._last_capability_preparation = dict(preparation)
+            return preparation
+        except Exception as exc:
+            self.capability_design = None
+            metadata_changed = (
+                preparation_path.is_file()
+                and preparation_path.stat().st_mtime_ns != metadata_before
+            )
+            preparation = (
+                _capability_design_metadata(preparation_path)
+                if metadata_changed else {}
+            )
+            preparation.update({
+                "design_path": str(design_output),
+                "output_dir": str(input_dir),
+                "duration_sec": float(preparation.get("duration_sec") or time.time() - started),
+                "token_usage": _numeric_token_usage(preparation.get("token_usage")),
+                "trace_path": preparation.get("trace_path"),
+                "error": f"{type(exc).__name__}: {exc}",
+            })
+            preparation_path.write_text(
+                json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            self._last_capability_preparation = dict(preparation)
+            raise
+
+    def _attach_capability_metadata(
+        self, study_result: PhaseResult, preparation: Mapping[str, Any]
+    ) -> None:
+        """Record TGCD resources on STUDY and include them in phase totals."""
+        metadata = dict(study_result.metadata or {})
+        metadata["capability_design_path"] = preparation.get("design_path")
+        metadata["capability_preparation"] = dict(preparation)
+        metadata["capability_design_duration_sec"] = preparation.get("duration_sec", 0.0)
+        metadata["capability_design_token_usage"] = dict(
+            preparation.get("token_usage") or {}
+        )
+        study_result.metadata = metadata
+        study_result.token_usage = _merge_numeric_usage(
+            study_result.token_usage, preparation.get("token_usage")
+        )
+        try:
+            study_result.duration_sec += max(0.0, float(preparation.get("duration_sec", 0.0)))
+        except (TypeError, ValueError):
+            pass
+
     # ─── Phase runner ─────────────────────────────────────────────────────
 
     def _run_phase(
@@ -749,6 +1013,11 @@ class SelfAssemble:
     # ─── Per-phase methods (thin: just bind tools + prompts) ──────────────
 
     def _phase_study(self) -> PhaseResult:
+        # A repeated STUDY starts a new design handoff.  Never let an earlier
+        # dynamic design make a failed/partial STUDY look generation-ready.
+        if getattr(self, "_dynamic_capabilities", False):
+            self.capability_design = None
+            self._last_capability_preparation = None
         if self.cfg.mode == "local":
             # The workspace is the authoritative artifact world in local
             # mode.  Keep MuJoCo probing in the same venv/cwd as write_file.
@@ -773,7 +1042,13 @@ class SelfAssemble:
             f"MJCF file (workspace-relative): {self.mjcf_workspace_path}\n"
             "Produce study.json per the procedure."
         )
-        return self._run_phase(
+        if getattr(self, "_dynamic_capabilities", False):
+            user_msg += (
+                f"\nActual MJCF source: {Path(self.cfg.mjcf_path).resolve()}\n"
+                "Resolve the workspace symlink before locating relative includes "
+                "and meshes; inspect this model directory rather than searching the filesystem."
+            )
+        result = self._run_phase(
             name="01_study",
             system=system,
             user_msg=user_msg,
@@ -781,8 +1056,28 @@ class SelfAssemble:
             max_iters=self.cfg.max_iters_study,
             expected_artifacts=["study.json"],
         )
+        if result.ok and self._dynamic_capabilities:
+            try:
+                study_path = self.workspace / "study.json"
+                study = json.loads(study_path.read_text(encoding="utf-8"))
+                if not isinstance(study, Mapping):
+                    raise ValueError("study.json must contain one JSON object")
+                preparation = self._prepare_capability_design(study)
+                self._attach_capability_metadata(result, preparation)
+            except Exception as exc:  # noqa: BLE001 - generation must be gated
+                self.capability_design = None
+                preparation = getattr(self, "_last_capability_preparation", None)
+                if isinstance(preparation, Mapping):
+                    self._attach_capability_metadata(result, preparation)
+                result.ok = False
+                result.error = f"capability design preparation failed: {exc}"
+                metadata = dict(result.metadata or {})
+                metadata["capability_preparation_error"] = result.error
+                result.metadata = metadata
+        return result
 
     def _phase_generate(self, prior_validate_failures: Optional[str] = None) -> PhaseResult:
+        self._require_capability_design("GENERATE")
         system = _CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM
         if self.cfg.mode == "local":
             # All Python/MuJoCo probes and generated files must stay in the
@@ -816,7 +1111,9 @@ class SelfAssemble:
             f"study.json is in the workspace. MJCF is at {self.mjcf_workspace_path}.\n"
             "Produce driver.py per the procedure."
         )
-        user_msg += capability_generation_context(self.robot_definition)
+        user_msg += capability_generation_context(
+            self.robot_definition, design=self.capability_design
+        )
         if prior_validate_failures:
             verification_tool = "local_exec" if self.cfg.mode == "local" else "execute_python"
             user_msg += (
@@ -845,6 +1142,7 @@ class SelfAssemble:
         not generation inputs; the caller supplies only
         :func:`validate_failure_feedback` output.
         """
+        self._require_capability_design("REPAIR")
         system = _CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM
         if self.cfg.mode == "local":
             tools = (
@@ -894,7 +1192,9 @@ class SelfAssemble:
             "the existing public interface intact; do not hard-code a test.\n"
             "Finish after writing the corrected driver.py."
         )
-        user_msg += capability_generation_context(self.robot_definition)
+        user_msg += capability_generation_context(
+            self.robot_definition, design=self.capability_design
+        )
         return self._run_phase(
             name=f"03_repair_{int(attempt)}",
             system=system,
@@ -916,6 +1216,10 @@ class SelfAssemble:
         return validate_failure_feedback(report)
 
     def _phase_validate(self) -> PhaseResult:
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError(
+                "dynamic capability designs cannot enter the legacy validation phase"
+            )
         if self.cfg.validate_mode == "framework":
             return self._phase_validate_framework()
         tools = self._local_tools() + self._runtime_tools()
@@ -952,6 +1256,10 @@ class SelfAssemble:
         Replaces the agent-written validate.py that often burned max_iters
         debugging numpy / signature mistakes (benchmark choke).
         """
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError(
+                "dynamic capability designs cannot enter the legacy Framework evaluator"
+            )
         import importlib.util  # noqa: PLC0415
         import sys as _sys  # noqa: PLC0415
 
@@ -1090,6 +1398,10 @@ class SelfAssemble:
 
     def _validate_new_morphology(self, skel, tests: list, rec_dir: Path) -> None:
         """Exercise the calibrated task on a generated driver using MuJoCo truth."""
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError(
+                "dynamic capability designs cannot use the legacy fixed task evaluator"
+            )
         from types import SimpleNamespace
         import imageio.v2 as imageio
         from .agent.task_planner import _FrameCapture
@@ -1133,6 +1445,8 @@ class SelfAssemble:
 
     def _validate_arm(self, skel, tests: list, rec_dir: Path) -> None:
         """Run a fixed sequence on an ArmSerialDLSSkeleton + capture frames."""
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError("dynamic capability designs cannot use fixed arm validation")
         import imageio  # noqa: PLC0415
         import numpy as np  # noqa: PLC0415
 
@@ -1259,6 +1573,10 @@ class SelfAssemble:
 
     def _validate_quadruped(self, skel, tests: list, rec_dir: Path) -> None:
         """Run stand / sit / walk smoke on a QuadrupedPDGaitSkeleton."""
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError(
+                "dynamic capability designs cannot use fixed quadruped validation"
+            )
         import imageio  # noqa: PLC0415
 
         frames: list = []
@@ -1425,6 +1743,12 @@ class SelfAssemble:
         """
         if stop_after is not None and stop_after not in self.PHASES:
             raise ValueError(f"stop_after={stop_after!r} not in {self.PHASES}")
+        if getattr(self, "_dynamic_capabilities", False) \
+                and stop_after not in {"study", "generate"}:
+            raise ValueError(
+                "dynamic capability runs are diagnostic only; use stop_after='study' "
+                "or stop_after='generate'"
+            )
 
         method_for = {
             "study":   self._phase_study,

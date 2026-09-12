@@ -39,7 +39,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 
 from .agent import ReactLoop, ReactResult, ToolSpec
 from .agent.tools import (
@@ -48,7 +48,12 @@ from .agent.tools import (
     make_read_file_tool,
     make_write_file_tool,
 )
-from .orchestrator import validate_failure_feedback
+from .orchestrator import (
+    _capability_design_metadata,
+    _capability_options_enabled,
+    _merge_numeric_usage,
+    validate_failure_feedback,
+)
 
 
 def _vlog(msg: str) -> None:
@@ -319,6 +324,26 @@ class FromScratchConfig:
     # a remote CodeInterpreter session.
     mode: str = "agentcore"
 
+    # Optional post-STUDY task-grounded capability design.  Scratch dynamic
+    # runs intentionally expose phase_study()/phase_gen_algo() diagnostics;
+    # the historical run() entry remains the default path.
+    prepare_capabilities: bool = False
+    capability_design_path: Path | None = None
+    max_iters_capability_design: int = 6
+
+    def __post_init__(self) -> None:
+        if self.prepare_capabilities and self.capability_design_path is not None:
+            raise ValueError(
+                "prepare_capabilities and capability_design_path are mutually exclusive"
+            )
+        if (self.prepare_capabilities or self.capability_design_path is not None) \
+                and self.mode != "local":
+            raise ValueError("task-grounded capability preparation is local-only")
+        if (isinstance(self.max_iters_capability_design, bool)
+                or not isinstance(self.max_iters_capability_design, int)
+                or not 1 <= self.max_iters_capability_design <= 6):
+            raise ValueError("max_iters_capability_design must be between one and six")
+
 
 @dataclass
 class FromScratchResult:
@@ -563,10 +588,14 @@ class FromScratchOrchestrator:
     def __init__(self, cfg: FromScratchConfig) -> None:
         from .robot_catalog import REPO_ROOT, find_robot_definition, load_capability_design
         self.cfg = cfg
+        self._dynamic_capabilities = _capability_options_enabled(cfg)
         self.robot_definition = find_robot_definition(cfg.robot_id, cfg.mjcf_path)
-        self.capability_design = load_capability_design(self.robot_definition)
-        if self.capability_design and self.robot_definition.get("capability_mjcf"):
-            cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
+        self.capability_design = None
+        self._last_capability_preparation: dict | None = None
+        if not self._dynamic_capabilities:
+            self.capability_design = load_capability_design(self.robot_definition)
+            if self.capability_design and self.robot_definition.get("capability_mjcf"):
+                cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         (self.workspace / "traces").mkdir(parents=True, exist_ok=True)
@@ -683,6 +712,131 @@ class FromScratchOrchestrator:
             python_path_prepend=[],  # critical: DO NOT add auto_adapter on path
         )
 
+    def _require_capability_design(self, phase: str) -> None:
+        if getattr(self, "_dynamic_capabilities", False) \
+                and not isinstance(self.capability_design, dict):
+            raise RuntimeError(
+                f"dynamic {phase} requires a successful STUDY and capability design; "
+                "catalog fallback is disabled"
+            )
+
+    def _prepare_capability_design_from_study(self) -> dict:
+        """Prepare a design for the explicit scratch phase diagnostics."""
+        if not getattr(self, "_dynamic_capabilities", False):
+            return {}
+        study_path = self.workspace / "study.json"
+        if not study_path.is_file():
+            raise FileNotFoundError("study.json missing after STUDY")
+        study = json.loads(study_path.read_text(encoding="utf-8"))
+        if not isinstance(study, dict):
+            raise ValueError("study.json must contain one JSON object")
+        if study.get("robot_id", self.cfg.robot_id) != self.cfg.robot_id:
+            raise ValueError("study.json robot_id does not match the run robot")
+        input_dir = self.workspace / "capability_inputs"
+        input_dir.mkdir(parents=True, exist_ok=True)
+        design_output = input_dir / "capability_design.json"
+        preparation_path = input_dir / "capability_preparation.json"
+        metadata_before = (
+            preparation_path.stat().st_mtime_ns
+            if preparation_path.is_file()
+            else None
+        )
+        started = time.time()
+        try:
+            from .capability_preparation import (  # noqa: PLC0415
+                generate_capability_design,
+                load_capability_design_file,
+                task_library_for_robot,
+            )
+            supplied = self.cfg.capability_design_path
+            if supplied is not None:
+                supplied_path = Path(supplied).expanduser().resolve()
+                design = load_capability_design_file(
+                    supplied_path, expected_robot_id=self.cfg.robot_id
+                )
+                design_path = supplied_path
+                preparation = {
+                    "mode": "supplied", "token_usage": {}, "duration_sec": 0.0,
+                    "trace_path": None, "error": None,
+                }
+            else:
+                # Scratch receives no skeleton context by design.
+                result = generate_capability_design(
+                    robot_id=self.cfg.robot_id,
+                    study=study,
+                    mjcf_path=Path(self.cfg.mjcf_path),
+                    task_library_dir=Path(task_library_for_robot(self.cfg.robot_id)),
+                    output_dir=input_dir,
+                    model=self.cfg.bedrock_model,
+                    provider=self.cfg.model_provider,
+                    region=self.cfg.aws_region,
+                    max_iters=self.cfg.max_iters_capability_design,
+                    max_tokens_per_turn=self.cfg.max_tokens_per_turn,
+                    skeleton_context=None,
+                )
+                design = result
+                if not isinstance(design, Mapping):
+                    raise ValueError("TGCD did not return a capability design object")
+                design = dict(design)
+                design_path = design_output
+                metadata_changed = (
+                    preparation_path.is_file()
+                    and preparation_path.stat().st_mtime_ns != metadata_before
+                )
+                preparation = (
+                    _capability_design_metadata(preparation_path)
+                    if metadata_changed else {}
+                )
+                if preparation.get("error"):
+                    raise RuntimeError(str(preparation["error"]))
+            if not isinstance(design, Mapping) or not design.get("capabilities"):
+                raise ValueError("capability design has no capabilities")
+            preparation = dict(preparation)
+            preparation.setdefault("token_usage", {})
+            preparation.setdefault("duration_sec", time.time() - started)
+            preparation.setdefault("trace_path", None)
+            preparation.setdefault("error", None)
+            preparation["design_path"] = str(design_path)
+            preparation["output_dir"] = str(input_dir)
+            preparation_path.write_text(
+                json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            self.capability_design = dict(design)
+            self._last_capability_preparation = dict(preparation)
+            # Keep the original STUDY artifact self-describing for manual
+            # phase diagnostics; this does not alter the model-facing design.
+            study["capability_preparation"] = dict(preparation)
+            study_path.write_text(
+                json.dumps(study, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            return preparation
+        except Exception as exc:
+            self.capability_design = None
+            metadata_changed = (
+                preparation_path.is_file()
+                and preparation_path.stat().st_mtime_ns != metadata_before
+            )
+            preparation = (
+                _capability_design_metadata(preparation_path)
+                if metadata_changed else {}
+            )
+            preparation.update({
+                "design_path": str(design_output),
+                "output_dir": str(input_dir),
+                "duration_sec": float(preparation.get("duration_sec") or time.time() - started),
+                "token_usage": preparation.get("token_usage") or {},
+                "trace_path": preparation.get("trace_path"),
+                "error": f"{type(exc).__name__}: {exc}",
+            })
+            preparation_path.write_text(
+                json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            self._last_capability_preparation = dict(preparation)
+            raise
+
     # ─── Phases ───────────────────────────────────────────────────────────
 
     def _run_loop(self, *, name: str, system: str, user_msg: str,
@@ -706,6 +860,10 @@ class FromScratchOrchestrator:
         return res
 
     def phase_study(self) -> ReactResult:
+        # Clear any previous dynamic handoff before starting a new STUDY.
+        if getattr(self, "_dynamic_capabilities", False):
+            self.capability_design = None
+            self._last_capability_preparation = None
         if self._is_local_mode():
             tools = self._common_tools() + [self._local_runtime_tool()]
             system = self._localize_prompt(_STUDY_SYSTEM)
@@ -718,13 +876,41 @@ class FromScratchOrchestrator:
             "MJCF (workspace-relative): mjcf.xml\n"
             "Produce study.json per the procedure."
         )
-        return self._run_loop(
+        if getattr(self, "_dynamic_capabilities", False):
+            user += (
+                f"\nActual MJCF source: {Path(self.cfg.mjcf_path).resolve()}\n"
+                "Resolve the workspace symlink before locating relative includes "
+                "and meshes; inspect this model directory rather than searching the filesystem."
+            )
+        result = self._run_loop(
             name="01_study", system=system, user_msg=user,
             tools=tools, max_iters=self.cfg.max_iters_study,
         )
+        if getattr(self, "_dynamic_capabilities", False) and getattr(result, "ok", False):
+            try:
+                preparation = self._prepare_capability_design_from_study()
+                # ReactResult has no phase metadata field in the legacy AA1
+                # API; retain the resource record on the result and in the
+                # updated public study artifact for diagnostic callers.
+                result.total_tokens = _merge_numeric_usage(
+                    result.total_tokens, preparation.get("token_usage")
+                )
+                result.capability_preparation = preparation
+            except Exception as exc:  # noqa: BLE001 - gate GEN_ALGO
+                self.capability_design = None
+                preparation = getattr(self, "_last_capability_preparation", None)
+                if isinstance(preparation, Mapping):
+                    result.total_tokens = _merge_numeric_usage(
+                        result.total_tokens, preparation.get("token_usage")
+                    )
+                    result.capability_preparation = preparation
+                result.ok = False
+                result.error = f"capability design preparation failed: {exc}"
+        return result
 
     def phase_gen_algo(self) -> ReactResult:
         """The from-scratch driver synthesis phase."""
+        self._require_capability_design("GEN_ALGO")
         if self._is_local_mode():
             tools = self._common_tools() + [self._local_runtime_tool()]
             system = self._localize_prompt(_GEN_ALGO_SYSTEM)
@@ -741,9 +927,11 @@ class FromScratchOrchestrator:
             "FK / IK / motion / gripper code, no auto_adapter.skeletons imports."
         )
         from .robot_catalog import capability_generation_context
-        user += capability_generation_context(self.robot_definition, from_scratch=True)
+        user += capability_generation_context(
+            self.robot_definition, from_scratch=True, design=self.capability_design
+        )
         if self.capability_design:
-            system += ("\nFor a catalogued capability profile, implement its complete "
+            system += ("\nFor the provided capability design, implement its complete "
                        "method(request) interface in addition to build/home/step/render. "
                        "The profile supersedes the legacy per-class motion API lists. "
                        "No retained policies, supplied skeletons or reference drivers.")
@@ -759,6 +947,7 @@ class FromScratchOrchestrator:
         post-step physical state until the structural-test suite passes' — the
         framework validator is otherwise out of the agent's inner loop.
         """
+        self._require_capability_design("GEN_REPAIR")
         # A resumed repair may be invoked without entering a context manager;
         # retain that established local-only behavior while ensuring a stale
         # remote handle cannot leak into an explicitly local run.
@@ -792,9 +981,11 @@ class FromScratchOrchestrator:
             "complete validation signal for this repair."
         )
         from .robot_catalog import capability_generation_context
-        user += capability_generation_context(self.robot_definition, from_scratch=True)
+        user += capability_generation_context(
+            self.robot_definition, from_scratch=True, design=self.capability_design
+        )
         if self.capability_design:
-            system += ("\nFor a catalogued capability profile, implement its complete "
+            system += ("\nFor the provided capability design, implement its complete "
                        "method(request) interface in addition to build/home/step/render. "
                        "The profile supersedes the legacy per-class motion API lists. "
                        "No retained policies, supplied skeletons or reference drivers.")
@@ -808,6 +999,10 @@ class FromScratchOrchestrator:
 
     def _validate_from_scratch_driver(self) -> dict:
         """Import the agent's driver, run smoke tests, return report."""
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError(
+                "dynamic capability designs cannot enter the legacy scratch evaluator"
+            )
         driver_path = self.workspace / "driver_from_scratch.py"
         report: dict = {"tests": [], "all_ok": False}
 
@@ -1432,6 +1627,11 @@ class FromScratchOrchestrator:
     # ─── Top-level ────────────────────────────────────────────────────────
 
     def run(self) -> FromScratchResult:
+        if getattr(self, "_dynamic_capabilities", False):
+            raise ValueError(
+                "dynamic scratch runs have no stop_after boundary; use "
+                "phase_study() then phase_gen_algo() for diagnostics"
+            )
         t0 = time.time()
         tok_in = tok_out = 0
         err: Optional[str] = None
