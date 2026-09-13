@@ -2,7 +2,2195 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree_a1",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree_a1-fixed-family-v1",
-  "snapshot_id": "unitree_a1-fixed-family-v1",
-  "tasks": []
+  "snapshot_id": "unitree_a1-public-proposed-tasks-2026-09-13-v1",
+  "numerical_requirements_status": "local_proposed_uncalibrated",
+  "model_limitations": [
+    "No arm, articulated gripper or onboard perception pipeline is present. Foot identities must be resolved from the real model tree, not invented site names.",
+    "Terrain, perception-reveal and object tasks need their declared future scene. All proposed dimensions, scores and deadlines remain uncalibrated."
+  ],
+  "tasks": [
+    {
+      "task_id": "A1-T01",
+      "name": "Point-goal arrival and stop",
+      "description": "Approach an announced destination and stop there for observation.",
+      "source_task_or_operation": "Approach an announced destination and stop there for observation.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Level floor; goal 2 m from the initial trunk projection.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_goal_planar_error",
+          "metric": "terminal_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum planar Euclidean distance from trunk origin to the declared goal during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Abstract: point-goal navigation.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_planar_speed",
+          "metric": "terminal_planar_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "metric_definition": "Maximum trunk planar speed in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Abstract: point-goal navigation.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Abstract: point-goal navigation.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T01",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared planar destination satisfying this task scene placement."
+              }
+            },
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T02",
+      "name": "Cluttered-room exit",
+      "description": "Leave a room by following the free corridor around furniture to its exit.",
+      "source_task_or_operation": "Leave a room by following the free corridor around furniture to its exit.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Three rigid furniture boxes create a route with two turns; all passage widths are 0.8 m or greater; exit is 3 m from start.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if the trunk crosses the declared doorway from inside to outside and remains outside at the deadline; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Navigation in Cluttered Indoor Settings.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with furniture or room walls is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Navigation in Cluttered Indoor Settings.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Navigation in Cluttered Indoor Settings.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T02",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T03",
+      "name": "Recover a route after barrier contact",
+      "description": "After touching a previously unannounced barrier, withdraw and take the available side route to the goal.",
+      "source_task_or_operation": "After touching a previously unannounced barrier, withdraw and take the available side route to the goal.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The obstacle is an ordinary rigid collider. A scheduled information reveal represents an initially unavailable map entry; no glass optics or vision algorithm is claimed. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid barrier blocks the initial 2 m route; one 0.8 m side opening remains. The barrier is revealed to the task controller after the first physical contact.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if barrier contact occurs, the trunk subsequently retreats at least 0.15 m from the contact position, and later reaches the goal region; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Collision Detector: rerouting after contact with glass.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_goal_planar_error",
+          "metric": "terminal_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum planar Euclidean distance from trunk origin to the declared goal during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Collision Detector: rerouting after contact with glass.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Collision Detector: rerouting after contact with glass.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T03",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared planar destination satisfying this task scene placement."
+              }
+            },
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T04",
+      "name": "Yield to a crossing obstacle",
+      "description": "Pause a route for a crossing obstacle and continue only after the route is clear.",
+      "source_task_or_operation": "Pause a route for a crossing obstacle and continue only after the route is clear.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid moving box crosses a 3 m route at t=4 s and clears it at t=8 s; a stop line lies 0.5 m before the crossing.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if the trunk stays behind the stop line during [4,8] s, then crosses the cleared intersection before reaching the goal; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Vision + Proprioception vs. Only Vision: suddenly appearing obstacle.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_goal_planar_error",
+          "metric": "terminal_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum planar Euclidean distance from trunk origin to the declared goal during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Vision + Proprioception vs. Only Vision: suddenly appearing obstacle.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the moving obstacle is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Vision + Proprioception vs. Only Vision: suddenly appearing obstacle.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Vision + Proprioception vs. Only Vision: suddenly appearing obstacle.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T04",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared planar destination satisfying this task scene placement."
+              }
+            },
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T05",
+      "name": "Slow down for uncertain footing",
+      "description": "Reduce route speed on an announced unstable section, then resume progress on firm ground.",
+      "source_task_or_operation": "Reduce route speed on an announced unstable section, then resume progress on firm ground.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A prescribed terrain annotation supplies the slowdown trigger; this is a behavioral subtask and does not evaluate a learned fall predictor. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 3 m route contains a marked 1 m section; commanded speed is 0.3 m/s outside and 0.1 m/s inside. This isolates the speed-change requirement on rigid ground.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if the trunk passes through the full marked section and reaches the route end; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Fall Predictor: reducing velocity on unstable planks.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "section_speed_limit",
+          "metric": "section_speed_limit",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum planar trunk speed while its origin is within the marked section.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Fall Predictor: reducing velocity on unstable planks.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-VP-NAV",
+              "specific_reference": "https://navigation-locomotion.github.io/ \u2014 Fall Predictor: reducing velocity on unstable planks.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T05",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T06",
+      "name": "Rock-field crossing",
+      "description": "Cross a field of uneven rigid blocks while keeping the body off the terrain.",
+      "source_task_or_operation": "Cross a field of uneven rigid blocks while keeping the body off the terrain.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 2 m by 1 m patch of fixed blocks has top heights from 0.02 to 0.06 m; route ends 0.5 m beyond it.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all four feet finish beyond the patch after traversing it; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Rocky and Pebble Terrain.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Trunk collision geoms touching terrain are forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Rocky and Pebble Terrain.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Rocky and Pebble Terrain.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T06",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T07",
+      "name": "Low-friction transition",
+      "description": "Enter and leave a slippery patch without losing the required route.",
+      "source_task_or_operation": "Enter and leave a slippery patch without losing the required route.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Only rigid-ground friction changes; oil fluid dynamics are not represented. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 3 m route has a 1 m rigid surface patch with sliding friction 0.3, surrounded by friction 0.8 terrain; joint and robot contact parameters are unchanged.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all four feet pass the slippery patch; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Oil Slip Test.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_cross_track_error",
+          "metric": "maximum_cross_track_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.3,
+          "metric_definition": "Maximum trunk distance from the straight route centerline.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Oil Slip Test.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Oil Slip Test.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T07",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T08",
+      "name": "Moving-plank crossing",
+      "description": "Cross passively tilting planks and regain stable support on the far floor.",
+      "source_task_or_operation": "Cross passively tilting planks and regain stable support on the far floor.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Planks are external passive rigid fixtures, not extra robot actuators; their physical parameters are proposed. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Two 0.6 m long by 0.8 m wide planks rotate passively about transverse hinges, with hard limits +/-5 degrees and 5 N m s/rad damping.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if each plank has received foot contact in route order and all feet finish on the far floor; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Plank Test and Unstable and Loose Ground.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Plank Test and Unstable and Loose Ground.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T08",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T09",
+      "name": "Compliant-pad crossing",
+      "description": "Traverse yielding supports without remaining trapped on a depressed pad.",
+      "source_task_or_operation": "Traverse yielding supports without remaining trapped on a depressed pad.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Spring-supported rigid pads approximate yielding support only; they are not a validated foam, mattress or deformable-material model. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 1.2 m section has four rigid support pads on passive vertical slides; each has 0.02 m travel, 6000 N/m spring stiffness and 150 N s/m damping.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if at least two pads deflect under foot contact and all feet subsequently reach the far rigid floor; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Foam and Mattress.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Foam and Mattress.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T09",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T10",
+      "name": "Stair-flight traversal",
+      "description": "Traverse one stair flight and settle on its upper landing.",
+      "source_task_or_operation": "Traverse one stair flight and settle on its upper landing.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Three rigid steps rise 0.05 m each with 0.30 m treads and 1 m width; an upper landing supports the complete robot.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all four feet finish on the upper landing after crossing the three risers; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Vegetation and Grass Patch and Hiking Stairs.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Vegetation and Grass Patch and Hiking Stairs.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T10",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T11",
+      "name": "Isolated-platform mount and dismount",
+      "description": "Cross a single raised platform and return all feet to the far ground.",
+      "source_task_or_operation": "Cross a single raised platform and return all feet to the far ground.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid platform is 0.10 m high, 0.70 m long and 1 m wide, with level approach and exit.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all feet have occupied the platform and subsequently finish on the far ground; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Step-Up and Step-Down.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RMA",
+              "specific_reference": "https://ashish-kmr.github.io/rma-legged-robots/ \u2014 Step-Up and Step-Down.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T11",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T12",
+      "name": "Inclined access ramp",
+      "description": "Follow an inclined access route and arrive on the raised deck.",
+      "source_task_or_operation": "Follow an inclined access route and arrive on the raised deck.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A fixed 8-degree ramp, 1.2 m long and 1 m wide, leads to a level deck; initial robot is on the lower floor.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all four feet finish on the upper deck; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-LEGGED-GYM-TERRAIN",
+              "specific_reference": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py \u2014 Terrain.make_terrain: pyramid_sloped_terrain branch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_cross_track_error",
+          "metric": "maximum_cross_track_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.25,
+          "metric_definition": "Maximum trunk planar distance from the ramp centerline during ramp occupancy.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-LEGGED-GYM-TERRAIN",
+              "specific_reference": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py \u2014 Terrain.make_terrain: pyramid_sloped_terrain branch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-LEGGED-GYM-TERRAIN",
+              "specific_reference": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py \u2014 Terrain.make_terrain: pyramid_sloped_terrain branch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T12",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T13",
+      "name": "Stepping-stone crossing",
+      "description": "Choose foot placements on separated support stones and reach the far bank.",
+      "source_task_or_operation": "Choose foot placements on separated support stones and reach the far bank.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Six fixed 0.30 m square stones form two rows with 0.08 m gaps; intervening lower floor is a forbidden support region.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both front and rear foot pairs contact stones and all feet finish beyond the stone field; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-LEGGED-GYM-TERRAIN",
+              "specific_reference": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py \u2014 Terrain.make_terrain: stepping_stones_terrain branch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with the lower forbidden region is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-LEGGED-GYM-TERRAIN",
+              "specific_reference": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py \u2014 Terrain.make_terrain: stepping_stones_terrain branch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-LEGGED-GYM-TERRAIN",
+              "specific_reference": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py \u2014 Terrain.make_terrain: stepping_stones_terrain branch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T13",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T14",
+      "name": "Gap leap",
+      "description": "Cross a break in the walking surface with a flight interval and land on the far bank.",
+      "source_task_or_operation": "Cross a break in the walking surface with a flight interval and land on the far bank.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Two level platforms have a 0.15 m horizontal gap; lower catch floor is 0.2 m below platform height and is a forbidden contact region.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all four feet are simultaneously out of contact for at least 0.02 s while passing the gap and all finish on the far platform; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with the catch floor is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T14",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T15",
+      "name": "Climb a block without a run-around",
+      "description": "Negotiate a vertical block face in a constrained lane.",
+      "source_task_or_operation": "Negotiate a vertical block face in a constrained lane.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Non-foot contact with the climb block is allowed; this is a contact-assisted climb, unlike the lower platform traversal. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 0.16 m high, 0.50 m long block spans a 0.8 m lane; side walls prevent going around; target is on its top.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all feet finish supported on the block top; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Climb.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with side walls is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Climb.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Climb.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T15",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T16",
+      "name": "Low-overhead passage",
+      "description": "Lower the body to pass beneath an overhead obstruction and stand again beyond it.",
+      "source_task_or_operation": "Lower the body to pass beneath an overhead obstruction and stand again beyond it.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 0.6 m long overhead plate has underside height 0.28 m and a 0.8 m wide passage; approaches are level.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if the complete robot crosses under the plate and finishes beyond it; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Crawl.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the overhead plate is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Crawl.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Crawl.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T16",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T17",
+      "name": "Narrow-slit body reconfiguration",
+      "description": "Reconfigure the body and legs to pass a narrow upright opening.",
+      "source_task_or_operation": "Reconfigure the body and legs to pass a narrow upright opening.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The opening width is a proposed challenge, not a demonstrated feasible clearance for local A1. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Two rigid walls define a 0.34 m wide opening, with 1 m headroom and level ground; goal lies on the far side.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if every robot collision geom passes through the opening to the far side; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Tilt: squeezing through thin slits.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the opening walls is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Tilt: squeezing through thin slits.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBOT-PARKOUR",
+              "specific_reference": "https://robot-parkour.github.io/ \u2014 Tilt: squeezing through thin slits.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T17",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T18",
+      "name": "Escape a terrain depression",
+      "description": "Leave a shallow terrain basin and settle beyond its rim.",
+      "source_task_or_operation": "Leave a shallow terrain basin and settle beyond its rim.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Retain only basin escape as an external task; do not transplant the abstract benchmark morphology or reward. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid bowl-shaped heightfield has 0.15 m depth and 1.5 m rim radius, with fixed small surface undulations and level exterior ground.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_distance_from_basin_center",
+          "metric": "terminal_distance_from_basin_center",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 1.7,
+          "metric_definition": "Minimum trunk planar distance from basin center in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Escape.initialize_episode and Escape.get_reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Escape.initialize_episode and Escape.get_reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T18",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T19",
+      "name": "Push a ball to a collection zone",
+      "description": "Bring a free rolling ball into a marked collection region through physical robot-ball contact.",
+      "source_task_or_operation": "Bring a free rolling ball into a marked collection region through physical robot-ball contact.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Use existing trunk/leg collision geoms to roll the ball; no hand, suction, weld or source Fetch reward is introduced. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 0.10 m radius, 0.2 kg ball starts 1 m from a goal on rigid floor; robot begins behind it. No attachment or grasp constraints.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if at least one physical robot-ball contact occurs; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Fetch task and Physics.ball_to_target_distance.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_ball_goal_error",
+          "metric": "terminal_ball_goal_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.2,
+          "metric_definition": "Maximum planar distance between ball center and goal in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Fetch task and Physics.ball_to_target_distance.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Fetch task and Physics.ball_to_target_distance.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T19",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "ball_goal_xy_m"
+            ],
+            "properties": {
+              "ball_goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Center of the declared ball collection region."
+              }
+            },
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "A1-T20",
+      "name": "Recover from a side-resting pose",
+      "description": "Regain a supported standing pose from a declared side-resting initial state.",
+      "source_task_or_operation": "Regain a supported standing pose from a declared side-resting initial state.",
+      "applicability": "Local a1.xml has a free trunk and four three-joint legs controlled by 12 position actuators; foot collision geoms are unnamed class=foot descendants of FR/FL/RR/RL_calf.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Use one explicit side-resting pose instead of random source initialization; early trunk-ground contact is allowed. No recovery policy is supplied. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Unobstructed plane; initial roll is 90 degrees with the robot placed without interpenetration and allowed to settle before task time starts.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all four canonical foot geoms are simultaneously in floor contact throughout the final 2 s; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Move.initialize_episode random orientation and upright reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 15,
+          "metric_definition": "Maximum angle between trunk local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Move.initialize_episode random orientation and upright reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_trunk_ground_clearance",
+          "metric": "terminal_trunk_ground_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.12,
+          "metric_definition": "Minimum vertical clearance between any trunk-attached collision geom and the floor throughout the final 2 s, computed from actual collision geometry. Together with four-foot support and upright posture this excludes belly-supported rest.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DMC-QUADRUPED",
+              "specific_reference": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py \u2014 Move.initialize_episode random orientation and upright reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "A1-T20",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "The stated scene defines fixed fixtures and schedule; only the parameters listed here vary. An empty object requests the fixed task scene. Scene placement is resolved before execution; no scoring limit is a request parameter."
+          }
+        }
+      }
+    }
+  ]
 }

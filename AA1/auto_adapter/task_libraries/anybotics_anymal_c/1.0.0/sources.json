@@ -2,15 +2,70 @@
   "schema_version": "1.0",
   "robot_configuration_id": "anybotics_anymal_c",
   "package_version": "1.0.0",
-  "task_snapshot_id": "anybotics_anymal_c-fixed-family-v1",
   "sources": [
     {
-      "source_id": "menagerie",
-      "title": "anybotics_anymal_c MJCF",
+      "source_id": "SRC-MENAGERIE-ANYMAL-C",
+      "title": "MuJoCo Menagerie ANYmal C model",
       "organization": "Google DeepMind",
-      "version_or_date": "8161bba264d7fa7c99ca301e91e7fb44737676ad",
-      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/8161bba264d7fa7c99ca301e91e7fb44737676ad/anybotics_anymal_c",
-      "specific_reference": "Robot model, actuator configuration and collision geometry."
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/main/anybotics_anymal_c",
+      "specific_reference": "Model origin only. Local checked files: AA1/assets/mjcf/anybotics_anymal_c/scene.xml and anymal_c.xml; base freejoint and 12 position-controlled leg joints. Local XML is authoritative; upstream equivalence is not asserted."
+    },
+    {
+      "source_id": "SRC-ANYMAL-PRODUCT",
+      "title": "ANYmal autonomous robotic inspection solution",
+      "organization": "ANYbotics",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://www.anybotics.com/robotics/anymal/",
+      "specific_reference": "Mobile in complex facilities: grated stairs, low positions, wet/bumpy terrain and automatic docking. Current product application context, not a claim that the older local ANYmal C contains current product sensors."
+    },
+    {
+      "source_id": "SRC-ANYMAL-INSPECTION",
+      "title": "Automate industrial inspection",
+      "organization": "ANYbotics",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://www.anybotics.com/solutions/automate-inspection/",
+      "specific_reference": "Visual inspection and Gas presence detection: repeatable observations at assets and mobile coverage. Only motion and observation-position requirements are adapted here."
+    },
+    {
+      "source_id": "SRC-ANYMAL-MISSIONS",
+      "title": "Robotic inspection solution capabilities",
+      "organization": "ANYbotics",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://www.anybotics.com/robotics/robot-capabilities/",
+      "specific_reference": "Autonomously finds the optimal route; Intelligent data gathering on the edge; Designed for safe operation. Source motivation for route replanning, inspection locations/viewpoints and commanded stopping."
+    },
+    {
+      "source_id": "SRC-THING",
+      "title": "EU H2020 THING",
+      "organization": "ETH Zurich Robotic Systems Lab",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://rsl.ethz.ch/research/research-programs/thing.html",
+      "specific_reference": "Main project description: feet probe terrain; compliance, friction and support stability matter to locomotion. These are research aims, not success limits."
+    },
+    {
+      "source_id": "SRC-ANYMAL-PARKOUR",
+      "title": "ANYmal Parkour: Learning Agile Navigation for Quadrupedal Robots",
+      "organization": "Hoeller et al., ETH Zurich",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://sites.google.com/leggedrobotics.com/agile-navigation",
+      "specific_reference": "Locomotion Module: rough-ground walking, climbing, gap crossing and crawling; Navigation Module: consecutive obstacles. No source controller or perception module is supplied."
+    },
+    {
+      "source_id": "SRC-LEGGED-GYM-TERRAIN",
+      "title": "legged_gym terrain generation",
+      "organization": "ETH Zurich Robotic Systems Lab",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py",
+      "specific_reference": "Terrain.make_terrain: slopes, stairs, discrete obstacles and stepping stones; gap_terrain and pit_terrain functions. Source terrain dimensions are not adopted."
+    },
+    {
+      "source_id": "SRC-DMC-QUADRUPED",
+      "title": "DeepMind Control Suite quadruped tasks",
+      "organization": "Google DeepMind",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py",
+      "specific_reference": "Move.initialize_episode/get_reward, Escape and Fetch. The abstract source quadruped differs from the local ANYmal C; no reward formula, model or source performance is transplanted."
     }
   ]
 }

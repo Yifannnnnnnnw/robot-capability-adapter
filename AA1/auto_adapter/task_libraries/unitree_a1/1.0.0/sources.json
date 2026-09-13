@@ -2,15 +2,54 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree_a1",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree_a1-fixed-family-v1",
   "sources": [
     {
-      "source_id": "menagerie",
-      "title": "unitree_a1 MJCF",
+      "source_id": "SRC-MENAGERIE-A1",
+      "title": "MuJoCo Menagerie Unitree A1 model",
       "organization": "Google DeepMind",
-      "version_or_date": "8161bba264d7fa7c99ca301e91e7fb44737676ad",
-      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/8161bba264d7fa7c99ca301e91e7fb44737676ad/unitree_a1",
-      "specific_reference": "Robot model, actuator configuration and collision geometry."
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_a1",
+      "specific_reference": "Model origin only. Local checked files: AA1/assets/mjcf/unitree_a1/scene.xml and a1.xml; trunk freejoint, four 3-joint legs, 12 position actuators and class=foot collision geoms. The local model is authoritative; no upstream revision equivalence is asserted."
+    },
+    {
+      "source_id": "SRC-RMA",
+      "title": "RMA: Rapid Motor Adaptation for Legged Robots",
+      "organization": "Kumar, Fu, Pathak and Malik",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://ashish-kmr.github.io/rma-legged-robots/",
+      "specific_reference": "RSS 2021 project: terrain demonstrations, Plank Test, Foam and Mattress, Step-Up and Step-Down."
+    },
+    {
+      "source_id": "SRC-VP-NAV",
+      "title": "Coupling Vision and Proprioception for Navigation of Legged Robots",
+      "organization": "Fu et al., CMU and UC Berkeley",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://navigation-locomotion.github.io/",
+      "specific_reference": "CVPR 2022 project: point-goal navigation, cluttered indoor settings, Collision Detector and Fall Predictor."
+    },
+    {
+      "source_id": "SRC-LEGGED-GYM-TERRAIN",
+      "title": "legged_gym terrain generation",
+      "organization": "ETH Zurich Robotic Systems Lab",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/utils/terrain.py",
+      "specific_reference": "Terrain.make_terrain: slopes, stairs, discrete obstacles and stepping stones; gap_terrain and pit_terrain functions. Source terrain dimensions are not adopted."
+    },
+    {
+      "source_id": "SRC-ROBOT-PARKOUR",
+      "title": "Robot Parkour Learning",
+      "organization": "Zhuang et al.",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://robot-parkour.github.io/",
+      "specific_reference": "CoRL 2023 project: Climb, Leap, Crawl, Tilt; Emergent Re-trying Behaviors. This motivates quadruped tasks without asserting the local A1 has the source policy or depth camera."
+    },
+    {
+      "source_id": "SRC-DMC-QUADRUPED",
+      "title": "DeepMind Control Suite quadruped tasks",
+      "organization": "Google DeepMind",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/google-deepmind/dm_control/blob/main/dm_control/suite/quadruped.py",
+      "specific_reference": "Move.initialize_episode/get_reward, Escape and Fetch. The abstract source quadruped differs from A1; no reward formula, model or source performance is transplanted."
     }
   ]
 }
