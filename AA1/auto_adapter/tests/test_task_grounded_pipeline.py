@@ -302,7 +302,7 @@ def test_supplied_capability_only_can_generate_but_validation_is_gated(
         "capabilities": [{"capability_id": "cap", "method_name": "move"}],
     }
     supplied.write_text(json.dumps(supplied_design), encoding="utf-8")
-    module = types.ModuleType("auto_adapter.capability_preparation")
+    module = types.ModuleType("auto_adapter.capability_design")
     module.generate_capability_design = lambda **kwargs: (_ for _ in ()).throw(
         AssertionError("supplied capability design must not call TGCD")
     )
@@ -310,7 +310,7 @@ def test_supplied_capability_only_can_generate_but_validation_is_gated(
         lambda path, *, expected_robot_id=None: supplied_design
     )
     module.task_library_for_robot = lambda robot_id: tmp_path
-    monkeypatch.setitem(sys.modules, "auto_adapter.capability_preparation", module)
+    monkeypatch.setitem(sys.modules, "auto_adapter.capability_design", module)
 
     runner = SelfAssemble(
         SelfAssembleConfig(

@@ -827,7 +827,7 @@ class SelfAssemble:
         started = time.time()
         preparation: dict[str, Any] = {}
         try:
-            from .capability_preparation import (  # noqa: PLC0415
+            from .capability_design import (  # noqa: PLC0415
                 generate_capability_design,
                 load_capability_design_file,
                 task_library_for_robot,

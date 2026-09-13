@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from auto_adapter import capability_preparation as preparation
+from auto_adapter import capability_design as preparation
 
 
 def _library(tmp_path: Path) -> Path:

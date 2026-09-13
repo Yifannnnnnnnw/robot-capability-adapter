@@ -754,7 +754,7 @@ class FromScratchOrchestrator:
         preparation_path = input_dir / "capability_preparation.json"
         started = time.time()
         try:
-            from .capability_preparation import (  # noqa: PLC0415
+            from .capability_design import (  # noqa: PLC0415
                 generate_capability_design,
                 load_capability_design_file,
                 task_library_for_robot,
