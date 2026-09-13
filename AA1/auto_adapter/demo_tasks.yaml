@@ -1,0 +1,284 @@
+# Fixed diagnostic demo goals and public parameters; these are not solver actions.
+# Scene paths are relative to the AA1 root. Use the matching generated driver/model.
+robots:
+  so101:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then close the gripper
+      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/capabilities/so101/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+    initial_state:
+      robot:
+        qpos_by_joint:
+          shoulder_pan: 0.0
+          shoulder_lift: 0.0
+          elbow_flex: 0.0
+          wrist_flex: 0.0
+          wrist_roll: 0.0
+          jaw_visual_joint: -0.175
+      settle_s: 0.5
+      ctrl_by_actuator:
+        act_shoulder_pan: 0.0
+        act_shoulder_lift: 0.0
+        act_elbow_flex: 0.0
+        act_wrist_flex: 0.0
+        act_wrist_roll: 0.0
+        act_jaw_visual: -0.175
+    parameters:
+      waypoints_world_m: [[0.4, 0.02, 0.24], [0.405, 0.03, 0.238]]
+      max_duration_per_segment_s: 3.0
+      closed_opening_fraction: 0.2
+      open_opening_fraction: 0.8
+      max_gripper_duration_s: 2.0
+  piper:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then close the gripper
+      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/capabilities/piper/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+    initial_state:
+      robot:
+        keyframe: home
+      settle_s: 0.5
+    parameters:
+      waypoints_world_m: [[0.5278726066989874, 0.0014136382917729296, 0.2932552441045567], [0.5397902112858992,
+          0.001413369142007601, 0.2505259409261455]]
+      max_duration_per_segment_s: 3.0
+      closed_opening_fraction: 0.2
+      open_opening_fraction: 0.8
+      max_gripper_duration_s: 2.0
+  franka:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then close the gripper
+      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/capabilities/franka/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+    initial_state:
+      robot:
+        keyframe: home
+      settle_s: 0.5
+    parameters:
+      waypoints_world_m: [[0.5748202967087088, -1.018587730189481e-17, 0.4383206727855534], [0.5813985219109039,
+          6.987254145608034e-18, 0.39204723824283383]]
+      max_duration_per_segment_s: 3.0
+      closed_opening_fraction: 0.2
+      open_opening_fraction: 0.8
+      max_gripper_duration_s: 2.0
+  kuka_iiwa14:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then move 2 centimetres
+      along the robot-base positive X direction and return to that motion's starting position, using
+      at most 3 seconds per leg.
+    scene: assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, move_cartesian_offset_and_return]
+    initial_state:
+      robot:
+        keyframe: home
+      settle_s: 0.5
+    parameters:
+      waypoints_world_m: [[0.6519175340259213, 1.3918228253195858e-17, 0.1924353681094415], [0.6364416340080432,
+          5.210352354021968e-18, 0.14087349879070193]]
+      max_duration_per_segment_s: 3.0
+      offset_robot_base_m: [0.02, 0.0, 0.0]
+      max_duration_per_leg_s: 3.0
+  kinova_gen3_robotiq_2f85:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then close the gripper
+      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+    initial_state:
+      robot:
+        keyframe: home
+      settle_s: 0.5
+    parameters:
+      waypoints_world_m: [[0.2970707541869708, -0.5118414345559095, 0.3517976771886743], [0.2988010240498259,
+          -0.5148383498608979, 0.30428967032278226]]
+      max_duration_per_segment_s: 3.0
+      closed_opening_fraction: 0.2
+      open_opening_fraction: 0.8
+      max_gripper_duration_s: 2.0
+  ufactory_xarm7:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then close the gripper
+      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+    initial_state:
+      robot:
+        keyframe: home
+      settle_s: 0.5
+    parameters:
+      waypoints_world_m: [[0.47653054397639794, 0.07187628071700333, 0.7890709567413583], [0.4703362890655162,
+          0.10503015881274474, 0.7890709567413585]]
+      max_duration_per_segment_s: 3.0
+      closed_opening_fraction: 0.2
+      open_opening_fraction: 0.8
+      max_gripper_duration_s: 2.0
+  universal_robots_ur5e_robotiq_2f85:
+    task: >-
+      Move the end effector through the two world-frame checkpoints in the listed order, using at
+      most 3 seconds per segment. Then close the gripper
+      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml
+    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+    initial_state:
+      robot:
+        keyframe: home
+      settle_s: 0.5
+    parameters:
+      waypoints_world_m: [[-0.13399740197579427, 0.451491054171059, 0.26604776837560373], [-0.13399750178676234,
+          0.424318335696851, 0.2309966113234071]]
+      max_duration_per_segment_s: 3.0
+      closed_opening_fraction: 0.2
+      open_opening_fraction: 0.8
+      max_gripper_duration_s: 2.0
+  go2:
+    task: >-
+      Hold a stable stance for 1.2 seconds. Move forward 10 centimetres along the initial heading
+      without changing heading, using at most 5 seconds. Hold a stable stance for another 1.2 seconds.
+      Crouch to a body height of 0.26 metres, then rise to 0.32 metres and hold a stable stance for
+      1.2 seconds. Use at most 3 seconds for each height change; remain upright throughout.
+    scene: assets/mjcf/go2/go2_scene.xml
+    required_capabilities: [trace_planar_path, set_body_height, hold_stable_stance]
+    initial_state:
+      robot:
+        keyframe: home
+      free_bodies:
+        base_link:
+          position_m: [0.0, 0.0, 0.27]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      initial_stand_s: 1.2
+      translation_initial_yaw_m: [0.1, 0.0]
+      yaw_delta_rad: 0.0
+      max_walk_duration_s: 5.0
+      post_walk_stand_s: 1.2
+      crouch_height_m: 0.26
+      standing_height_m: 0.32
+      max_height_change_duration_s: 3.0
+      final_stand_s: 1.2
+  unitree_a1:
+    task: >-
+      Hold a stable stance for 1.2 seconds. Move forward 10 centimetres along the initial heading
+      without changing heading, using at most 5 seconds. Hold a stable stance for another 1.2 seconds.
+      Crouch to a body height of 0.23 metres, then rise to 0.26 metres and hold a stable stance for
+      1.2 seconds. Use at most 3 seconds for each height change; remain upright throughout.
+    scene: assets/mjcf/capabilities/unitree_a1/fixed_scene.xml
+    required_capabilities: [trace_planar_path, set_body_height, hold_stable_stance]
+    initial_state:
+      robot:
+        keyframe: fixed_settled
+      free_bodies:
+        trunk:
+          position_m: [-0.009287943329024754, 0.0001620980901417257, 0.2608028758756205]
+          quaternion_wxyz: [0.9999976858294743, -0.0004624525165845869, -0.0020995356178032444, 8.01470826695388e-05]
+    parameters:
+      initial_stand_s: 1.2
+      translation_initial_yaw_m: [0.1, 0.0]
+      yaw_delta_rad: 0.0
+      max_walk_duration_s: 5.0
+      post_walk_stand_s: 1.2
+      crouch_height_m: 0.23
+      standing_height_m: 0.26
+      max_height_change_duration_s: 3.0
+      final_stand_s: 1.2
+  anymal_c:
+    task: >-
+      Hold a stable stance for 1.2 seconds. Move forward 10 centimetres along the initial heading
+      without changing heading, using at most 5 seconds. Hold a stable stance for another 1.2 seconds.
+      Crouch to a body height of 0.34 metres, then rise to 0.374 metres and hold a stable stance for
+      1.2 seconds. Use at most 3 seconds for each height change; remain upright throughout.
+    scene: assets/mjcf/capabilities/anymal_c/fixed_scene.xml
+    required_capabilities: [trace_planar_path, set_body_height, hold_stable_stance]
+    initial_state:
+      robot:
+        keyframe: fixed_settled
+      free_bodies:
+        base:
+          position_m: [-6.457461251270239e-05, -4.0079877731544627e-08, 0.3737473812630869]
+          quaternion_wxyz: [0.9999999224697815, 3.496239916988932e-08, 0.00039376895540493183, 2.5372932878103854e-06]
+    parameters:
+      initial_stand_s: 1.2
+      translation_initial_yaw_m: [0.1, 0.0]
+      yaw_delta_rad: 0.0
+      max_walk_duration_s: 5.0
+      post_walk_stand_s: 1.2
+      crouch_height_m: 0.34
+      standing_height_m: 0.374
+      max_height_change_duration_s: 3.0
+      final_stand_s: 1.2
+  leap_hand:
+    task: >-
+      Observe and remember the initial world-frame positions of all four fingertips. Move them to
+      the four specified fingertip targets within 2 seconds, then return them to their observed initial
+      positions within 2 seconds. Keep the palm fixed.
+    scene: assets/mjcf/leap_hand/scene_right.xml
+    initial_state: {}
+    parameters:
+      fingertip_targets_world_m:
+        index: [0.07335660802168197, -0.00035632549311595194, 0.19640134016148583]
+        middle: [0.0816667783168793, 0.03052030123777584, 0.190066559632383]
+        ring: [0.08921244503978432, 0.0755951492628891, 0.18266184109195774]
+        thumb: [-0.04099581270947017, -0.09376306126879147, 0.17724107124754265]
+      max_duration_per_motion_s: 2.0
+  hello_robot_stretch_2:
+    task: >-
+      Drive the base forward 10 centimetres at 0.1 metres per second, completing the move within 5
+      seconds. Then move the end effector to world position (-0.02, -0.24, 0.67) metres within 2 seconds
+      while keeping the base position fixed.
+    scene: assets/mjcf/hello_robot_stretch_2/scene.xml
+    initial_state: {}
+    parameters:
+      forward_distance_m: 0.1
+      drive_speed_m_s: 0.1
+      max_drive_duration_s: 5.0
+      end_effector_target_world_m: [-0.02, -0.24, 0.67]
+      max_reach_duration_s: 2.0
+  aloha_2:
+    task: >-
+      Move the left end effector to its specified world-frame target, then move the right end effector
+      to its specified world-frame target, using at most 2 seconds for each arm. Keep the other arm
+      in place during each move, then hold both target positions together for 0.5 seconds.
+    scene: assets/mjcf/aloha_2/scene.xml
+    initial_state:
+      robot:
+        keyframe: neutral_pose
+    parameters:
+      left_target_world_m: [-0.178291, 0.004306, 0.326503]
+      right_target_world_m: [0.178291, -0.042306, 0.326503]
+      max_duration_per_arm_s: 2.0
+      hold_duration_s: 0.5
+  skydio_x2:
+    task: >-
+      Take off to a world-frame altitude of 0.5 metres within 8 seconds, then hover in place for 2
+      seconds. Stay upright and maintain the target altitude during the hover.
+    scene: assets/mjcf/skydio_x2/scene.xml
+    initial_state: {}
+    parameters:
+      target_altitude_world_m: 0.5
+      max_takeoff_duration_s: 8.0
+      hover_duration_s: 2.0
+  h1:
+    task: >-
+      Stand upright and balanced for 2 seconds. Lower the torso by 0.15 metres and recover the standing
+      height over 3 seconds, then stand balanced for another 2 seconds. Remain upright throughout.
+    scene: assets/mjcf/h1/scene.xml
+    initial_state:
+      robot:
+        keyframe: home
+      free_bodies:
+        pelvis:
+          position_m: [0.0, 0.0, 0.98]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      initial_stand_s: 2.0
+      squat_depth_m: 0.15
+      squat_and_recovery_duration_s: 3.0
+      final_stand_s: 2.0
