@@ -153,6 +153,7 @@ class ReactLoop:
         if self.trace_path is not None:
             self.trace_path.parent.mkdir(parents=True, exist_ok=True)
             self.trace_path.write_text("")  # truncate on each run
+            self.trace_path.with_suffix(".messages.jsonl").write_text("")
 
         self.invoke_retries = int(invoke_retries)
         self.invoke_backoff_base = float(invoke_backoff_base)
@@ -165,6 +166,26 @@ class ReactLoop:
             return
         with self.trace_path.open("a") as f:
             f.write(json.dumps(asdict(step), default=str) + "\n")
+
+    def _dump_message_event(self, event: dict) -> None:
+        """Keep complete model inputs and tool returns beside the compact trace.
+
+        Record only message payloads, never transport clients, headers or env.
+        This also preserves tools executed on the final budgeted turn, whose
+        results would otherwise never appear in a subsequent model request.
+        """
+        if self.trace_path is None:
+            return
+
+        def encode(value):
+            if hasattr(value, "model_dump"):
+                return value.model_dump()
+            if hasattr(value, "__dict__"):
+                return vars(value)
+            return str(value)
+
+        with self.trace_path.with_suffix(".messages.jsonl").open("a") as handle:
+            handle.write(json.dumps(event, default=encode, ensure_ascii=False) + "\n")
 
     def _execute_tools(self, tool_use_blocks: list[Any]) -> list[dict]:
         """Run handlers, capture exceptions, build tool_result content list."""
@@ -274,10 +295,21 @@ class ReactLoop:
         for it in range(self.max_iters):
             t0 = time.time()
             _vlog(f"iter {it}/{self.max_iters}: invoking LLM (msgs={len(msgs)})…")
+            request_event = {
+                "event": "request", "iter": it, "provider": self.provider,
+                "model": self.model, "system": self.system,
+                "tools": self.tool_schemas, "max_tokens": self.max_tokens,
+                "messages": msgs,
+            }
+            if self.provider == "holistic":
+                from .holistic_client import to_openai_messages
+                request_event["gateway_messages"] = to_openai_messages(msgs, self.system)
+            self._dump_message_event(request_event)
             try:
                 resp = self._invoke_with_retry(msgs)
             except Exception as e:  # noqa: BLE001
                 error = f"{self.provider} invoke failed after retries: {type(e).__name__}: {e}"
+                self._dump_message_event({"event": "error", "iter": it, "error": error})
                 step = TraceStep(iter=it, thought="", actions=[],
                                  observations=[{"is_error": True, "content": error}],
                                  duration_ms=(time.time() - t0) * 1000.0,
@@ -292,6 +324,11 @@ class ReactLoop:
                     total_tokens={"in": tok_in, "out": tok_out},
                 )
 
+            self._dump_message_event({
+                "event": "response", "iter": it,
+                "response": {"content": resp.content, "stop_reason": resp.stop_reason,
+                             "usage": resp.usage},
+            })
             # Parse the response content blocks
             thought_text = "".join(b.text for b in resp.content if b.type == "text")
             tool_uses = [b for b in resp.content if b.type == "tool_use"]
@@ -331,6 +368,8 @@ class ReactLoop:
                   f"{[t.name for t in tool_uses]}…")
             _te = time.time()
             tool_results = self._execute_tools(tool_uses)
+            self._dump_message_event({"event": "tool_results", "iter": it,
+                                      "results": tool_results})
             _vlog(f"iter {it}: tools done in {time.time()-_te:.0f}s")
 
             step = TraceStep(
