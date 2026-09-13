@@ -1,0 +1,10 @@
+{
+  "token_usage": {
+    "in": 229747,
+    "out": 10525,
+    "cache_read": 0
+  },
+  "duration_sec": 103.06989312171936,
+  "trace_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real/piper/design/trace.jsonl",
+  "error": "max_iters=6 exhausted"
+}

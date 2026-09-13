@@ -1,0 +1,84 @@
+[
+  {
+    "name": "read_file",
+    "description": "Read the supplied study input, exact robot catalog.json, optional skeleton_context.json, current drafts, or real reports/canonical outputs produced by this run.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  },
+  {
+    "name": "write_file",
+    "description": "Write or append exactly draft/capability_design.json or draft/scene_cases.yaml. Start each file with append=false; append=true is allowed only after a replacement write to that same file.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "workspace-relative file path"
+        },
+        "content": {
+          "type": "string",
+          "description": "complete text chunk, at most 150 lines"
+        },
+        "append": {
+          "type": "boolean",
+          "description": "append a chunk instead of replacing the file",
+          "default": false
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ]
+    }
+  },
+  {
+    "name": "local_exec",
+    "description": "Run a short shell command for a public MuJoCo/robot-model check with cwd=/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real/piper/design using the orchestrator's AA1 virtual environment and PYTHONPATH. Inspect only the supplied actual_mjcf_path (/Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml); do not modify source robot assets or read private tests, reference contracts/drivers, or archived experiment data. This is an ordinary shell, not a sandbox or a process-permission boundary.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "timeout_sec": {
+          "type": "number",
+          "default": 120.0
+        }
+      },
+      "required": [
+        "command"
+      ]
+    }
+  },
+  {
+    "name": "probe_case",
+    "description": "Run the real AA1 scene runtime against the current draft/scene_cases.yaml case using the actual MJCF and current capability design. Returns and saves the real framework probe report; it does not accept authored reports.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "scene_cases_path": {
+          "type": "string",
+          "description": "Must be draft/scene_cases.yaml"
+        },
+        "case_id": {
+          "type": "string",
+          "description": "One case_id from the current draft"
+        }
+      },
+      "required": [
+        "scene_cases_path",
+        "case_id"
+      ],
+      "additionalProperties": false
+    }
+  }
+]
