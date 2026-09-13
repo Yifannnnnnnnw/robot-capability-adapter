@@ -25,11 +25,9 @@ agreement.
 |---|---|
 | [`AA1/`](AA1/README.md) | Our maintained copy of the imported Auto-Adapter code, with its benchmark, earlier paper and current capability integration work. Python distribution: `auto-adapter`. |
 | [`extensions/sdk/`](extensions/sdk/README.md) | Separate real-SDK and Translation extension. Python distribution: `autoadapter2-sdk`; import namespace: `autoadapter2_sdk`. |
-| [`experiment/`](experiment/README.md) | Historical experiment locations and path-compatibility helpers. No approved new experiment workspace or runner. |
 | [`thesis/`](thesis/README.md) | Maintained MSc thesis source. Research framing is taken from the compiled `Main.tex`. |
-| [`research_assets/`](research_assets/) | Research illustrations and presentation assets. |
-| [`poster/`](poster/) | Poster source and assets. |
 | [`tools/`](tools/) | Robot-scene rendering and illustration helpers. |
+| [`outputs/`](outputs/) | Selected diagnostic review copies and generated illustrations. |
 
 `AA1/autoadapter_bench/` belongs to the maintained AA1 implementation. The AA1
 paper and its historical results are distinct from the MSc thesis.
@@ -57,9 +55,12 @@ remove it from Git or its history.
 The retired root `autoadapter/` and `AutoAdapter-Bench/` trees remain available
 in Git history for their previously tracked content. Their ignored local run
 outputs were removed during cleanup and are not recoverable from Git.
-Old Authority references and archived experiment descriptions are historical
-context, not an active experiment specification. Consult the
-[experiment README](experiment/README.md) for recorded archive locations.
+The retired `experiment/`, duplicate `thesis_copy/`, `poster/` and
+`research_assets/` trees also remain available in Git history at commit
+`f136ec46`. For example, `git show f136ec46:experiment/README.md` reads the
+former experiment index without restoring an old workspace. Old Authority
+references and archived experiment descriptions are historical context, not
+an active experiment specification.
 
 Use `thesis/` for thesis edits and Overleaf synchronization. Component source,
 robot assets and retained evidence have existing path dependencies; directory
