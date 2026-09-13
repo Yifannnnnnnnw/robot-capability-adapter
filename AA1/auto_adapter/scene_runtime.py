@@ -473,6 +473,62 @@ def _normalise_resources(spec: Any, *, source: Path) -> None:
             resource.file = str(resolved)
 
 
+def _name_unnamed_base_geoms(spec: Any, *, source: Path) -> None:
+    """Give unnamed base geoms stable IDs matching compiled MuJoCo indices."""
+
+    base_model = mujoco.MjModel.from_xml_path(str(source))
+    spec_geoms = list(getattr(spec, "geoms", []))
+    if len(spec_geoms) != int(base_model.ngeom):
+        raise SceneCaseError(
+            "MjSpec geom traversal does not match base MuJoCo geom indices"
+        )
+    existing = _existing_names(spec, "geoms")
+    for geom_index, geom in enumerate(spec_geoms):
+        body_id = int(base_model.geom_bodyid[geom_index])
+        body_name = str(base_model.body(body_id).name)
+        parent = getattr(geom, "parent", None)
+        if str(getattr(parent, "name", "")) != body_name:
+            raise SceneCaseError(
+                "MjSpec geom traversal does not preserve base geom body order"
+            )
+        if str(getattr(geom, "name", "")):
+            continue
+        generated = f"aa1_robot_geom_{geom_index}"
+        if generated in existing:
+            raise SceneCaseError(
+                f"generated base geom name collides with existing name {generated!r}"
+            )
+        geom.name = generated
+        existing.add(generated)
+
+
+def _base_geom_inventory(source: Path, model: Any) -> dict[str, Any]:
+    """Report aliases added to unnamed base geoms for DESIGN bindings."""
+
+    base_model = mujoco.MjModel.from_xml_path(str(source))
+    base_count = int(base_model.ngeom)
+    if int(model.ngeom) < base_count:
+        raise SceneCaseError("reloaded scene has fewer geoms than its base MJCF")
+    aliases: list[dict[str, Any]] = []
+    for geom_index in range(base_count):
+        if str(base_model.geom(geom_index).name):
+            continue
+        generated_name = f"aa1_robot_geom_{geom_index}"
+        if str(model.geom(geom_index).name) != generated_name:
+            raise SceneCaseError(
+                f"reloaded base geom {geom_index} does not have its generated name"
+            )
+        body_id = int(model.geom_bodyid[geom_index])
+        aliases.append(
+            {
+                "base_geom_id": geom_index,
+                "generated_name": generated_name,
+                "body_name": str(model.body(body_id).name),
+            }
+        )
+    return {"base_geom_count": base_count, "unnamed_base_geoms": aliases}
+
+
 def _existing_names(spec: Any, collection: str) -> set[str]:
     return {
         str(getattr(item, "name", ""))
@@ -524,6 +580,7 @@ def _build_scene_xml(mjcf_path: Path, scene: Mapping[str, Any], *, scene_id: str
     try:
         spec = mujoco.MjSpec.from_file(str(source))
         _normalise_resources(spec, source=source)
+        _name_unnamed_base_geoms(spec, source=source)
         _append_scene_objects(spec, scene, scene_id=scene_id)
         xml = spec.to_xml()
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -787,6 +844,9 @@ def probe_case(
         model = mujoco.MjModel.from_xml_path(str(scene_path))
         data = mujoco.MjData(model)
         report["reloaded"] = True
+        report["model_inventory"] = _base_geom_inventory(
+            Path(mjcf_path).resolve(), model
+        )
         apply_initial_state(model, data, dict(case))
         bindings: list[dict[str, Any]] = []
         for raw_measurement in case["measurements"]:

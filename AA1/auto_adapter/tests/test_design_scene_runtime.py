@@ -124,6 +124,7 @@ def test_load_validates_request_and_every_criterion(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("shape,size", [("box", [0.02, 0.02, 0.02]), ("sphere", [0.02]), ("cylinder", [0.02, 0.04])])
 def test_piper_scene_assembly_reload_reset_restore_and_independence(tmp_path: Path, shape, size) -> None:
+    source_before = PIPER_MJCF.read_bytes()
     suite = _suite()
     suite["scenes"]["far_cube"]["objects"][0].update(shape=shape, size_m=size)
     paths = prepare_scenes(mjcf_path=PIPER_MJCF, suite=suite, output_dir=tmp_path)
@@ -132,6 +133,10 @@ def test_piper_scene_assembly_reload_reset_restore_and_independence(tmp_path: Pa
 
     model = mujoco.MjModel.from_xml_path(str(scene_path))
     data = mujoco.MjData(model)
+    assert model.geom("aa1_robot_geom_81").id == 81
+    assert model.geom(81).name == "aa1_robot_geom_81"
+    assert model.body(int(model.geom_bodyid[81])).name == "link6"
+    assert PIPER_MJCF.read_bytes() == source_before
     apply_initial_state(model, data, _suite()["cases"][0])
     cube_id = model.body("far_cube").id
     assert model.nq == 15  # Piper qpos plus the newly assembled free body.
@@ -175,3 +180,39 @@ def test_probe_reports_compile_reload_and_binding_only(tmp_path: Path) -> None:
     assert "criteria_passed" not in report
     assert report["initial_sample"]["time"] == 0.0
     assert report["post_step_sample"]["time"] > report["initial_sample"]["time"]
+    aliases = report["model_inventory"]["unnamed_base_geoms"]
+    assert {
+        "base_geom_id": 81,
+        "generated_name": "aa1_robot_geom_81",
+        "body_name": "link6",
+    } in aliases
+
+    # The local alias is a real exported geom binding, including for contact
+    # measurements; absence of contact remains a physical zero during probe.
+    contact_design = _design()
+    contact_design["capabilities"][0]["criteria"][0] = {
+        "metric": "tool_contact_force",
+        "unit": "N",
+        "comparator": ">=",
+        "threshold": 0.0,
+        "temporal": {"kind": "terminal"},
+        "aggregation": {"kind": "max"},
+    }
+    contact_suite = _suite()
+    contact_suite["cases"][0]["measurements"][0] = {
+        "criterion_index": 0,
+        "operator": "contact_normal_force",
+        "bindings": {
+            "geom1": "aa1_robot_geom_81",
+            "geom2": "far_cube_geom",
+        },
+    }
+    contact_report = probe_case(
+        mjcf_path=PIPER_MJCF,
+        suite=contact_suite,
+        design=contact_design,
+        output_dir=tmp_path / "contact",
+        case_id="piper_far_cube",
+    )
+    assert contact_report["ok"] is True
+    assert contact_report["bindings_resolved"] is True
