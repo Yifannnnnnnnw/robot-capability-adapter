@@ -127,6 +127,12 @@ to identify the joints, actuators and control conventions. It records these
 findings in \texttt{study.json}, which supplies the robot-specific information
 used during capability design and driver synthesis.
 
+\textbf{Design.} The agent translates task requirements into reusable robot
+capabilities and specifies how their effects will be measured in simulation.
+Using the robot study and MJCF model, it develops the capability interface and
+corresponding simulation cases within one bounded ReAct loop. The framework
+checks these outputs and prepares the cases for subsequent driver validation.
+
 \textbf{Generate.} The agent writes \texttt{driver.py} to implement the
 capability interface established during Design. Generation can proceed from
 scratch or use a task-neutral controller skeleton suited to the robot's
@@ -217,23 +223,24 @@ effector to enter and remain within a stated tolerance of that target. The
 capability therefore captures a reusable physical effect without embedding the
 identity or action sequence of a particular task.
 
-Before driver synthesis, the Independent Validation Compiler translates each
-capability criterion into executable simulation cases. It receives the
-capability design and the withheld information needed to initialise and
-observe each simulation, but it cannot inspect the candidate driver or its
-later revision history. For every capability, it constructs one nominal case
-representing ordinary use and one calibrated-boundary case near the declared
-operating limit. For the end-effector example, these could place one target
-well within the workspace and another near its declared boundary while
-retaining the same behavioural criterion.
+To make a behavioural requirement executable, each simulation case links a
+capability request and initial state to explicitly defined measurements. Each
+measurement refers to a capability criterion by index and selects a supported
+operator with the required MuJoCo bindings. For Cartesian positioning, these
+bindings identify the end-effector site and the request field containing its
+target position. The evaluator reads the evaluation interval, aggregation
+rule, comparator and threshold from the capability contract and applies them
+to the recorded trajectory. A holding requirement can therefore be assessed
+through the maximum sampled position error over a specified interval.
 
-Before a formal suite is fixed, an independently prepared reference
-implementation executes every compiled case. This positive control establishes
-that the reference implementation can satisfy the cases under the fixed
-simulation conditions. It does not provide the later generation agent with the
-reference implementation or its outputs. The resulting
-\texttt{capability\_validation\_suite.json} is then fixed and withheld from
-driver synthesis and Repair.
+Before driver synthesis, the framework checks the final capability and case
+specifications for consistency and requires measurement coverage for every
+criterion. It constructs the scenes from the supplied MJCF, applies the
+prescribed initial conditions and resolves the measurement bindings. Each
+prepared case is then briefly stepped in MuJoCo without executing a driver.
+These probes check whether the scenes and measurements are ready for
+evaluation; they do not establish whether a controller can satisfy the
+behavioural criteria.
 
 \subsection{Driver Synthesis and Physics-Grounded Feedback}
 
