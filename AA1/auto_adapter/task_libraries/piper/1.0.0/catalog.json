@@ -9,7 +9,7 @@
       "description": "Move the Piper end effector to a specified tabletop target position without manipulating an object.",
       "source_task_or_operation": "Meta-World sawyer_reach_v3 reach",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The 6-DoF Piper has a serial arm with a hand end-effector body and can perform point-to-point tabletop reaches within its workspace.",
-      "adaptation": "Replace the Sawyer body and benchmark scene with the canonical Piper Direct MuJoCo model and a private tabletop target. Preserve the source Euclidean position metric, metre unit, comparator, and 0.05 m threshold.",
+      "adaptation": "Replace the Sawyer body and benchmark scene with the canonical Piper Direct MuJoCo model and a reachable target. Preserve the Euclidean endpoint distance metric, metre unit, comparator, and terminal evaluation. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A fixed target body is placed in the reachable tabletop workspace.",
         "The private scene provides collision-free free space for the end effector to approach the target."
@@ -24,7 +24,7 @@
           "metric": "end_effector_target_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.05,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state"
           },
@@ -36,7 +36,7 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 74-98 at pinned commit: success is reach_dist <= 0.05.",
               "support": "adapted",
-              "adaptation": "Retain the 0.05 m Euclidean endpoint obligation and apply it to the Piper end-effector and private target body in the canonical MuJoCo metre frame; only robot and scene identities change."
+              "adaptation": "Measure the Euclidean distance between the Piper end-effector and target in the same MuJoCo metre frame. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
@@ -137,7 +137,7 @@
       "description": "Use end-effector contact to push a tabletop object until its position is within the goal region.",
       "source_task_or_operation": "Meta-World sawyer_push_v3 push",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The Piper gripper can make planar contact with a small rigid object and push it across a tabletop.",
-      "adaptation": "Use a private rigid object and goal fixture in the Piper scene. Preserve the benchmark object-to-goal position metric and 0.05 m success radius; no grasp is required.",
+      "adaptation": "Use a rigid object and goal fixture in the Piper scene. Preserve the object-to-goal distance metric after contact-driven pushing; no grasp is required. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A small rigid object and a planar goal marker are placed on the tabletop within the arm workspace.",
         "The object has enough clearance for a planar pushing motion and does not require lifting."
@@ -152,7 +152,7 @@
           "metric": "object_goal_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.05,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state_after_push"
           },
@@ -164,7 +164,7 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_push_v3.py, line 31 and evaluate_state lines 88-112 at pinned commit: TARGET_RADIUS is 0.05 and success is target_to_obj <= TARGET_RADIUS.",
               "support": "adapted",
-              "adaptation": "Keep the source 0.05 m object-to-goal obligation and measure it between Piper scene bodies after contact-driven pushing; replace only Sawyer geometry and private object placement."
+              "adaptation": "Measure the object-to-goal distance between Piper scene bodies after contact-driven pushing. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
@@ -711,7 +711,7 @@
       "description": "Use a sweeping contact motion to move a tabletop object into a goal region.",
       "source_task_or_operation": "Meta-World sawyer_sweep_into_goal_v3 sweep-into-goal",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The Piper end effector can make planar sweeping contact with a small object without requiring a precision grasp.",
-      "adaptation": "Use a private free planar object and a collidable tabletop opening with a lower catch surface, matching the source table-with-hole operation. Preserve the source 0.05 m object-to-goal criterion and contact-based sweep interpretation.",
+      "adaptation": "Use a free planar object and a collidable tabletop opening with a lower catch surface, matching the source table-with-hole operation. Preserve the object-to-goal distance metric and contact-based sweep interpretation. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A small movable object starts on the upper tabletop and the goal lies inside a physical opening with a lower catch surface.",
         "The opening has collidable edges, and the object can enter it only after a lateral contact sweep."
@@ -726,7 +726,7 @@
           "metric": "object_goal_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.05,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state_after_sweep"
           },
@@ -738,7 +738,7 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_sweep_into_goal_v3.py, model_name lines 63-66 and evaluate_state lines 68-91 at pinned commit: the source uses sawyer_table_with_hole.xml and success is target_to_obj <= 0.05.",
               "support": "adapted",
-              "adaptation": "Retain the 0.05 m terminal object-to-goal requirement and instantiate a physical opening and lower catch surface at Piper scale; only morphology and fixture dimensions change."
+              "adaptation": "Measure the terminal object-to-goal distance after a physical sweep into an opening with a lower catch surface at Piper scale. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
@@ -841,7 +841,7 @@
       "description": "Pull a drawer handle until the drawer reaches the source open-state tolerance.",
       "source_task_or_operation": "Meta-World sawyer_drawer_open_v3 drawer-open",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The Piper gripper can contact or grasp a drawer handle and pull a constrained tabletop drawer.",
-      "adaptation": "Use a private sliding drawer fixture compatible with the Piper reach. Preserve the source 0.03 m handle error criterion and evaluate the handle against the private open target.",
+      "adaptation": "Use a sliding drawer fixture compatible with the Piper reach. Preserve the Euclidean handle-to-target distance metric and evaluate the handle against the open target. The original source threshold is 0.03 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A drawer with a rigid handle is mounted on the tabletop and moves along one constrained axis.",
         "The handle is reachable by the Piper gripper without requiring an unsupported wrist orientation."
@@ -856,7 +856,7 @@
           "metric": "drawer_handle_target_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.03,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state_after_pull"
           },
@@ -868,7 +868,7 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_drawer_open_v3.py, evaluate_state, lines 67-87 at pinned commit: success is handle_error <= 0.03; compute_reward line 125 defines handle_error as Euclidean handle-to-target distance.",
               "support": "adapted",
-              "adaptation": "Keep the 0.03 m handle-error requirement and measure the analogous Piper drawer handle against the private open target; the fixture and robot are substituted without changing the bound."
+              "adaptation": "Measure the Euclidean distance between the Piper drawer handle and its open target after pulling. The original source threshold is 0.03 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
@@ -1237,7 +1237,7 @@
       "description": "Approach a tabletop button from above and press it to the target state.",
       "source_task_or_operation": "Meta-World sawyer_button_press_topdown_v3 button-press-topdown",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The Piper can perform a vertical or near-vertical end-effector approach to a tabletop button within its workspace.",
-      "adaptation": "Use a private top-down button constrained along z and preserve the source absolute z-axis error and 0.024 m threshold.",
+      "adaptation": "Use a top-down button constrained along z. Preserve the absolute z-axis error metric and adapt the robot model and fixture dimensions to Piper. The original source threshold is 0.024 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A button with a clear overhead approach is mounted on a horizontal tabletop fixture.",
         "The fixture height and target are chosen so the 6-DoF Piper can reach from above."
@@ -1252,7 +1252,7 @@
           "metric": "button_target_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.024,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state_after_topdown_contact"
           },
@@ -1264,7 +1264,7 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_button_press_topdown_v3.py, evaluate_state lines 61-81 and compute_reward line 135 at pinned commit: success is obj_to_target <= 0.024 and obj_to_target is absolute z-axis error.",
               "support": "adapted",
-              "adaptation": "Keep the exact 0.024 m source z-axis bound and apply it to a physical z-slide button; only the robot model and fixture dimensions are changed. Apply the unchanged source criterion to the Piper morphology."
+              "adaptation": "Measure the absolute z-axis error of the physical z-slide button after top-down contact. The original source threshold is 0.024 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
@@ -1497,7 +1497,7 @@
       "description": "Pull a constrained handle to its target position.",
       "source_task_or_operation": "Meta-World sawyer_handle_pull_v3 handle-pull",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The Piper gripper can grasp or hook a reachable handle and pull it along a constrained tabletop fixture.",
-      "adaptation": "Use a private handle fixture and preserve the inherited Meta-World TARGET_RADIUS of 0.05 m used by the handle-pull evaluation; the fixture must provide a stable grasp path for the Piper directly actuated slide gripper.",
+      "adaptation": "Use a constrained handle fixture that provides a stable grasp or hook path for the Piper directly actuated slide gripper. Preserve the source absolute z-axis target error after pulling. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A constrained pull handle is reachable and has a graspable or hookable geometry.",
         "The handle travel is aligned with a tabletop fixture axis and does not require unsupported wrist orientation."
@@ -1512,7 +1512,7 @@
           "metric": "handle_target_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.05,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state_after_pull"
           },
@@ -1524,13 +1524,13 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_handle_pull_v3.py, evaluate_state lines 63-88 and compute_reward line 133 at pinned commit: success uses self.TARGET_RADIUS and target_to_obj is absolute z-axis error.",
               "support": "adapted",
-              "adaptation": "Apply the source handle-pull terminal predicate to the Piper fixture while resolving its inherited radius from the shared base environment."
+              "adaptation": "Measure the absolute z-axis handle-to-target error after pulling; the original source radius is inherited from SawyerXYZEnv.TARGET_RADIUS. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             },
             {
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/sawyer_xyz_env.py, class SawyerXYZEnv line 156 at pinned commit: TARGET_RADIUS = 0.05.",
               "support": "adapted",
-              "adaptation": "Use the inherited 0.05 m value exactly for the Piper private handle target; no robot-specific relaxation is introduced."
+              "adaptation": "Measure the absolute z-axis handle-to-target error after pulling; the original source radius is inherited from SawyerXYZEnv.TARGET_RADIUS. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
@@ -2421,7 +2421,7 @@
       "description": "Grasp an object in a bin and place it at the specified target location.",
       "source_task_or_operation": "Meta-World sawyer_bin_picking_v3 bin-picking",
       "applicability": "The local Piper is a fixed-base 6-DoF serial arm with joint6 as the wrist roll, a directly actuated slide gripper actuator named gripper controlling joint7, passive mirrored joint8 following joint8 = -joint7, end-effector/TCP site ee_site, four contact-enabled box geoms on link7/link8, and native slide-position gripper control in metres [0.0, 0.035] where 0.0 m is closed and 0.035 m is open. The Piper gripper can reach into a shallow tabletop bin, grasp a small object, and transport it to a nearby goal.",
-      "adaptation": "Use distinct shallow source and target bins sized for the Piper gripper. Preserve the source Euclidean object-to-target-bin-center formula and 0.05 m terminal bound.",
+      "adaptation": "Use distinct shallow source and target bins sized for the Piper gripper. Preserve the Euclidean object-to-target-bin-center distance metric after physical picking and placement. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision.",
       "scene_assumptions": [
         "A shallow bin contains one graspable rigid object and is placed within the Piper reachable workspace.",
         "The bin walls leave enough clearance for the gripper to enter, close, and withdraw the object."
@@ -2436,7 +2436,7 @@
           "metric": "object_goal_distance",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.05,
+          "threshold": 0.02,
           "temporal": {
             "kind": "terminal_state_after_pick_and_place"
           },
@@ -2448,7 +2448,7 @@
               "source_id": "metaworld_repo",
               "specific_reference": "metaworld/envs/sawyer_bin_picking_v3.py, evaluate_state lines 93-116 and compute_reward lines 161-172: obj_to_target is the Euclidean object-to-target norm and success is obj_to_target <= 0.05.",
               "support": "adapted",
-              "adaptation": "Preserve the 0.05 m source placement threshold and apply it after physical Piper removal from a shallow bin; bin depth and object geometry are selected for morphology without changing the bound."
+              "adaptation": "Measure the Euclidean object-to-target-bin-center distance after physical removal from a shallow bin; bin depth and object geometry are selected for Piper morphology. The original source threshold is 0.05 m; the locally adopted threshold is 0.02 m, tightened by human decision."
             }
           ]
         }
