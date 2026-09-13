@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render one self-contained transparent SVG for every robot package."""
+"""Render self-contained transparent robot SVGs from AA1's simulation scenes."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import argparse
 import base64
 import html
 import io
-import json
 import math
 from pathlib import Path
 
@@ -15,10 +14,8 @@ import mujoco
 import numpy as np
 from PIL import Image
 
+from aa1_rendering import add_robot_arguments, robot_scenes
 
-ROOT = Path(__file__).resolve().parents[1]
-ROBOTS_ROOT = ROOT / "autoadapter" / "libraries" / "robots"
-OUTPUT_DIR = ROOT / "research_assets" / "robot_svgs"
 DEFAULT_SIZE = 800
 DEFAULT_SUPERSAMPLE = 3
 FRAME_MARGIN = 0.08
@@ -35,61 +32,26 @@ def _reset_for_view(model: mujoco.MjModel, data: mujoco.MjData) -> None:
     mujoco.mj_forward(model, data)
 
 
-def _discover_packages(robots_root: Path) -> dict[str, Path]:
-    registered: dict[str, str] = {}
-    index_path = robots_root / "index.json"
-    if index_path.is_file():
-        registered = json.loads(index_path.read_text(encoding="utf-8"))["robots"]
-
-    packages: dict[str, Path] = {}
-    for robot_dir in sorted(path for path in robots_root.iterdir() if path.is_dir()):
-        registered_path = registered.get(robot_dir.name)
-        if registered_path:
-            package_root = robots_root / registered_path
-            if (package_root / "morphology.json").is_file():
-                packages[robot_dir.name] = package_root
-                continue
-
-        version_roots = sorted(
-            path.parent for path in robot_dir.glob("*/morphology.json")
-        )
-        if version_roots:
-            canonical = robot_dir / "1.0.0"
-            packages[robot_dir.name] = (
-                canonical if canonical in version_roots else version_roots[-1]
-            )
-    return packages
-
-
-def _robot_joint_names(morphology: dict[str, object]) -> list[str]:
-    control = morphology.get("public_control", {})
-    if not isinstance(control, dict):
-        return []
-    names = control.get("joint_names") or control.get("robot_joint_names") or []
-    return [str(name) for name in names]
-
-
-def _robot_root_body_ids(
-    model: mujoco.MjModel, morphology: dict[str, object]
-) -> set[int]:
+def _robot_root_body_ids(model: mujoco.MjModel) -> set[int]:
+    """Locate AA1 robot subtrees through joint motors and drone thrust sites."""
     roots: set[int] = set()
-    missing: list[str] = []
-    for joint_name in _robot_joint_names(morphology):
-        joint_id = mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_JOINT, joint_name
-        )
-        if joint_id < 0:
-            missing.append(joint_name)
+    for actuator_id in range(model.nu):
+        transmission = int(model.actuator_trntype[actuator_id])
+        target_id = int(model.actuator_trnid[actuator_id, 0])
+        if transmission in (mujoco.mjtTrn.mjTRN_JOINT, mujoco.mjtTrn.mjTRN_JOINTINPARENT):
+            body_id = int(model.jnt_bodyid[target_id])
+        elif transmission == mujoco.mjtTrn.mjTRN_SITE:
+            body_id = int(model.site_bodyid[target_id])
+        else:
+            # AA1's tendon-driven parts share roots with joint-driven parts.
             continue
-        body_id = int(model.jnt_bodyid[joint_id])
         while int(model.body_parentid[body_id]) != 0:
             body_id = int(model.body_parentid[body_id])
-        roots.add(body_id)
+        if body_id:
+            roots.add(body_id)
 
-    if missing:
-        raise ValueError(f"robot joints absent from MJCF: {', '.join(missing)}")
     if not roots:
-        raise ValueError("morphology does not identify any robot joints")
+        raise ValueError("AA1 scene has no robot bodies driven by joint or site actuators")
     return roots
 
 
@@ -104,10 +66,8 @@ def _is_descendant(
     return False
 
 
-def _robot_geom_ids(
-    model: mujoco.MjModel, morphology: dict[str, object]
-) -> set[int]:
-    root_body_ids = _robot_root_body_ids(model, morphology)
+def _robot_geom_ids(model: mujoco.MjModel) -> set[int]:
+    root_body_ids = _robot_root_body_ids(model)
     robot_body_ids = {
         body_id
         for body_id in range(1, model.nbody)
@@ -148,17 +108,13 @@ def _camera_for_robot(
 
 
 def _render_robot_rgba(
-    package_root: Path, size: int, supersample: int
-) -> tuple[Image.Image, str]:
-    morphology_path = package_root / "morphology.json"
-    morphology = json.loads(morphology_path.read_text(encoding="utf-8"))
-    robot_id = str(morphology["robot_configuration_id"])
-    scene_path = package_root / str(morphology["mjcf_entrypoint"])
+    scene_path: Path, size: int, supersample: int
+) -> Image.Image:
     model = mujoco.MjModel.from_xml_path(str(scene_path))
     data = mujoco.MjData(model)
     _reset_for_view(model, data)
 
-    geom_ids = _robot_geom_ids(model, morphology)
+    geom_ids = _robot_geom_ids(model)
     camera = _camera_for_robot(model, data, geom_ids)
 
     environment_geom_ids = sorted(set(range(model.ngeom)) - geom_ids)
@@ -232,7 +188,7 @@ def _render_robot_rgba(
     image = Image.fromarray(rgba)
     if image.getchannel("A").getextrema() != (0, 255):
         raise ValueError("rendered PNG is not a bounded transparent cutout")
-    return image, robot_id
+    return image
 
 
 def _svg_document(image: Image.Image, robot_id: str, size: int) -> str:
@@ -241,7 +197,7 @@ def _svg_document(image: Image.Image, robot_id: str, size: int) -> str:
     payload = base64.b64encode(png.getvalue()).decode("ascii")
     title = html.escape(robot_id.replace("_", " ").replace("-", " ").title())
     description = html.escape(
-        f"Transparent MuJoCo render of the {robot_id} robot package."
+        f"Transparent MuJoCo render of AA1's {robot_id} robot."
     )
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
@@ -256,9 +212,7 @@ def _svg_document(image: Image.Image, robot_id: str, size: int) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robots-root", type=Path, default=ROBOTS_ROOT)
-    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
-    parser.add_argument("--robot", action="append", default=[])
+    add_robot_arguments(parser, "robot_svgs")
     parser.add_argument("--size", type=int, default=DEFAULT_SIZE)
     parser.add_argument(
         "--supersample", type=int, default=DEFAULT_SUPERSAMPLE
@@ -267,32 +221,15 @@ def main() -> int:
     if args.size <= 0 or args.supersample <= 0:
         raise SystemExit("--size and --supersample must be positive")
 
-    packages = _discover_packages(args.robots_root)
-    if args.robot:
-        requested = set(args.robot)
-        missing = requested - packages.keys()
-        if missing:
-            raise SystemExit(
-                f"unknown robot package(s): {', '.join(sorted(missing))}"
-            )
-        packages = {name: packages[name] for name in sorted(requested)}
-    if not packages:
-        raise SystemExit(f"no robot packages found under {args.robots_root}")
-
+    scenes = robot_scenes(args.aa1_root, args.robot)
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    for directory_name, package_root in packages.items():
-        image, robot_id = _render_robot_rgba(
-            package_root, args.size, args.supersample
-        )
-        output_path = args.output_dir / f"{directory_name}.svg"
+    for robot_id, scene_path in scenes.items():
+        image = _render_robot_rgba(scene_path, args.size, args.supersample)
+        output_path = args.output_dir / f"{robot_id}.svg"
         output_path.write_text(
             _svg_document(image, robot_id, args.size), encoding="utf-8"
         )
-        try:
-            display_path = output_path.relative_to(ROOT)
-        except ValueError:
-            display_path = output_path
-        print(f"{display_path} <- {package_root.relative_to(args.robots_root)}")
+        print(f"{output_path} <- {scene_path}")
     return 0
 
 

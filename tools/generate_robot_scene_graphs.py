@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Render simple MJCF body scene-graph PNGs for robot packages."""
+"""Render MJCF body scene-graph PNGs from AA1's robot catalogue."""
 
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -12,9 +11,7 @@ from xml.etree import ElementTree
 
 from PIL import Image, ImageDraw, ImageFont
 
-
-ROOT = Path(__file__).resolve().parents[1]
-ROBOTS_ROOT = ROOT / "autoadapter" / "libraries" / "robots"
+from aa1_rendering import add_robot_arguments, robot_scenes
 
 
 @dataclass
@@ -226,27 +223,20 @@ def _depth(target: SceneNode, root: SceneNode, depth: int = 0) -> int:
     return -1
 
 
-def _write_scene_graph(package_root: Path) -> Path:
-    morphology_path = package_root / "morphology.json"
-    morphology = json.loads(morphology_path.read_text(encoding="utf-8"))
-    entrypoint = package_root / morphology["mjcf_entrypoint"]
+def _write_scene_graph(robot_id: str, entrypoint: Path, output_dir: Path, aa1_root: Path) -> Path:
     tree = _scene_tree(entrypoint)
-    robot_id = morphology["robot_configuration_id"]
-    output_path = package_root / "scene_graph.png"
-    _render_png(tree, output_path, robot_id, morphology["mjcf_entrypoint"])
+    output_path = output_dir / f"{robot_id}.png"
+    _render_png(tree, output_path, robot_id, str(entrypoint.relative_to(aa1_root.resolve())))
     return output_path
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robots-root", type=Path, default=ROBOTS_ROOT)
+    add_robot_arguments(parser, "scene_graphs")
     args = parser.parse_args()
-    morphology_paths = sorted(args.robots_root.glob("*/1.0.0/morphology.json"))
-    if not morphology_paths:
-        raise SystemExit(f"no morphology.json files found under {args.robots_root}")
-    for morphology_path in morphology_paths:
-        output = _write_scene_graph(morphology_path.parent)
-        print(output.relative_to(ROOT))
+    for robot_id, scene_path in robot_scenes(args.aa1_root, args.robot).items():
+        output = _write_scene_graph(robot_id, scene_path, args.output_dir, args.aa1_root)
+        print(f"{output} <- {scene_path}")
     return 0
 
 

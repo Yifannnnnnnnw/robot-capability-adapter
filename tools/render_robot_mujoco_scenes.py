@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
-"""Render real MuJoCo scene PNGs for robot package MJCF entrypoints."""
+"""Render real MuJoCo scene PNGs from AA1's robot catalogue."""
 
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import mujoco
 import numpy as np
 from PIL import Image, ImageDraw
 
+from aa1_rendering import add_robot_arguments, robot_scenes
 
-ROOT = Path(__file__).resolve().parents[1]
-ROBOTS_ROOT = ROOT / "autoadapter" / "libraries" / "robots"
 DEFAULT_WIDTH = 800
 DEFAULT_HEIGHT = 600
 CONTACT_SHEET_COLUMNS = 5
 CONTACT_SHEET_TILE = (320, 240)
 CONTACT_SHEET_MARGIN = 24
 CONTACT_SHEET_LABEL_HEIGHT = 50
-PRESENTATION_ENTRYPOINTS = {
-    "piper": "assets/scene.xml",
-    "robotstudio_so101": "assets/scene.xml",
-}
 
 
 def _object_name(model: mujoco.MjModel, obj: mujoco.mjtObj, index: int) -> str:
@@ -74,12 +68,7 @@ def _camera_for_model(model: mujoco.MjModel, data: mujoco.MjData) -> mujoco.MjvC
     return camera
 
 
-def _render_package(package_root: Path, width: int, height: int) -> Path:
-    morphology = json.loads((package_root / "morphology.json").read_text(encoding="utf-8"))
-    scene_entrypoint = PRESENTATION_ENTRYPOINTS.get(
-        package_root.parent.name, morphology["mjcf_entrypoint"]
-    )
-    scene_path = package_root / scene_entrypoint
+def _render_scene(scene_path: Path, output_path: Path, width: int, height: int) -> Path:
     model = mujoco.MjModel.from_xml_path(str(scene_path))
     model.vis.global_.offwidth = max(int(model.vis.global_.offwidth), width)
     model.vis.global_.offheight = max(int(model.vis.global_.offheight), height)
@@ -94,16 +83,11 @@ def _render_package(package_root: Path, width: int, height: int) -> Path:
     finally:
         renderer.close()
 
-    output_path = package_root / "mujoco_scene.png"
     Image.fromarray(image).save(output_path)
     return output_path
 
 
-def _write_contact_sheet(robots_root: Path) -> Path:
-    scene_paths = sorted(robots_root.glob("*/1.0.0/mujoco_scene.png"))
-    if not scene_paths:
-        raise SystemExit(f"no mujoco_scene.png files found under {robots_root}")
-
+def _write_contact_sheet(scene_paths: list[Path], output_dir: Path) -> Path:
     tile_width, tile_height = CONTACT_SHEET_TILE
     row_height = tile_height + CONTACT_SHEET_LABEL_HEIGHT
     rows = (len(scene_paths) + CONTACT_SHEET_COLUMNS - 1) // CONTACT_SHEET_COLUMNS
@@ -124,38 +108,32 @@ def _write_contact_sheet(robots_root: Path) -> Path:
                 CONTACT_SHEET_TILE, Image.Resampling.LANCZOS
             )
             sheet.paste(thumbnail, (x, y))
-        draw.text((x, y + tile_height + 6), scene_path.parent.parent.name, fill="black")
+        draw.text((x, y + tile_height + 6), scene_path.stem, fill="black")
 
-    output_path = robots_root / "mujoco_scene_contact_sheet.png"
+    output_path = output_dir / "mujoco_scene_contact_sheet.png"
     sheet.save(output_path)
     return output_path
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robots-root", type=Path, default=ROBOTS_ROOT)
-    parser.add_argument("--robot", action="append", default=[])
+    add_robot_arguments(parser, "scenes")
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH)
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT)
     args = parser.parse_args()
 
-    morphology_paths = sorted(args.robots_root.glob("*/1.0.0/morphology.json"))
-    if args.robot:
-        selected = set(args.robot)
-        morphology_paths = [
-            path for path in morphology_paths if path.parent.parent.name in selected
-        ]
-        missing = selected - {path.parent.parent.name for path in morphology_paths}
-        if missing:
-            raise SystemExit(f"unknown robot package(s): {', '.join(sorted(missing))}")
-    if not morphology_paths:
-        raise SystemExit(f"no morphology.json files found under {args.robots_root}")
-
-    for morphology_path in morphology_paths:
-        output_path = _render_package(morphology_path.parent, args.width, args.height)
-        print(output_path.relative_to(ROOT))
-    contact_sheet_path = _write_contact_sheet(args.robots_root)
-    print(contact_sheet_path.relative_to(ROOT))
+    if args.width <= 0 or args.height <= 0:
+        raise SystemExit("--width and --height must be positive")
+    scenes = robot_scenes(args.aa1_root, args.robot)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    outputs = []
+    for robot_id, scene_path in scenes.items():
+        output_path = _render_scene(
+            scene_path, args.output_dir / f"{robot_id}.png", args.width, args.height
+        )
+        outputs.append(output_path)
+        print(f"{output_path} <- {scene_path}")
+    print(_write_contact_sheet(outputs, args.output_dir))
     return 0
 
 
