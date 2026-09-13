@@ -1,4 +1,4 @@
-"""Check fixed demo inputs against their real MuJoCo scenes, without running a task."""
+"""Check diagnostic demo inputs against their real MuJoCo scenes."""
 
 from __future__ import annotations
 
@@ -18,46 +18,59 @@ DEMOS = yaml.safe_load(
     (AA1_ROOT / "auto_adapter/demo_tasks.yaml").read_text(encoding="utf-8")
 )["robots"]
 ROBOT_IDS = {
-    "so101", "piper", "franka", "kuka_iiwa14",
+    "so101", "menagerie_so101", "so101_push", "piper_push", "franka_push",
+    "piper", "franka", "ur5e", "kuka_iiwa14", "go2", "unitree_a1", "anymal_c",
     "kinova_gen3_robotiq_2f85", "ufactory_xarm7",
-    "universal_robots_ur5e_robotiq_2f85", "go2", "unitree_a1", "anymal_c",
-    "leap_hand", "hello_robot_stretch_2", "aloha_2", "skydio_x2", "h1",
+    "universal_robots_ur5e_robotiq_2f85", "leap_hand", "hello_robot_stretch_2",
+    "aloha_2", "skydio_x2", "h1", "unitree_g1", "google_barkour_vb",
+}
+EXPECTED_SCENE_PATHS = {
+    "so101": "assets/mjcf/demo_scenes/so101/fixed_scene.xml",
+    "menagerie_so101": "assets/mjcf/robotstudio_so101/scene.xml",
+    "so101_push": "assets/mjcf/pushbench/so101_pushbench.xml",
+    "piper_push": "assets/mjcf/piper/pushbench.xml",
+    "franka_push": "assets/mjcf/franka_panda/pushbench.xml",
+    "piper": "assets/mjcf/demo_scenes/piper/fixed_scene.xml",
+    "franka": "assets/mjcf/demo_scenes/franka/fixed_scene.xml",
+    "ur5e": "assets/mjcf/universal_robots_ur5e/scene.xml",
+    "kuka_iiwa14": "assets/mjcf/demo_scenes/kuka_iiwa14/fixed_scene.xml",
+    "go2": "assets/mjcf/go2/go2_scene.xml",
+    "unitree_a1": "assets/mjcf/demo_scenes/unitree_a1/fixed_scene.xml",
+    "anymal_c": "assets/mjcf/demo_scenes/anymal_c/fixed_scene.xml",
+    "kinova_gen3_robotiq_2f85": "assets/mjcf/demo_scenes/kinova_gen3_robotiq_2f85/fixed_scene.xml",
+    "ufactory_xarm7": "assets/mjcf/demo_scenes/ufactory_xarm7/fixed_scene.xml",
+    "universal_robots_ur5e_robotiq_2f85": "assets/mjcf/demo_scenes/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml",
+    "leap_hand": "assets/mjcf/leap_hand/scene_right.xml",
+    "hello_robot_stretch_2": "assets/mjcf/hello_robot_stretch_2/scene.xml",
+    "aloha_2": "assets/mjcf/aloha_2/scene.xml",
+    "skydio_x2": "assets/mjcf/skydio_x2/scene.xml",
+    "h1": "assets/mjcf/h1/scene.xml",
+    "unitree_g1": "assets/mjcf/unitree_g1/scene.xml",
+    "google_barkour_vb": "assets/mjcf/google_barkour_vb/scene.xml",
+}
+RETIRED_METHOD_NAMES = {
+    "trace_cartesian_path", "set_gripper_opening", "move_cartesian_offset_and_return",
+    "trace_planar_path", "set_body_height", "hold_stable_stance",
 }
 
 
-def test_fixed_demo_inputs_cover_the_fifteen_robots() -> None:
+def test_demo_inputs_cover_the_twenty_two_robots() -> None:
     assert set(DEMOS) == ROBOT_IDS
-    zoo = yaml.safe_load(
-        (AA1_ROOT / "autoadapter_bench/spec/robot_zoo.yaml").read_text(encoding="utf-8")
-    )["robots"]
-    catalog = {robot["id"]: robot for robot in zoo}
     for robot_id, demo in DEMOS.items():
-        robot = catalog[robot_id]
-        assert demo["scene"] == robot.get("capability_mjcf", robot["mjcf"])
+        assert set(demo) == {"task", "scene", "initial_state", "parameters"}
+        assert demo["scene"] == EXPECTED_SCENE_PATHS[robot_id]
         assert demo["task"].strip()
         assert isinstance(demo["parameters"], dict)
         # These parameters are sent to the model as public JSON.
         json.dumps(demo["parameters"], allow_nan=False)
 
 
-def test_fixed_demos_declare_only_their_existing_required_interfaces() -> None:
-    for robot_id in (
-        "so101", "piper", "franka", "kinova_gen3_robotiq_2f85",
-        "ufactory_xarm7", "universal_robots_ur5e_robotiq_2f85",
-    ):
-        assert DEMOS[robot_id]["required_capabilities"] == [
-            "trace_cartesian_path", "set_gripper_opening",
-        ]
-    assert DEMOS["kuka_iiwa14"]["required_capabilities"] == [
-        "trace_cartesian_path", "move_cartesian_offset_and_return",
-    ]
-    for robot_id in ("go2", "unitree_a1", "anymal_c"):
-        assert DEMOS[robot_id]["required_capabilities"] == [
-            "trace_planar_path", "set_body_height", "hold_stable_stance",
-        ]
-    for robot_id in ("leap_hand", "hello_robot_stretch_2", "aloha_2", "skydio_x2", "h1"):
-        assert "required_capabilities" not in DEMOS[robot_id]
-
+def test_demo_inputs_have_no_retired_interfaces_or_paths() -> None:
+    serialized = json.dumps(DEMOS)
+    assert "required_capabilities" not in serialized
+    assert "assets/mjcf/capabilities/" not in serialized
+    for method_name in RETIRED_METHOD_NAMES:
+        assert method_name not in serialized
 
 def test_arm_demos_do_not_request_an_extra_hold_but_aloha_keeps_its_hold() -> None:
     for robot_id in (
@@ -72,7 +85,7 @@ def test_arm_demos_do_not_request_an_extra_hold_but_aloha_keeps_its_hold() -> No
 
 
 @pytest.mark.parametrize("robot_id", sorted(ROBOT_IDS))
-def test_fixed_demo_initial_state_loads_in_the_selected_scene(robot_id: str) -> None:
+def test_demo_initial_state_loads_in_the_selected_scene(robot_id: str) -> None:
     demo = DEMOS[robot_id]
     scene = AA1_ROOT / demo["scene"]
     assert scene.is_file()

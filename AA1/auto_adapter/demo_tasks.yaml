@@ -4,10 +4,9 @@ robots:
   so101:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
-      most 3 seconds per segment. Then close the gripper
-      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
-    scene: assets/mjcf/capabilities/so101/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+      most 3 seconds per segment. Then set the gripper opening to 20% of its full opening and set it
+      to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/demo_scenes/so101/fixed_scene.xml
     initial_state:
       robot:
         qpos_by_joint:
@@ -34,10 +33,9 @@ robots:
   piper:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
-      most 3 seconds per segment. Then close the gripper
-      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
-    scene: assets/mjcf/capabilities/piper/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+      most 3 seconds per segment. Then set the gripper opening to 20% of its full opening and set it
+      to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/demo_scenes/piper/fixed_scene.xml
     initial_state:
       robot:
         keyframe: home
@@ -52,10 +50,9 @@ robots:
   franka:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
-      most 3 seconds per segment. Then close the gripper
-      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
-    scene: assets/mjcf/capabilities/franka/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+      most 3 seconds per segment. Then set the gripper opening to 20% of its full opening and set it
+      to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/demo_scenes/franka/fixed_scene.xml
     initial_state:
       robot:
         keyframe: home
@@ -73,8 +70,7 @@ robots:
       most 3 seconds per segment. Then move 2 centimetres
       along the robot-base positive X direction and return to that motion's starting position, using
       at most 3 seconds per leg.
-    scene: assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, move_cartesian_offset_and_return]
+    scene: assets/mjcf/demo_scenes/kuka_iiwa14/fixed_scene.xml
     initial_state:
       robot:
         keyframe: home
@@ -88,10 +84,9 @@ robots:
   kinova_gen3_robotiq_2f85:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
-      most 3 seconds per segment. Then close the gripper
-      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
-    scene: assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+      most 3 seconds per segment. Then set the gripper opening to 20% of its full opening and set it
+      to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/demo_scenes/kinova_gen3_robotiq_2f85/fixed_scene.xml
     initial_state:
       robot:
         keyframe: home
@@ -106,10 +101,9 @@ robots:
   ufactory_xarm7:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
-      most 3 seconds per segment. Then close the gripper
-      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
-    scene: assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+      most 3 seconds per segment. Then set the gripper opening to 20% of its full opening and set it
+      to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/demo_scenes/ufactory_xarm7/fixed_scene.xml
     initial_state:
       robot:
         keyframe: home
@@ -124,10 +118,9 @@ robots:
   universal_robots_ur5e_robotiq_2f85:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
-      most 3 seconds per segment. Then close the gripper
-      to 20% of its full opening and reopen it to 80%, using at most 2 seconds for each change.
-    scene: assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml
-    required_capabilities: [trace_cartesian_path, set_gripper_opening]
+      most 3 seconds per segment. Then set the gripper opening to 20% of its full opening and set it
+      to 80%, using at most 2 seconds for each change.
+    scene: assets/mjcf/demo_scenes/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml
     initial_state:
       robot:
         keyframe: home
@@ -146,7 +139,6 @@ robots:
       Crouch to a body height of 0.26 metres, then rise to 0.32 metres and hold a stable stance for
       1.2 seconds. Use at most 3 seconds for each height change; remain upright throughout.
     scene: assets/mjcf/go2/go2_scene.xml
-    required_capabilities: [trace_planar_path, set_body_height, hold_stable_stance]
     initial_state:
       robot:
         keyframe: home
@@ -170,8 +162,7 @@ robots:
       without changing heading, using at most 5 seconds. Hold a stable stance for another 1.2 seconds.
       Crouch to a body height of 0.23 metres, then rise to 0.26 metres and hold a stable stance for
       1.2 seconds. Use at most 3 seconds for each height change; remain upright throughout.
-    scene: assets/mjcf/capabilities/unitree_a1/fixed_scene.xml
-    required_capabilities: [trace_planar_path, set_body_height, hold_stable_stance]
+    scene: assets/mjcf/demo_scenes/unitree_a1/fixed_scene.xml
     initial_state:
       robot:
         keyframe: fixed_settled
@@ -195,8 +186,7 @@ robots:
       without changing heading, using at most 5 seconds. Hold a stable stance for another 1.2 seconds.
       Crouch to a body height of 0.34 metres, then rise to 0.374 metres and hold a stable stance for
       1.2 seconds. Use at most 3 seconds for each height change; remain upright throughout.
-    scene: assets/mjcf/capabilities/anymal_c/fixed_scene.xml
-    required_capabilities: [trace_planar_path, set_body_height, hold_stable_stance]
+    scene: assets/mjcf/demo_scenes/anymal_c/fixed_scene.xml
     initial_state:
       robot:
         keyframe: fixed_settled
@@ -282,3 +272,172 @@ robots:
       squat_depth_m: 0.15
       squat_and_recovery_duration_s: 3.0
       final_stand_s: 2.0
+  menagerie_so101:
+    task: >-
+      Move the `gripperframe` site through the two nearby world-frame waypoints in order. Then set
+      the `gripper` joint to -0.08 radians and to 0.16 radians, using at most 2 seconds for each
+      change.
+    scene: assets/mjcf/robotstudio_so101/scene.xml
+    initial_state:
+      robot:
+        qpos_by_joint:
+          shoulder_pan: 0.0
+          shoulder_lift: 0.0
+          elbow_flex: 0.0
+          wrist_flex: 0.0
+          wrist_roll: 0.0
+          gripper: 0.0
+    parameters:
+      waypoints_world_m: [[0.396, -0.001, 0.248], [0.388, 0.004, 0.242]]
+      gripper_joint_targets_rad: [-0.08, 0.16]
+      max_duration_per_segment_s: 2.0
+      max_gripper_duration_s: 2.0
+  so101_push:
+    task: >-
+      In the push scene, place the `ee_site` fingertip at the `tee` body and make a short positive-X
+      push from the listed initial object pose, then withdraw to the listed clearance waypoint.
+      Keep the fixed `obs` body out of the motion.
+    scene: assets/mjcf/pushbench/so101_pushbench.xml
+    initial_state:
+      robot:
+        qpos_by_joint:
+          shoulder_pan: 0.0
+          shoulder_lift: 0.0
+          elbow_flex: 0.0
+          wrist_flex: 0.0
+          wrist_roll: 0.0
+          jaw_visual_joint: 0.0
+      free_bodies:
+        tee:
+          position_m: [0.18, -0.05, 0.025]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_red:
+          position_m: [0.1, 0.1, 0.025]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_green:
+          position_m: [0.18, 0.12, 0.025]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_blue:
+          position_m: [0.14, 0.18, 0.025]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      pushed_body: tee
+      object_initial_position_world_m: [0.18, -0.05, 0.025]
+      push_delta_world_m: [0.04, 0.0, 0.0]
+      clearance_waypoint_world_m: [0.30, -0.05, 0.08]
+      max_duration_s: 3.0
+  piper_push:
+    task: >-
+      In the Piper push scene, move the `ee_site` to the `tee` body and make a short positive-X
+      contact motion, then return the arm to its `home` joint configuration. Leave the three cubes
+      in their listed scene positions.
+    scene: assets/mjcf/piper/pushbench.xml
+    initial_state:
+      robot:
+        keyframe: home
+      free_bodies:
+        tee:
+          position_m: [0.35, -0.05, 0.205]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_red:
+          position_m: [0.35, 0.1, 0.205]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_green:
+          position_m: [0.45, 0.12, 0.205]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_blue:
+          position_m: [0.4, 0.15, 0.205]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      pushed_body: tee
+      object_initial_position_world_m: [0.35, -0.05, 0.205]
+      push_delta_world_m: [0.04, 0.0, 0.0]
+      max_duration_s: 3.0
+  franka_push:
+    task: >-
+      In the Franka push scene, move the `hand` body into a short positive-X contact motion with
+      the `tee` body, then return the seven arm joints to their `home` values. Leave the three cubes
+      and fixed `obs` body in their listed scene positions.
+    scene: assets/mjcf/franka_panda/pushbench.xml
+    initial_state:
+      robot:
+        keyframe: home
+      free_bodies:
+        tee:
+          position_m: [0.45, -0.05, 0.425]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_red:
+          position_m: [0.45, 0.1, 0.425]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_green:
+          position_m: [0.55, 0.12, 0.425]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        cube_blue:
+          position_m: [0.5, 0.15, 0.425]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      pushed_body: tee
+      object_initial_position_world_m: [0.45, -0.05, 0.425]
+      push_delta_world_m: [0.04, 0.0, 0.0]
+      max_duration_s: 3.0
+  ur5e:
+    task: >-
+      Use the bare UR5e arm's `attachment_site` as the end-effector reference. Starting from the
+      `home` keyframe, move the six named arm joints to the listed bounded configuration and return
+      to `home`, using at most 2 seconds for each leg.
+    scene: assets/mjcf/universal_robots_ur5e/scene.xml
+    initial_state:
+      robot:
+        keyframe: home
+    parameters:
+      target_joint_positions_rad:
+        shoulder_pan_joint: -1.5
+        shoulder_lift_joint: -1.45
+        elbow_joint: 1.45
+        wrist_1_joint: -1.45
+        wrist_2_joint: -1.55
+        wrist_3_joint: 0.1
+      max_duration_per_leg_s: 2.0
+  unitree_g1:
+    task: >-
+      From the `stand` keyframe, move the left and right elbow joints to the listed nearby targets
+      in order, then restore their stand values. Keep the `pelvis` floating body at its initialized
+      pose.
+    scene: assets/mjcf/unitree_g1/scene.xml
+    initial_state:
+      robot:
+        keyframe: stand
+      free_bodies:
+        pelvis:
+          position_m: [0.0, 0.0, 0.79]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      joint_targets_rad:
+        left_elbow_joint: 1.18
+        right_elbow_joint: 1.38
+      max_duration_per_joint_s: 2.0
+  google_barkour_vb:
+    task: >-
+      From the `home` keyframe, move the four knee joints to the listed nearby targets in
+      front-left, hind-left, front-right, hind-right order, then restore their home values. Keep
+      the `torso` floating body at its initialized pose.
+    scene: assets/mjcf/google_barkour_vb/scene.xml
+    initial_state:
+      robot:
+        keyframe: home
+      free_bodies:
+        torso:
+          position_m: [0.0, 0.0, 0.28]
+          quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+    parameters:
+      knee_joint_order:
+        - knee_front_left
+        - knee_hind_left
+        - knee_front_right
+        - knee_hind_right
+      knee_targets_rad:
+        knee_front_left: 0.9
+        knee_hind_left: 1.1
+        knee_front_right: 0.9
+        knee_hind_right: 1.1
+      max_duration_per_joint_s: 1.0
