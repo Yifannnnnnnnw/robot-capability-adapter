@@ -1,11 +1,10 @@
 # AutoAdapter 2.0 SDK Extension
 
 This directory preserves the real-SDK and Translation experiments independently
-from the canonical Direct-MuJoCo mainline in `../../autoadapter/`.
+from the maintained implementation in [`../../AA1/`](../../AA1/README.md).
 
 The Python distribution is `autoadapter2-sdk` and its import namespace is
-`autoadapter2_sdk`, so installing it cannot replace or shadow the mainline
-`autoadapter2` package.
+`autoadapter2_sdk`.
 
 The extension contains the reusable transport boundary:
 

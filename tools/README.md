@@ -2,7 +2,7 @@
 
 These scripts read the `id` and `mjcf` fields in
 `AA1/autoadapter_bench/spec/robot_zoo.yaml` and load the referenced AA1 assets.
-They do not read the sibling `autoadapter/` packages or modify AA1 source assets.
+They read AA1 source assets without modifying them.
 
 Run from the repository root using an environment with MuJoCo, NumPy, Pillow
 and PyYAML installed (the current `AA1/.venv` has these dependencies):

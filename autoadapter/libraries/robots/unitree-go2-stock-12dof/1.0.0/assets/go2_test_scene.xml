@@ -1,7 +1,0 @@
-
-<mujoco model="go2_scene">
-  <include file="go2.xml"/>
-  <worldbody>
-    <geom name="floor" type="plane" size="0 0 0.05" friction="1 0.01 0.001"/>
-  </worldbody>
-</mujoco>

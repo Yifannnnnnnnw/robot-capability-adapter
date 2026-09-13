@@ -1,8 +1,0 @@
-{
-  "artifact_type": "capability_v2_public_reference_index",
-  "protocol_version": "capability-v2",
-  "references": [
-    {"robot_configuration_id": "robotstudio_so101", "capability_count": 6, "path": "so101.json"},
-    {"robot_configuration_id": "unitree-go2-stock-12dof", "capability_count": 5, "path": "go2.json"}
-  ]
-}
