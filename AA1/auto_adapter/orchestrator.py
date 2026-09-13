@@ -175,20 +175,25 @@ class SelfAssembleConfig:
     # diagnostic input and is selected after the public STUDY artifact.
     prepare_capabilities: bool = False
     capability_design_path: Path | None = None
-    max_iters_capability_design: int = 6
+    scene_cases_path: Path | None = None
+    max_iters_capability_design: int = 30
 
     def __post_init__(self) -> None:
         if self.prepare_capabilities and self.capability_design_path is not None:
             raise ValueError(
                 "prepare_capabilities and capability_design_path are mutually exclusive"
             )
+        if self.scene_cases_path is not None and self.capability_design_path is None:
+            raise ValueError(
+                "scene_cases_path requires capability_design_path"
+            )
         if (self.prepare_capabilities or self.capability_design_path is not None) \
                 and self.mode != "local":
             raise ValueError("task-grounded capability preparation is local-only")
         if (isinstance(self.max_iters_capability_design, bool)
                 or not isinstance(self.max_iters_capability_design, int)
-                or not 1 <= self.max_iters_capability_design <= 6):
-            raise ValueError("max_iters_capability_design must be between one and six")
+                or self.max_iters_capability_design < 1):
+            raise ValueError("max_iters_capability_design must be a positive integer")
 
 
 def _capability_options_enabled(cfg: Any) -> bool:
@@ -463,6 +468,12 @@ then IMPLEMENT every required method(request). The inherited low-level IK,
 actuator and gait primitives do not implement the complete public contracts.
 Generate feedback, request-dependent targets, ordering, holds, stopping and
 bounded failure handling. Do not hard-code test requests or success outcomes.
+The prepared validation scenes may contain additional free-joint objects and
+extra ``nq`` entries. Bind only the named robot joints, actuators and sites
+from the public study/design; ignore unrelated scene entities unless a public
+request explicitly observes them. ``build()`` must load the framework MJCF
+from the supplied ``mjcf.xml`` path and must not depend on cached initial-state
+files. Initialise any target from the current model/data on every call.
 Use native actuator commands and advance the same MuJoCo model/data. Never
 teleport or modify live state to complete an action. Kinematic calculations
 may use scratch data. Probe real gripper direction and joint limits as needed.
@@ -664,6 +675,8 @@ class SelfAssemble:
         # catalog capability scene on this route.  The default path retains
         # the historical catalog behavior verbatim.
         self.capability_design = None
+        self.scene_cases_path: Path | None = None
+        self.scene_paths: dict[str, Path] = {}
         self._last_capability_preparation: dict | None = None
         if not self._dynamic_capabilities:
             self.capability_design = load_capability_design(self.robot_definition)
@@ -807,15 +820,10 @@ class SelfAssemble:
             raise ValueError(
                 f"STUDY robot_id {robot_id!r} does not match {self.cfg.robot_id!r}"
             )
-        input_dir = self.workspace / "capability_inputs"
+        input_dir = self.workspace / "design"
         input_dir.mkdir(parents=True, exist_ok=True)
         design_output = input_dir / "capability_design.json"
         preparation_path = input_dir / "capability_preparation.json"
-        metadata_before = (
-            preparation_path.stat().st_mtime_ns
-            if preparation_path.is_file()
-            else None
-        )
         started = time.time()
         preparation: dict[str, Any] = {}
         try:
@@ -841,7 +849,13 @@ class SelfAssemble:
                     "trace_path": None,
                     "error": None,
                 }
+                shutil.copy2(supplied_path, design_output)
             else:
+                # A current preparation record is part of the generated
+                # design handoff.  Remove the previous record before asking
+                # TGCD to write so an invocation failure cannot inherit stale
+                # scene paths or token usage.
+                preparation_path.unlink(missing_ok=True)
                 task_library_dir = task_library_for_robot(self.cfg.robot_id)
                 skeleton_context = _trusted_skeleton_context(
                     self.robot_definition, self.expected_robot_class
@@ -861,6 +875,7 @@ class SelfAssemble:
                     max_iters=self.cfg.max_iters_capability_design,
                     max_tokens_per_turn=self.cfg.max_tokens_per_turn,
                     skeleton_context=skeleton_context,
+                    prepare_scene_cases=True,
                 )
                 design = result
                 if not isinstance(design, Mapping):
@@ -868,14 +883,11 @@ class SelfAssemble:
                 design = dict(design)
                 design_path = design_output
 
-                metadata_changed = (
-                    preparation_path.is_file()
-                    and preparation_path.stat().st_mtime_ns != metadata_before
-                )
-                preparation = (
-                    _capability_design_metadata(preparation_path)
-                    if metadata_changed else {}
-                )
+                if not preparation_path.is_file():
+                    raise ValueError(
+                        "TGCD did not write current capability_preparation.json"
+                    )
+                preparation = _capability_design_metadata(preparation_path)
                 if preparation.get("error"):
                     raise RuntimeError(str(preparation["error"]))
                 preparation.setdefault("token_usage", {})
@@ -896,6 +908,10 @@ class SelfAssemble:
             preparation.setdefault("error", None)
             preparation["design_path"] = str(design_path)
             preparation["output_dir"] = str(input_dir)
+            # The generation helper owns its current metadata.  Supplied
+            # designs have no helper metadata, so write a small local record.
+            preparation_path.write_text(json.dumps(preparation, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            self._prepare_scene_inputs(design, preparation, input_dir)
             preparation_path.write_text(
                 json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
@@ -905,14 +921,7 @@ class SelfAssemble:
             return preparation
         except Exception as exc:
             self.capability_design = None
-            metadata_changed = (
-                preparation_path.is_file()
-                and preparation_path.stat().st_mtime_ns != metadata_before
-            )
-            preparation = (
-                _capability_design_metadata(preparation_path)
-                if metadata_changed else {}
-            )
+            preparation = _capability_design_metadata(preparation_path)
             preparation.update({
                 "design_path": str(design_output),
                 "output_dir": str(input_dir),
@@ -927,6 +936,102 @@ class SelfAssemble:
             )
             self._last_capability_preparation = dict(preparation)
             raise
+
+    def _prepare_scene_inputs(
+        self, design: Mapping[str, Any], preparation: dict[str, Any], output_dir: Path
+    ) -> None:
+        """Resolve the current design's case suite and prepared scenes."""
+        from .scene_runtime import load_scene_cases, prepare_scenes
+
+        supplied_cases = self.cfg.scene_cases_path
+        raw_cases = preparation.get("scene_cases_path")
+        if supplied_cases is None and raw_cases:
+            supplied_cases = Path(str(raw_cases))
+            if not supplied_cases.is_absolute():
+                supplied_cases = output_dir / supplied_cases
+        if supplied_cases is None:
+            if self.cfg.prepare_capabilities:
+                raise ValueError(
+                    "automatic capability preparation did not produce scene cases"
+                )
+            self.scene_cases_path = None
+            self.scene_paths = {}
+            return
+        case_path = Path(supplied_cases).expanduser().resolve()
+        suite = load_scene_cases(case_path, design=dict(design))
+        # Auto-prepared scenes already come from TGCD.  Explicit case YAML is
+        # hosted here so it is always built from the caller's actual MJCF.
+        raw_paths = preparation.get("scene_paths")
+        if self.cfg.scene_cases_path is not None:
+            raw_paths = prepare_scenes(
+                mjcf_path=Path(self.cfg.mjcf_path).resolve(),
+                suite=suite,
+                output_dir=output_dir,
+            )
+        if not isinstance(raw_paths, Mapping):
+            raise ValueError("design has no prepared scene path mapping")
+        paths: dict[str, Path] = {}
+        for scene_id in suite["scenes"]:
+            if scene_id not in raw_paths:
+                raise ValueError(f"design has no prepared scene for {scene_id!r}")
+            path = Path(str(raw_paths[scene_id])).expanduser().resolve()
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"prepared scene path for {scene_id!r} is missing: {path}"
+                )
+            paths[str(scene_id)] = path
+        self.scene_cases_path = case_path
+        self.scene_paths = paths
+        preparation["scene_cases_path"] = str(case_path)
+        preparation["scene_paths"] = {key: str(path) for key, path in paths.items()}
+
+    def _phase_design(self) -> PhaseResult:
+        """Prepare or load the capability design after a successful STUDY."""
+        if not getattr(self, "_dynamic_capabilities", False):
+            return PhaseResult("design", True, 0.0, metadata={"legacy": True})
+        self.capability_design = None
+        self.scene_cases_path = None
+        self.scene_paths = {}
+        self._last_capability_preparation = None
+        started = time.time()
+        try:
+            study_path = self.workspace / "study.json"
+            if not study_path.is_file():
+                raise FileNotFoundError("study.json missing after STUDY")
+            study = json.loads(study_path.read_text(encoding="utf-8"))
+            preparation = self._prepare_capability_design(study)
+            return PhaseResult(
+                name="design", ok=True, duration_sec=max(0.0, time.time() - started),
+                artifact_paths=[p for p in (
+                    self.workspace / "design" / "capability_design.json",
+                    self.workspace / "design" / "capability_preparation.json",
+                ) if p.is_file()],
+                token_usage=_numeric_token_usage(preparation.get("token_usage")),
+                metadata={
+                    "capability_design_path": preparation.get("design_path"),
+                    "capability_preparation": dict(preparation),
+                    "capability_design_duration_sec": preparation.get("duration_sec", 0.0),
+                    "capability_design_token_usage": dict(preparation.get("token_usage") or {}),
+                    "scene_cases_path": str(self.scene_cases_path) if self.scene_cases_path else None,
+                    "scene_paths": {
+                        key: str(path) for key, path in self.scene_paths.items()
+                    },
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.capability_design = None
+            self.scene_cases_path = None
+            self.scene_paths = {}
+            preparation = getattr(self, "_last_capability_preparation", None) or {}
+            return PhaseResult(
+                name="design", ok=False,
+                duration_sec=max(0.0, time.time() - started),
+                artifact_paths=[self.workspace / "design" / "capability_preparation.json"]
+                if (self.workspace / "design" / "capability_preparation.json").is_file() else [],
+                error=f"capability design preparation failed: {exc}",
+                token_usage=_numeric_token_usage(preparation.get("token_usage")),
+                metadata={"capability_preparation_error": str(exc)},
+            )
 
     def _attach_capability_metadata(
         self, study_result: PhaseResult, preparation: Mapping[str, Any]
@@ -961,6 +1066,11 @@ class SelfAssemble:
         expected_artifacts: list[str],
     ) -> PhaseResult:
         trace_path = self.workspace / "traces" / f"{name}.jsonl"
+        before_mtimes = {
+            rel: (self.workspace / rel).stat().st_mtime_ns
+            for rel in expected_artifacts
+            if (self.workspace / rel).is_file()
+        }
 
         loop = ReactLoop(
             tools=tools,
@@ -981,7 +1091,16 @@ class SelfAssemble:
         missing: list[str] = []
         for rel in expected_artifacts:
             p = self.workspace / rel
-            if p.exists():
+            current_write = (
+                p.exists()
+                and (
+                    rel not in before_mtimes
+                    or p.stat().st_mtime_ns != before_mtimes[rel]
+                )
+            )
+            if p.exists() and (
+                not getattr(self, "_dynamic_capabilities", False) or current_write
+            ):
                 artifact_paths.append(p)
             else:
                 missing.append(rel)
@@ -1028,6 +1147,8 @@ class SelfAssemble:
         # dynamic design make a failed/partial STUDY look generation-ready.
         if getattr(self, "_dynamic_capabilities", False):
             self.capability_design = None
+            self.scene_cases_path = None
+            self.scene_paths = {}
             self._last_capability_preparation = None
         if self.cfg.mode == "local":
             # The workspace is the authoritative artifact world in local
@@ -1062,24 +1183,6 @@ class SelfAssemble:
             max_iters=self.cfg.max_iters_study,
             expected_artifacts=["study.json"],
         )
-        if result.ok and self._dynamic_capabilities:
-            try:
-                study_path = self.workspace / "study.json"
-                study = json.loads(study_path.read_text(encoding="utf-8"))
-                if not isinstance(study, Mapping):
-                    raise ValueError("study.json must contain one JSON object")
-                preparation = self._prepare_capability_design(study)
-                self._attach_capability_metadata(result, preparation)
-            except Exception as exc:  # noqa: BLE001 - generation must be gated
-                self.capability_design = None
-                preparation = getattr(self, "_last_capability_preparation", None)
-                if isinstance(preparation, Mapping):
-                    self._attach_capability_metadata(result, preparation)
-                result.ok = False
-                result.error = f"capability design preparation failed: {exc}"
-                metadata = dict(result.metadata or {})
-                metadata["capability_preparation_error"] = result.error
-                result.metadata = metadata
         return result
 
     def _phase_generate(self, prior_validate_failures: Optional[str] = None) -> PhaseResult:
@@ -1225,8 +1328,48 @@ class SelfAssemble:
 
     def _phase_validate(self) -> PhaseResult:
         if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError(
-                "dynamic capability designs cannot enter the legacy validation phase"
+            self._require_capability_design("VALIDATE")
+            if self.scene_cases_path is None or not self.scene_paths:
+                return PhaseResult(
+                    name="03_validate", ok=False, duration_sec=0.0,
+                    error="dynamic validation requires scene cases and prepared scenes",
+                    metadata={"validation_error": True, "repairable": False},
+                )
+            from .design_validation import validate_design_driver  # noqa: PLC0415
+
+            started = time.time()
+            report_path = self.workspace / "validate_report.json"
+            # A failed current invocation cannot inherit a previous report.
+            report_path.unlink(missing_ok=True)
+            report = validate_design_driver(
+                driver_path=self.workspace / "driver.py",
+                design=self.capability_design,
+                scene_cases_path=self.scene_cases_path,
+                scene_paths=self.scene_paths,
+                output_dir=self.workspace / "validation",
+            )
+            report_path.write_text(
+                json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            validation_error = bool(report.get("validation_error"))
+            repairable = bool(report.get("repairable", not validation_error))
+            return PhaseResult(
+                name="03_validate",
+                ok=report.get("all_ok") is True,
+                duration_sec=max(0.0, time.time() - started),
+                artifact_paths=[report_path],
+                final_text=(
+                    f"design validation: {report.get('n_passed', 0)}/"
+                    f"{report.get('n_total', 0)} cases passed"
+                ),
+                error=None if report.get("all_ok") is True else report.get("error") or "design validation failed",
+                token_usage={"in": 0, "out": 0},
+                metadata={
+                    "validation_error": validation_error,
+                    "repairable": repairable,
+                    "validation_report": report,
+                },
             )
         if self.cfg.validate_mode == "framework":
             return self._phase_validate_framework()
@@ -1741,6 +1884,149 @@ class SelfAssemble:
     # ─── Top-level entrypoint ─────────────────────────────────────────────
 
     PHASES = ("study", "generate", "validate", "export", "demo")
+    DYNAMIC_PHASES = ("study", "design", "generate", "validate")
+
+    def _finish_result(
+        self,
+        results: list[PhaseResult],
+        *,
+        ok_override: bool | None = None,
+    ) -> SelfAssembleResult:
+        """Persist the aggregate result and narrative for either route."""
+        # ``not run — stop_after=...`` is an intentional prefix marker and
+        # must not make a successful requested prefix report as failed.
+        executed = [
+            phase for phase in results
+            if not (phase.error or "").startswith("not run — stop_after=")
+        ]
+        aggregate_ok = bool(executed) and all(phase.ok for phase in executed)
+        if ok_override is not None:
+            aggregate_ok = bool(ok_override)
+        out = SelfAssembleResult(
+            robot_id=self.cfg.robot_id,
+            workspace=self.workspace,
+            phases=results,
+            ok=aggregate_ok,
+        )
+        summary_path = self.workspace / "summary.json"
+        summary_path.write_text(json.dumps(out.to_json(), indent=2))
+        self._write_narrative(out)
+        return out
+
+    def _run_dynamic(self, *, stop_after: Optional[str]) -> SelfAssembleResult:
+        if stop_after is not None and stop_after not in self.DYNAMIC_PHASES:
+            raise ValueError(f"dynamic stop_after={stop_after!r} not in {self.DYNAMIC_PHASES}")
+        # A dynamic invocation owns a fresh current-output boundary.  The
+        # prior run's study, candidate, validation report, or design handoff
+        # cannot certify this invocation after a transport/model failure.
+        for path in (
+            self.workspace / "study.json",
+            self.workspace / "driver.py",
+            self.workspace / "validate_report.json",
+            self.workspace / "design" / "capability_design.json",
+            self.workspace / "design" / "capability_preparation.json",
+            self.workspace / "design" / "scene_cases.yaml",
+            self.workspace / "design" / "probe_report.json",
+        ):
+            path.unlink(missing_ok=True)
+        self.capability_design = None
+        self.scene_cases_path = None
+        self.scene_paths = {}
+        results: list[PhaseResult] = []
+        phase_methods = {
+            "study": self._phase_study,
+            "design": self._phase_design,
+        }
+        failed: str | None = None
+        for name in ("study", "design"):
+            if failed is not None:
+                results.append(PhaseResult(name=name, ok=False, duration_sec=0.0, error=failed))
+                continue
+            phase = phase_methods[name]()
+            if name == "study" and not (self.workspace / "study.json").is_file():
+                phase.ok = False
+                phase.error = phase.error or "study.json was not written by the current run"
+            if name == "design" and not (
+                isinstance(self.capability_design, dict)
+                and (self.workspace / "design" / "capability_design.json").is_file()
+            ):
+                phase.ok = False
+                phase.error = phase.error or "capability design was not written by the current run"
+            results.append(phase)
+            if not phase.ok:
+                failed = f"skipped — upstream `{name}` failed: {phase.error}"
+                continue
+            if stop_after == name:
+                break
+        if failed is None and (stop_after is None or stop_after not in {"study", "design"}):
+            max_outer = max(1, int(self.cfg.max_outer_gen_val_iters))
+            gen: PhaseResult | None = None
+            val: PhaseResult | None = None
+            attempts = 0
+            feedback: str | None = None
+            while attempts < max_outer:
+                attempts += 1
+                gen = self._phase_generate() if feedback is None else self._phase_repair(feedback, attempts - 1)
+                gen.metadata = dict(gen.metadata or {})
+                gen.metadata["outer_gen_val_iters"] = attempts
+                if not gen.ok:
+                    results.append(gen)
+                    results.append(PhaseResult(
+                        name="validate", ok=False, duration_sec=0.0,
+                        error=f"skipped — upstream `generate` failed: {gen.error}",
+                    ))
+                    failed = f"skipped — upstream `generate` failed: {gen.error}"
+                    break
+                results.append(gen)
+                if stop_after == "generate":
+                    break
+                val = self._phase_validate()
+                results.append(val)
+                if val.ok:
+                    break
+                if not val.metadata.get("repairable", True):
+                    failed = f"skipped — dynamic validation preparation failed: {val.error}"
+                    break
+                feedback = self._summarise_validate_failures()
+            if stop_after == "validate" and val is None and failed is None:
+                # This is only reachable with a zero outer budget; keep the
+                # result explicit rather than implying that validation ran.
+                results.append(PhaseResult(
+                    name="validate", ok=False, duration_sec=0.0,
+                    error="dynamic validation was not run",
+                    metadata={"validation_error": True, "repairable": False},
+                ))
+            elif val is not None and not val.ok and failed is None:
+                failed = f"skipped — dynamic validation failed after {attempts} attempts: {val.error}"
+        if stop_after is not None:
+            try:
+                index = self.DYNAMIC_PHASES.index(stop_after)
+            except ValueError:
+                index = -1
+            names = self.DYNAMIC_PHASES[index + 1 :] if index >= 0 else []
+            existing = {phase.name for phase in results}
+            for name in names:
+                if name not in existing:
+                    results.append(PhaseResult(
+                        name=name, ok=False, duration_sec=0.0,
+                        error=f"not run — stop_after={stop_after}",
+                    ))
+        elif failed is not None:
+            existing = {phase.name for phase in results}
+            for name in ("generate", "validate"):
+                if name not in existing:
+                    results.append(PhaseResult(
+                        name=name, ok=False, duration_sec=0.0, error=failed
+                    ))
+        if failed is not None:
+            effective_ok = False
+        elif stop_after in {"study", "design"}:
+            effective_ok = True
+        elif stop_after == "generate":
+            effective_ok = gen is not None and gen.ok
+        else:
+            effective_ok = val is not None and val.ok
+        return self._finish_result(results, ok_override=effective_ok)
 
     def run(self, *, stop_after: Optional[str] = None) -> SelfAssembleResult:
         """Run phases sequentially. `stop_after` ∈ PHASES (inclusive) lets you
@@ -1749,14 +2035,10 @@ class SelfAssemble:
         On the first failing phase, later phases are skipped (each is recorded
         as `ok=False, error="skipped — upstream <name> failed"`).
         """
+        if getattr(self, "_dynamic_capabilities", False):
+            return self._run_dynamic(stop_after=stop_after)
         if stop_after is not None and stop_after not in self.PHASES:
             raise ValueError(f"stop_after={stop_after!r} not in {self.PHASES}")
-        if getattr(self, "_dynamic_capabilities", False) \
-                and stop_after not in {"study", "generate"}:
-            raise ValueError(
-                "dynamic capability runs are diagnostic only; use stop_after='study' "
-                "or stop_after='generate'"
-            )
 
         method_for = {
             "study":   self._phase_study,
@@ -1848,24 +2130,7 @@ class SelfAssemble:
                     )
                 break
 
-        all_ok = all(r.ok for r in results)
-        out = SelfAssembleResult(
-            robot_id=self.cfg.robot_id,
-            workspace=self.workspace,
-            phases=results,
-            ok=all_ok,
-        )
-
-        # Persist the aggregate result alongside the per-phase traces
-        summary_path = self.workspace / "summary.json"
-        summary_path.write_text(json.dumps(out.to_json(), indent=2))
-
-        # Human-readable narrative: stitches together what the agent did
-        # per phase, including every sim recording it captured. This is
-        # what a researcher reads to see the agent's exploration.
-        self._write_narrative(out)
-
-        return out
+        return self._finish_result(results)
 
     def _write_narrative(self, result: "SelfAssembleResult") -> None:
         """Walk traces + artifacts + recordings → narrative.md timeline."""

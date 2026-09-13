@@ -330,20 +330,25 @@ class FromScratchConfig:
     # the historical run() entry remains the default path.
     prepare_capabilities: bool = False
     capability_design_path: Path | None = None
-    max_iters_capability_design: int = 6
+    scene_cases_path: Path | None = None
+    max_iters_capability_design: int = 30
 
     def __post_init__(self) -> None:
         if self.prepare_capabilities and self.capability_design_path is not None:
             raise ValueError(
                 "prepare_capabilities and capability_design_path are mutually exclusive"
             )
+        if self.scene_cases_path is not None and self.capability_design_path is None:
+            raise ValueError(
+                "scene_cases_path requires capability_design_path"
+            )
         if (self.prepare_capabilities or self.capability_design_path is not None) \
                 and self.mode != "local":
             raise ValueError("task-grounded capability preparation is local-only")
         if (isinstance(self.max_iters_capability_design, bool)
                 or not isinstance(self.max_iters_capability_design, int)
-                or not 1 <= self.max_iters_capability_design <= 6):
-            raise ValueError("max_iters_capability_design must be between one and six")
+                or self.max_iters_capability_design < 1):
+            raise ValueError("max_iters_capability_design must be a positive integer")
 
 
 @dataclass
@@ -358,6 +363,9 @@ class FromScratchResult:
     total_duration_sec: float
     total_tokens: dict
     error: Optional[str] = None
+    design_ok: bool = False
+    phases: list[Any] = field(default_factory=list)
+    ok: bool = False
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -417,6 +425,11 @@ Hard rules:
   - The driver must expose a class `Robot` with classmethod
     `build_from_mjcf(mjcf_path: str) -> Robot` plus `home() -> bool`,
     `get_joint_positions()`, `step(n: int = 1)`, `render()`, `describe()`.
+    Prepared scenes may add free-joint objects and increase nq. Bind only
+    named robot joints/actuators/sites from the public study and initialise
+    targets from the current model/data on every request. Do not depend on
+    cached initial-state files. Keep build_from_mjcf compatible with the
+    existing public ABI and load the supplied framework MJCF path.
   - Beyond those, the API should fit the robot's CLASS (from study.json):
 
       ARM (serial chain with end-effector):
@@ -592,6 +605,8 @@ class FromScratchOrchestrator:
         self._dynamic_capabilities = _capability_options_enabled(cfg)
         self.robot_definition = find_robot_definition(cfg.robot_id, cfg.mjcf_path)
         self.capability_design = None
+        self.scene_cases_path: Path | None = None
+        self.scene_paths: dict[str, Path] = {}
         self._last_capability_preparation: dict | None = None
         if not self._dynamic_capabilities:
             self.capability_design = load_capability_design(self.robot_definition)
@@ -733,15 +748,10 @@ class FromScratchOrchestrator:
             raise ValueError("study.json must contain one JSON object")
         if study.get("robot_id", self.cfg.robot_id) != self.cfg.robot_id:
             raise ValueError("study.json robot_id does not match the run robot")
-        input_dir = self.workspace / "capability_inputs"
+        input_dir = self.workspace / "design"
         input_dir.mkdir(parents=True, exist_ok=True)
         design_output = input_dir / "capability_design.json"
         preparation_path = input_dir / "capability_preparation.json"
-        metadata_before = (
-            preparation_path.stat().st_mtime_ns
-            if preparation_path.is_file()
-            else None
-        )
         started = time.time()
         try:
             from .capability_preparation import (  # noqa: PLC0415
@@ -760,8 +770,11 @@ class FromScratchOrchestrator:
                     "mode": "supplied", "token_usage": {}, "duration_sec": 0.0,
                     "trace_path": None, "error": None,
                 }
+                import shutil  # noqa: PLC0415
+                shutil.copy2(supplied_path, design_output)
             else:
                 # Scratch receives no skeleton context by design.
+                preparation_path.unlink(missing_ok=True)
                 result = generate_capability_design(
                     robot_id=self.cfg.robot_id,
                     study=study,
@@ -775,20 +788,18 @@ class FromScratchOrchestrator:
                     max_iters=self.cfg.max_iters_capability_design,
                     max_tokens_per_turn=self.cfg.max_tokens_per_turn,
                     skeleton_context=None,
+                    prepare_scene_cases=True,
                 )
                 design = result
                 if not isinstance(design, Mapping):
                     raise ValueError("TGCD did not return a capability design object")
                 design = dict(design)
                 design_path = design_output
-                metadata_changed = (
-                    preparation_path.is_file()
-                    and preparation_path.stat().st_mtime_ns != metadata_before
-                )
-                preparation = (
-                    _capability_design_metadata(preparation_path)
-                    if metadata_changed else {}
-                )
+                if not preparation_path.is_file():
+                    raise ValueError(
+                        "TGCD did not write current capability_preparation.json"
+                    )
+                preparation = _capability_design_metadata(preparation_path)
                 if preparation.get("error"):
                     raise RuntimeError(str(preparation["error"]))
             if not isinstance(design, Mapping) or not design.get("capabilities"):
@@ -804,26 +815,17 @@ class FromScratchOrchestrator:
                 json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
-            self.capability_design = dict(design)
-            self._last_capability_preparation = dict(preparation)
-            # Keep the original STUDY artifact self-describing for manual
-            # phase diagnostics; this does not alter the model-facing design.
-            study["capability_preparation"] = dict(preparation)
-            study_path.write_text(
-                json.dumps(study, indent=2, ensure_ascii=False) + "\n",
+            self._prepare_scene_inputs(dict(design), preparation, input_dir)
+            preparation_path.write_text(
+                json.dumps(preparation, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
+            self.capability_design = dict(design)
+            self._last_capability_preparation = dict(preparation)
             return preparation
         except Exception as exc:
             self.capability_design = None
-            metadata_changed = (
-                preparation_path.is_file()
-                and preparation_path.stat().st_mtime_ns != metadata_before
-            )
-            preparation = (
-                _capability_design_metadata(preparation_path)
-                if metadata_changed else {}
-            )
+            preparation = _capability_design_metadata(preparation_path)
             preparation.update({
                 "design_path": str(design_output),
                 "output_dir": str(input_dir),
@@ -838,6 +840,49 @@ class FromScratchOrchestrator:
             )
             self._last_capability_preparation = dict(preparation)
             raise
+
+    def _prepare_scene_inputs(
+        self, design: Mapping[str, Any], preparation: dict[str, Any], output_dir: Path
+    ) -> None:
+        from .scene_runtime import load_scene_cases, prepare_scenes
+
+        supplied_cases = self.cfg.scene_cases_path
+        raw_cases = preparation.get("scene_cases_path")
+        if supplied_cases is None and raw_cases:
+            supplied_cases = Path(str(raw_cases))
+            if not supplied_cases.is_absolute():
+                supplied_cases = output_dir / supplied_cases
+        if supplied_cases is None:
+            if self.cfg.prepare_capabilities:
+                raise ValueError("automatic capability preparation did not produce scene cases")
+            self.scene_cases_path = None
+            self.scene_paths = {}
+            return
+        case_path = Path(supplied_cases).expanduser().resolve()
+        suite = load_scene_cases(case_path, design=dict(design))
+        raw_paths = preparation.get("scene_paths")
+        if self.cfg.scene_cases_path is not None:
+            raw_paths = prepare_scenes(
+                mjcf_path=Path(self.cfg.mjcf_path).resolve(),
+                suite=suite,
+                output_dir=output_dir,
+            )
+        if not isinstance(raw_paths, Mapping):
+            raise ValueError("design has no prepared scene path mapping")
+        paths: dict[str, Path] = {}
+        for scene_id in suite["scenes"]:
+            if scene_id not in raw_paths:
+                raise ValueError(f"design has no prepared scene for {scene_id!r}")
+            path = Path(str(raw_paths[scene_id])).expanduser().resolve()
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"prepared scene path for {scene_id!r} is missing: {path}"
+                )
+            paths[str(scene_id)] = path
+        self.scene_cases_path = case_path
+        self.scene_paths = paths
+        preparation["scene_cases_path"] = str(case_path)
+        preparation["scene_paths"] = {key: str(path) for key, path in paths.items()}
 
     # ─── Phases ───────────────────────────────────────────────────────────
 
@@ -865,6 +910,8 @@ class FromScratchOrchestrator:
         # Clear any previous dynamic handoff before starting a new STUDY.
         if getattr(self, "_dynamic_capabilities", False):
             self.capability_design = None
+            self.scene_cases_path = None
+            self.scene_paths = {}
             self._last_capability_preparation = None
         if self._is_local_mode():
             tools = self._common_tools() + [self._local_runtime_tool()]
@@ -883,27 +930,36 @@ class FromScratchOrchestrator:
             name="01_study", system=system, user_msg=user,
             tools=tools, max_iters=self.cfg.max_iters_study,
         )
-        if getattr(self, "_dynamic_capabilities", False) and getattr(result, "ok", False):
-            try:
-                preparation = self._prepare_capability_design_from_study()
-                # ReactResult has no phase metadata field in the legacy AA1
-                # API; retain the resource record on the result and in the
-                # updated public study artifact for diagnostic callers.
-                result.total_tokens = _merge_numeric_usage(
-                    result.total_tokens, preparation.get("token_usage")
-                )
-                result.capability_preparation = preparation
-            except Exception as exc:  # noqa: BLE001 - gate GEN_ALGO
-                self.capability_design = None
-                preparation = getattr(self, "_last_capability_preparation", None)
-                if isinstance(preparation, Mapping):
-                    result.total_tokens = _merge_numeric_usage(
-                        result.total_tokens, preparation.get("token_usage")
-                    )
-                    result.capability_preparation = preparation
-                result.ok = False
-                result.error = f"capability design preparation failed: {exc}"
         return result
+
+    def phase_design(self) -> ReactResult:
+        """Prepare/load the capability design after STUDY."""
+        if not getattr(self, "_dynamic_capabilities", False):
+            return ReactResult(final_text="legacy design is catalog-owned", trace=[], ok=True)
+        self.capability_design = None
+        self.scene_cases_path = None
+        self.scene_paths = {}
+        self._last_capability_preparation = None
+        try:
+            preparation = self._prepare_capability_design_from_study()
+            result = ReactResult(
+                final_text="capability design prepared", trace=[], ok=True,
+                total_tokens=_merge_numeric_usage({}, preparation.get("token_usage")),
+            )
+            result.capability_preparation = preparation
+            return result
+        except Exception as exc:  # noqa: BLE001 - gate GEN_ALGO
+            preparation = getattr(self, "_last_capability_preparation", None)
+            result = ReactResult(
+                final_text="", trace=[], ok=False,
+                error=f"capability design preparation failed: {exc}",
+                total_tokens=_merge_numeric_usage(
+                    {}, preparation.get("token_usage") if isinstance(preparation, Mapping) else {}
+                ),
+            )
+            if isinstance(preparation, Mapping):
+                result.capability_preparation = dict(preparation)
+            return result
 
     def phase_gen_algo(self) -> ReactResult:
         """The from-scratch driver synthesis phase."""
@@ -999,9 +1055,23 @@ class FromScratchOrchestrator:
     def _validate_from_scratch_driver(self) -> dict:
         """Import the agent's driver, run smoke tests, return report."""
         if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError(
-                "dynamic capability designs cannot enter the legacy scratch evaluator"
+            self._require_capability_design("VALIDATE")
+            if self.scene_cases_path is None or not self.scene_paths:
+                return {
+                    "tests": [], "all_ok": False,
+                    "error": "dynamic validation requires scene cases and prepared scenes",
+                    "validation_error": True, "repairable": False,
+                }
+            from .design_validation import validate_design_driver  # noqa: PLC0415
+            report = validate_design_driver(
+                driver_path=self.workspace / "driver_from_scratch.py",
+                design=self.capability_design,
+                scene_cases_path=self.scene_cases_path,
+                scene_paths=self.scene_paths,
+                from_scratch=True,
+                output_dir=self.workspace / "validation",
             )
+            return report
         driver_path = self.workspace / "driver_from_scratch.py"
         report: dict = {"tests": [], "all_ok": False}
 
@@ -1625,12 +1695,167 @@ class FromScratchOrchestrator:
 
     # ─── Top-level ────────────────────────────────────────────────────────
 
-    def run(self) -> FromScratchResult:
-        if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError(
-                "dynamic scratch runs have no stop_after boundary; use "
-                "phase_study() then phase_gen_algo() for diagnostics"
+    def _dynamic_run(self, *, stop_after: str | None) -> FromScratchResult:
+        allowed = ("study", "design", "generate", "validate")
+        if stop_after is not None and stop_after not in allowed:
+            raise ValueError(f"dynamic stop_after={stop_after!r} not in {allowed}")
+        t0 = time.time()
+        tok_in = tok_out = 0
+        phases: list[dict[str, Any]] = []
+        # Every dynamic phase has a current-output boundary.  Old files are
+        # removed from this run workspace so an API/transport failure cannot
+        # be admitted from a prior diagnostic attempt.
+        for path in (
+            self.workspace / "study.json",
+            self.workspace / "driver_from_scratch.py",
+            self.workspace / "validate_report.json",
+            self.workspace / "design" / "capability_design.json",
+            self.workspace / "design" / "capability_preparation.json",
+            self.workspace / "design" / "scene_cases.yaml",
+            self.workspace / "design" / "probe_report.json",
+        ):
+            path.unlink(missing_ok=True)
+        self.capability_design = None
+        self.scene_cases_path = None
+        self.scene_paths = {}
+
+        r_study = self.phase_study()
+        phases.append({"name": "study", "ok": bool(r_study.ok), "error": r_study.error})
+        tok_in += int(r_study.total_tokens.get("in", 0))
+        tok_out += int(r_study.total_tokens.get("out", 0))
+        study_ok = bool(
+            getattr(r_study, "ok", True)
+            and (self.workspace / "study.json").is_file()
+        )
+        if not study_ok:
+            error = f"STUDY failed: {r_study.error or 'study.json was not written by the current run'}"
+            phases.extend({"name": name, "ok": False, "error": f"skipped — upstream study failed: {error}"} for name in ("design", "generate", "validate"))
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=False, design_ok=False, gen_ok=False, validate_ok=False,
+                driver_path=None, validate_report={"tests": [], "all_ok": False, "error": error},
+                total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, error=error,
+                phases=phases, ok=False,
             )
+        if stop_after == "study":
+            phases.extend({"name": name, "ok": False, "error": f"not run — stop_after={stop_after}"} for name in ("design", "generate", "validate"))
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, design_ok=False, gen_ok=False, validate_ok=False,
+                driver_path=None, validate_report={}, total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, phases=phases, ok=True,
+            )
+
+        r_design = self.phase_design()
+        phases.append({"name": "design", "ok": bool(r_design.ok), "error": r_design.error})
+        tok_in += int(r_design.total_tokens.get("in", 0))
+        tok_out += int(r_design.total_tokens.get("out", 0))
+        design_ok = bool(
+            r_design.ok
+            and isinstance(self.capability_design, dict)
+            and (self.workspace / "design" / "capability_design.json").is_file()
+        )
+        if not design_ok:
+            error = r_design.error or "DESIGN did not produce a current capability design"
+            phases.extend({"name": name, "ok": False, "error": f"skipped — upstream design failed: {error}"} for name in ("generate", "validate"))
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, design_ok=False, gen_ok=False, validate_ok=False,
+                driver_path=None, validate_report={"tests": [], "all_ok": False, "error": error},
+                total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, error=error,
+                phases=phases, ok=False,
+            )
+        if stop_after == "design":
+            phases.extend({"name": name, "ok": False, "error": f"not run — stop_after={stop_after}"} for name in ("generate", "validate"))
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, design_ok=True, gen_ok=False, validate_ok=False,
+                driver_path=None, validate_report={}, total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, phases=phases, ok=True,
+            )
+
+        driver_path = self.workspace / "driver_from_scratch.py"
+        driver_mtime_before = (
+            driver_path.stat().st_mtime_ns if driver_path.is_file() else None
+        )
+        r_gen = self.phase_gen_algo()
+        phases.append({"name": "generate", "ok": bool(r_gen.ok), "error": r_gen.error})
+        tok_in += int(r_gen.total_tokens.get("in", 0))
+        tok_out += int(r_gen.total_tokens.get("out", 0))
+        gen_ok = bool(
+            getattr(r_gen, "ok", True)
+            and driver_path.is_file()
+            and (
+                driver_mtime_before is None
+                or driver_path.stat().st_mtime_ns != driver_mtime_before
+            )
+        )
+        if not gen_ok:
+            error = r_gen.error or "GEN_ALGO did not write a current driver_from_scratch.py"
+            phases.append({"name": "validate", "ok": False, "error": f"skipped — upstream generate failed: {error}"})
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, design_ok=True, gen_ok=False, validate_ok=False,
+                driver_path=None, validate_report={"tests": [], "all_ok": False, "error": error},
+                total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, error=error,
+                phases=phases, ok=False,
+            )
+        if stop_after == "generate":
+            phases.append({"name": "validate", "ok": False, "error": f"not run — stop_after={stop_after}"})
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, design_ok=True, gen_ok=True, validate_ok=False,
+                driver_path=self.workspace / "driver_from_scratch.py", validate_report={},
+                total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, phases=phases, ok=True,
+            )
+
+        report = self._validate_from_scratch_driver()
+        validate_ok = bool(report.get("all_ok") is True)
+        phases.append({"name": "validate", "ok": validate_ok, "error": report.get("error")})
+        outer_attempts = 0
+        while (not validate_ok and gen_ok and report.get("repairable", True)
+               and outer_attempts < self.cfg.max_outer_retries):
+            outer_attempts += 1
+            driver_mtime_before = (
+                driver_path.stat().st_mtime_ns if driver_path.is_file() else None
+            )
+            r_rep = self.phase_gen_repair(validate_failure_feedback(report), outer_attempts)
+            tok_in += int(r_rep.total_tokens.get("in", 0))
+            tok_out += int(r_rep.total_tokens.get("out", 0))
+            gen_ok = bool(
+                getattr(r_rep, "ok", True)
+                and driver_path.is_file()
+                and (
+                    driver_mtime_before is None
+                    or driver_path.stat().st_mtime_ns != driver_mtime_before
+                )
+            )
+            if not gen_ok:
+                break
+            report = self._validate_from_scratch_driver()
+            validate_ok = bool(report.get("all_ok") is True)
+            phases.append({"name": f"repair_{outer_attempts}", "ok": validate_ok, "error": report.get("error")})
+        report["outer_attempts"] = outer_attempts
+        (self.workspace / "validate_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+        return FromScratchResult(
+            robot_id=self.cfg.robot_id, workspace=self.workspace,
+            study_ok=True, design_ok=True, gen_ok=gen_ok, validate_ok=validate_ok,
+            driver_path=(self.workspace / "driver_from_scratch.py" if gen_ok else None),
+            validate_report=report, total_duration_sec=time.time() - t0,
+            total_tokens={"in": tok_in, "out": tok_out},
+            error=None if validate_ok else report.get("error"), phases=phases,
+            ok=bool(validate_ok),
+        )
+
+    def run(self, *, stop_after: str | None = None) -> FromScratchResult:
+        if getattr(self, "_dynamic_capabilities", False):
+            return self._dynamic_run(stop_after=stop_after)
+        if stop_after not in {None, "study", "generate", "validate"}:
+            raise ValueError(f"stop_after={stop_after!r} is not a scratch phase")
         t0 = time.time()
         tok_in = tok_out = 0
         err: Optional[str] = None
@@ -1642,7 +1867,10 @@ class FromScratchOrchestrator:
         # Phase OK if the expected artifact exists, regardless of whether the
         # agent reached end_turn before max_iters. (Common pattern: agent
         # writes study.json on the final iter then hits the iter cap.)
-        study_ok = (self.workspace / "study.json").exists()
+        study_ok = bool(
+            getattr(r_study, "ok", True)
+            and (self.workspace / "study.json").is_file()
+        )
         if not study_ok:
             err = f"STUDY failed: {r_study.error}"
             report = self._validate_from_scratch_driver()  # may report driver missing
@@ -1654,15 +1882,37 @@ class FromScratchOrchestrator:
                 total_duration_sec=time.time() - t0,
                 total_tokens={"in": tok_in, "out": tok_out},
                 error=err,
+                ok=False,
+            )
+
+        if stop_after == "study":
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, gen_ok=False, validate_ok=False,
+                driver_path=None, validate_report={}, total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, ok=True,
             )
 
         # GEN_ALGO
         r_gen = self.phase_gen_algo()
         tok_in += int(r_gen.total_tokens.get("in", 0))
         tok_out += int(r_gen.total_tokens.get("out", 0))
-        gen_ok = (self.workspace / "driver_from_scratch.py").exists()
+        gen_ok = bool(
+            getattr(r_gen, "ok", True)
+            and (self.workspace / "driver_from_scratch.py").is_file()
+        )
         if not gen_ok:
             err = f"GEN_ALGO failed: {r_gen.error}; no driver_from_scratch.py"
+
+        if stop_after == "generate":
+            return FromScratchResult(
+                robot_id=self.cfg.robot_id, workspace=self.workspace,
+                study_ok=True, gen_ok=gen_ok, validate_ok=False,
+                driver_path=(self.workspace / "driver_from_scratch.py" if gen_ok else None),
+                validate_report={}, total_duration_sec=time.time() - t0,
+                total_tokens={"in": tok_in, "out": tok_out}, error=err,
+                ok=bool(gen_ok),
+            )
 
         # VALIDATE (framework, deterministic)
         report = self._validate_from_scratch_driver()
@@ -1676,7 +1926,7 @@ class FromScratchOrchestrator:
         # what makes the pipeline 'iterate until the structural-test suite
         # passes' rather than giving up after a single shallow bug.
         outer_attempts = 0
-        while (not validate_ok and gen_ok
+        while (not validate_ok and gen_ok and report.get("repairable", True)
                and outer_attempts < self.cfg.max_outer_retries):
             outer_attempts += 1
             r_rep = self.phase_gen_repair(
@@ -1684,7 +1934,10 @@ class FromScratchOrchestrator:
             )
             tok_in += int(r_rep.total_tokens.get("in", 0))
             tok_out += int(r_rep.total_tokens.get("out", 0))
-            gen_ok = (self.workspace / "driver_from_scratch.py").exists()
+            gen_ok = bool(
+                getattr(r_rep, "ok", True)
+                and (self.workspace / "driver_from_scratch.py").is_file()
+            )
             report = self._validate_from_scratch_driver()
             validate_ok = report.get("all_ok") is True
 
@@ -1701,6 +1954,7 @@ class FromScratchOrchestrator:
             total_duration_sec=time.time() - t0,
             total_tokens={"in": tok_in, "out": tok_out},
             error=err,
+            ok=bool(study_ok and gen_ok and validate_ok),
         )
 
 
