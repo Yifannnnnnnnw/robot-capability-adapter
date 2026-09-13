@@ -17,9 +17,6 @@ from typing import Any
 
 import numpy as np
 
-from autoadapter_bench.a4_observations import A4Observations
-
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -578,14 +575,12 @@ class _TraceRecorder:
         max_steps: int,
         max_sim_time_s: float,
         video: "_VideoRecorder",
-        a4_observations: A4Observations | None = None,
     ) -> None:
         self.skel = skel
         self.model, self.data, self.mujoco = _model_data(skel)
         self.max_steps = int(max_steps)
         self.max_sim_time_s = float(max_sim_time_s)
         self.video = video
-        self.a4_observations = a4_observations
         self.original_step: Any = None
         self.step_count = 0
         self.initial_time = float(self.data.time)
@@ -854,7 +849,7 @@ class _TraceRecorder:
                     "distance": float(contact.dist),
                 }
             )
-        sample = {
+        return {
             "time": float(self.data.time),
             "qpos": np.asarray(self.data.qpos, dtype=np.float64).tolist(),
             "qvel": np.asarray(self.data.qvel, dtype=np.float64).tolist(),
@@ -866,15 +861,6 @@ class _TraceRecorder:
             "joint_velocities": joint_velocities,
             "contacts": contacts,
         }
-        if self.a4_observations is not None:
-            observations = self.a4_observations.snapshot(self.data)
-            if set(observations) != {
-                "a4_surface_relative_speed_m_s",
-                "a4_contact_normal_closing_speed_m_s",
-            }:
-                raise RuntimeError("A4 trace observation keys are incomplete")
-            sample.update(observations)
-        return sample
 
     def evidence(self) -> dict[str, Any]:
         return {
@@ -1281,11 +1267,6 @@ def run_capability_case(
         # perturbation; candidate state writes are measured from this point.
         mujoco.mj_forward(model, data)
         binding = _binding_parameters(case, model, mujoco)
-        a4_observations = (
-            A4Observations(model, binding, mujoco_module=mujoco)
-            if binding.get("contract_id") == "A4"
-            else None
-        )
         video = _VideoRecorder(
             skel,
             video_path,
@@ -1300,7 +1281,6 @@ def run_capability_case(
             max_steps=int(timing["max_steps"]),
             max_sim_time_s=float(timing["max_sim_time_s"]),
             video=video,
-            a4_observations=a4_observations,
         )
         trace.install()
         try:
