@@ -33,10 +33,14 @@ task all calls share the same driver/model/data. Input copies and the scene
 link live in the task directory; the generation workspace's `mjcf.xml` is
 unchanged. Use a new `output_dir` for each invocation.
 
-The compatibility CLI uses the same runner:
+The unified `agent/recap.py` contains the controller adapter, model and capability
+bridges, and task CLI. `task_execution.py` owns its MuJoCo recorder and JSON
+conversion helpers; this path does not import the legacy `task_planner.py`.
+
+The task CLI uses the same runner:
 
 ```sh
-PYTHONPATH=AA1 AA1/.venv/bin/python -m auto_adapter.agent.recap_demo \
+PYTHONPATH=AA1 AA1/.venv/bin/python -m auto_adapter.agent.recap \
   --workspace /absolute/generated/piper --robot-id piper \
   --model eu.anthropic.claude-sonnet-4-6
 ```

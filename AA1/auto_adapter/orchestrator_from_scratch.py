@@ -1745,7 +1745,7 @@ class FromScratchOrchestrator:
         if not self._is_local_mode():
             return PhaseResult("05_demo", False, 0.0,
                                error="configured ReCAP demo requires local mode")
-        from .agent.recap_demo import run_configured_demo
+        from .agent.recap import run_configured_demo
 
         report = run_configured_demo(
             workspace=self.workspace, robot_id=self.cfg.robot_id,

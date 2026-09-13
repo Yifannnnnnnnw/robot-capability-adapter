@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from auto_adapter.agent.recap_demo import AA1CapabilityAdapter, AA1RecapModel, passed_design
+from auto_adapter.agent.recap import AA1CapabilityAdapter, AA1RecapModel, passed_design
 from auto_adapter.robot_catalog import find_robot_definition, load_capability_design, load_capability_suite
 from auto_adapter.agent.recap import run_recap
 

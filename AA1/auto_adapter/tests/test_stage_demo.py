@@ -109,7 +109,7 @@ def test_fixed_and_dynamic_routes_share_export_and_optional_demo(
 
 @pytest.mark.parametrize("scratch", [False, True])
 def test_demo_phase_passes_current_design_and_cases_to_bridge(tmp_path, monkeypatch, scratch):
-    from auto_adapter.agent import recap_demo
+    from auto_adapter.agent import recap
 
     scene = tmp_path / "scene.xml"
     scene.write_text("<mujoco/>")
@@ -125,7 +125,7 @@ def test_demo_phase_passes_current_design_and_cases_to_bridge(tmp_path, monkeypa
         captured.update(kwargs)
         return {"ok": True, "duration_sec": 0.1, "controller_result": {"status": "CONTROLLER_FINISHED"}}
 
-    monkeypatch.setattr(recap_demo, "run_configured_demo", demo, raising=False)
+    monkeypatch.setattr(recap, "run_configured_demo", demo, raising=False)
     result = runner.phase_demo() if scratch else runner._phase_demo()
     assert result.ok
     assert captured["capability_design"] is runner.capability_design

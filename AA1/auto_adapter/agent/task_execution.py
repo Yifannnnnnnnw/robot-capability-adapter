@@ -16,9 +16,77 @@ import mujoco
 import numpy as np
 
 from auto_adapter.scene_runtime import apply_initial_state
-from .recap import run_recap
-from .recap_demo import AA1CapabilityAdapter, AA1RecapModel, passed_design
-from .task_planner import _FrameCapture, _to_jsonable
+from .recap import AA1CapabilityAdapter, AA1RecapModel, passed_design, run_recap
+
+
+def _to_jsonable(value):
+    """Convert task observations and reports to JSON-compatible values."""
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, (tuple, list)):
+        return [_to_jsonable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _to_jsonable(item) for key, item in value.items()}
+    if isinstance(value, np.floating):
+        return float(value)
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.bool_):
+        return bool(value)
+    return value
+
+
+class _TaskRecorder:
+    """Record this task's real MuJoCo steps with its own offscreen renderer."""
+
+    def __init__(self, model, data, *, capture_every=16, max_frames=3000):
+        self.frames = []
+        self._data = data
+        self._capture_every = capture_every
+        self._max_frames = max_frames
+        self._step_count = 0
+        self._cam = mujoco.MjvCamera()
+        mujoco.mjv_defaultFreeCamera(model, self._cam)
+        self._cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        self._cam.azimuth = float(model.vis.global_.azimuth)
+        self._cam.elevation = float(model.vis.global_.elevation)
+        self._cam.lookat[:] = model.stat.center
+        self._cam.distance = float(max(model.stat.extent, 0.3)) * 1.8
+        self._track_free = bool(model.njnt and model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE)
+        self._track_offset = (np.asarray(self._cam.lookat).copy() - data.qpos[:3]
+                              if self._track_free else np.zeros(3))
+        self._renderer = mujoco.Renderer(model, height=360, width=480)
+        self._orig_mj_step = mujoco.mj_step
+
+        def record_step(current_model, current_data, nstep=1):
+            # Leave other worlds' stepping untouched while recording this task.
+            if current_model is not model or current_data is not data:
+                return self._orig_mj_step(current_model, current_data, nstep)
+            for _ in range(int(nstep)):
+                self._orig_mj_step(model, data, 1)
+                self._step_count += 1
+                if self._step_count % self._capture_every == 0:
+                    self.snapshot()
+
+        mujoco.mj_step = record_step
+
+    def snapshot(self):
+        if len(self.frames) >= self._max_frames:
+            return
+        try:
+            if self._track_free:
+                self._cam.lookat[:] = self._data.qpos[:3] + self._track_offset
+            self._renderer.update_scene(self._data, camera=self._cam)
+            self.frames.append(self._renderer.render())
+        except Exception:
+            pass
+
+    def uninstall(self):
+        mujoco.mj_step = self._orig_mj_step
+        try:
+            self._renderer.close()
+        except Exception:
+            pass
 
 
 def _write_json(path, value):
@@ -190,9 +258,7 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
         if not _finite_world(world_data):
             raise ValueError("initial simulation state is not finite")
         report["sim_time_start"] = float(world_data.time)
-        capture = _FrameCapture(driver, capture_every=16)
-        if capture._mode != "mj_step":
-            raise ValueError("real MuJoCo offscreen recording is unavailable")
+        capture = _TaskRecorder(world_model, world_data)
         _frame_robot(capture, world_model, world_data)
         capture.snapshot()
 

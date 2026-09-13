@@ -1790,7 +1790,7 @@ class SelfAssemble:
 
     def _phase_recap_demo(self) -> PhaseResult:
         """Use this run's design and validation for the configured demo."""
-        from .agent.recap_demo import run_configured_demo
+        from .agent.recap import run_configured_demo
 
         report = run_configured_demo(
             workspace=self.workspace, robot_id=self.cfg.robot_id,

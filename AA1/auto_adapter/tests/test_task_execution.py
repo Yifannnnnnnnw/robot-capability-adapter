@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from auto_adapter.agent.recap_demo import _task_inputs, passed_design
+from auto_adapter.agent.recap import _task_inputs, passed_design
 
 
 @pytest.fixture
