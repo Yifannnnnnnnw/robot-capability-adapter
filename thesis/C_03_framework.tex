@@ -116,30 +116,30 @@ resulting simulation evidence does not establish hardware performance.
 
 \subsection{Framework overview}
 
-Auto-Adapter runs in five phases: study, generate, validation, export and demo. The
-pipeline operates on a working directory containing the robot documentation,
-the robot's MJCF model files and a task library.
-Figure~\ref{fig:autoadapter-framework-workflow} shows the sequence and the
-feedback path from validation to generate.
+Auto-Adapter runs in six stages: Study, Design, Generate, Validation, Export
+and Demo. The pipeline takes robot documentation, the robot's MJCF model files
+and a task library as inputs.
+Figure~\ref{fig:autoadapter-framework-workflow} shows the stage sequence and
+the feedback path from Validation to Generate.
 
-\textbf{study.} The agent reads the robot documentation and inspects the MJCF
-to identify the joints, actuators and control conventions. It records its
-findings in \texttt{study.json}, then uses the task requirements to define
-reusable operations and their pass criteria. A separate validation compiler
-turns these criteria into executable tests before driver generation. The
-generation agent receives the capability interface but cannot inspect the
-tests. The agent can select a controller skeleton according to the robot's
-morphology: damped least-squares (DLS) inverse kinematics (IK) for serial arms,
-or proportional--derivative (PD) gait control for quadrupeds.
+\textbf{Study.} The agent reads the robot documentation and inspects the MJCF
+to identify the joints, actuators and control conventions. It records these
+findings in \texttt{study.json}, which supplies the robot-specific information
+used during capability design and driver synthesis.
 
-\textbf{generate.} The agent writes \texttt{driver.py} to implement the required
-operations. Through \texttt{execute\_python}, it runs the draft in development
+\textbf{Generate.} The agent writes \texttt{driver.py} to implement the
+capability interface established during Design. Generation can proceed from
+scratch or use a task-neutral controller skeleton suited to the robot's
+morphology. Examples include damped least-squares (DLS) inverse kinematics (IK)
+for serial arms and proportional--derivative (PD) gait control for quadrupeds.
+Through \texttt{execute\_python}, the agent runs the draft in development
 simulations and inspects the resulting robot state and execution errors. It
-revises the code against this feedback before submitting the driver to
-validation.
+revises the implementation using this feedback before submitting the driver
+to Validation.
 
-\textbf{validation.} The validator checks each capability in fresh MuJoCo
-simulations, using simulator state and the pass criteria prepared during study.
+\textbf{Validation.} The validator checks each capability in fresh MuJoCo
+simulations, using independently recorded simulator state and the pass criteria
+established during Design.
 For example:
 \[
 \texttt{driver.move\_cartesian}(\mathbf p^\star),
@@ -153,12 +153,12 @@ of execution, and \(\varepsilon\) is the specified tolerance. If any critical
 test fails, generate runs again with the diagnostic messages appended. Each
 revised driver is evaluated using the same tests and criteria.
 
-\textbf{export.} A passing driver is bundled into
+\textbf{Export.} A passing driver is bundled into
 \texttt{auto\_adapter\_\textless robot\textgreater\_artifacts/} together
 with the MJCF, the study and validate reports, and a generated README.
 Self-contained artifacts run on \texttt{numpy} and \texttt{mujoco} alone.
 
-\textbf{demo.} ReCAP uses the generated driver to execute natural-language
+\textbf{Demo.} ReCAP uses the generated driver to execute natural-language
 tasks, calling only capabilities that passed validation. It observes state
 through the driver's high-level methods and plans a sequence of capability
 calls, which the runtime executes and logs. For example, a pick-and-place task
@@ -181,27 +181,28 @@ Success is measured against the task's ground-truth criterion using
 independently recorded simulator state and execution video, avoiding reliance
 on the controller's self-report.
 
-The following subsections describe robot study and capability design, then
-explain how the tests are constructed. They subsequently detail driver
-generation, validation and repair, and downstream task execution.
+The following subsections explain capability and validation design, driver
+synthesis, and independent behavioural assessment. They also describe bounded
+repair and the use of validated capabilities for downstream task execution.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[
     width=\linewidth
   ]{assets/auto_adapter_framework.png}
-  \caption[Five-stage Auto-Adapter workflow]
-  {Five-stage Auto-Adapter workflow from fixed inputs and capability design to
-  driver synthesis, independent MuJoCo assessment, and task demonstration. The
-  dashed path denotes bounded Repair feedback.}
+  \caption[Six-stage Auto-Adapter workflow]
+  {Six-stage Auto-Adapter workflow from robot study and capability design to
+  driver synthesis, independent MuJoCo validation, export and task
+  demonstration. The dashed path denotes bounded Repair feedback from
+  Validation to Generate.}
   \label{fig:autoadapter-framework-workflow}
 \end{figure}
 
 \subsection{Task-Grounded Capability and Validation Design}
 \label{sec:task-grounded-capability-design}
 
-Task-Grounded Capability Design uses the robot study and documented task
-requirements to define between three and ten reusable capabilities. Each
+During Design, the agent uses the robot study and documented task requirements
+to define between three and ten reusable capabilities. Each
 capability represents one composable physical effect and accepts a bounded,
 task-neutral request. The design also records which tasks motivate each
 capability and why. This relationship supplies coverage rationale rather than
@@ -308,11 +309,7 @@ capabilities when attempting the documented tasks.
 Task completion is judged independently from the recorded MuJoCo trajectory
 and continuous execution video rather than from the controller's declaration
 that it has finished. This task-level verdict does not alter the preceding
-capability results and cannot trigger Repair within the same run. An optional
-post-run analysis stage, termed Evolution, may propose a human-reviewed
-Experience record for use in a later independent run. It cannot modify the
-driver or verdicts of the originating run, and the experimental design states
-whether this stage is enabled.
+capability results and cannot trigger Repair within the same run.
 
 The resulting evidence supports claims about capability execution and task
 completion only under the specified MuJoCo model, requests, initial conditions,
