@@ -3,17 +3,16 @@
 
 Controller completion is not an independently evaluated physical task verdict.
 """
-from dataclasses import asdict
 import json
 from pathlib import Path
 import time
 
 from .react_loop import ReactLoop
-from .recap import ToolCall, ToolTurn, CapabilityAdapterError, run_recap
+from .recap import CapabilityAdapterError
 
 
 class AA1RecapModel:
-    """Adapt AA1's existing model transport to ReCAP's native tool turns."""
+    """Send official ReCAP's JSON conversation through AA1's model transport."""
 
     def __init__(self, *, model, provider, region, max_tokens, trace_path):
         transport = ReactLoop(tools=[], system="", model=model, provider=provider,
@@ -23,45 +22,29 @@ class AA1RecapModel:
         self.trace_path = Path(trace_path)
         self.trace_path.write_text("")
 
-    def generate_tool_turn(self, *, stage, system_prompt, messages, tools):
+    def generate_json(self, *, messages):
+        system = [
+            'Return only a JSON object with "think" and "subtasks". '
+            '"think" is a brief plan summary; "subtasks" is an ordered list of strings.'
+        ]
         converted = []
         for message in messages:
             role = message["role"]
-            if role == "tool":
-                item = {"role": "user", "content": [{"type": "tool_result",
-                        "tool_use_id": message["tool_call_id"], "content": message["content"]}]}
-            elif role == "assistant":
-                blocks = []
-                if message.get("content"):
-                    blocks.append({"type": "text", "text": message["content"]})
-                for call in message.get("tool_calls", []):
-                    blocks.append({"type": "tool_use", "id": call["id"],
-                                   "name": call["function"]["name"],
-                                   "input": json.loads(call["function"]["arguments"])})
-                item = {"role": role, "content": blocks or [{"type": "text", "text": "(empty model response)"}]}
-            else:
-                item = {"role": role, "content": message["content"]}
-            if (converted and item["role"] == "user" and converted[-1]["role"] == "user"
-                    and isinstance(item["content"], list) and isinstance(converted[-1]["content"], list)):
-                converted[-1]["content"].extend(item["content"])
+            if role == "system":
+                system.append(message["content"])
+                continue
+            item = {"role": role, "content": message["content"]}
+            if converted and converted[-1]["role"] == role:
+                converted[-1]["content"] += "\n\n" + item["content"]
             else:
                 converted.append(item)
         response = self.client.messages.create(
-            model=self.model, system=system_prompt, messages=converted,
-            max_tokens=self.max_tokens,
-            tools=[{"name": t["function"]["name"],
-                    "description": t["function"]["description"],
-                    "input_schema": t["function"]["parameters"]} for t in tools])
-        calls, texts = [], []
-        for block in response.content:
-            if block.type == "tool_use":
-                calls.append(ToolCall(block.id, block.name, block.input, json.dumps(block.input)))
-            elif block.type == "text":
-                texts.append(block.text)
-        turn = ToolTurn("\n".join(texts) or None, tuple(calls), response.stop_reason)
+            model=self.model, system="\n\n".join(system), messages=converted,
+            max_tokens=self.max_tokens)
+        content = "\n".join(block.text for block in response.content if block.type == "text")
         with self.trace_path.open("a") as stream:
-            stream.write(json.dumps({"stage": stage, "turn": asdict(turn)}) + "\n")
-        return turn
+            stream.write(json.dumps({"messages": messages, "response": content}) + "\n")
+        return content
 
 
 def passed_design(design, suite, report):

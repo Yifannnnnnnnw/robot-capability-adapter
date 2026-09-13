@@ -1,0 +1,88 @@
+--- upstream/chatbot.py
++++ AA1/chatbot.py
+@@ -1,12 +1,9 @@
+ import os
+ import json
+-import openai
+-import tiktoken
+ 
+ from typing import List
+ 
+ import time
+-from together import Together
+ import re
+ _quad_fence = re.compile(r'`+(?:json)?', re.IGNORECASE)
+ #from prompts import get_few_shot
+@@ -34,6 +31,7 @@
+ 
+ def count_chat_tokens(messages, model):
+     """Count tokens in a list of chat messages for the given model."""
++    import tiktoken
+     enc = tiktoken.encoding_for_model(model)
+     # per OpenAI chat-token guidelines:
+     tokens_per_message = 3
+@@ -65,6 +63,9 @@
+         truncated_history (list)
+             The truncated history that fits within the context length.
+     """
++    import openai
++    import tiktoken
++
+     success = False
+     truncated_history = history
+     while not success:
+@@ -130,6 +131,7 @@
+ 
+ class ChatGPTWithMemory:
+     def __init__(self, fixed_prompt, ctx_len):
++        import openai
+         self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+         self.model = "gpt-4o"
+         self.fixed_prompt = fixed_prompt
+@@ -385,13 +387,14 @@
+     return action in valid_actions
+ 
+ 
+-def chatbot(system_prompt: str, few_shot_list, task_name: str, init_obs: str, rule: str, valid_actions: List[str], ctx_len: int):
++def chatbot(system_prompt: str, few_shot_list, task_name: str, init_obs: str, rule: str, valid_actions: List[str], ctx_len: int,
++            *, llm=None, prompt_obj=None, node_factory=Node, log_dir=None):
+ 
+ 
+       
+     cur_time = time.strftime('%Y%m%d_%H%M%S')
+     # log_dir = f"logs_original_ctx_{ctx_len}_{task_name}"
+-    log_dir = f"logs_original_ctx_{ctx_len}"
++    log_dir = log_dir or f"logs_original_ctx_{ctx_len}"
+     os.makedirs(log_dir, exist_ok=True)
+     log_tree_json_file_path = f"{log_dir}/tree_{cur_time}.json"
+     log_history_json_file_path = f"{log_dir}/history_{cur_time}.json"
+@@ -404,8 +407,9 @@
+ 
+ END OF DEMO.
+     """
+-    llm = ChatGPTWithMemory(fixed_prompt={'role': 'user', 'content': few_shot_str}, ctx_len=ctx_len)
+-    prompt_obj = Prompt()
++    if llm is None:
++        llm = ChatGPTWithMemory(fixed_prompt={'role': 'user', 'content': few_shot_str}, ctx_len=ctx_len)
++    prompt_obj = prompt_obj if prompt_obj is not None else Prompt()
+       
+     prompt = prompt_obj.generate_init_prompt(
+         task_name=task_name,
+@@ -416,7 +420,7 @@
+ 
+ 
+       
+-    root = Node(task_name=task_name, parent=None)
++    root = node_factory(task_name=task_name, parent=None)
+     # 初始化状态变量
+     node_ptr = root # 指向当前节点
+     cur_obs = init_obs # 当前观察
+@@ -535,7 +539,7 @@
+                     )
+             # 4. 如果当前子任务没有完成，执行第一个子任务
+             else:
+-                child = Node(task_name=response["subtasks"][0], parent=node_ptr)
++                child = node_factory(task_name=response["subtasks"][0], parent=node_ptr)
+                 node_ptr.add_child(child)
+                 node_ptr = child
+                 during_down = True

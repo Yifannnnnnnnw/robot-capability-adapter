@@ -1,38 +1,27 @@
-"""Focused recursion and bounded execution checks; adapters/models here are test doubles."""
+"""Focused official-generator checks; models and adapters here are named fixtures."""
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-from dataclasses import asdict
 
 import pytest
 
-from auto_adapter.agent.recap import (
-    CapabilityAdapterError, RecapBudgets, ToolCall, ToolTurn, run_recap,
-)
+from auto_adapter.agent.recap import CapabilityAdapterError, RecapBudgets, run_recap, upstream
 
 
-def _leaf(amount):
-    return {"kind": "capability", "capability_name": "move", "request": {"amount": amount}}
+def _leaf(amount, name="move"):
+    return json.dumps({"capability_name": name, "request": {"amount": amount}})
 
 
-def _subtask(description):
-    return {"kind": "subtask", "description": description}
-
-
-def _turn(subtasks, call_id="plan", name="submit_plan"):
-    arguments = {"reasoning_summary": "Revise the next actions.", "subtasks": subtasks}
-    return ToolTurn(None, (ToolCall(call_id, name, arguments, json.dumps(arguments)),))
+def _plan(subtasks, summary="Revise the next actions."):
+    return json.dumps({"think": summary, "subtasks": subtasks})
 
 
 class _Adapter:
-    robot_configuration_id = "test-robot"
-    capability_design_id = "test-design"
-
-    def __init__(self, outcomes=None):
+    def __init__(self, outcomes=()):
         self.calls = []
-        self.outcomes = iter(outcomes or [])
+        self.outcomes = iter(outcomes)
 
     def public_catalog(self):
         return [{"method_name": "move", "description": "Move the test actuator.",
@@ -53,150 +42,122 @@ class _Adapter:
 class _Model:
     def __init__(self, turns):
         self.turns = iter(turns)
-        self.contexts = []
         self.messages = []
 
-    def generate_tool_turn(self, **kwargs):
-        assert [tool["function"]["name"] for tool in kwargs["tools"]] == ["submit_plan"]
-        parameters = kwargs["tools"][0]["function"]["parameters"]
-        leaf_schema = parameters["properties"]["subtasks"]["items"]["oneOf"][1]
-        assert leaf_schema["properties"]["capability_name"]["const"] == "move"
-        assert leaf_schema["properties"]["request"]["required"] == ["amount"]
-        self.messages.append(json.loads(json.dumps(kwargs["messages"])))
-        self.contexts.append(json.loads(kwargs["messages"][-1]["content"]))
+    def generate_json(self, *, messages):
+        self.messages.append(json.loads(json.dumps(messages)))
         return next(self.turns)
 
 
-def test_recursive_return_revises_siblings_and_shares_latest_observation():
+def test_official_recursive_return_revises_parent_siblings():
     adapter = _Adapter()
-    model = _Model([_turn([_leaf(0), _subtask("old group")]),
-                    _turn([_subtask("group"), _leaf(99)]),
-                    _turn([_subtask("nested action")]),
-                    _turn([_leaf(1), _leaf(99)]), _turn([]), _turn([]),
-                    _turn([_leaf(2)]), _turn([])])
-    result = run_recap(public_task={"description": "Reach positions 0, 1, 2."},
-                       adapter=adapter, model=model, initial_public_state={"position": -1})
+    model = _Model([_plan(["group", _leaf(99)], "ROOT_SUMMARY"),
+                    _plan([_leaf(1), _leaf(99)], "CHILD_SUMMARY"),
+                    _plan([]), _plan([_leaf(2)]), _plan([])])
+    # Observe execution of the real vendored generator, not just an API with its name.
+    frames = []
+    original_profiler = sys.getprofile()
+    def observe(frame, event, arg):
+        if event == "call" and frame.f_code is upstream.chatbot.__code__:
+            frames.append(frame.f_code.co_filename)
+    sys.setprofile(observe)
+    try:
+        result = run_recap(public_task={"description": "Reach positions 1, 2."},
+                           adapter=adapter, model=model, initial_public_state={"position": 0})
+    finally:
+        sys.setprofile(original_profiler)
+    assert frames and all(path.endswith("vendor/recap/chatbot.py") for path in frames)
     assert result.status == "CONTROLLER_FINISHED"
-    assert result.planning_turns == 8 and result.capability_calls == 3
-    assert [request["amount"] for _, request in adapter.calls] == [0, 1, 2]
-    root, child, nested = result.context_tree["nodes"]
-    assert root["children"] == ["n1"] and child["children"] == ["n2"]
-    assert nested["parent_id"] == "n1" and nested["depth"] == 2
-    assert all(node["completed"] for node in [root, child, nested])
-    assert model.contexts[3]["latest_public_observation"]["observations"]["position"] == 0
-    assert model.contexts[5]["latest_public_observation"]["observations"]["position"] == 1
-    assert model.contexts[6]["previous_remaining_plan"] == [_leaf(99)]
-    assert len(root["revisions"]) == 4
-    assert "physical_task_success" not in json.dumps(asdict(result))
+    assert result.planning_turns == 5 and result.capability_calls == 2
+    assert [r["amount"] for _, r in adapter.calls] == [1, 2]
+    root = result.context_tree
+    group, second_leaf = root["children"]
+    assert group["task_name"] == "group"
+    assert group["children"][0]["task_name"] == _leaf(1)
+    assert second_leaf["task_name"] == _leaf(2)
+    assert len(root["info_list"]) == 3
+    leaf_return = model.messages[2][-1]["content"]
+    parent_return = model.messages[3][-1]["content"]
+    assert "CHILD_SUMMARY" in leaf_return and '"position": 1' in leaf_return
+    assert "ROOT_SUMMARY" in parent_return and _leaf(99) in parent_return
+    assert "successfully completed" not in leaf_return
+    assert any(e["event"] == "parent_return" and e["kind"] == "subtask" for e in result.trace)
 
 
-@pytest.mark.parametrize("bad", [
-    _turn([]),
-    _turn([_leaf("bad")]),
-    _turn([_leaf(1), {"kind": "capability", "capability_name": "missing", "request": {}}]),
-    _turn([_leaf(1)], name="move"),
-])
-def test_invalid_plan_cannot_execute_or_finish(bad):
+@pytest.mark.parametrize("bad", ["not json", _plan([_leaf("bad")]),
+                                _plan([_leaf(1, name="missing")]),
+                                json.dumps({"think": "bad format", "subtasks": [{}]})])
+def test_invalid_plan_or_request_never_reaches_driver(bad):
     adapter = _Adapter()
     result = run_recap(public_task={}, adapter=adapter, model=_Model([bad]),
                        budgets=RecapBudgets(max_invalid_outputs=1))
     assert result.status == "INVALID_OUTPUT_BUDGET_EXHAUSTED"
     assert result.invalid_outputs == 1 and not adapter.calls
-    assert not result.context_tree["nodes"][0]["completed"]
 
 
 @pytest.mark.parametrize("budgets,turns,status,calls", [
-    (RecapBudgets(max_planning_turns=2), [_turn([_subtask("child")]), _turn([_leaf(1)])],
-     "PLANNING_TURN_BUDGET_EXHAUSTED", 1),
+    (RecapBudgets(max_planning_turns=2),
+     [_plan(["child", "later"]), _plan([_leaf(1)])], "PLANNING_TURN_BUDGET_EXHAUSTED", 1),
     (RecapBudgets(max_capability_calls=1),
-     [_turn([_subtask("child")]), _turn([_leaf(1)]), _turn([]), _turn([_leaf(2)])],
-     "CAPABILITY_CALL_BUDGET_EXHAUSTED", 1),
-    (RecapBudgets(max_depth=1, max_invalid_outputs=1),
-     [_turn([_subtask("child")]), _turn([_subtask("too deep")])],
-     "INVALID_OUTPUT_BUDGET_EXHAUSTED", 0),
+     [_plan([_leaf(1), _leaf(2)]), _plan([_leaf(2)])], "CAPABILITY_CALL_BUDGET_EXHAUSTED", 1),
+    (RecapBudgets(max_depth=1),
+     [_plan(["child", "later"]), _plan(["too deep", "later"])], "DEPTH_BUDGET_EXHAUSTED", 0),
 ])
-def test_budgets_are_shared_by_all_nodes(budgets, turns, status, calls):
+def test_host_budgets_terminate_official_generator(budgets, turns, status, calls, tmp_path):
     adapter = _Adapter()
-    result = run_recap(public_task={}, adapter=adapter, model=_Model(turns), budgets=budgets)
+    result = run_recap(public_task={}, adapter=adapter, model=_Model(turns), budgets=budgets,
+                       log_dir=tmp_path / "recap")
     assert result.status == status and len(adapter.calls) == calls
     assert result.planning_turns == len(turns)
-    assert not result.context_tree["nodes"][0]["completed"]
+    assert (tmp_path / "recap/tree.json").is_file()
+    assert (tmp_path / "recap/history.json").is_file()
 
 
-def test_failed_operation_returns_observation_and_does_not_allow_empty_completion():
+def test_upstream_empty_completion_is_not_a_successful_run():
+    # Upstream accepts an empty root; host must not claim an executed diagnostic.
+    adapter = _Adapter()
+    result = run_recap(public_task={}, adapter=adapter, model=_Model([_plan([])]))
+    assert result.status == "NO_ACTION_EXECUTED" and not adapter.calls
+    # A failed root primitive also causes upstream StopIteration, not task success.
+    failed = run_recap(public_task={}, adapter=_Adapter(["ERROR"]), model=_Model([_plan([_leaf(1)])]))
+    assert failed.status == "LAST_ACTION_FAILED"
+
+
+def test_operation_error_returns_to_official_parent_for_replanning():
     adapter = _Adapter(["ERROR", "EXECUTED"])
-    model = _Model([_turn([_leaf(1)]), _turn([]), _turn([_leaf(2)]), _turn([])])
+    model = _Model([_plan(["first attempt", "remaining"]), _plan([_leaf(1)]),
+                    _plan([_leaf(2)]), _plan([])])
     result = run_recap(public_task={}, adapter=adapter, model=model)
     assert result.status == "CONTROLLER_FINISHED" and result.capability_calls == 2
-    assert result.invalid_outputs == 1
-    assert model.contexts[1]["latest_public_observation"]["operation"]["status"] == "ERROR"
+    feedback = model.messages[2][-1]["content"]
+    assert '"status": "ERROR"' in feedback
+    assert "successfully completed" not in feedback
 
 
-def test_unexpected_failures_report_cause_without_completion():
+def test_transport_error_and_world_abort_do_not_complete():
     class DisconnectedModel:
-        def generate_tool_turn(self, **kwargs):
+        def generate_json(self, **kwargs):
             raise RuntimeError("transport disconnected")
-
-    model_error = run_recap(public_task={}, adapter=_Adapter(), model=DisconnectedModel())
-    assert model_error.status == "MODEL_ERROR" and model_error.capability_calls == 0
-    assert model_error.trace[-1]["error_type"] == "RuntimeError"
-    assert model_error.trace[-1]["message"] == "transport disconnected"
-
-    class BrokenAdapter(_Adapter):
-        def execute(self, name, request):
-            raise RuntimeError("lost simulation")
-
-    runtime_error = run_recap(public_task={}, adapter=BrokenAdapter(), model=_Model([_turn([_leaf(1)])]))
-    assert runtime_error.status == "RUNTIME_ERROR" and runtime_error.capability_calls == 1
-    assert runtime_error.trace[-1]["feedback"]["message"] == "lost simulation"
-    assert not runtime_error.context_tree["nodes"][0]["completed"]
+    result = run_recap(public_task={}, adapter=_Adapter(), model=DisconnectedModel())
+    assert result.status == "MODEL_ERROR"
+    assert any(e.get("message") == "transport disconnected" for e in result.trace)
+    aborted = run_recap(public_task={}, adapter=_Adapter(["WORKER_ABORTED"]),
+                        model=_Model([_plan([_leaf(1)])]))
+    assert aborted.status == "WORKER_ABORTED"
 
 
-def test_malformed_multi_tool_turn_gets_every_reply_and_executes_nothing():
-    adapter = _Adapter()
-    malformed = ToolTurn(None, (_turn([_leaf(99)], "first").tool_calls[0],
-                                _turn([_leaf(99)], "second").tool_calls[0]))
-    model = _Model([malformed, _turn([_leaf(1)]), _turn([])])
-    result = run_recap(public_task={}, adapter=adapter, model=model)
-    assert result.status == "CONTROLLER_FINISHED" and len(adapter.calls) == 1
-    replies = [message for message in model.messages[1] if message["role"] == "tool"]
-    assert [reply["tool_call_id"] for reply in replies] == ["first", "second"]
-    assert all(json.loads(reply["content"])["status"] == "INVALID_PLAN" for reply in replies)
-
-
-def test_history_trimming_keeps_complete_tool_exchanges():
-    adapter = _Adapter()
-    model = _Model([_turn([_leaf(i)], f"p{i}") for i in range(8)] + [_turn([], "done")])
-    result = run_recap(public_task={}, adapter=adapter, model=model,
-                       budgets=RecapBudgets(max_history_chars=3300))
-    assert result.status == "CONTROLLER_FINISHED"
-    assert not any(call["id"] == "p0" for message in model.messages[-1]
-                   for call in message.get("tool_calls", []))
-    for messages in model.messages:
-        pending = []
-        for message in messages:
-            if message["role"] == "assistant":
-                assert not pending
-                pending = [call["id"] for call in message.get("tool_calls", [])]
-            elif message["role"] == "tool":
-                assert message["tool_call_id"] == pending.pop(0)
-            else:
-                assert not pending
-        assert not pending
-
-
-def test_native_controller_runs_with_old_package_import_blocked(tmp_path):
+def test_official_controller_runs_without_old_package_or_standalone_sdks(tmp_path):
     root = Path(__file__).resolve().parents[2]
     code = """
 import sys
 from importlib.abc import MetaPathFinder
-class BlockOldPackage(MetaPathFinder):
+class BlockUnusedPackages(MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] == 'autoadapter2':
-            raise ImportError('old package deliberately unavailable')
-sys.meta_path.insert(0, BlockOldPackage())
-from auto_adapter.tests.test_recap import test_recursive_return_revises_siblings_and_shares_latest_observation
-test_recursive_return_revises_siblings_and_shares_latest_observation()
+        if fullname.split('.')[0] in {'autoadapter2', 'openai', 'tiktoken', 'together'}:
+            raise ImportError('package deliberately unavailable')
+sys.meta_path.insert(0, BlockUnusedPackages())
+from auto_adapter.tests.test_recap import test_official_recursive_return_revises_parent_siblings
+test_official_recursive_return_revises_parent_siblings()
 assert not any(name.split('.')[0] == 'autoadapter2' for name in sys.modules)
 """
     completed = subprocess.run([sys.executable, "-c", code], cwd=tmp_path,

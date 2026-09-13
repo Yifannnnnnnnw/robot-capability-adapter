@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from auto_adapter.agent.recap import ToolCall, ToolTurn
 from auto_adapter.agent.recap_demo import _task_inputs, passed_design
 
 
@@ -56,18 +55,18 @@ class RecursiveFixtureModel:
     def __init__(self):
         self.turn = 0
 
-    def generate_tool_turn(self, **kwargs):
-        assert "PRIVATE_SENTINEL_DO_NOT_PLAN_WITH" not in json.dumps(kwargs)
+    def generate_json(self, *, messages):
+        assert "PRIVATE_SENTINEL_DO_NOT_PLAN_WITH" not in json.dumps(messages)
+        action = json.dumps({"capability_name": "advance", "request": {"steps": 20}})
         plans = [
-            [{"kind": "subtask", "description": "First action"}],
-            [{"kind": "capability", "capability_name": "advance", "request": {"steps": 20}}],
-            [],
-            [{"kind": "capability", "capability_name": "advance", "request": {"steps": 20}}],
+            ["First action", "Second action"],
+            [action],
+            [action],
             [],
         ]
-        args = {"reasoning_summary": "Fixture action summary.", "subtasks": plans[self.turn]}
+        args = {"think": "Fixture action summary.", "subtasks": plans[self.turn]}
         self.turn += 1
-        return ToolTurn(None, (ToolCall(str(self.turn), "submit_plan", args, json.dumps(args)),))
+        return json.dumps(args)
 
 
 @pytest.mark.parametrize("scratch", [False, True])
@@ -79,13 +78,22 @@ def test_fresh_persistent_world_and_separate_generation_artifacts(task_inputs, s
     task_inputs["from_scratch"] = scratch
     report = run_task(**task_inputs, model_client=RecursiveFixtureModel())
     assert report["ok"], report
+    assert report["controller"] == "auto_adapter.agent.vendor.recap.chatbot.chatbot"
+    assert report["controller_source_commit"] == "2fb112ffad685c7c6f7de86d5487ecca6f566fcc"
     assert report["physical_task_success"] is None
     assert report["controller_result"]["capability_calls"] == 2
     assert report["sim_time_end"] == pytest.approx(0.4)
     assert report["n_frames"] > 1
     assert Path(report["video_path"]).stat().st_size > 100
     assert Path(report["trace_path"]).is_file()
-    assert len(report["controller_result"]["context_tree"]["nodes"]) == 2
+    tree = report["controller_result"]["context_tree"]
+    assert len(tree["children"]) == 2
+    assert tree["children"][0]["task_name"] == "First action"
+    assert json.loads(tree["children"][1]["task_name"])["capability_name"] == "advance"
+    assert tree["info_list"][-1]["subtasks"] == []
+    turns = [json.loads(line) for line in Path(report["model_trace_path"]).read_text().splitlines()]
+    assert len(turns) == 4
+    assert all("messages" in turn and "response" in turn for turn in turns)
     assert task_inputs["driver_path"].read_bytes() == original
     assert (task_inputs["driver_path"].parent / "mjcf.xml").readlink() == original_scene
     # A second task starts from its own initial state, never the last task's time.

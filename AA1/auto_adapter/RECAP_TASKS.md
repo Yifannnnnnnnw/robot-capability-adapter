@@ -65,26 +65,47 @@ No task library or formal experiment runner is introduced here.
 
 ## Controller and outputs
 
-`agent/recap.py` is the local task controller. `submit_plan` replaces the current
-node's ordered remaining plan. Only its first item executes: an abstract
-subtask opens a child; a capability leaf crosses the validated
-`driver.method(request=...)` boundary. After observations, the model revises
-the current plan. An empty child plan returns to its parent for replanning.
-An empty root plan ends the controller after at least one executed capability.
-The model can also use capability leaves directly in a node.
+`agent/recap.py` adapts the **official ReCAP controller** vendored at
+`agent/vendor/recap/chatbot.py`, revision
+`2fb112ffad685c7c6f7de86d5487ecca6f566fcc` of
+[ReCAP-Stanford/ReCAP](https://github.com/ReCAP-Stanford/ReCAP).
+The complete source, MIT license, source URL and small integration patch are
+kept together in that directory. The previous custom `submit_plan` loop is removed.
 
-All nodes share 16 planning turns, 12 capability calls and a maximum depth of 6.
-Budget exhaustion, malformed plans and runtime failures are explicit results.
-Ordinary method errors return to the model for replanning. The controller does
-not call `ReactLoop.run()`; generation and export retain their existing ReAct
-loops and the task bridge reuses only AA1's model transport.
+The model returns the official JSON format with a brief `think` summary and an
+ordered list of string `subtasks`. Abstract strings become task-tree nodes.
+Primitive strings encode a capability name and native request as JSON. The
+upstream generator expands the first subtask, yields executable actions, returns
+to parent nodes and builds prompts containing the parent's previous summary and
+remaining tasks. AA1 validates and executes each yielded native request, then
+sends back the actual operation status and public observations.
+
+The official downward singleton rule is retained: one subtask denotes a
+primitive action; an abstract decomposition needs at least two subtasks. After
+a leaf returns, the parent revises its remaining plan. An empty abstract-node
+plan returns to its parent. Root termination ends the controller only; AA1
+rejects a diagnostic with no executed action or a final failed action.
+
+All nodes share 16 model calls, 12 capability calls and a maximum depth of 6
+(root depth is zero; primitive nodes count). Budget exhaustion and errors are
+explicit results. Model history uses the upstream message-window policy, with
+a default threshold of 32 messages. AA1 replaces the cooking few-shot setup and
+wording with robot task/schema instructions, and avoids claiming an attempted
+action succeeded before its status is inspected. These adaptations do not
+replace the official tree traversal or parent-context construction.
+
+The task bridge reuses AA1's model client; it does not call `ReactLoop.run()`.
+Generation and export retain their existing ReAct loops. Ordinary method errors
+return as observations for replanning; world corruption stops task execution.
 
 The task directory contains `task_report.json`, `trace.jsonl`,
-`model_turns.jsonl`, copied inputs and `video.mp4` when recording is available.
-The report distinguishes controller status, actual method calls, method
-errors, observations and simulation advancement. `ok` records controller and
-recording completion, not independent physical success.
-`physical_task_success` remains `null` because no task predicate is evaluated.
+`model_turns.jsonl`, copied inputs, `recap/tree.json`, `recap/history.json`, and
+`video.mp4` when recording is available. The official timestamped tree/history
+files are retained too. Tree JSON uses upstream's nested `task_name`, `children`,
+`info_list` and `obs_list` structure, including primitive nodes. The report names
+the official controller and its source revision. `ok` records completion of the
+diagnostic execution/recording chain; `physical_task_success` remains `null`
+because no independent task predicate is evaluated.
 
 ## Fixed demos and current limitations
 
@@ -118,33 +139,38 @@ removed: the approved arm task is two checkpoints followed by gripper actions
 (or the KUKA offset/return), with no invented holding interface. A regression
 check failed before that configuration correction and passed afterward.
 
-## Migration check, 2026-09-13
+## Official-source integration check, 2026-09-13
 
-Focused checks cover recursion, request rejection, budget termination, standard
-and scratch stage dispatch, current-design forwarding, repair gating, world
-isolation, recordings, and all 15 actual scene/initial-state loads. A stale
-standard-export artifact was also reproduced as a false success, then rejected
-by a focused regression after fixing the export boundary.
+The earlier `artifacts/recap_migration_20260913/` diagnostics exercised the
+previous custom AA1 controller. They are **not evidence of official ReCAP source
+integration**. Root `autoadapter/` and the retired root benchmark were
+subsequently removed by the approved repository cleanup.
 
-Real diagnostic outputs live under `artifacts/recap_migration_20260913/`.
-Piper uses the existing generated driver from
-`repair3_opus48_20260910/repair_2/piper`, with the real Holistic model and MuJoCo.
-The recursive diagnostic explicitly requests two abstract planning groups while
-keeping the approved physical goal and parameters. No formal experiment or
-physical success claim is made.
+Focused checks now exercise the actual vendored generator, parent-summary
+reinjection, pending-sibling revision, invalid native requests, host budgets,
+empty-root rejection, and operation errors. A subprocess blocks imports of
+`autoadapter2` as well as the upstream standalone OpenAI/Together/token-counting
+SDKs. Standard and from-scratch task lifecycle checks use actual MuJoCo worlds
+and recordings with explicitly named fixture models/drivers.
 
-The final `piper_recursive` run completed in 26.9 s: 8 planning turns, 3
-capability calls, 3 context-tree nodes and 204 decoded video frames. Its trace
-is `n0 → n1 → n0 → n2 → n0`: checkpoint traversal in the first child, gripper
-close/open in the second child, with parent replanning after each return.
-All three calls returned normally. Simulation advanced from 0.500 s after
-initial settling to 6.916 s. The report retains `physical_task_success: null`.
-Core/stage/task checks passed (73 tests), as did the fixed-input checks
-(21 tests); the video requires an available local offscreen graphics context.
+The real diagnostic uses the existing generated Piper driver at
+`autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_2/piper/driver.py`.
+It loads Piper's fixed task and parameters directly from `demo_tasks.yaml`:
+the two listed checkpoints, then gripper opening 20% and 80%, in the configured
+scene and `home` keyframe. Its existing Framework report only filters available
+capabilities; private validation predicates are not supplied to the planner.
+There is no manually supplied action plan or extra task decomposition instruction.
 
-AA1 task execution requires no root `autoadapter/` code or installed
-`autoadapter2` package. The real diagnostic installs an import blocker for that
-package. The separate retained `AutoAdapter-Bench/runners/manifest.py` still
-reads `autoadapter/libraries/robots`; deleting the old directory would disable
-those old B1/B2 manifest commands. This migration does not modify that runner
-or delete the old directory.
+New real-run outputs are under `artifacts/recap_official_20260913/piper/`.
+`integration_check.json` records actual execution of the vendored generator
+while `autoadapter2` imports are blocked. This is a diagnostic integration run,
+not a formal experiment or independent physical task-success measurement.
+
+The official-source Piper run completed in 18.3 s with 7 model calls, 3 native
+capability calls, no invalid plans, and 204 decoded video frames. Simulation
+advanced from 0.500 s to 6.916 s. The tree contains the root and three action
+nodes; each returned to the root for replanning. Multi-level non-leaf returns
+were checked separately with a named fixture model, not claimed for this real
+run. The initial, middle and final video frames were visually inspected. All
+three native calls returned `EXECUTED`; `physical_task_success` remains `null`.
+The focused controller/bridge, task-lifecycle and stage checks passed: 69 tests.

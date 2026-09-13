@@ -127,7 +127,9 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
     trace_path.write_text("")
     model_trace_path.write_text("")
     report = {"ok": False, "status": "UNAVAILABLE", "robot_id": robot_id,
-              "task_description": task_description, "controller": "auto_adapter.agent.recap.run_recap",
+              "task_description": task_description,
+              "controller": "auto_adapter.agent.vendor.recap.chatbot.chatbot",
+              "controller_source_commit": "2fb112ffad685c7c6f7de86d5487ecca6f566fcc",
               "controller_result": None, "physical_task_success": None,
               "scope": "diagnostic task execution; no independent task predicate evaluated",
               "driver_path": str(source), "scene_path": str(scene), "from_scratch": from_scratch,
@@ -235,16 +237,17 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
                                                max_tokens=max_tokens, trace_path=model_trace_path)
         if model_client is not None:
             class RecordedFixtureModel:
-                def generate_tool_turn(self, **kwargs):
-                    turn = model_client.generate_tool_turn(**kwargs)
+                def generate_json(self, *, messages):
+                    response = model_client.generate_json(messages=messages)
                     with model_trace_path.open("a") as stream:
-                        stream.write(json.dumps({"stage": kwargs["stage"], "turn": asdict(turn)}) + "\n")
-                    return turn
+                        stream.write(json.dumps({"messages": messages, "response": response}) + "\n")
+                    return response
             client = RecordedFixtureModel()
         controller_started = True
         result = run_recap(public_task={"description": task_description, "parameters": parameters or {}},
                            adapter=AA1CapabilityAdapter(selected, invoke), model=client,
-                           initial_public_state=_public_observations(driver, world_data))
+                           initial_public_state=_public_observations(driver, world_data),
+                           log_dir=destination / "recap")
         report.update(status=result.status, controller_result=asdict(result))
         trace_path.write_text("".join(json.dumps(item, allow_nan=False) + "\n" for item in result.trace))
         report["sim_time_end"] = float(world_data.time) if np.isfinite(world_data.time) else None

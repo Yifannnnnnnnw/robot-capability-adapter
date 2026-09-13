@@ -7,7 +7,7 @@ import pytest
 
 from auto_adapter.agent.recap_demo import AA1CapabilityAdapter, AA1RecapModel, passed_design
 from auto_adapter.robot_catalog import find_robot_definition, load_capability_design, load_capability_suite
-from auto_adapter.agent.recap import ToolCall, ToolTurn, run_recap
+from auto_adapter.agent.recap import run_recap
 
 
 @pytest.mark.parametrize('robot_id', ['so101', 'universal_robots_ur5e_robotiq_2f85'])
@@ -24,34 +24,42 @@ def test_only_complete_framework_capabilities_reach_real_recap(robot_id):
         seen.append((name, envelope))
         return {'operation': {'status': 'EXECUTED'}, 'observations': {}}
     class FixtureModel:
-        def generate_tool_turn(self, **kwargs):
-            assert [t['function']['name'] for t in kwargs['tools']] == ['submit_plan']
-            args = {'reasoning_summary': 'Execute the selected capability.',
-                    'subtasks': ([] if seen else [{
-                        'kind': 'capability', 'capability_name': cases[0]['method_name'],
-                        'request': cases[0]['request']}])}
-            return ToolTurn(None, (ToolCall(str(len(seen)), 'submit_plan', args, json.dumps(args)),))
+        def generate_json(self, *, messages):
+            assert messages and all(isinstance(message['content'], str) for message in messages)
+            action = json.dumps({'capability_name': cases[0]['method_name'],
+                                 'request': cases[0]['request']})
+            return json.dumps({'think': 'Execute the selected capability.',
+                               'subtasks': [action]})
     result = run_recap(public_task={'description': 'fixture'},
                        adapter=AA1CapabilityAdapter(selected, invoke), model=FixtureModel())
     assert result.status == 'CONTROLLER_FINISHED'
     assert seen == [(cases[0]['method_name'], {'request': cases[0]['request']})]
 
 
-def test_model_bridge_preserves_tool_ids_and_observations(tmp_path):
+def test_model_bridge_preserves_official_json_history_and_records_request_response(tmp_path):
     captured = {}
     def create(**kwargs):
         captured.update(kwargs)
-        return SimpleNamespace(content=[SimpleNamespace(type='tool_use', id='finish-1', name='finish', input={})], stop_reason='tool_use')
+        return SimpleNamespace(content=[
+            SimpleNamespace(type='text', text='{"think":"Finished.",'),
+            SimpleNamespace(type='text', text='"subtasks":[]}')])
     model = object.__new__(AA1RecapModel)
     model.client = SimpleNamespace(messages=SimpleNamespace(create=create))
     model.model, model.max_tokens, model.trace_path = 'fixture', 100, tmp_path/'trace.jsonl'
-    turn = model.generate_tool_turn(stage='fixture', system_prompt='rules', tools=[], messages=[
+    messages = [
+        {'role':'system','content':'rules'},
         {'role':'user','content':'task'},
-        {'role':'assistant','content':None,'tool_calls':[{'id':'a','function':{'name':'move','arguments':'{}'}}]},
-        {'role':'tool','tool_call_id':'a','content':'observed'}])
-    assert captured['messages'][1]['content'][0]['id'] == 'a'
-    assert captured['messages'][2]['content'][0] == {'type':'tool_result','tool_use_id':'a','content':'observed'}
-    assert turn.tool_calls[0].name == 'finish'
+        {'role':'assistant','content':'{"think":"Move.","subtasks":["move"]}'},
+        {'role':'user','content':'observed'},
+        {'role':'user','content':'revise the parent plan'}]
+    response = model.generate_json(messages=messages)
+    assert 'rules' in captured['system']
+    assert 'brief plan summary' in captured['system']
+    assert captured['messages'] == [messages[1], messages[2],
+                                   {'role':'user','content':'observed\n\nrevise the parent plan'}]
+    assert 'tools' not in captured
+    assert json.loads(response) == {'think': 'Finished.', 'subtasks': []}
+    assert json.loads(model.trace_path.read_text()) == {'messages': messages, 'response': response}
 
 
 def test_local_catalog_demo_dispatches_to_recap():

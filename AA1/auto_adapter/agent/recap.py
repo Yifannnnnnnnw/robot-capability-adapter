@@ -1,35 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
-"""AA1's bounded recursive task controller. Completion is not a physical verdict."""
+"""AA1 environment/transport adapter around the vendored official ReCAP generator.
+
+Task decomposition, traversal and parent-context prompts run in upstream.chatbot.
+This module supplies native actions, model I/O, diagnostic tracing and host budgets.
+"""
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass, field
-from typing import Any, Protocol
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass
+from pathlib import Path
+import tempfile
+from typing import Any
 
+from .vendor.recap import chatbot as upstream
 
-@dataclass(frozen=True)
-class ToolCall:
-    id: str
-    name: str
-    arguments: Mapping[str, Any] | None
-    raw_arguments: str
-    argument_error: str | None = None
-
-
-@dataclass(frozen=True)
-class ToolTurn:
-    content: str | None
-    tool_calls: tuple[ToolCall, ...] = ()
-    finish_reason: str | None = None
-    reasoning_content: str | None = None
-
-
-class ToolModelClient(Protocol):
-    def generate_tool_turn(
-        self, *, stage: str, system_prompt: str,
-        messages: Sequence[Mapping[str, Any]], tools: Sequence[Mapping[str, Any]],
-    ) -> ToolTurn: ...
+UPSTREAM_REVISION = "2fb112ffad685c7c6f7de86d5487ecca6f566fcc"
+UPSTREAM_CONTROLLER = "auto_adapter.agent.vendor.recap.chatbot.chatbot"
 
 
 class CapabilityAdapterError(RuntimeError):
@@ -51,11 +38,11 @@ class RecapBudgets:
     max_depth: int = 6
     max_subtasks_per_plan: int = 8
     max_invalid_outputs: int = 3
-    max_history_chars: int = 80_000
+    context_window_messages: int = 32
 
     def __post_init__(self):
         for name, value in asdict(self).items():
-            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            if type(value) is not int or value <= 0:
                 raise RecapControllerError(f"{name} must be a positive integer")
 
 
@@ -77,285 +64,218 @@ class RecapControllerResult:
         return self.capability_calls
 
 
-@dataclass
-class _Node:
-    node_id: str
-    description: str
-    parent_id: str | None
-    depth: int
-    children: list[str] = field(default_factory=list)
-    remaining_plan: list[dict[str, Any]] = field(default_factory=list)
-    observations: list[dict[str, Any]] = field(default_factory=list)
-    revisions: list[dict[str, Any]] = field(default_factory=list)
-    completed: bool = False
+# Upstream catches Exception to retry malformed plans. Host termination must bypass
+# that handler; catch this specific sentinel only, never KeyboardInterrupt/SystemExit.
+class _StopRecap(BaseException):
+    def __init__(self, status):
+        self.status = status
 
 
-RECAP_SYSTEM_PROMPT = """You control one robot task by recursive planning.
-Call submit_plan exactly once per turn to replace the current node's entire remaining
-ordered plan. Supply only a short action summary, not private chain-of-thought.
-Use abstract subtasks to decompose a task; use capability leaves with names and native
-requests from the supplied public catalogue. The runtime executes ONLY the first item,
-then asks you to revise the remaining plan using the latest public observation.
-For a task with multiple phases, first group its phases into a small number of abstract
-subtasks, then use capability leaves inside those children.
-An abstract first item opens a child node. Finish that child with an empty subtasks list;
-control then returns to its parent so you can revise the parent's remaining plan.
-Do not repeat completed actions. Do not assume pending siblings executed. Preserve any
-unfinished task requirements when revising. Empty subtasks at the root ends the controller
-only after a real capability call. Completion does not determine physical task success.
-Use only the supplied public task, capability interfaces and observations; do not invent
-capabilities, simulation resets, private criteria or driver repair actions.
-Budgets are shared by every node: leave planning turns for child returns and root completion.
+class _Actions:
+    """A schema-backed action set for upstream's `action in valid_actions` test.
+
+    Membership has no side effects: upstream probes both abstract tasks and leaves.
+    Requests are continuous, so a finite list of preselected actions cannot describe it.
+    """
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    def decode(self, action):
+        value = json.loads(action)
+        if not isinstance(value, dict) or set(value) != {"capability_name", "request"}:
+            raise CapabilityAdapterError("action must contain capability_name and request")
+        if not isinstance(value["capability_name"], str) or not isinstance(value["request"], dict):
+            raise CapabilityAdapterError("action needs a string capability_name and object request")
+        # Reject nonfinite JSON even when the underlying schema permits a number.
+        json.dumps(value, allow_nan=False)
+        return value["capability_name"], self.adapter.validate_request(
+            value["capability_name"], value["request"])
+
+    def __contains__(self, action):
+        try:
+            self.decode(action)
+            return True
+        except (ValueError, TypeError, CapabilityAdapterError):
+            return False
+
+    def __repr__(self):
+        return "AA1 capabilities and native request schemas supplied in the environment rules"
+
+
+SYSTEM_PROMPT = """You control a robot through recursive ReCAP task planning.
+Respond with one JSON object: {"think": "brief plan summary", "subtasks": ["..."]}.
+The think field is a short action summary, not private chain-of-thought.
+Subtasks are strings: either abstract task descriptions or JSON-encoded primitive actions
+with exactly {"capability_name": "a published method name", "request": {native fields}}.
+ReCAP treats a SINGLE subtask while descending as a primitive action to execute. To
+DECOMPOSE a task, return at least two subtasks. Start a multi-phase goal with meaningful
+abstract groups. Only the first item is expanded/executed; remaining siblings are pending.
+After returning to a parent, revise its remaining plan from the supplied observations.
+Return [] when the current task has no remaining work. Preserve unfinished requirements.
+Do not invent methods, reset the world, regenerate a driver or use private test criteria.
+An EXECUTED operation means the method returned normally, not that its physical goal was
+independently verified. Inspect observations and errors. Controller completion is not a
+physical task verdict. Budget limits are shared across the whole task tree.
 """
 
 
-def _json_copy(value, label):
+def run_recap(*, public_task, adapter, model, budgets=None, initial_public_state=None, log_dir=None):
+    """Drive the official generator with AA1 JSON model turns and native capabilities."""
+    budgets = budgets or RecapBudgets()
+    actions = _Actions(adapter)
+    trace, nodes = [], []
+    planning_turns = capability_calls = invalid_outputs = 0
+    last_status = None
+
+    def event(event_name, **payload):
+        trace.append({"event": event_name, **payload})
+
+    def invalid(message):
+        nonlocal invalid_outputs
+        invalid_outputs += 1
+        event("invalid_output", message=message)
+        if invalid_outputs >= budgets.max_invalid_outputs:
+            raise _StopRecap("INVALID_OUTPUT_BUDGET_EXHAUSTED")
+
+    class ObservedNode(upstream.Node):
+        def __init__(self, task_name, parent=None):
+            super().__init__(task_name, parent)
+            self.node_id = f"n{len(nodes)}"
+            self.depth = parent.depth + 1 if parent is not None else 0
+            if self.depth > budgets.max_depth:
+                raise _StopRecap("DEPTH_BUDGET_EXHAUSTED")
+            nodes.append(self)
+            event("node_created", node_id=self.node_id,
+                  parent_id=parent.node_id if parent is not None else None,
+                  depth=self.depth, task_name=task_name)
+
+        def set_info(self, info):
+            if (not isinstance(info, dict) or not isinstance(info.get("think"), str)
+                    or not isinstance(info.get("subtasks"), list)
+                    or len(info["subtasks"]) > budgets.max_subtasks_per_plan
+                    or any(not isinstance(s, str) or not s.strip() for s in info["subtasks"])):
+                invalid("expected think string and bounded subtasks string list")
+                raise ValueError("expected think string and bounded subtasks string list")
+            super().set_info(info)
+            event("plan_revision", node_id=self.node_id, plan=info)
+
+        def set_obs(self, obs):
+            super().set_obs(obs)
+            event("observation", node_id=self.node_id, observation=obs)
+
+    class RobotPrompt(upstream.Prompt):
+        def generate_init_prompt(self, **kwargs):
+            return super().generate_init_prompt(**kwargs).replace(
+                "Now you need to make a new meal.", "Now you need to perform a robot task.")
+
+        def _return(self, prompt, kind, kwargs):
+            event("parent_return", kind=kind, **kwargs)
+            return prompt.replace("You have successfully completed the task:",
+                                  "The child task attempt has returned. Inspect its observations and operation status:")
+
+        def generate_leaf_up_prompt(self, **kwargs):
+            return self._return(super().generate_leaf_up_prompt(**kwargs), "leaf", kwargs)
+
+        def generate_leaf_judge_done_prompt(self, **kwargs):
+            return self._return(super().generate_leaf_judge_done_prompt(**kwargs), "leaf", kwargs)
+
+        def generate_nonleaf_up_prompt(self, **kwargs):
+            return self._return(super().generate_nonleaf_up_prompt(**kwargs), "subtask", kwargs)
+
+        def generate_nonleaf_judge_done_prompt(self, **kwargs):
+            return self._return(super().generate_nonleaf_judge_done_prompt(**kwargs), "subtask", kwargs)
+
+        def generate_leaf_up_fail_prompt(self, **kwargs):
+            try:
+                actions.decode(kwargs["fail_task_name"])
+            except (ValueError, TypeError, CapabilityAdapterError) as exc:
+                explanation = str(exc)
+            else:
+                explanation = "invalid primitive action"
+            invalid(explanation)
+            prompt = super().generate_leaf_up_fail_prompt(**kwargs)
+            start = prompt.index("Because the task name")
+            end = prompt.index("\n\n", start)
+            prompt = prompt[:start] + (
+                "The primitive action failed AA1 native request validation: " + explanation
+                + ". Use a published capability and its request schema. An abstract decomposition "
+                  "needs at least two subtasks; a descending singleton must be executable.") + prompt[end:]
+            event("parent_return", kind="invalid_action", **kwargs)
+            return prompt
+
+    class Memory(upstream.ChatGPTWithMemory):
+        def __init__(self):
+            # Retain upstream's shared history and [2:4] window eviction. AA1 supplies
+            # transport instead of the upstream standalone OpenAI client and billing.
+            self.fixed_prompt = {"role": "user", "content": "Use the ReCAP JSON plan format."}
+            self.truncated_chat_history = [self.fixed_prompt]
+            self.ctx_len = budgets.context_window_messages
+            self.model = "aa1-transport"
+
+        def invoke(self, user_prompt):
+            nonlocal planning_turns
+            if planning_turns >= budgets.max_planning_turns:
+                raise _StopRecap("PLANNING_TURN_BUDGET_EXHAUSTED")
+            if len(self.truncated_chat_history) > self.ctx_len:
+                del self.truncated_chat_history[2:4]
+            self.truncated_chat_history.append({"role": "user", "content": user_prompt})
+            planning_turns += 1
+            try:
+                response = model.generate_json(messages=self.truncated_chat_history)
+            except Exception as exc:
+                event("model_error", error_type=type(exc).__name__, message=str(exc))
+                raise _StopRecap("MODEL_ERROR") from exc
+            self.truncated_chat_history.append({"role": "assistant", "content": response})
+            try:
+                json.loads(upstream.remove_json_fence(response))
+            except (ValueError, TypeError) as exc:
+                invalid(str(exc))
+            return response
+
+    memory = Memory()
+    temporary = tempfile.TemporaryDirectory(prefix="aa1-recap-") if log_dir is None else None
+    output = Path(temporary.name if temporary else log_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    task = json.dumps(public_task, ensure_ascii=False, allow_nan=False)
+    rule = json.dumps({"capabilities": adapter.public_catalog(), "budgets": asdict(budgets)},
+                      ensure_ascii=False, allow_nan=False)
+    generator = upstream.chatbot(
+        system_prompt=SYSTEM_PROMPT, few_shot_list=[], task_name=task,
+        init_obs=json.dumps(initial_public_state or {}, ensure_ascii=False, allow_nan=False),
+        rule=rule, valid_actions=actions, ctx_len=budgets.context_window_messages,
+        llm=memory, prompt_obj=RobotPrompt(), node_factory=ObservedNode, log_dir=str(output))
+    event("controller_started", controller=UPSTREAM_CONTROLLER, revision=UPSTREAM_REVISION)
     try:
-        return json.loads(json.dumps(value, allow_nan=False))
-    except (TypeError, ValueError) as exc:
-        raise RecapControllerError(f"{label} must be finite JSON") from exc
-
-
-def _message(payload):
-    return {"role": "user", "content": json.dumps(payload, ensure_ascii=False, allow_nan=False)}
-
-
-def _plan_tool(catalog, max_subtasks):
-    variants = [{
-        "type": "object",
-        "properties": {"kind": {"const": "subtask", "type": "string"},
-                       "description": {"type": "string", "minLength": 1}},
-        "required": ["kind", "description"], "additionalProperties": False,
-    }]
-    names = set()
-    for capability in catalog:
-        name = capability.get("capability_name", capability.get("method_name"))
-        schema = capability.get("request_schema")
-        if not isinstance(name, str) or not name or name in names or not isinstance(schema, dict):
-            raise RecapControllerError("public catalogue has an invalid or duplicate capability")
-        names.add(name)
-        variants.append({
-            "type": "object", "description": capability.get("description", name),
-            "properties": {"kind": {"const": "capability", "type": "string"},
-                           "capability_name": {"const": name, "type": "string"},
-                           "request": schema},
-            "required": ["kind", "capability_name", "request"], "additionalProperties": False,
-        })
-    return {"type": "function", "function": {
-        "name": "submit_plan",
-        "description": "Replace this node's remaining plan; execute only its head. Empty completes this node.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "reasoning_summary": {"type": "string", "minLength": 1, "maxLength": 2000},
-                "subtasks": {"type": "array", "maxItems": max_subtasks,
-                             "items": {"oneOf": variants}},
-            },
-            "required": ["reasoning_summary", "subtasks"], "additionalProperties": False,
-        },
-    }}, names
-
-
-def _parse_plan(call, adapter, names, max_subtasks):
-    if call.name != "submit_plan" or call.argument_error:
-        raise RecapControllerError(call.argument_error or "only submit_plan is available")
-    output = _json_copy(call.arguments, "plan")
-    if not isinstance(output, dict) or set(output) != {"reasoning_summary", "subtasks"}:
-        raise RecapControllerError("submit_plan requires exactly reasoning_summary and subtasks")
-    summary, subtasks = output["reasoning_summary"], output["subtasks"]
-    if not isinstance(summary, str) or not summary.strip() or len(summary) > 2000:
-        raise RecapControllerError("reasoning_summary must contain 1 to 2000 characters")
-    if not isinstance(subtasks, list) or len(subtasks) > max_subtasks:
-        raise RecapControllerError("subtasks must be an array within the plan budget")
-    # Validate the complete proposed plan before executing its first item.
-    for item in subtasks:
-        if not isinstance(item, dict):
-            raise RecapControllerError("every plan item must be an object")
-        if item.get("kind") == "subtask":
-            if (set(item) != {"kind", "description"} or not isinstance(item["description"], str)
-                    or not item["description"].strip()):
-                raise RecapControllerError("abstract subtask requires a nonempty description")
-        elif item.get("kind") == "capability":
-            if (set(item) != {"kind", "capability_name", "request"}
-                    or not isinstance(item["capability_name"], str)
-                    or item["capability_name"] not in names or not isinstance(item["request"], dict)):
-                raise RecapControllerError("capability leaf requires a known name and native request object")
-            item["request"] = adapter.validate_request(item["capability_name"], item["request"])
-        else:
-            raise RecapControllerError("plan item kind must be subtask or capability")
-    return output
-
-
-def _assistant_message(turn):
-    return {"role": "assistant", "content": turn.content, "tool_calls": [
-        {"id": call.id, "type": "function", "function": {
-            "name": call.name, "arguments": json.dumps(call.arguments, allow_nan=False)
-            if call.arguments is not None else call.raw_arguments}}
-        for call in turn.tool_calls
-    ]}
-
-
-def _bounded_messages(base, history, current, max_chars):
-    def cost(message):
-        return len(json.dumps(message, ensure_ascii=False))
-    used = cost(base) + cost(current)
-    if used > max_chars:
-        raise RecapControllerError("task, capability catalogue and current context exceed history budget")
-    selected = []
-    # Retain whole exchanges, including every tool result for an assistant turn.
-    for exchange in reversed(history):
-        size = sum(cost(message) for message in exchange)
-        if used + size > max_chars:
-            break
-        selected.append(exchange)
-        used += size
-    return tuple([base, *(message for exchange in reversed(selected) for message in exchange), current])
-
-
-def run_recap(*, public_task, adapter, model: ToolModelClient,
-              budgets: RecapBudgets | None = None, initial_public_state=None) -> RecapControllerResult:
-    """Execute one recursive task against a persistent adapter; never generate/repair a driver."""
-    fixed = budgets or RecapBudgets()
-    task = _json_copy(public_task, "public_task")
-    if not isinstance(task, dict):
-        raise RecapControllerError("public_task must be an object")
-    latest = _json_copy(initial_public_state, "initial_public_state")
-    catalog = _json_copy(adapter.public_catalog(), "capability catalogue")
-    tool, names = _plan_tool(catalog, fixed.max_subtasks_per_plan)
-    description = task.get("objective") or task.get("description") or "Complete the supplied robot task."
-    nodes = {"n0": _Node("n0", description, None, 0)}
-    current_id = "n0"
-    planning_turns = capability_calls = invalid_outputs = executed_calls = 0
-    trace, history = [], []
-    base = _message({"event": "controller_start", "public_task": task,
-                     "robot_configuration_id": adapter.robot_configuration_id,
-                     "capability_design_id": adapter.capability_design_id,
-                     "capability_catalog": catalog, "initial_public_state": latest,
-                     "budgets": asdict(fixed)})
-
-    def result(status):
-        return RecapControllerResult(status, planning_turns, capability_calls, invalid_outputs,
-                                     tuple(_json_copy(trace, "trace")), {
-                                         "root_node_id": "n0", "active_node_id": current_id,
-                                         "nodes": [asdict(node) for node in nodes.values()],
-                                     })
-
-    while planning_turns < fixed.max_planning_turns:
-        current = nodes[current_id]
-        path, cursor = [], current
-        while cursor is not None:
-            path.append({"node_id": cursor.node_id, "description": cursor.description,
-                         "remaining_plan": cursor.remaining_plan})
-            cursor = nodes.get(cursor.parent_id)
-        context = _message({"event": "plan_or_refine", "current_path": list(reversed(path)),
-                            "current_node": {"node_id": current_id, "description": current.description,
-                                             "depth": current.depth},
-                            "previous_remaining_plan": current.remaining_plan,
-                            "latest_public_observation": latest,
-                            "latest_node_event": current.observations[-1] if current.observations else None,
-                            "remaining_budgets": {"planning_turns": fixed.max_planning_turns - planning_turns,
-                                                  "capability_calls": fixed.max_capability_calls - capability_calls}})
-        try:
-            messages = _bounded_messages(base, history, context, fixed.max_history_chars)
-        except RecapControllerError:
-            return result("HISTORY_BUDGET_EXHAUSTED")
-        planning_turns += 1
-        try:
-            turn = model.generate_tool_turn(stage="recursive_plan_or_refine",
-                                            system_prompt=RECAP_SYSTEM_PROMPT, messages=messages, tools=(tool,))
-            if not isinstance(turn, ToolTurn) or any(not isinstance(call, ToolCall) for call in turn.tool_calls):
-                raise TypeError("model must return ToolTurn")
-            assistant = _assistant_message(turn)
-        except Exception as exc:
-            trace.append({"turn_index": planning_turns, "node_id": current_id, "action_kind": "model_error",
-                          "error_type": type(exc).__name__, "message": str(exc)})
-            return result("MODEL_ERROR")
-
-        entry = {"turn_index": planning_turns, "node_id": current_id,
-                 "call_budget_used": capability_calls, "action_kind": "invalid_plan"}
-        terminal = None
-        try:
-            if len(turn.tool_calls) != 1:
-                raise RecapControllerError("call submit_plan exactly once per planning turn")
-            output = _parse_plan(turn.tool_calls[0], adapter, names, fixed.max_subtasks_per_plan)
-            plan = output["subtasks"]
-            if not plan and current.parent_id is None and executed_calls == 0:
-                raise RecapControllerError("root completion requires at least one executed capability call")
-            if plan and plan[0]["kind"] == "subtask" and current.depth >= fixed.max_depth:
-                raise RecapControllerError("maximum recursion depth reached; use a capability or complete this node")
-            current.revisions.append({"turn_index": planning_turns, **_json_copy(output, "revision")})
-            current.remaining_plan = list(plan)
-            entry["reasoning_summary"] = output["reasoning_summary"]
-            if not plan:
-                current.completed = True
-                entry.update(action_kind="complete_node", controller_self_reported_completion=current.parent_id is None)
-                feedback = {"status": "NODE_COMPLETED", "node_id": current_id,
-                            "latest_public_observation": latest}
-                if current.parent_id is None:
-                    terminal = "CONTROLLER_FINISHED"
-                else:
-                    parent = nodes[current.parent_id]
-                    parent.observations.append(feedback)
-                    current_id = parent.node_id
-            elif plan[0]["kind"] == "subtask":
-                head = current.remaining_plan.pop(0)
-                child_id = f"n{len(nodes)}"
-                nodes[child_id] = _Node(child_id, head["description"], current_id, current.depth + 1)
-                current.children.append(child_id)
-                entry.update(action_kind="subtask", child_node_id=child_id)
-                feedback = {"status": "CHILD_STARTED", "node_id": child_id,
-                            "latest_public_observation": latest}
-                current_id = child_id
-            else:
-                head = current.remaining_plan[0]
-                entry.update(action_kind="capability", capability_name=head["capability_name"],
-                             public_arguments=head["request"])
-                if capability_calls >= fixed.max_capability_calls:
-                    terminal = "CAPABILITY_CALL_BUDGET_EXHAUSTED"
-                    feedback = {"status": terminal}
-                else:
-                    current.remaining_plan.pop(0)
-                    capability_calls += 1
-                    observation = _json_copy(adapter.execute(head["capability_name"], head["request"]),
-                                             "capability observation")
-                    outcome = observation.get("operation", {}).get("status") if isinstance(observation, dict) else None
-                    feedback = {"kind": "capability_observation", "capability_name": head["capability_name"],
-                                "status": outcome or "INVALID_OBSERVATION", "public_observation": observation}
-                    latest = observation
-                    current.observations.append(feedback)
-                    entry["capability_execution_outcome"] = outcome
-                    if outcome == "EXECUTED":
-                        executed_calls += 1
-                    elif outcome in {"ABORTED", "WORKER_ABORTED"}:
-                        terminal = "WORKER_ABORTED"
-                    elif outcome != "ERROR":
-                        terminal = "RUNTIME_ERROR"
-        except (RecapControllerError, CapabilityAdapterError) as exc:
-            # Invocation failures consume their attempted call, not the invalid-plan budget.
-            if isinstance(exc, CapabilityInvocationError) or entry["action_kind"] == "capability":
-                terminal = "RUNTIME_ERROR"
-                feedback = {"status": "CAPABILITY_EXECUTION_ERROR", "error_type": type(exc).__name__,
-                            "message": str(exc)}
-            else:
-                invalid_outputs += 1
-                feedback = {"status": "INVALID_PLAN", "message": str(exc)}
-                current.observations.append(feedback)
-                if invalid_outputs >= fixed.max_invalid_outputs:
-                    terminal = "INVALID_OUTPUT_BUDGET_EXHAUSTED"
-        except Exception as exc:
-            terminal = "RUNTIME_ERROR"
-            feedback = {"status": "CAPABILITY_EXECUTION_ERROR", "error_type": type(exc).__name__,
-                        "message": str(exc)}
-
-        # A malformed multi-tool turn still receives one reply per tool ID, with no action.
-        replies = [{"role": "tool", "tool_call_id": call.id,
-                    "content": json.dumps(feedback, allow_nan=False)} for call in turn.tool_calls]
-        if not replies:
-            replies = [_message(feedback)]
-        history.append([context, assistant, *replies])
-        entry.update(call_budget_used=capability_calls, feedback=feedback,
-                     tool_results=replies, invalid_call=feedback.get("status") == "INVALID_PLAN")
-        trace.append(entry)
-        if terminal:
-            return result(terminal)
-    return result("PLANNING_TURN_BUDGET_EXHAUSTED")
+        action = next(generator)
+        while True:
+            if capability_calls >= budgets.max_capability_calls:
+                raise _StopRecap("CAPABILITY_CALL_BUDGET_EXHAUSTED")
+            name, request = actions.decode(action)
+            capability_calls += 1
+            event("capability_call", capability_name=name, request=request)
+            result = adapter.execute(name, request)
+            observation = json.dumps(result, ensure_ascii=False, allow_nan=False)
+            last_status = result.get("operation", {}).get("status")
+            event("capability_result", capability_name=name, feedback=result)
+            if last_status == "WORKER_ABORTED":
+                raise _StopRecap("WORKER_ABORTED")
+            action = generator.send((observation, actions))
+    except StopIteration:
+        status = ("NO_ACTION_EXECUTED" if not capability_calls else
+                  "LAST_ACTION_FAILED" if last_status != "EXECUTED" else "CONTROLLER_FINISHED")
+    except _StopRecap as stop:
+        status = stop.status
+    except Exception as exc:
+        event("runtime_error", error_type=type(exc).__name__, message=str(exc))
+        status = "RUNTIME_ERROR"
+    finally:
+        generator.close()
+        # Also save partial trees/history after host budget termination.
+        if nodes:
+            upstream.save_tree_to_json(nodes[0], str(output / "tree.json"))
+        memory.save_history_to_json(str(output / "history.json"))
+        if temporary:
+            temporary.cleanup()
+    event("controller_ended", status=status)
+    return RecapControllerResult(status, planning_turns, capability_calls, invalid_outputs,
+                                 tuple(trace), upstream.tree_to_dict(nodes[0]) if nodes else {})
