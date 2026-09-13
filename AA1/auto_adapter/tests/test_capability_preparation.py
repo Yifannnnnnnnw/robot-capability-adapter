@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -184,13 +185,16 @@ class _FakeLoop:
     tool_names = []
     read_paths = []
     write_errors = []
+    local_exec_result = None
 
     def __init__(self, *, tools, **kwargs):
         self.writer = next(tool for tool in tools if tool.name == "write_file")
         self.reader = next(tool for tool in tools if tool.name == "read_file")
+        self._tools = tools
         type(self).tool_names = [tool.name for tool in tools]
         type(self).read_paths = []
         type(self).write_errors = []
+        type(self).local_exec_result = None
         type(self).last_kwargs = kwargs
 
     def run(self, prompt):
@@ -202,8 +206,21 @@ class _FakeLoop:
         }
         study_path = paths["study_path"]
         catalog_path = paths["catalog_path"]
+        actual_mjcf_path = paths["actual_mjcf_path"]
         assert Path(study_path).is_absolute()
         assert Path(catalog_path).is_absolute()
+        assert Path(actual_mjcf_path).is_absolute()
+        if self.mode == "probe_local_exec":
+            local_exec = next(tool for tool in self._tools if tool.name == "local_exec")
+            script = (
+                "import os, mujoco; "
+                f"model = mujoco.MjModel.from_xml_path({json.dumps(actual_mjcf_path)}); "
+                "print(os.getcwd()); print('mujoco_imported', mujoco.__version__); "
+                "print('nq', model.nq)"
+            )
+            result = local_exec.handler({"command": f"python -c {shlex.quote(script)}"})
+            type(self).local_exec_result = result
+            assert result["exit_code"] == 0, result
         study = json.loads(self.reader.handler({"path": study_path})["content"])
         catalog = json.loads(self.reader.handler({"path": catalog_path})["content"])
         relative_catalog = json.loads(
@@ -403,7 +420,37 @@ def test_valid_write_writes_main_draft_and_criteria(
     assert "\n" in _FakeLoop.last_prompt
     assert _FakeLoop.last_kwargs["max_iters"] == 6
     assert _FakeLoop.last_kwargs["max_tokens_per_turn"] == 8000
-    assert _FakeLoop.tool_names == ["read_file", "write_file"]
+    assert _FakeLoop.tool_names == ["read_file", "write_file", "local_exec"]
+
+
+def test_local_exec_probes_actual_mjcf_in_output_workspace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    library = _library(tmp_path)
+    mjcf = tmp_path / "scene.xml"
+    mjcf.write_text("<mujoco/>", encoding="utf-8")
+    output = tmp_path / "output"
+    _FakeLoop.mode = "probe_local_exec"
+    monkeypatch.setattr(preparation, "ReactLoop", _FakeLoop)
+
+    design = preparation.generate_capability_design(
+        robot_id="fixture-aa1",
+        study={"robot_id": "fixture-aa1", "dof": 1},
+        mjcf_path=mjcf,
+        task_library_dir=library,
+        output_dir=output,
+        model="fixture-model",
+        provider="holistic",
+        region="fixture-region",
+    )
+
+    assert design["robot_configuration_id"] == "fixture-aa1"
+    assert f"actual_mjcf_path: {mjcf.resolve()}" in _FakeLoop.last_prompt
+    probe = _FakeLoop.local_exec_result
+    assert probe is not None
+    assert probe["stdout"].splitlines()[0] == str(output.resolve())
+    assert "mujoco_imported" in probe["stdout"]
 
 
 def test_invalid_draft_gets_feedback_then_corrected_write(

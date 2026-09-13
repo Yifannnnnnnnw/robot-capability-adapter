@@ -21,7 +21,11 @@ from typing import Any
 import yaml
 
 from .agent.react_loop import ReactLoop
-from .agent.tools import make_read_file_tool, make_write_file_tool
+from .agent.tools import (
+    make_local_exec_tool,
+    make_read_file_tool,
+    make_write_file_tool,
+)
 
 
 TASK_LIBRARY_ROOT = Path(__file__).resolve().parent / "task_libraries"
@@ -485,6 +489,12 @@ IVC/evaluation files, reference contracts/drivers, or archived experiment data.
 
 Read the supplied study and catalog paths with read_file before writing. Then write one compact
 capability-v2 JSON object to draft/capability_design.json with write_file.
+You may use local_exec for a short, read-only public MuJoCo/robot-model check
+against the supplied actual_mjcf_path. It runs in the TGCD output workspace with
+the orchestrator's AA1 virtual environment and PYTHONPATH, so `python` can import
+MuJoCo. Do not modify source robot assets and do not read private tests, reference
+contracts or drivers, or archived experiment data. local_exec is an ordinary shell
+and is not a sandbox or a process-permission boundary.
 Prefer three to six compact reusable package-bound, task-neutral single-effect
 capabilities (the allowed range is three to ten when task coverage needs more).
 Each needs a unique capability_id and Python method_name for method(request),
@@ -614,6 +624,11 @@ def generate_capability_design(
             reader_roots.append(study_input_path.parent)
         reader = make_read_file_tool(output, extra_roots=reader_roots)
         writer = make_write_file_tool(output)
+        aa1_root = Path(__file__).resolve().parents[1]
+        local_exec = make_local_exec_tool(
+            output,
+            python_path_prepend=[aa1_root],
+        )
         read_handler = reader.handler
         write_handler = writer.handler
         draft_path = output / "draft" / "capability_design.json"
@@ -729,11 +744,19 @@ def generate_capability_design(
             "Write or append the TGCD draft at exactly "
             "draft/capability_design.json. Other paths are rejected."
         )
+        local_exec.description = (
+            f"Run a short shell command for a public MuJoCo/robot-model check with "
+            f"cwd={output} using the orchestrator's AA1 virtual environment and "
+            f"PYTHONPATH. Inspect only the supplied actual_mjcf_path ({mjcf}); do "
+            "not modify source robot assets or read private tests, reference "
+            "contracts/drivers, or archived experiment data. This is an ordinary "
+            "shell, not a sandbox or a process-permission boundary."
+        )
         reader.handler = read_public_input
         writer.handler = write_draft
 
         loop = ReactLoop(
-            tools=[reader, writer],
+            tools=[reader, writer, local_exec],
             system=TGCD_SYSTEM_PROMPT,
             model=model,
             provider=provider,
@@ -747,6 +770,7 @@ def generate_capability_design(
             f"robot_configuration_id: {robot_id}",
             f"study_path: {study_input_path}",
             f"catalog_path: {catalog_path}",
+            f"actual_mjcf_path: {mjcf}",
         ]
         if skeleton_path is not None:
             prompt_lines.append(f"skeleton_context_path: {skeleton_path}")

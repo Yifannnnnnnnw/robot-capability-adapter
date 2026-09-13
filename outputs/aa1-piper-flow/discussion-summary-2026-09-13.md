@@ -1,7 +1,7 @@
 AA1 自动能力设计与场景验证：讨论整理（2026-09-13）
 ====================================================
 
-本文整理当前代码事实、已澄清的概念，以及讨论中的扩展方案。核对基线为分支 `codex/aa1-task-grounded-capabilities`，代码提交 `7f37f27e`，已有记录提交 `9cdab41c`。场景与动态 criteria 验证尚未接入主线；本文不是正式实验协议。
+本文整理当前代码事实、已澄清的概念，以及讨论中的扩展方案。初稿基线为分支 `codex/aa1-task-grounded-capabilities`，代码提交 `7f37f27e`，已有记录提交 `9cdab41c`。2026-09-13 后续补充了 TGCD local_exec 接入，并将场景验证建议改为优先保留现有 driver 构建接口。场景与动态 criteria 验证尚未接入主线；本文不是正式实验协议。
 
 **1. 我们要建立的关系**
 
@@ -63,6 +63,7 @@ robot_configuration_id: piper
 study_path: <本次真实 study.json 的路径>
 catalog_path: <Piper 任务包 catalog.json 的路径>
 skeleton_context_path: <可选控制库说明文件路径>
+actual_mjcf_path: <实际机器人 MJCF 的绝对路径>
 ```
 
 模型通过 `read_file` 读取 study 和对应机器人的 catalog。任务包身份也从 catalog 读取。Skeleton-assisted 模式额外提供底层控制说明，from-scratch 不提供。
@@ -71,18 +72,19 @@ skeleton_context_path: <可选控制库说明文件路径>
 
 新运行不再生成 `authoring_brief.json` 和 `public_inputs.json` 这两份重复整理输入；历史诊断中的旧文件保留。
 
-实际 MJCF 路径仍传给 TGCD 的 Python 接口，但当前 TGCD agent 并没有 MJCF 的 read_file 权限或 MuJoCo 执行工具，也没有把完整 MJCF 文本再放入其初始 prompt。运行时场景构造仍需要实际 MJCF 文件，study 不能替代物理模型。
+实际 MJCF 路径现在也进入初始 prompt，TGCD 可以用新接入的 local_exec 检查真实模型；read_file 的原有范围保持。完整 MJCF 文本不会自动复制进 prompt。运行时场景构造仍需要实际 MJCF 文件，study 不能替代物理模型。
 
 **4. TGCD 的工作形式和消息交接**
 
-TGCD 当前是一个 ReactLoop，联合生成 cap、criteria 和 task_support，工具只有：
+TGCD 当前是一个 ReactLoop，联合生成 cap、criteria 和 task_support，工具为：
 
 ```text
 read_file
 write_file
+local_exec
 ```
 
-没有新增 `submit_design`，也没有 TGCD `local_exec`。模型必须在本轮读取 study 与实际 catalog 后，才写 `draft/capability_design.json`；允许分块追加。Python 在写入后解析和检查草稿，错误作为工具结果返回同一循环，在最多六次模型调用内修正。
+没有新增 `submit_design`。local_exec 复用 AA1 原工具，在本次 TGCD 输出目录运行，使用 orchestrator 的虚拟环境和 AA1 PYTHONPATH，供公开机器人/MuJoCo 检查；它不是 shell 权限隔离。模型仍须在本轮用 read_file 读取 study 与实际 catalog，再用 write_file 写 `draft/capability_design.json`；允许分块追加。Python 在写入后解析和检查草稿，错误作为工具结果返回同一循环，在最多六次模型调用内修正。
 
 输出组织：
 
@@ -117,7 +119,7 @@ Python 只做必要结构、身份、唯一性、任务引用及数值检查。�
 | 阶段 | 标准 local 路线工具 |
 |---|---|
 | Study | read_file、write_file、local_exec |
-| TGCD | read_file、write_file |
+| TGCD | read_file、write_file、local_exec |
 | Generation / repair | read_file、write_file、list_skeletons、inspect_skeleton、local_exec |
 | 默认 framework validation | 普通 Python 执行，不运行验证 LLM |
 
@@ -159,7 +161,7 @@ From-scratch 路线目前通过 `Robot.build_from_mjcf(path)` 构建。
 
 准备 agent 决定需要什么物体、放在哪里、形状尺寸、固定或自由、质量和摩擦、机器人与物体初态、request、执行时间及观测绑定。框架 Python 根据描述执行装配。
 
-建议首版只额外暴露一个 `probe_case(scene_cases_path, case_id)` 工具，内部调用与验证相同的场景构造函数，返回编译错误、实体绑定、初态接触和短时运行观测。`local_exec` 可以作为额外诊断工具，但不能代替一套前后共用的场景构造函数。
+建议首版额外暴露一个 `probe_case(scene_cases_path, case_id)` 工具，内部装配并导出场景，重新加载输出文件后返回编译错误、资源错误、实体绑定、初态接触和短时运行观测。local_exec 已接入，可作额外诊断，但不能代替前后共用的场景与初态处理逻辑。
 
 准备阶段调用 probe 是一次工具交互；driver 提交后的正式 validation 是 framework 自己调用 Python。二者可以复用构造代码，但不复用运行中的仿真状态。
 
@@ -171,7 +173,7 @@ scene_cases.yaml         # 场景、初态、request、观测绑定
 probe_report.json        # 框架试装配和探测记录
 ```
 
-场景可从原始机器人 MJCF 和 YAML 在内存装配。导出的完整 `scene.xml` 可供检查或重放；不能把 XML 与 YAML 都变成独立手改的主描述。若选择以完整场景 XML 作为执行入口，必须处理并验证 includes、meshes 等资源路径。
+场景在 TGCD 阶段从原始机器人 MJCF 和 YAML 装配并导出 `scene.xml`。建议 validation 直接加载该产物；YAML 是设计描述，XML 是派生产物，不能把二者都变成独立手改的主描述。工具必须处理资源路径，并从输出位置重新加载。仅 `to_xml()` 不保证资源可以找到；Piper 本地诊断通过显式 assets 符号链接恢复重载，这不代表已经制作了可迁移的资源包。
 
 建议 YAML 最少包含以下内容。此处是格式示意，尚未实现；省略的数值与字段必须在实际 case 中补齐：
 
@@ -211,32 +213,33 @@ validate_prepared_driver(
 )
 ```
 
-每个 case 的执行顺序：
+场景在 TGCD 阶段已经设计、装配并试建。validation 创建的是新的运行实例。建议每个 case 的执行顺序：
 
 ```text
-MjSpec.from_file(实际机器人 MJCF)
-  → 根据 YAML 添加 body / geom / freejoint 等
-  → compile 得到新的 MjModel
-  → 新建 MjData
+读取 TGCD 准备好的 scene.xml 路径与本次 case
+  → 标准模式：每 case 目录的 mjcf.xml 指向该场景，调用 driver.build()
+    from-scratch：调用 Robot.build_from_mjcf(scene_path)
+  → 加载 XML，得到新的 model/data/Robot
   → 恢复机器人 keyframe 或指定初态
   → 按当前关节名称地址设置新增物体位姿和速度、需要覆盖的控制初值
   → mj_forward
-  → 创建并绑定新的 Robot 控制器
   → 必要的明确 settle；记录实际动作起点
   → 调用本次 cap(request)
   → 在同一份 model/data 上采样、计算指标
 ```
 
-首版建议要求 generation 和 repair 统一支持：
+标准模式可保留原有接口，框架调用大致为：
 
 ```python
-class Robot(ChosenSkeleton):
-    @classmethod
-    def from_model(cls, model, data):
-        return cls(model, data, spec=_build_spec())
+# case_dir/mjcf.xml 已指向准备好的 scene.xml。
+# 在 case_dir 内调用原 build()，并在调用后恢复原 cwd。
+robot = driver_module.build()
+apply_case_initial_state(robot.model, robot.data, case)
 ```
 
-framework 已创建环境时，不能再调用一个会重新加载 XML 的 `from_mjcf()`。标准与 from-scratch 两条路线都需要明确这一新接口。当前 Piper 可用 `Robot(model, data, _build_spec())` 验证这一机制，但 `_build_spec` 是生成文件的私有实现细节，不能直接当成通用框架接口。
+必须在独立的 case 运行目录绑定场景，不覆盖 generation 工作区的原 mjcf.xml。若需要摆脱 cwd 依赖，可另选向后兼容的 `build(mjcf_path="mjcf.xml")` 接口小改动；本方案并不强制它。
+
+此前讨论的 `Robot.from_model(model,data)` 适用于另一条路线：框架先在内存装配 model/data，再注入控制器。它是可选实现方式，并非 fresh 的必要条件。当前 Piper 能注入实例，但其私有 `_build_spec` 不能当成通用框架接口。
 
 每 case、每次修复重测和独立 reference 调用，都创建各自的 model/data/Robot。复用描述与资源，不复用已经被控制过的对象。这里的 fresh 说明对象重建；它本身不等于已完成进程级隔离。
 
@@ -298,8 +301,8 @@ Repair 是 generation 的修复模式，复用模型配置、生成 system promp
 | 文件或位置 | 建议增加的内容 |
 |---|---|
 | capability_preparation.py | 同一准备 agent 输出 scene_cases.yaml；扩大必要的 read/write 范围；挂入 probe_case；检查本轮场景/设计引用是否一致 |
-| 新 scene_runtime.py | 直接实现 YAML → 实际 MJCF 装配 → fresh model/data → 初态；准备探测与验证共用 |
-| generation/repair 的提示与接口要求 | 标准、from-scratch 均要求 Robot.from_model(model,data)；保留 cap(request) ABI |
+| 新 scene_runtime.py | 实现 YAML → 实际 MJCF 装配与导出 → 从产物重新加载 → 初态；准备探测与验证复用相同场景文件和初态逻辑 |
+| generation/repair 的提示与接口要求 | 优先保留标准 build() 和 scratch build_from_mjcf(path)；明确加载框架提供的场景，保留 cap(request) ABI |
 | 新的动态验证入口 | 接受本次 design、scene/case 文件与实际 MJCF；每 case 新建对象；执行支持的测量方法并记录结果 |
 | 两个 orchestrator | 保存本次场景路径；在 driver 提交后调用动态验证；复用已有报告→反馈→修复流程 |
 
@@ -321,4 +324,4 @@ Repair 是 generation 的修复模式，复用模型配置、生成 system promp
 - [scene_cases.yaml](/tmp/aa1-scene-injection-GDZtNy/scene_cases.yaml)
 - [result.json](/tmp/aa1-scene-injection-GDZtNy/result.json)
 
-本次整理只新增本文，没有修改 AA1 运行代码、重新调用模型、创建正式实验或改变已有证据的性质。
+初稿提交仅新增本文。后续 local_exec 小批次修改 TGCD 工具注册、prompt 和一个聚焦检查；相关两份测试文件共 23 项通过，并用真实 Piper 验证现有执行工具可以加载模型、推进 10 步。本批没有重新调用 LLM，也没有实现 probe_case 或动态 validation。
