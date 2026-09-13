@@ -3,11 +3,11 @@
 Both `SelfAssemble` and `FromScratchOrchestrator` now use:
 
 ```text
-Study → Design (when requested) → Generate ↔ Validate → Export → optional Demo
+Study → Design (generate or load) → Generate ↔ Validate → Export → optional Demo
 ```
 
-The fixed catalog and task-grounded design routes share the stage sequence.
-Generation implementations remain separate. The selected design is passed to
+The standard and from-scratch generation implementations remain separate.
+The selected task-grounded design is passed to
 generation, validation, export and task execution. A final validation failure
 blocks export. Export writes `mcp_server.py`; standard drivers retain
 `driver.py:build()`, and scratch drivers retain
@@ -21,12 +21,15 @@ failure does not change generation/validation results or trigger repair.
 
 ## One task entry point
 
-`auto_adapter.agent.task_execution.run_task` receives an existing driver,
+`auto_adapter.agent.task_execution.run_task` receives an existing MCP export and driver,
 its current capability design, validation cases and report, and an explicit
 task, scene, initial state and public parameters. It never studies, generates,
-repairs or selects another driver. Standard tasks call `build()` from a copied
-module beside the selected `mjcf.xml` link; scratch tasks call
-`Robot.build_from_mjcf()` with that scene's resolved path.
+repairs or selects another driver. It starts the copied `mcp_server.py` with
+the official SDK's stdio client. ReCAP discovers the available request schemas
+through `list_tools()` and executes through `call_tool()`. The server's
+`ExportRuntime` builds the generated driver once: standard exports use
+`driver.build()`; scratch exports use `Robot.build_from_mjcf()`. The client
+reads `robot://state` before planning and after calls.
 
 Each task creates a fresh output directory and a new MuJoCo world. Within one
 task all calls share the same driver/model/data. Input copies and the scene
@@ -34,8 +37,9 @@ link live in the task directory; the generation workspace's `mjcf.xml` is
 unchanged. Use a new `output_dir` for each invocation.
 
 The unified `agent/recap.py` contains the controller adapter, model and capability
-bridges, and task CLI. `task_execution.py` owns its MuJoCo recorder and JSON
-conversion helpers; this path does not import the legacy `task_planner.py`.
+bridges, and task CLI. `task_execution.py` owns the SDK client and shared MuJoCo
+recorder/JSON helpers. `export_runtime.py` uses those helpers inside the server
+to record the controlled world. This path does not import `task_planner.py`.
 
 The task CLI uses the same runner:
 
@@ -46,8 +50,8 @@ PYTHONPATH=AA1 AA1/.venv/bin/python -m auto_adapter.agent.recap \
 ```
 
 Add `--from-scratch` for `driver_from_scratch.py`. The wrapper loads the saved
-design/cases, or the matching fixed catalog when no generated design exists.
-An explicitly selected generated design never falls back to another catalog.
+design and cases under `design/`; missing inputs fail without a catalog fallback.
+It uses the sibling `mcp_server.py`, or an explicitly supplied export path.
 Automatic demos call `run_configured_demo`, which dispatches an isolated task
 process and returns its report to the orchestrator.
 
@@ -57,15 +61,20 @@ For a manually chosen independent task, write a JSON object containing the
 | Input | Value |
 | --- | --- |
 | `driver_path`, `from_scratch`, `robot_id` | Existing driver and construction route |
+| `export_server_path` | Existing MCP server; defaults to the sibling `mcp_server.py` |
 | `capability_design` | Current public design object |
 | `validation_suite`, `validation_report` | Corresponding case and result objects |
 | `task_description`, `parameters` | Natural-language task and public goal parameters |
 | `scene_path`, `initial_state` | Explicit scene and AA1 reset-state object |
-| `required_capabilities` | Optional required method names; missing or unvalidated names block execution |
+| `required_capabilities` | Optional explicit exported-tool requirements for standalone callers; fixed DEMO configurations do not set these |
 | `model`, `provider`, `region`, `max_tokens` | Existing AA1 model transport configuration |
 | `output_dir` | New task directory |
 
 No task library or formal experiment runner is introduced here.
+
+Fixed tasks, public parameters and initial states are in `demo_tasks.yaml`.
+The 22 configuration IDs cover 17 robot families plus existing model/scene
+variants. See [configuration and scene locations](../docs/DEMO_CONFIGURATION.md).
 
 ## Controller and outputs
 

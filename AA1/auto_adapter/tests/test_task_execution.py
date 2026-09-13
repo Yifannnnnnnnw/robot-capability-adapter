@@ -1,134 +1,245 @@
-"""Named model/driver fixtures exercising the real MuJoCo task lifecycle."""
+"""Focused MCP protocol checks for the AA1 task boundary."""
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
 import pytest
 
-from auto_adapter.agent.recap import _task_inputs, passed_design
 
 
 @pytest.fixture
-def task_inputs(tmp_path):
+def exported_mcp_fixture(tmp_path):
+    """Named real FastMCP stdio fixture with explicit robot/model fixtures."""
+
     source = tmp_path / "generation"
     source.mkdir()
     scene = source / "scene.xml"
-    scene.write_text('''<mujoco><option timestep="0.01"/>
-      <worldbody><light pos="0 0 3"/><geom type="plane" size="2 2 .1"/>
-      <body pos="0 0 .3"><joint name="joint" type="hinge" axis="0 1 0"/>
-      <geom type="capsule" size=".05 .2"/></body></worldbody>
-      <actuator><motor joint="joint"/></actuator></mujoco>''')
+    scene.write_text("<mujoco><option timestep=\"0.01\"/><worldbody/></mujoco>")
     driver = source / "driver.py"
-    driver.write_text('''import mujoco
-class Robot:
-    def __init__(self, path):
-        self.model = mujoco.MjModel.from_xml_path(path)
-        self.data = mujoco.MjData(self.model)
-        self.calls = 0
-    @classmethod
-    def build_from_mjcf(cls, path): return cls(path)
-    def advance(self, request):
-        self.calls += 1
-        mujoco.mj_step(self.model, self.data, request["steps"])
-        return {"calls": self.calls}
-    def get_joint_positions(self): return self.data.qpos.copy()
-def build(): return Robot.build_from_mjcf("mjcf.xml")
-''')
-    (source / "mjcf.xml").symlink_to(scene)
-    design = {"robot_configuration_id": "fixture", "capabilities": [{
-        "capability_id": "C1", "method_name": "advance", "description": "Advance the joint.",
-        "request_schema": {"type": "object", "properties": {
-            "steps": {"type": "integer", "minimum": 1, "maximum": 40}},
-            "required": ["steps"], "additionalProperties": False},
-    }]}
-    suite = {"cases": [{"case_id": "nominal", "capability_id": "C1",
-                        "criteria": "PRIVATE_SENTINEL_DO_NOT_PLAN_WITH"},
-                       {"case_id": "boundary", "capability_id": "C1"}]}
-    report = {"tests": [{"case_id": c["case_id"], "ok": True} for c in suite["cases"]]}
-    return dict(driver_path=driver, robot_id="fixture", capability_design=design,
-                validation_suite=suite, validation_report=report,
-                task_description="Perform the two actions.", scene_path=scene,
-                initial_state={}, parameters={}, required_capabilities=["advance"],
-                model="fixture", output_dir=tmp_path / "task")
+    driver.write_text("""\n# The protocol fixture owns the observable state; run_task must not import this.\ndef build():\n    raise AssertionError('task_execution must use exported MCP')\n""")
+    server = source / "mcp_server.py"
+    server.write_text("""
+from contextlib import asynccontextmanager
+import json
+import os
+from pathlib import Path
+from typing import Annotated
+from typing_extensions import TypedDict
+from pydantic import ConfigDict, Field, with_config
+from mcp.server.fastmcp import FastMCP
+
+state = {"sim_time_s": 0.0, "calls": 0}
+
+@asynccontextmanager
+async def lifespan(_server):
+    yield
+    config = json.loads(Path(os.environ["AA1_TASK_RUNTIME_CONFIG"]).read_text())
+    output_dir = Path(config["output_dir"])
+    video = output_dir / "fixture.mp4"
+    video.write_bytes(b"MCP fixture video")
+    (output_dir / "runtime_report.json").write_text(json.dumps({
+        "sim_time_start": 0.0,
+        "sim_time_end": state["sim_time_s"],
+        "n_frames": state["calls"] + 1,
+        "video_path": str(video),
+        "errors": [],
+        "error": "fixture close failure" if os.environ.get("AA1_FIXTURE_RUNTIME_ERROR") else None,
+    }) + "\\n")
+
+mcp = FastMCP("task-execution-fixture", lifespan=lifespan)
+
+@mcp.resource("robot://state")
+def robot_state() -> dict:
+    if os.environ.get("AA1_FIXTURE_FAIL_STATE") or (
+            os.environ.get("AA1_FIXTURE_FAIL_STATE_AFTER_CALL") and state["calls"] > 0):
+        raise RuntimeError("fixture state failure")
+    return dict(state)
+
+@with_config(ConfigDict(strict=True, extra="forbid"))
+class AdvanceRequest(TypedDict):
+    steps: Annotated[int, Field(ge=1, le=10)]
+
+@mcp.tool()
+def advance(request: AdvanceRequest) -> dict:
+    state["calls"] += 1
+    state["sim_time_s"] += request["steps"] * 0.01
+    return {"calls": state["calls"], "steps": request["steps"]}
+
+@mcp.tool()
+def error_action(request: AdvanceRequest) -> dict:
+    raise RuntimeError("fixture failure")
+
+if __name__ == "__main__":
+    mcp.run()
+""")
+    design = {
+        "robot_configuration_id": "fixture",
+        "capabilities": [{
+            "capability_id": "design_only",
+            "method_name": "design_only",
+            "description": "Design metadata is not the runtime catalog.",
+            "request_schema": {
+                "type": "object", "properties": {}, "required": [],
+                "additionalProperties": False,
+            },
+        }],
+    }
+    return {
+        "driver_path": driver,
+        "export_server_path": server,
+        "robot_id": "fixture",
+        "capability_design": design,
+        "validation_suite": {"cases": []},
+        "validation_report": {"tests": []},
+        "task_description": "Run the advertised actions.",
+        "scene_path": scene,
+        "initial_state": {},
+        "parameters": {},
+        "required_capabilities": [],
+        "model": "fixture-model",
+        "output_dir": tmp_path / "task",
+    }
 
 
-class RecursiveFixtureModel:
-    def __init__(self):
+class AdvertisedNamesModel:
+    def __init__(self, plans):
+        self.plans = list(plans)
         self.turn = 0
 
     def generate_json(self, *, messages):
         assert "PRIVATE_SENTINEL_DO_NOT_PLAN_WITH" not in json.dumps(messages)
-        action = json.dumps({"capability_name": "advance", "request": {"steps": 20}})
-        plans = [
-            ["First action", "Second action"],
-            [action],
-            [action],
-            [],
-        ]
-        args = {"think": "Fixture action summary.", "subtasks": plans[self.turn]}
+        args = {"think": "Use the advertised MCP action.",
+                "subtasks": self.plans[self.turn]}
         self.turn += 1
         return json.dumps(args)
 
 
-@pytest.mark.parametrize("scratch", [False, True])
-def test_fresh_persistent_world_and_separate_generation_artifacts(task_inputs, scratch):
+def _call(name, steps):
+    return json.dumps({"capability_name": name, "request": {"steps": steps}})
+
+
+def test_actual_advertised_names_and_persistent_calls(exported_mcp_fixture):
     from auto_adapter.agent.task_execution import run_task
 
-    original = task_inputs["driver_path"].read_bytes()
-    original_scene = (task_inputs["driver_path"].parent / "mjcf.xml").readlink()
-    task_inputs["from_scratch"] = scratch
-    report = run_task(**task_inputs, model_client=RecursiveFixtureModel())
+    inputs = dict(exported_mcp_fixture)
+    model = AdvertisedNamesModel([
+        ["First action", "Second action"],
+        [_call("advance", 2)],
+        [_call("advance", 3)],
+        [],
+    ])
+    original_driver = inputs["driver_path"].read_bytes()
+    original_server = inputs["export_server_path"].read_bytes()
+    report = run_task(**inputs, model_client=model)
+
     assert report["ok"], report
+    assert report["status"] == "CONTROLLER_FINISHED"
+    assert report["capability_whitelist"] == ["advance", "error_action"]
+    assert [call["arguments"] for call in report["tool_call_log"]] == [
+        {"request": {"steps": 2}}, {"request": {"steps": 3}}
+    ]
+    assert [call["return_value"]["calls"] for call in report["tool_call_log"]] == [1, 2]
+    assert all(call["mcp_result"]["isError"] is False for call in report["tool_call_log"])
+    assert report["initial_observation"]["sim_time_s"] == 0.0
+    assert report["sim_time_end"] == pytest.approx(0.05)
     assert report["controller"] == "auto_adapter.agent.vendor.recap.chatbot.chatbot"
     assert report["controller_source_commit"] == "2fb112ffad685c7c6f7de86d5487ecca6f566fcc"
     assert report["physical_task_success"] is None
-    assert report["controller_result"]["capability_calls"] == 2
-    assert report["sim_time_end"] == pytest.approx(0.4)
     assert report["n_frames"] > 1
-    assert Path(report["video_path"]).stat().st_size > 100
-    assert Path(report["trace_path"]).is_file()
-    tree = report["controller_result"]["context_tree"]
-    assert len(tree["children"]) == 2
-    assert tree["children"][0]["task_name"] == "First action"
-    assert json.loads(tree["children"][1]["task_name"])["capability_name"] == "advance"
-    assert tree["info_list"][-1]["subtasks"] == []
-    turns = [json.loads(line) for line in Path(report["model_trace_path"]).read_text().splitlines()]
-    assert len(turns) == 4
-    assert all("messages" in turn and "response" in turn for turn in turns)
-    assert task_inputs["driver_path"].read_bytes() == original
-    assert (task_inputs["driver_path"].parent / "mjcf.xml").readlink() == original_scene
-    # A second task starts from its own initial state, never the last task's time.
-    task_inputs["output_dir"] = task_inputs["output_dir"].with_name("second-task")
-    second = run_task(**task_inputs, model_client=RecursiveFixtureModel())
-    assert second["ok"]
-    assert second["sim_time_start"] == pytest.approx(0.0)
-    assert second["sim_time_end"] == pytest.approx(0.4)
+    assert Path(report["video_path"]).is_file()
+    assert Path(report["mcp_tools_path"]).is_file()
+    advertised = json.loads(Path(report["mcp_tools_path"]).read_text())
+    assert {tool["name"] for tool in advertised["tools"]} == {"advance", "error_action"}
+    assert Path(report["model_messages_path"]).is_file()
+    assert all("messages" in json.loads(line)
+               for line in Path(report["model_messages_path"]).read_text().splitlines())
+    assert inputs["driver_path"].read_bytes() == original_driver
+    assert inputs["export_server_path"].read_bytes() == original_server
+
+    second = dict(inputs, output_dir=inputs["output_dir"].with_name("second-task"),
+                  model_client=AdvertisedNamesModel([[_call("advance", 1)], []]))
+    second_report = run_task(**second)
+    assert second_report["ok"], second_report
+    assert second_report["initial_observation"]["sim_time_s"] == 0.0
+    assert second_report["sim_time_end"] == pytest.approx(0.01)
 
 
-def test_missing_required_validation_blocks_before_any_model_call(task_inputs):
+def test_mcp_error_is_recorded_and_replanning_can_recover(exported_mcp_fixture):
     from auto_adapter.agent.task_execution import run_task
 
-    task_inputs["validation_report"]["tests"][-1]["ok"] = False
-    model = RecursiveFixtureModel()
-    report = run_task(**task_inputs, model_client=model)
-    assert not report["ok"]
-    assert model.turn == 0
-    assert report["physical_task_success"] is None
+    inputs = dict(exported_mcp_fixture, output_dir=exported_mcp_fixture["output_dir"].with_name("error-task"))
+    model = AdvertisedNamesModel([
+        ["First action", "Second action"],
+        [_call("error_action", 1)],
+        [_call("advance", 2)],
+        [],
+    ])
+    report = run_task(**inputs, model_client=model)
+
+    assert report["status"] == "CONTROLLER_FINISHED"
+    assert report["ok"], report
+    assert report["tool_call_log"][0]["status"] == "ERROR"
+    assert report["tool_call_log"][0]["isError"] is True
+    assert report["tool_call_log"][0]["mcp_result"]["isError"] is True
+    assert report["tool_call_log"][1]["status"] == "EXECUTED"
+
+
+def test_missing_export_is_explicit_unavailable(tmp_path, exported_mcp_fixture):
+    from auto_adapter.agent.task_execution import run_task
+
+    inputs = dict(exported_mcp_fixture,
+                  export_server_path=tmp_path / "missing-mcp_server.py",
+                  output_dir=tmp_path / "missing-export")
+    report = run_task(**inputs, model_client=AdvertisedNamesModel([]))
+
+    assert report["ok"] is False
+    assert report["status"] == "UNAVAILABLE"
+    assert "exported MCP server is unavailable" in report["error"]
+    assert report["tool_call_log"] == []
     assert Path(report["report_path"]).is_file()
 
 
-def test_explicit_dynamic_design_never_falls_back_to_catalog(tmp_path):
-    design = {"robot_configuration_id": "piper", "capabilities": [{"method_name": "new_action"}]}
-    config = tmp_path / "demo.yaml"
-    config.write_text("robots:\n  piper:\n    task: fixture\n    scene: fixture.xml\n")
-    with pytest.raises(ValueError, match="corresponding scene_cases_path"):
-        _task_inputs(workspace=tmp_path, robot_id="piper", capability_design=design,
-                     demo_config_path=config)
+def test_initial_state_resource_failure_stops_before_model(monkeypatch, exported_mcp_fixture):
+    from auto_adapter.agent.task_execution import run_task
+
+    monkeypatch.setenv("AA1_FIXTURE_FAIL_STATE", "1")
+    inputs = dict(exported_mcp_fixture,
+                  output_dir=exported_mcp_fixture["output_dir"].with_name("state-error-task"))
+    model = AdvertisedNamesModel([[_call("advance", 1)], []])
+    report = run_task(**inputs, model_client=model)
+
+    assert report["status"] == "UNAVAILABLE"
+    assert report["tool_call_log"] == []
+    assert model.turn == 0
+    assert "initial robot://state observation is unavailable" in report["error"]
 
 
-def test_dynamic_case_filter_requires_all_case_results(task_inputs):
-    suite = {"scene_cases": task_inputs["validation_suite"]["cases"]}
-    assert passed_design(task_inputs["capability_design"], suite,
-                         task_inputs["validation_report"])["capabilities"]
-    task_inputs["validation_report"]["tests"].pop()
-    with pytest.raises(ValueError, match="no fully Framework-passed"):
-        passed_design(task_inputs["capability_design"], suite, task_inputs["validation_report"])
+def test_post_call_state_failure_aborts_worker(monkeypatch, exported_mcp_fixture):
+    from auto_adapter.agent.task_execution import run_task
+
+    monkeypatch.setenv("AA1_FIXTURE_FAIL_STATE_AFTER_CALL", "1")
+    inputs = dict(exported_mcp_fixture,
+                  output_dir=exported_mcp_fixture["output_dir"].with_name("post-call-state-error"))
+    report = run_task(**inputs, model_client=AdvertisedNamesModel([[_call("advance", 1)]]))
+
+    assert report["status"] == "WORKER_ABORTED"
+    assert report["ok"] is False
+    assert report["tool_call_log"][0]["status"] == "WORKER_ABORTED"
+    assert report["tool_call_log"][0]["isError"] is False
+    assert report["tool_call_log"][0]["mcp_result"]["isError"] is False
+
+
+def test_runtime_close_error_rejects_report_even_with_video(monkeypatch, exported_mcp_fixture):
+    from auto_adapter.agent.task_execution import run_task
+
+    monkeypatch.setenv("AA1_FIXTURE_RUNTIME_ERROR", "1")
+    inputs = dict(exported_mcp_fixture,
+                  output_dir=exported_mcp_fixture["output_dir"].with_name("close-error-task"))
+    report = run_task(**inputs, model_client=AdvertisedNamesModel([[_call("advance", 1)]]))
+
+    assert report["status"] == "CONTROLLER_FINISHED"
+    assert report["video_path"]
+    assert report["sim_advanced"]
+    assert report["runtime_report"]["error"] == "fixture close failure"
+    assert report["ok"] is False

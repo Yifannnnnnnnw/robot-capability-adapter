@@ -8,6 +8,8 @@ task_execution; controller completion is not a physical task verdict.
 """
 from __future__ import annotations
 
+import asyncio
+import copy
 import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
@@ -295,6 +297,8 @@ class AA1RecapModel:
         self.max_tokens = max_tokens
         self.trace_path = Path(trace_path)
         self.trace_path.write_text("")
+        self.messages_trace_path = self.trace_path.with_name("model_messages.jsonl")
+        self.messages_trace_path.write_text("")
 
     def generate_json(self, *, messages):
         system = [
@@ -312,13 +316,68 @@ class AA1RecapModel:
                 converted[-1]["content"] += "\n\n" + item["content"]
             else:
                 converted.append(item)
+        system_prompt = "\n\n".join(system)
         response = self.client.messages.create(
-            model=self.model, system="\n\n".join(system), messages=converted,
+            model=self.model, system=system_prompt, messages=converted,
             max_tokens=self.max_tokens)
-        content = "\n".join(block.text for block in response.content if block.type == "text")
+        content = "\n".join(
+            block.text for block in getattr(response, "content", ())
+            if getattr(block, "type", None) == "text"
+        )
+        response_json = _json_value(response)
+        usage = getattr(response, "usage", None)
+        messages_trace_path = getattr(
+            self, "messages_trace_path", self.trace_path.with_name("model_messages.jsonl")
+        )
+        if not messages_trace_path.exists():
+            messages_trace_path.write_text("")
+        with messages_trace_path.open("a") as stream:
+            stream.write(json.dumps({
+                "system_prompt": system_prompt,
+                "messages": messages,
+                "converted_messages": converted,
+                "tools": [],
+                "response": response_json,
+                "usage": _json_value(usage) if usage is not None else None,
+            }, ensure_ascii=False, allow_nan=False) + "\n")
         with self.trace_path.open("a") as stream:
             stream.write(json.dumps({"messages": messages, "response": content}) + "\n")
         return content
+
+
+def _json_value(value: Any) -> Any:
+    """Return a finite JSON representation of SDK/Pydantic values."""
+
+    if hasattr(value, "model_dump"):
+        try:
+            value = value.model_dump(mode="json")
+        except TypeError:
+            value = value.model_dump()
+    elif hasattr(value, "dict") and callable(value.dict):
+        value = value.dict()
+    elif hasattr(value, "__dict__"):
+        value = vars(value)
+    if isinstance(value, Mapping):
+        return {str(key): _json_value(child) for key, child in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(child) for child in value]
+    try:
+        json.dumps(value, allow_nan=False)
+    except (TypeError, ValueError):
+        return str(value)
+    return value
+
+
+def _exception_text(exc: BaseException) -> str:
+    """Keep the useful leaf message when AnyIO wraps an MCP failure."""
+
+    nested = getattr(exc, "exceptions", None)
+    if nested:
+        details = [_exception_text(child) for child in nested]
+        details = [detail for detail in details if detail]
+        if details:
+            return "; ".join(details)
+    return str(exc)
 
 
 def passed_design(design, suite, report):
@@ -338,35 +397,142 @@ def passed_design(design, suite, report):
     return {**design, "capabilities": selected}
 
 
-class AA1CapabilityAdapter:
-    """AA1 public schemas omit design-time evidence_refs; validate native requests."""
+def _schema_ref_target(document: Mapping[str, Any], ref: str) -> Any:
+    if not isinstance(ref, str) or not ref.startswith("#/"):
+        raise CapabilityAdapterError(f"unsupported MCP schema reference: {ref!r}")
+    target: Any = document
+    for part in ref[2:].split("/"):
+        part = part.replace("~1", "/").replace("~0", "~")
+        if not isinstance(target, Mapping) or part not in target:
+            raise CapabilityAdapterError(f"unresolved MCP schema reference: {ref!r}")
+        target = target[part]
+    return target
 
-    def __init__(self, design, invoke):
-        self.robot_configuration_id = design["robot_configuration_id"]
-        self.capability_design_id = str(
-            design.get("task_snapshot_id")
-            or design.get("package_version")
-            or self.robot_configuration_id + "::current-design"
+
+def _resolve_schema(value: Any, document: Mapping[str, Any], refs: tuple[str, ...] = ()) -> Any:
+    """Inline local MCP schema references before nesting the request schema."""
+
+    if isinstance(value, list):
+        return [_resolve_schema(child, document, refs) for child in value]
+    if not isinstance(value, Mapping):
+        return value
+    if "$ref" in value:
+        ref = value["$ref"]
+        if ref in refs:
+            raise CapabilityAdapterError(f"cyclic MCP schema reference: {ref!r}")
+        target = _resolve_schema(_schema_ref_target(document, ref), document, (*refs, ref))
+        if not isinstance(target, Mapping):
+            raise CapabilityAdapterError(f"MCP schema reference is not an object: {ref!r}")
+        merged = dict(target)
+        merged.update({key: child for key, child in value.items() if key != "$ref"})
+        return _resolve_schema(merged, document, (*refs, ref))
+    return {
+        key: _resolve_schema(child, document, refs)
+        for key, child in value.items()
+        if key not in {"$defs", "definitions"}
+    }
+
+
+def _tool_value(tool: Any, key: str, default: Any = None) -> Any:
+    if isinstance(tool, Mapping):
+        return tool.get(key, default)
+    return getattr(tool, key, default)
+
+
+def _request_schema_from_tool(tool: Any) -> dict[str, Any]:
+    raw = _tool_value(tool, "inputSchema")
+    if raw is None:
+        raw = _tool_value(tool, "input_schema")
+    schema = _json_value(raw)
+    if not isinstance(schema, Mapping):
+        raise CapabilityAdapterError("MCP tool inputSchema must be an object")
+    schema = _resolve_schema(schema, schema)
+    properties = schema.get("properties")
+    required = schema.get("required")
+    if (not isinstance(properties, Mapping) or set(properties) != {"request"}
+            or not isinstance(required, list) or set(required) != {"request"}
+            or len(required) != 1):
+        raise CapabilityAdapterError(
+            "each exported MCP tool must require exactly one request object"
         )
-        self.capabilities = {c["method_name"]: c for c in design["capabilities"]}
-        self.invoke = invoke
+    request_schema = properties["request"]
+    if not isinstance(request_schema, Mapping) or request_schema.get("type") != "object":
+        raise CapabilityAdapterError("exported MCP request must have an object schema")
+    return copy.deepcopy(dict(request_schema))
+
+
+def catalog_from_tools_result(tools_result: Any) -> list[dict[str, Any]]:
+    """Build the ReCAP catalog exclusively from ClientSession.list_tools()."""
+
+    tools = _tool_value(tools_result, "tools", ())
+    if not isinstance(tools, (list, tuple)):
+        raise CapabilityAdapterError("MCP list_tools result has no tools array")
+    catalog: list[dict[str, Any]] = []
+    names: set[str] = set()
+    for tool in tools:
+        name = _tool_value(tool, "name")
+        if not isinstance(name, str) or not name:
+            raise CapabilityAdapterError("MCP tool name must be nonempty text")
+        if name in names:
+            raise CapabilityAdapterError(f"duplicate MCP tool name: {name!r}")
+        names.add(name)
+        description = _tool_value(tool, "description", "")
+        catalog.append({
+            "capability_id": name,
+            "method_name": name,
+            "capability_name": name,
+            "description": description if isinstance(description, str) else "",
+            "request_schema": _request_schema_from_tool(tool),
+        })
+    return catalog
+
+
+def _resource_value(result: Any) -> Any:
+    contents = _tool_value(result, "contents", ())
+    if not isinstance(contents, (list, tuple)) or not contents:
+        raise ValueError("robot://state resource returned no contents")
+    values = []
+    for content in contents:
+        text = _tool_value(content, "text")
+        if text is not None:
+            try:
+                values.append(json.loads(text))
+            except (TypeError, ValueError):
+                values.append(text)
+            continue
+        blob = _tool_value(content, "blob")
+        if blob is not None:
+            import base64
+            decoded = base64.b64decode(blob)
+            try:
+                values.append(json.loads(decoded.decode("utf-8")))
+            except (UnicodeDecodeError, ValueError):
+                values.append(decoded.decode("utf-8", errors="replace"))
+            continue
+        values.append(_json_value(content))
+    return values[0] if len(values) == 1 else values
+
+
+class AA1CapabilityAdapter:
+    """Bridge ReCAP to the exact tools exposed by one MCP ClientSession."""
+
+    def __init__(self, *, session=None, loop=None, tools_result=None, catalog=None,
+                 robot_configuration_id=None, tool_call_log=None):
+        self._session = session
+        self._loop = loop
+        if catalog is None and tools_result is not None:
+            catalog = catalog_from_tools_result(tools_result)
+        self._catalog = copy.deepcopy(catalog or [])
+        self.capabilities = {item["capability_name"]: item for item in self._catalog}
+        self.tool_names = frozenset(self.capabilities)
+        self.robot_configuration_id = robot_configuration_id or "mcp-export"
+        self.capability_design_id = (
+            self.robot_configuration_id + "::mcp-export"
+        )
+        self.tool_call_log = tool_call_log if tool_call_log is not None else []
 
     def public_catalog(self):
-        def public_schema(value):
-            if isinstance(value, dict):
-                return {key: public_schema(child) for key, child in value.items()
-                        if key != "evidence_refs"}
-            if isinstance(value, list):
-                return [public_schema(child) for child in value]
-            return value
-
-        return [{"capability_id": cap["capability_id"],
-                 "method_name": cap["method_name"],
-                 "capability_name": cap["method_name"],
-                 "description": cap["description"],
-                 "request_schema": public_schema(cap["request_schema"]),
-                 "invocation_abi": "driver.<capability_name>(request=<request>)"}
-                for cap in self.capabilities.values()]
+        return copy.deepcopy(self._catalog)
 
     def validate_request(self, name, request):
         from auto_adapter.scene_runtime import SceneCaseError, _validate_schema_value
@@ -377,10 +543,96 @@ class AA1CapabilityAdapter:
                                    where=f"{name}.request")
         except SceneCaseError as exc:
             raise CapabilityAdapterError(str(exc)) from None
-        return dict(request)
+        return copy.deepcopy(dict(request))
+
+    def _await(self, awaitable):
+        if self._session is None or self._loop is None:
+            raise CapabilityAdapterError("MCP session is unavailable")
+        return asyncio.run_coroutine_threadsafe(awaitable, self._loop).result()
+
+    def _read_observation(self):
+        try:
+            return _resource_value(self._await(self._session.read_resource("robot://state")))
+        except Exception as exc:
+            return {"available": False, "error_type": type(exc).__name__,
+                    "error": _exception_text(exc)}
+
+    def read_observation(self):
+        return _json_value(self._read_observation())
 
     def execute(self, name, request):
-        return self.invoke(name, {"request": self.validate_request(name, request)})
+        request = self.validate_request(name, request)
+        if self._session is None:
+            raise CapabilityAdapterError("MCP session is unavailable")
+
+        arguments = {"request": request}
+        call = {
+            "tool": name,
+            "arguments": copy.deepcopy(arguments),
+            "request": copy.deepcopy(request),
+            "ok": False,
+            "isError": None,
+            "mcp_result": None,
+        }
+        raw_result = None
+        try:
+            raw_result = self._await(self._session.call_tool(name, arguments=arguments))
+            raw_dump = _json_value(raw_result)
+            is_error = bool(_tool_value(raw_result, "isError", False))
+            value = _json_value(_call_result_value(raw_result))
+            status = "ERROR" if is_error else "EXECUTED"
+            operation = {"status": status, "return_value": value}
+            if is_error:
+                operation.update(error_type="MCPToolError", error=value)
+            call.update(ok=not is_error, isError=is_error, mcp_result=raw_dump,
+                        return_value=value, status=status)
+        except Exception as exc:
+            is_error = True
+            status = "ERROR"
+            value = None
+            operation = {"status": status, "return_value": None,
+                         "error_type": type(exc).__name__, "error": _exception_text(exc)}
+            call.update(ok=False, isError=True, status=status,
+                        error_type=type(exc).__name__, error=_exception_text(exc),
+                        mcp_result=_json_value(raw_result) if raw_result is not None else None)
+        observation = self.read_observation()
+        if (isinstance(observation, Mapping)
+                and observation.get("available") is False):
+            # A tool return without a readable post-call state is not a usable
+            # operation. Preserve the MCP response, but stop the controller at
+            # the same worker boundary used by the original task executor.
+            status = "WORKER_ABORTED"
+            observation_error = observation.get("error", "robot://state unavailable")
+            operation["status"] = status
+            operation.update(error_type="ObservationError", error=observation_error)
+            call.update(ok=False, status=status,
+                        error_type="ObservationError", error=observation_error)
+        call["observations"] = copy.deepcopy(observation)
+        call["observation"] = copy.deepcopy(observation)
+        self.tool_call_log.append(call)
+        return {"operation": operation, "observations": observation}
+
+
+def _call_result_value(result: Any) -> Any:
+    structured = _tool_value(result, "structuredContent")
+    if structured is not None:
+        return structured
+    contents = _tool_value(result, "content", ())
+    if not isinstance(contents, (list, tuple)):
+        return None
+    values = []
+    for content in contents:
+        text = _tool_value(content, "text")
+        if text is not None:
+            try:
+                values.append(json.loads(text))
+            except (TypeError, ValueError):
+                values.append(text)
+        else:
+            values.append(_json_value(content))
+    if len(values) == 1:
+        return values[0]
+    return values
 
 
 def _task_inputs(*, workspace, robot_id, capability_design=None,
@@ -424,7 +676,7 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
 
 def run_configured_demo(*, workspace, robot_id, capability_design, scene_cases_path=None,
                         from_scratch=False, model, provider, region, max_tokens,
-                        demo_config_path=None):
+                        demo_config_path=None, export_server_path=None):
     """Both orchestrators dispatch the same isolated, existing-driver task process."""
     import os
     import subprocess
@@ -443,7 +695,9 @@ def run_configured_demo(*, workspace, robot_id, capability_design, scene_cases_p
                               capability_design=capability_design, scene_cases_path=scene_cases_path,
                               from_scratch=from_scratch, demo_config_path=demo_config_path)
         inputs.update(output_dir=str(output_dir), model=model, provider=provider,
-                      region=region, max_tokens=max_tokens)
+                      region=region, max_tokens=max_tokens,
+                      export_server_path=str(Path(export_server_path or
+                                                  (Path(workspace).resolve() / "mcp_server.py")).resolve()))
         payload = invocation_dir / "request.json"
         payload.write_text(json.dumps(inputs, indent=2) + "\n")
         env = dict(os.environ)
@@ -471,7 +725,7 @@ def run_configured_demo(*, workspace, robot_id, capability_design, scene_cases_p
 
 def run_demo(*, workspace, robot_id, task_description=None, model, provider="holistic",
              region="us-east-1", max_tokens=6000, from_scratch=False,
-             demo_config_path=None, output_dir=None):
+             demo_config_path=None, output_dir=None, export_server_path=None):
     """Compatibility wrapper; use run_task/--input-json for arbitrary explicit tasks and scenes."""
     import tempfile
     from .task_execution import run_task
@@ -485,7 +739,7 @@ def run_demo(*, workspace, robot_id, task_description=None, model, provider="hol
         root.mkdir(parents=True, exist_ok=True)
         output_dir = Path(tempfile.mkdtemp(prefix="recap-", dir=root)) / "task"
     return run_task(**inputs, output_dir=output_dir, model=model, provider=provider,
-                    region=region, max_tokens=max_tokens)
+                    region=region, max_tokens=max_tokens, export_server_path=export_server_path)
 
 
 def main():
