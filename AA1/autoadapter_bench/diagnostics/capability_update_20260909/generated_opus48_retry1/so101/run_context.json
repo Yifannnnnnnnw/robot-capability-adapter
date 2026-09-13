@@ -1,9 +1,0 @@
-{
-  "robot_id": "so101",
-  "provider": "holistic",
-  "requested_model": "eu.anthropic.claude-opus-4-8",
-  "started_at": "2026-09-09T23:43:41.499093+00:00",
-  "reason": "Authorized higher-model retry after failed Sonnet baseline; unchanged calibrated conditions; original traces retained.",
-  "actual_generation_cost_usd": null,
-  "finished_at": "2026-09-09T23:48:08.030793+00:00"
-}

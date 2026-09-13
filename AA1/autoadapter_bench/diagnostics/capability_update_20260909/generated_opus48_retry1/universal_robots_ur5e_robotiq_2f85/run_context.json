@@ -1,9 +1,0 @@
-{
-  "robot_id": "universal_robots_ur5e_robotiq_2f85",
-  "provider": "holistic",
-  "requested_model": "eu.anthropic.claude-opus-4-8",
-  "started_at": "2026-09-09T23:49:13.157279+00:00",
-  "reason": "Authorized higher-model retry after failed Sonnet baseline; unchanged calibrated conditions; original traces retained.",
-  "actual_generation_cost_usd": null,
-  "finished_at": "2026-09-09T23:53:52.917890+00:00"
-}

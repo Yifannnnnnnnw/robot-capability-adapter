@@ -1,19 +1,32 @@
 # AA1 capability integration diagnostics
 
-This file describes the current bounded Stage 1 diagnostic. It is an
+This file describes the completed bounded Stage 1 diagnostic. It is an
 integration check, not a formal experiment protocol, manifest, or governance
 record. The parent repository tracks AA1; the original AA1 upstream is never a
 push destination.
 
+The local `autoadapter_bench/diagnostics/` tree was removed during repository
+cleanup. Its tracked reports, drivers and summaries remain in parent-repository
+Git history at commit `0dddf580`. Historical paths below are relative to that
+tree, not live workspace links. For example, from the repository root:
+
+```sh
+git show 0dddf580:AA1/autoadapter_bench/diagnostics/capability_update_20260909/FULL_REPORT_20260910.md
+```
+
+Untracked and ignored outputs, including bulk video and raw physics traces,
+were deleted and are not preserved by that commit.
+
 The 2026-09-10 diagnostic is finished: six robots passed within their recorded
 validation scopes, nine failed, and no robot remains pending or interrupted.
-The final [15-robot report](diagnostics/capability_update_20260909/stage1_full_opus48_20260910T180406Z/REPORT.md)
-and [aggregate JSON](diagnostics/capability_update_20260909/stage1_full_opus48_20260910T180406Z/batch_summary.json)
-link each final candidate, verdict, trace/video index, and evidence commit.
+The final 15-robot report and aggregate JSON were recorded at
+`capability_update_20260909/stage1_full_opus48_20260910T180406Z/REPORT.md`
+and `capability_update_20260909/stage1_full_opus48_20260910T180406Z/batch_summary.json`.
+They identify each final candidate, verdict, trace/video index, and evidence commit.
 SO-101's interrupted third repair was retried from its last validated candidate
 using the existing pipeline repair and full-Framework functions; it finished
 at 8/10, with both A4 conditions failing. Original interruption records remain
-unchanged. The fresh-only public entrypoint has no resume mode. The differing
+in Git history. The fresh-only public entrypoint has no resume mode. The differing
 historical validation scopes do not define a uniform formal pass-rate denominator.
 
 The completed batch ran fresh generation for the remaining canonical robots in this
@@ -71,27 +84,29 @@ or inconsistent evidence is reported as unavailable; it is not silently treated
 as passing. Keep rescores beside the original evidence without overwriting the
 original driver, report, or completed repair budget. The correction review and
 real xArm7 reference checks are recorded in
-[A4 correction report](diagnostics/capability_update_20260909/stage1_full_opus48_20260910T133740Z/a4_correction_20260910T142252Z/REPORT.md).
+`capability_update_20260909/stage1_full_opus48_20260910T133740Z/a4_correction_20260910T142252Z/REPORT.md`.
 
 Reference controls establish whether a trusted condition is physically
 reachable; they are not model-generated drivers and do not enter a generated
 result. Previously recorded reference gaps include Unitree A1 and ANYmal-C G1–G3
-(nominal and boundary). The earlier reports remain historical evidence:
-[FIRST_ROUND_RESULTS.md](diagnostics/capability_update_20260909/FIRST_ROUND_RESULTS.md),
-[HIGHER_MODEL_RESULTS.md](diagnostics/capability_update_20260909/HIGHER_MODEL_RESULTS.md),
-and [FULL_REPORT_20260910.md](diagnostics/capability_update_20260909/FULL_REPORT_20260910.md).
+(nominal and boundary). The earlier reports remain in Git history under
+`capability_update_20260909/`: `FIRST_ROUND_RESULTS.md`,
+`HIGHER_MODEL_RESULTS.md`, and `FULL_REPORT_20260910.md`.
 In particular, the old PiPER generation failure is preserved in those reports
 and is not presented as a current Stage 1 result.
 
-Compact summaries, source, and generation traces are suitable for Git review.
-Large per-trial videos and raw physics traces remain local. H1's current
-stand evidence is written under its pipeline workspace as
-`stand_balance_2s_physics_trace.json` and
+Compact summaries, source, and tracked generation traces remain in Git history.
+The removed local videos and raw physics traces are no longer available.
+For subsequent diagnostic runs, H1's stand evidence is written under its
+pipeline workspace as `stand_balance_2s_physics_trace.json` and
 `recordings/stand_balance_2s.mp4`.
 
 The following commands document fresh invocations from `AA1` with the project
 virtual environment. They do not request rerunning the completed batch. Each
-selected robot is reviewed and committed separately:
+selected robot is reviewed and committed separately.
+
+The launcher creates its output directory when invoked, so these commands can
+recreate the former directory path. The cleanup does not change that output default.
 
 ```sh
 BATCH="autoadapter_bench/diagnostics/capability_update_20260909/stage1_full_opus48_$(date -u +%Y%m%dT%H%M%SZ)"

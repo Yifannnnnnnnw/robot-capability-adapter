@@ -11,8 +11,8 @@ agreement.
 
 ## Start here
 
-- **Recent AA1 integration work:** [capability diagnostic guide](AA1/autoadapter_bench/CAPABILITY_DIAGNOSTICS.md)
-  and [15-robot diagnostic report, 2026-09-10](AA1/autoadapter_bench/diagnostics/capability_update_20260909/FULL_REPORT_20260910.md).
+- **Recent AA1 integration work:** [capability diagnostic guide](AA1/autoadapter_bench/CAPABILITY_DIAGNOSTICS.md),
+  including the Git location of the retired 2026-09-10 diagnostic reports.
   These records distinguish generation, Framework validation and task outcomes;
   they are not formal experiment success rates.
 - **Implementation:** [AA1 setup and component guide](AA1/README.md).
@@ -51,6 +51,11 @@ Raw physics traces, bulk video, local environments and credentials stay local
 under the component ignore rules. Existing tracked evidence remains tracked
 until its retention is reviewed separately; adding an ignore rule does not
 remove it from Git or its history.
+
+The retired `AA1/autoadapter_bench/diagnostics/` tree is available in Git history
+at commit `0dddf580` for its previously tracked content. Its untracked and ignored
+local outputs, including videos and raw physics traces, were removed during
+cleanup and are not preserved by that commit.
 
 The retired root `autoadapter/` and `AutoAdapter-Bench/` trees remain available
 in Git history for their previously tracked content. Their ignored local run

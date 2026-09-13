@@ -1,3 +1,0 @@
-{
-  "feedback": "Framework failure feedback (measurements only):\n- check=behavior_smoke: detail=ValueError: missing required capabilities: track_planar_twist, move_body_relative_pose, trace_planar_path, set_body_height, hold_stable_stance"
-}

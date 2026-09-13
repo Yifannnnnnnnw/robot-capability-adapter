@@ -127,7 +127,10 @@ stance for 1.2 s, shallow crouch, restore standing height, stable stance for
 | Unitree A1 | `stage1_full_opus48_20260910T142842Z/repair_2/unitree_a1` | Path, height and stable-stance boundary cases |
 | ANYmal C | `stage1_full_opus48_20260910T142842Z/repair_3/anymal_c` | Path, height and stable-stance cases |
 
-These paths are under `autoadapter_bench/diagnostics/capability_update_20260909`.
+These historical paths were under
+`autoadapter_bench/diagnostics/capability_update_20260909`. That local directory
+has been removed; its tracked drivers and reports remain in parent-repository
+Git history at commit `0dddf580`.
 All three actual drivers loaded their configured scenes and initial states and
 exposed the requested methods. Task preflight returned `UNAVAILABLE` with zero
 model or capability calls. Their new crouch/restore behavior is therefore not
@@ -153,9 +156,11 @@ empty-root rejection, and operation errors. A subprocess blocks imports of
 SDKs. Standard and from-scratch task lifecycle checks use actual MuJoCo worlds
 and recordings with explicitly named fixture models/drivers.
 
-The real diagnostic uses the existing generated Piper driver at
+The real diagnostic used the generated Piper driver formerly at
 `autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_2/piper/driver.py`.
-It loads Piper's fixed task and parameters directly from `demo_tasks.yaml`:
+That source path is retained in Git history at commit `0dddf580`; the task-local
+driver copy remains under `artifacts/recap_official_20260913/piper/`.
+It loaded Piper's fixed task and parameters directly from `demo_tasks.yaml`:
 the two listed checkpoints, then gripper opening 20% and 80%, in the configured
 scene and `home` keyframe. Its existing Framework report only filters available
 capabilities; private validation predicates are not supplied to the planner.

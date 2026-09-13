@@ -7,8 +7,9 @@ See the [repository map](../README.md) for the other components. Commands and
 paths below are relative to `AA1/` unless stated otherwise.
 
 For the recent capability integration work, start with the
-[diagnostic guide](autoadapter_bench/CAPABILITY_DIAGNOSTICS.md) and
-[15-robot diagnostic report, 2026-09-10](autoadapter_bench/diagnostics/capability_update_20260909/FULL_REPORT_20260910.md).
+[diagnostic guide](autoadapter_bench/CAPABILITY_DIAGNOSTICS.md).
+The retired diagnostic reports are available in parent-repository Git history
+at commit `0dddf580`; their former local output directory has been removed.
 The paper, quick facts and reproduction instructions below describe the earlier
 AA1 research artifact; they are separate from the MSc thesis and its future
 formal experiments.

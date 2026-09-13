@@ -1,9 +1,0 @@
-{
-  "robot_id": "kuka_iiwa14",
-  "provider": "holistic",
-  "requested_model": "eu.anthropic.claude-opus-4-8",
-  "started_at": "2026-09-09T23:43:28.553572+00:00",
-  "reason": "Authorized higher-model retry after failed Sonnet baseline; unchanged calibrated conditions; original traces retained.",
-  "actual_generation_cost_usd": null,
-  "finished_at": "2026-09-09T23:47:15.085065+00:00"
-}

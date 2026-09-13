@@ -1,1 +1,0 @@
-{"iter": 0, "thought": "", "actions": [], "observations": [{"is_error": true, "content": "Bedrock invoke failed after retries: APIConnectionError: Connection error."}], "duration_ms": 35.70127487182617, "token_usage": {"in": 0, "out": 0}, "stop_reason": "invoke_error"}

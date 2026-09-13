@@ -1,4 +1,0 @@
-{
-  "task_result": "not_run",
-  "reason": "missing required capabilities: track_planar_twist, move_body_relative_pose, trace_planar_path, set_body_height, hold_stable_stance"
-}
