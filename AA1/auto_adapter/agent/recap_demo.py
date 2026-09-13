@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Local AA1 diagnostic demo using the canonical AutoAdapter 2 ReCAP runtime.
+"""AA1 model and capability bridge for diagnostic ReCAP tasks.
 
-Requires the sibling autoadapter package on PYTHONPATH (or installed). Controller
-completion is not an independently evaluated physical task verdict.
+Controller completion is not an independently evaluated physical task verdict.
 """
 from dataclasses import asdict
 import json
@@ -10,6 +9,7 @@ from pathlib import Path
 import time
 
 from .react_loop import ReactLoop
+from .recap import ToolCall, ToolTurn, CapabilityAdapterError, run_recap
 from .task_planner import TaskPlanner, _FrameCapture
 from auto_adapter.robot_catalog import load_capability_suite
 
@@ -26,7 +26,6 @@ class AA1RecapModel:
         self.trace_path.write_text("")
 
     def generate_tool_turn(self, *, stage, system_prompt, messages, tools):
-        from autoadapter2.react import ToolCall, ToolTurn
         converted = []
         for message in messages:
             role = message["role"]
@@ -41,7 +40,7 @@ class AA1RecapModel:
                     blocks.append({"type": "tool_use", "id": call["id"],
                                    "name": call["function"]["name"],
                                    "input": json.loads(call["function"]["arguments"])})
-                item = {"role": role, "content": blocks}
+                item = {"role": role, "content": blocks or [{"type": "text", "text": "(empty model response)"}]}
             else:
                 item = {"role": role, "content": message["content"]}
             if (converted and item["role"] == "user" and converted[-1]["role"] == "user"
@@ -93,19 +92,30 @@ class AA1CapabilityAdapter:
         self.invoke = invoke
 
     def public_catalog(self):
-        from autoadapter2.b2.capability_adapter import CapabilityContract
-        return [CapabilityContract(**{key: cap[key] for key in
-                ("capability_id", "method_name", "description", "request_schema")}).public_definition()
+        def public_schema(value):
+            if isinstance(value, dict):
+                return {key: public_schema(child) for key, child in value.items()
+                        if key != "evidence_refs"}
+            if isinstance(value, list):
+                return [public_schema(child) for child in value]
+            return value
+
+        return [{"capability_id": cap["capability_id"],
+                 "method_name": cap["method_name"],
+                 "capability_name": cap["method_name"],
+                 "description": cap["description"],
+                 "request_schema": public_schema(cap["request_schema"]),
+                 "invocation_abi": "driver.<capability_name>(request=<request>)"}
                 for cap in self.capabilities.values()]
 
     def validate_request(self, name, request):
-        from autoadapter2.b2.capability_adapter import CapabilityAdapterError
-        from autoadapter2.capability_design.protocol import CapabilityProtocolError, validate_schema_value
+        from auto_adapter.scene_runtime import SceneCaseError, _validate_schema_value
         if name not in self.capabilities:
             raise CapabilityAdapterError("unknown capability")
         try:
-            validate_schema_value(request, self.capabilities[name]["request_schema"])
-        except CapabilityProtocolError as exc:
+            _validate_schema_value(request, self.capabilities[name]["request_schema"],
+                                   where=f"{name}.request")
+        except SceneCaseError as exc:
             raise CapabilityAdapterError(str(exc)) from None
         return dict(request)
 
@@ -115,7 +125,6 @@ class AA1CapabilityAdapter:
 
 def run_demo(*, workspace, robot_id, task_description, model, provider="holistic",
              region="us-east-1", max_tokens=6000):
-    from autoadapter2.task_demo.recap import run_recap
     import imageio.v2 as imageio
 
     workspace = Path(workspace).resolve()
@@ -169,7 +178,7 @@ def run_demo(*, workspace, robot_id, task_description, model, provider="holistic
         if len(capture.frames) > 1:
             imageio.mimsave(str(video_path), capture.frames, format="FFMPEG", fps=30,
                            codec="libx264", pixelformat="yuv420p")
-    report = {"controller": "autoadapter2.task_demo.recap.run_recap",
+    report = {"controller": "auto_adapter.agent.recap.run_recap",
               "task_description": task_description, "controller_result": asdict(result),
               "physical_task_success": None, "scope": "diagnostic demo; no task predicate evaluated",
               "capability_whitelist": [c["method_name"] for c in design["capabilities"]],

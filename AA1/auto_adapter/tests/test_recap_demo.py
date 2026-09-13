@@ -7,8 +7,7 @@ import pytest
 
 from auto_adapter.agent.recap_demo import AA1CapabilityAdapter, AA1RecapModel, passed_design
 from auto_adapter.robot_catalog import find_robot_definition, load_capability_design, load_capability_suite
-from autoadapter2.react import ToolCall, ToolTurn
-from autoadapter2.task_demo.recap import run_recap
+from auto_adapter.agent.recap import ToolCall, ToolTurn, run_recap
 
 
 @pytest.mark.parametrize('robot_id', ['so101', 'universal_robots_ur5e_robotiq_2f85'])
@@ -26,9 +25,12 @@ def test_only_complete_framework_capabilities_reach_real_recap(robot_id):
         return {'operation': {'status': 'EXECUTED'}, 'observations': {}}
     class FixtureModel:
         def generate_tool_turn(self, **kwargs):
-            assert [t['function']['name'] for t in kwargs['tools']] == [cases[0]['method_name'], 'finish']
-            name, args = (cases[0]['method_name'], cases[0]['request']) if not seen else ('finish', {})
-            return ToolTurn(None, (ToolCall(str(len(seen)), name, args, json.dumps(args)),))
+            assert [t['function']['name'] for t in kwargs['tools']] == ['submit_plan']
+            args = {'reasoning_summary': 'Execute the selected capability.',
+                    'subtasks': ([] if seen else [{
+                        'kind': 'capability', 'capability_name': cases[0]['method_name'],
+                        'request': cases[0]['request']}])}
+            return ToolTurn(None, (ToolCall(str(len(seen)), 'submit_plan', args, json.dumps(args)),))
     result = run_recap(public_task={'description': 'fixture'},
                        adapter=AA1CapabilityAdapter(selected, invoke), model=FixtureModel())
     assert result.status == 'CONTROLLER_FINISHED'
