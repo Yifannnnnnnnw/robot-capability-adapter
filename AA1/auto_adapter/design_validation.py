@@ -185,6 +185,33 @@ def _finite_state(model: Any, data: Any) -> bool:
     )
 
 
+def _framing_camera(model: Any, data: Any, mujoco: Any, np: Any) -> Any:
+    """Choose a fixed view around non-floor, non-world MuJoCo geoms."""
+
+    visible: list[tuple[Any, float]] = []
+    plane = int(mujoco.mjtGeom.mjGEOM_PLANE)
+    for geom_id in range(int(model.ngeom)):
+        if int(model.geom_bodyid[geom_id]) == 0 or int(model.geom_type[geom_id]) == plane:
+            continue
+        center = np.asarray(data.geom_xpos[geom_id], dtype=float)
+        radius = float(model.geom_rbound[geom_id])
+        if np.all(np.isfinite(center)) and math.isfinite(radius):
+            visible.append((center, max(0.0, radius)))
+
+    camera = mujoco.MjvCamera()
+    camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+    camera.azimuth = 135.0
+    camera.elevation = -25.0
+    if visible:
+        centers = np.asarray([item[0] for item in visible], dtype=float)
+        radii = np.asarray([item[1] for item in visible], dtype=float)
+        lower = np.min(centers - radii[:, None], axis=0)
+        upper = np.max(centers + radii[:, None], axis=0)
+        camera.lookat[:] = (lower + upper) / 2.0
+        camera.distance = max(0.75, 2.25 * float(np.max(upper - lower)))
+    return camera
+
+
 class _Recorder:
     """Record and render the same model/data pair used by the candidate."""
 
@@ -225,6 +252,7 @@ class _Recorder:
         self.frames: list[Any] = []
         self.output = output
         self.renderer: Any = None
+        self.camera = _framing_camera(model, data, mujoco, np)
         fps = float(execution.get("video_fps", 10.0))
         self.capture_every = max(
             1, int(round(1.0 / max(timestep * fps, 1e-12)))
@@ -242,7 +270,7 @@ class _Recorder:
         if self.renderer is None or (step_count and step_count % self.capture_every):
             return
         try:
-            self.renderer.update_scene(self.data)
+            self.renderer.update_scene(self.data, camera=self.camera)
             frame = self.renderer.render()
             if getattr(frame, "ndim", 0) != 3 or frame.shape[2] < 3:
                 raise RuntimeError("renderer returned a non-image frame")

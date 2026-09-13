@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from auto_adapter.design_validation import validate_design_driver
+import mujoco
+import numpy as np
+
+from auto_adapter.design_validation import _framing_camera, validate_design_driver
 
 
 XML = """
@@ -104,7 +107,8 @@ def _driver(path: Path, *, hang: bool = False) -> None:
             "class _FixtureRenderer:\n"
             "    def __init__(self, model, height, width):\n"
             "        self.height, self.width = height, width\n"
-            "    def update_scene(self, data): pass\n"
+            "    def update_scene(self, data, camera=-1):\n"
+            "        assert camera != -1\n"
             "    def render(self):\n"
             "        return np.zeros((self.height, self.width, 3), dtype=np.uint8)\n"
             "    def close(self): pass\n"
@@ -133,6 +137,28 @@ def _driver(path: Path, *, hang: bool = False) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def test_framing_camera_uses_robot_geom_bounds_and_excludes_floor() -> None:
+    model = mujoco.MjModel.from_xml_string(
+        """
+        <mujoco model="camera_fixture">
+          <worldbody>
+            <geom name="floor" type="plane" size="2 2 0.1"/>
+            <body name="arm" pos="1 0 0.2">
+              <geom name="arm_geom" type="sphere" size="0.1" mass="1"/>
+            </body>
+          </worldbody>
+        </mujoco>
+        """
+    )
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    camera = _framing_camera(model, data, mujoco, np)
+
+    assert camera.type == mujoco.mjtCamera.mjCAMERA_FREE
+    assert np.allclose(camera.lookat, [1.0, 0.0, 0.2])
+    assert camera.distance >= 0.75
 
 
 def test_validator_uses_fresh_worker_and_scores_real_samples(tmp_path: Path) -> None:
