@@ -123,6 +123,12 @@ def _validate_schema_value(value: Any, schema: Any, *, where: str) -> None:
         "unit",
         "frame",
         "evidence_refs",
+        # JSON Schema annotations are descriptive metadata; validation below
+        # deliberately ignores their values while enforcing the constraints.
+        "description",
+        "title",
+        "default",
+        "examples",
     }
     unknown = set(schema_map) - allowed
     if unknown:

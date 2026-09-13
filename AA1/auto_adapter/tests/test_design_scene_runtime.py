@@ -122,6 +122,31 @@ def test_load_validates_request_and_every_criterion(tmp_path: Path) -> None:
         load_scene_cases(path, design=_design())
 
 
+def test_request_schema_annotations_are_accepted_without_relaxing_shape(tmp_path: Path) -> None:
+    design = _design()
+    target_schema = design["capabilities"][0]["request_schema"]["properties"][
+        "target_position_m"
+    ]
+    target_schema.update(
+        {
+            "description": "Target position in metres in the world frame.",
+            "title": "World target",
+            "unit": "m",
+            "frame": "world",
+        }
+    )
+    path = tmp_path / "annotated_scene_cases.yaml"
+    path.write_text(yaml.safe_dump(_suite()), encoding="utf-8")
+    loaded = load_scene_cases(path, design=design)
+    assert loaded["cases"][0]["request"]["target_position_m"] == [0.4, 0.0, 0.3]
+
+    invalid = _suite()
+    invalid["cases"][0]["request"]["target_position_m"] = [0.4, 0.0]
+    path.write_text(yaml.safe_dump(invalid), encoding="utf-8")
+    with pytest.raises(SceneCaseError, match="length 3|minItems"):
+        load_scene_cases(path, design=design)
+
+
 @pytest.mark.parametrize("shape,size", [("box", [0.02, 0.02, 0.02]), ("sphere", [0.02]), ("cylinder", [0.02, 0.04])])
 def test_piper_scene_assembly_reload_reset_restore_and_independence(tmp_path: Path, shape, size) -> None:
     source_before = PIPER_MJCF.read_bytes()
