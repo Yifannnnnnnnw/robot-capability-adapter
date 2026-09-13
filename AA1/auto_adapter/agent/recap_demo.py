@@ -10,8 +10,6 @@ import time
 
 from .react_loop import ReactLoop
 from .recap import ToolCall, ToolTurn, CapabilityAdapterError, run_recap
-from .task_planner import TaskPlanner, _FrameCapture
-from auto_adapter.robot_catalog import load_capability_suite
 
 
 class AA1RecapModel:
@@ -71,7 +69,8 @@ def passed_design(design, suite, report):
     tests = report.get("tests", [])
     selected = []
     for capability in design["capabilities"]:
-        cases = [c for c in suite["cases"] if c["capability_id"] == capability["capability_id"]]
+        cases = [c for c in suite.get("scene_cases", suite.get("cases", []))
+                 if c["capability_id"] == capability["capability_id"]]
         if cases and all(
             len(matches := [t for t in tests if t.get("case_id") == c["case_id"]]) == 1
             and matches[0].get("ok") is True for c in cases
@@ -123,86 +122,151 @@ class AA1CapabilityAdapter:
         return self.invoke(name, {"request": self.validate_request(name, request)})
 
 
-def run_demo(*, workspace, robot_id, task_description, model, provider="holistic",
-             region="us-east-1", max_tokens=6000):
-    import imageio.v2 as imageio
+def _task_inputs(*, workspace, robot_id, capability_design=None,
+                 scene_cases_path=None, demo_config_path=None, from_scratch=False):
+    """Resolve generation artifacts once; never replace an explicitly selected design."""
+    import yaml
+    from auto_adapter.robot_catalog import (
+        REPO_ROOT, find_robot_definition, load_capability_design, load_capability_suite,
+    )
+    from auto_adapter.scene_runtime import load_scene_cases
 
     workspace = Path(workspace).resolve()
+    robot = find_robot_definition(robot_id)
+    config_path = Path(demo_config_path or REPO_ROOT / "auto_adapter/demo_tasks.yaml").resolve()
+    config = yaml.safe_load(config_path.read_text())["robots"].get(robot_id)
+    if not config:
+        raise ValueError(f"no fixed demo configured for {robot_id}")
+    design = capability_design
+    if design is None:
+        saved = workspace / "design/capability_design.json"
+        if not saved.is_file():
+            saved = workspace / "capability_design.json"
+        design = json.loads(saved.read_text()) if saved.is_file() else load_capability_design(robot)
+    if not design:
+        raise ValueError(f"{robot_id}: no capability design supplied for the existing driver")
+    if design.get("robot_configuration_id") != robot_id:
+        raise ValueError("task robot does not match capability design")
+    cases_path = Path(scene_cases_path).resolve() if scene_cases_path else workspace / "design/scene_cases.yaml"
+    if scene_cases_path is not None and not cases_path.is_file():
+        raise ValueError(f"supplied scene_cases_path does not exist: {cases_path}")
+    if scene_cases_path is None and not cases_path.is_file():
+        cases_path = workspace / "scene_cases.yaml"
+    if cases_path.is_file():
+        suite = load_scene_cases(cases_path, design=design)
+    else:
+        # The catalog suite is valid only for that exact public contract.
+        if design != load_capability_design(robot):
+            raise ValueError("current capability design requires its corresponding scene_cases_path")
+        suite = load_capability_suite(robot)
+    scene = Path(config["scene"])
+    if not scene.is_absolute():
+        scene = REPO_ROOT / scene
+    return dict(
+        driver_path=str(workspace / ("driver_from_scratch.py" if from_scratch else "driver.py")),
+        from_scratch=from_scratch, robot_id=robot_id, capability_design=design,
+        validation_suite=suite,
+        validation_report=json.loads((workspace / "validate_report.json").read_text()),
+        task_description=config["task"], scene_path=str(scene.resolve()),
+        initial_state=config.get("initial_state", {}), parameters=config.get("parameters", {}),
+        required_capabilities=config.get("required_capabilities", []),
+    )
+
+
+def run_configured_demo(*, workspace, robot_id, capability_design, scene_cases_path=None,
+                        from_scratch=False, model, provider, region, max_tokens,
+                        demo_config_path=None):
+    """Both orchestrators dispatch the same isolated, existing-driver task process."""
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    from auto_adapter.robot_catalog import REPO_ROOT
+
     started = time.monotonic()
-    trace_path = workspace / "traces" / "recap_demo.jsonl"
-    trace_path.parent.mkdir(parents=True, exist_ok=True)
-    video_path = workspace / "demo.mp4"
-    # A previous recording cannot make this attempt appear complete.
-    video_path.unlink(missing_ok=True)
-    with TaskPlanner(workspace=workspace, robot_id=robot_id) as planner:
-        if not planner.capability_design:
-            raise ValueError("ReCAP demo requires a trusted capability profile")
-        design = passed_design(planner.capability_design,
-                               load_capability_suite(planner.robot_definition),
-                               json.loads((workspace / "validate_report.json").read_text()))
-        driver = planner._load_driver()
-        capture = _FrameCapture(driver, capture_every=16)
-        calls = []
-        try:
-            tools = {t.name: t for t in planner._build_tools(driver, capture, calls)}
-            def observations():
-                # Only existing no-argument public observation methods are exposed.
-                values = {}
-                for name, tool in tools.items():
-                    if name.startswith("get_") and not tool.input_schema.get("required"):
-                        try:
-                            values[name] = tool.handler({})
-                        except Exception:
-                            values[name] = {"available": False}
-                return values
-
-            def invoke(name, envelope):
-                try:
-                    tools[name].handler(envelope["request"])
-                    status = "EXECUTED"
-                except Exception:
-                    status = "ERROR"
-                return {"operation": {"status": status}, "observations": observations()}
-
-            capture.snapshot()
-            result = run_recap(public_task={"description": task_description},
-                               adapter=AA1CapabilityAdapter(design, invoke),
-                               model=AA1RecapModel(model=model, provider=provider, region=region,
-                                                  max_tokens=max_tokens, trace_path=trace_path),
-                               initial_public_state=observations())
-        finally:
-            capture.uninstall()
-            close = getattr(driver, "close", None)
-            if callable(close):
-                close()
-        if len(capture.frames) > 1:
-            imageio.mimsave(str(video_path), capture.frames, format="FFMPEG", fps=30,
-                           codec="libx264", pixelformat="yuv420p")
-    report = {"controller": "auto_adapter.agent.recap.run_recap",
-              "task_description": task_description, "controller_result": asdict(result),
-              "physical_task_success": None, "scope": "diagnostic demo; no task predicate evaluated",
-              "capability_whitelist": [c["method_name"] for c in design["capabilities"]],
-              "tool_call_log": calls, "n_frames": len(capture.frames),
-              "video_path": str(video_path) if video_path.exists() else None,
-              "trace_path": str(trace_path), "duration_sec": time.monotonic() - started}
-    report["ok"] = (result.status == "CONTROLLER_FINISHED" and result.capability_calls > 0
-                    and len(capture.frames) > 1 and video_path.exists()
-                    and all(c["ok"] for c in calls))
-    (workspace / "recap_demo_report.json").write_text(json.dumps(report, indent=2) + "\n")
-    return report
+    root = Path(workspace).resolve() / "demos"
+    root.mkdir(parents=True, exist_ok=True)
+    invocation_dir = Path(tempfile.mkdtemp(prefix="recap-", dir=root))
+    output_dir = invocation_dir / "task"
+    report_path = output_dir / "task_report.json"
+    try:
+        inputs = _task_inputs(workspace=workspace, robot_id=robot_id,
+                              capability_design=capability_design, scene_cases_path=scene_cases_path,
+                              from_scratch=from_scratch, demo_config_path=demo_config_path)
+        inputs.update(output_dir=str(output_dir), model=model, provider=provider,
+                      region=region, max_tokens=max_tokens)
+        payload = invocation_dir / "request.json"
+        payload.write_text(json.dumps(inputs, indent=2) + "\n")
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(REPO_ROOT)
+        with (invocation_dir / "worker.log").open("w") as log:
+            completed = subprocess.run(
+                [sys.executable, "-m", "auto_adapter.agent.recap_demo", "--input-json", str(payload)],
+                env=env, cwd=REPO_ROOT, stdout=log, stderr=subprocess.STDOUT,
+                timeout=2400, check=False,
+            )
+        if not report_path.is_file():
+            raise RuntimeError(f"task worker exited {completed.returncode}; see {invocation_dir / 'worker.log'}")
+        report = json.loads(report_path.read_text())
+        if completed.returncode and report.get("ok"):
+            report.update(ok=False, error=f"task worker exited {completed.returncode}")
+        return report
+    except Exception as exc:
+        report = {"ok": False, "error": str(exc), "controller_result": None,
+                  "physical_task_success": None, "duration_sec": time.monotonic() - started,
+                  "report_path": str(report_path), "trace_path": None, "video_path": None}
+        output_dir.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, indent=2) + "\n")
+        return report
 
 
-if __name__ == "__main__":
+def run_demo(*, workspace, robot_id, task_description=None, model, provider="holistic",
+             region="us-east-1", max_tokens=6000, from_scratch=False,
+             demo_config_path=None, output_dir=None):
+    """Compatibility wrapper; use run_task/--input-json for arbitrary explicit tasks and scenes."""
+    import tempfile
+    from .task_execution import run_task
+
+    inputs = _task_inputs(workspace=workspace, robot_id=robot_id,
+                          from_scratch=from_scratch, demo_config_path=demo_config_path)
+    if task_description:
+        inputs.update(task_description=task_description, required_capabilities=[])
+    if output_dir is None:
+        root = Path(workspace).resolve() / "demos"
+        root.mkdir(parents=True, exist_ok=True)
+        output_dir = Path(tempfile.mkdtemp(prefix="recap-", dir=root)) / "task"
+    return run_task(**inputs, output_dir=output_dir, model=model, provider=provider,
+                    region=region, max_tokens=max_tokens)
+
+
+def main():
     import argparse
+    from .task_execution import run_task
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace", type=Path, required=True)
-    parser.add_argument("--robot-id", required=True)
-    parser.add_argument("--task", dest="task_description", required=True)
-    parser.add_argument("--model", required=True)
+    parser.add_argument("--input-json", type=Path,
+                        help="Explicit run_task keyword inputs; never generates or repairs a driver.")
+    parser.add_argument("--workspace", type=Path)
+    parser.add_argument("--robot-id")
+    parser.add_argument("--task", dest="task_description")
+    parser.add_argument("--model")
     parser.add_argument("--provider", default="holistic")
     parser.add_argument("--region", default="us-east-1")
     parser.add_argument("--max-tokens", type=int, default=6000)
+    parser.add_argument("--from-scratch", action="store_true")
+    parser.add_argument("--demo-config-path", type=Path)
+    parser.add_argument("--output-dir", type=Path)
     args = vars(parser.parse_args())
-    report = run_demo(**args)
-    print(json.dumps({key: report[key] for key in ("ok", "video_path", "n_frames", "scope")}))
-    raise SystemExit(0 if report["ok"] else 1)
+    input_json = args.pop("input_json")
+    if input_json:
+        report = run_task(**json.loads(input_json.read_text()))
+    else:
+        if not all(args[key] for key in ("workspace", "robot_id", "model")):
+            parser.error("supply --input-json or --workspace, --robot-id and --model")
+        report = run_demo(**args)
+    print(json.dumps({key: report.get(key) for key in ("ok", "error", "video_path", "report_path")}))
+    return 0 if report["ok"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

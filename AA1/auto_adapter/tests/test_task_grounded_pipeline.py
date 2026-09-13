@@ -181,6 +181,8 @@ def test_dynamic_standard_stage_order_and_failure_gating(
         "design",
         "generate",
         "validate",
+        "export",
+        "demo",
     ]
 
     failed_runner = SelfAssemble(
@@ -250,7 +252,7 @@ def test_dynamic_repair_pass_sets_effective_result_but_keeps_failed_attempt(
     monkeypatch.setattr(runner, "_phase_repair", lambda *_args: generate())
     monkeypatch.setattr(runner, "_phase_validate", validate)
 
-    result = runner.run()
+    result = runner.run(stop_after="validate")
 
     assert result.ok is True
     assert validation_calls == 2
@@ -258,8 +260,8 @@ def test_dynamic_repair_pass_sets_effective_result_but_keeps_failed_attempt(
         phase.name == "03_validate" and phase.ok is False
         for phase in result.phases
     )
-    assert result.phases[-1].name == "03_validate"
-    assert result.phases[-1].ok is True
+    validations = [phase for phase in result.phases if phase.name == "03_validate"]
+    assert validations[-1].ok is True
 
 
 def test_scratch_dynamic_stop_after_study_uses_current_react_artifact(

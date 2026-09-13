@@ -20,9 +20,11 @@ not the algorithm.
 
 Pipeline:
     STUDY        — same as before (capability graph)
-    GEN_ALGO     — NEW: agent writes complete driver.py with IK / motion logic
+    DESIGN       — prepare task-grounded capabilities when requested
+    GEN_ALGO     — agent writes driver_from_scratch.py with IK / motion logic
     VALIDATE_FW  — framework-level: import the driver, run smoke tests
-    TASK_SUITE   — same standardized tasks via TaskPlanner-equivalent
+    EXPORT       — wrap the validated driver's methods in an MCP server
+    DEMO         — optional configured local ReCAP task and video
 
 Output:
     workspace/driver_from_scratch.py  — single-file driver, no auto_adapter imports
@@ -49,6 +51,8 @@ from .agent.tools import (
     make_write_file_tool,
 )
 from .orchestrator import (
+    PhaseResult,
+    _EXPORT_SYSTEM,
     _actual_mjcf_context,
     _capability_design_metadata,
     _capability_options_enabled,
@@ -318,16 +322,18 @@ class FromScratchConfig:
     max_iters_study: int = 14
     max_iters_gen_algo: int = 40         # algorithm synthesis needs many iters
     max_iters_gen_repair: int = 20       # repair passes are shorter than first gen
+    max_iters_export: int = 8
     max_outer_retries: int = 3           # repairs after the initial generation/validation
     max_tokens_per_turn: int = 8000
+    enable_demo: bool = False
+    demo_config_path: Path | None = None
     # ``agentcore`` preserves the historical entry behavior.  ``local`` uses
     # the AA1 workspace and venv for every generation probe and never creates
     # a remote CodeInterpreter session.
     mode: str = "agentcore"
 
-    # Optional post-STUDY task-grounded capability design.  Scratch dynamic
-    # runs intentionally expose phase_study()/phase_gen_algo() diagnostics;
-    # the historical run() entry remains the default path.
+    # Optional post-STUDY task-grounded capability design. Both design routes
+    # continue through the same generation, validation, and export stages.
     prepare_capabilities: bool = False
     capability_design_path: Path | None = None
     scene_cases_path: Path | None = None
@@ -366,6 +372,8 @@ class FromScratchResult:
     design_ok: bool = False
     phases: list[Any] = field(default_factory=list)
     ok: bool = False
+    export_ok: bool = False
+    demo_ok: bool | None = None
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1695,266 +1703,183 @@ class FromScratchOrchestrator:
 
     # ─── Top-level ────────────────────────────────────────────────────────
 
-    def _dynamic_run(self, *, stop_after: str | None) -> FromScratchResult:
-        allowed = ("study", "design", "generate", "validate")
-        if stop_after is not None and stop_after not in allowed:
-            raise ValueError(f"dynamic stop_after={stop_after!r} not in {allowed}")
-        t0 = time.time()
-        tok_in = tok_out = 0
-        phases: list[dict[str, Any]] = []
-        # Every dynamic phase has a current-output boundary.  Old files are
-        # removed from this run workspace so an API/transport failure cannot
-        # be admitted from a prior diagnostic attempt.
-        for path in (
-            self.workspace / "study.json",
-            self.workspace / "driver_from_scratch.py",
-            self.workspace / "validate_report.json",
-            self.workspace / "design" / "capability_design.json",
-            self.workspace / "design" / "capability_preparation.json",
-            self.workspace / "design" / "scene_cases.yaml",
-            self.workspace / "design" / "probe_report.json",
-        ):
-            path.unlink(missing_ok=True)
-        self.capability_design = None
-        self.scene_cases_path = None
-        self.scene_paths = {}
-
-        r_study = self.phase_study()
-        phases.append({"name": "study", "ok": bool(r_study.ok), "error": r_study.error})
-        tok_in += int(r_study.total_tokens.get("in", 0))
-        tok_out += int(r_study.total_tokens.get("out", 0))
-        study_ok = bool(
-            getattr(r_study, "ok", True)
-            and (self.workspace / "study.json").is_file()
+    def phase_export(self) -> PhaseResult:
+        """Reuse the MCP export procedure with the scratch driver's builder."""
+        artifact = self.workspace / "mcp_server.py"
+        artifact.unlink(missing_ok=True)
+        system = (_EXPORT_SYSTEM
+                  .replace("driver.py", "driver_from_scratch.py")
+                  .replace("import driver, inspect", "import driver_from_scratch as driver, inspect")
+                  .replace("driver.build()", "driver.Robot.build_from_mjcf('mjcf.xml')")
+                  .replace("skeleton", "robot"))
+        system += (
+            "\nThe generated module is driver_from_scratch. Lazy-build with "
+            "driver_from_scratch.Robot.build_from_mjcf('mjcf.xml'). "
+            "Do not import any skeleton library."
         )
-        if not study_ok:
-            error = f"STUDY failed: {r_study.error or 'study.json was not written by the current run'}"
-            phases.extend({"name": name, "ok": False, "error": f"skipped — upstream study failed: {error}"} for name in ("design", "generate", "validate"))
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=False, design_ok=False, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report={"tests": [], "all_ok": False, "error": error},
-                total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, error=error,
-                phases=phases, ok=False,
+        user_msg = (f"Robot ID: {self.cfg.robot_id}\n"
+                    "Write mcp_server.py from driver_from_scratch.py and validate_report.json.")
+        if self.capability_design is not None:
+            user_msg += "\nCurrent public capability design:\n" + json.dumps(
+                self.capability_design, indent=2, ensure_ascii=False
             )
-        if stop_after == "study":
-            phases.extend({"name": name, "ok": False, "error": f"not run — stop_after={stop_after}"} for name in ("design", "generate", "validate"))
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, design_ok=False, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report={}, total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, phases=phases, ok=True,
-            )
-
-        r_design = self.phase_design()
-        phases.append({"name": "design", "ok": bool(r_design.ok), "error": r_design.error})
-        tok_in += int(r_design.total_tokens.get("in", 0))
-        tok_out += int(r_design.total_tokens.get("out", 0))
-        design_ok = bool(
-            r_design.ok
-            and isinstance(self.capability_design, dict)
-            and (self.workspace / "design" / "capability_design.json").is_file()
+        started = time.monotonic()
+        result = self._run_loop(
+            name="04_export", system=system,
+            user_msg=user_msg,
+            tools=self._common_tools() + [self._local_runtime_tool()],
+            max_iters=self.cfg.max_iters_export,
         )
-        if not design_ok:
-            error = r_design.error or "DESIGN did not produce a current capability design"
-            phases.extend({"name": name, "ok": False, "error": f"skipped — upstream design failed: {error}"} for name in ("generate", "validate"))
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, design_ok=False, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report={"tests": [], "all_ok": False, "error": error},
-                total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, error=error,
-                phases=phases, ok=False,
-            )
-        if stop_after == "design":
-            phases.extend({"name": name, "ok": False, "error": f"not run — stop_after={stop_after}"} for name in ("generate", "validate"))
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, design_ok=True, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report={}, total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, phases=phases, ok=True,
-            )
-
-        driver_path = self.workspace / "driver_from_scratch.py"
-        driver_mtime_before = (
-            driver_path.stat().st_mtime_ns if driver_path.is_file() else None
+        ok = bool(result.ok and artifact.is_file())
+        return PhaseResult(
+            "04_export", ok, time.monotonic() - started,
+            trace_path=self.workspace / "traces/04_export.jsonl",
+            artifact_paths=[artifact] if artifact.is_file() else [],
+            final_text=result.final_text,
+            error=None if ok else (result.error or "mcp_server.py was not written by the current export"),
+            token_usage=result.total_tokens,
         )
-        r_gen = self.phase_gen_algo()
-        phases.append({"name": "generate", "ok": bool(r_gen.ok), "error": r_gen.error})
-        tok_in += int(r_gen.total_tokens.get("in", 0))
-        tok_out += int(r_gen.total_tokens.get("out", 0))
-        gen_ok = bool(
-            getattr(r_gen, "ok", True)
-            and driver_path.is_file()
-            and (
-                driver_mtime_before is None
-                or driver_path.stat().st_mtime_ns != driver_mtime_before
-            )
-        )
-        if not gen_ok:
-            error = r_gen.error or "GEN_ALGO did not write a current driver_from_scratch.py"
-            phases.append({"name": "validate", "ok": False, "error": f"skipped — upstream generate failed: {error}"})
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, design_ok=True, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report={"tests": [], "all_ok": False, "error": error},
-                total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, error=error,
-                phases=phases, ok=False,
-            )
-        if stop_after == "generate":
-            phases.append({"name": "validate", "ok": False, "error": f"not run — stop_after={stop_after}"})
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, design_ok=True, gen_ok=True, validate_ok=False,
-                driver_path=self.workspace / "driver_from_scratch.py", validate_report={},
-                total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, phases=phases, ok=True,
-            )
 
-        report = self._validate_from_scratch_driver()
-        validate_ok = bool(report.get("all_ok") is True)
-        phases.append({"name": "validate", "ok": validate_ok, "error": report.get("error")})
-        outer_attempts = 0
-        while (not validate_ok and gen_ok and report.get("repairable", True)
-               and outer_attempts < self.cfg.max_outer_retries):
-            outer_attempts += 1
-            driver_mtime_before = (
-                driver_path.stat().st_mtime_ns if driver_path.is_file() else None
-            )
-            r_rep = self.phase_gen_repair(validate_failure_feedback(report), outer_attempts)
-            tok_in += int(r_rep.total_tokens.get("in", 0))
-            tok_out += int(r_rep.total_tokens.get("out", 0))
-            gen_ok = bool(
-                getattr(r_rep, "ok", True)
-                and driver_path.is_file()
-                and (
-                    driver_mtime_before is None
-                    or driver_path.stat().st_mtime_ns != driver_mtime_before
-                )
-            )
-            if not gen_ok:
-                break
-            report = self._validate_from_scratch_driver()
-            validate_ok = bool(report.get("all_ok") is True)
-            phases.append({"name": f"repair_{outer_attempts}", "ok": validate_ok, "error": report.get("error")})
-        report["outer_attempts"] = outer_attempts
-        (self.workspace / "validate_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-        return FromScratchResult(
-            robot_id=self.cfg.robot_id, workspace=self.workspace,
-            study_ok=True, design_ok=True, gen_ok=gen_ok, validate_ok=validate_ok,
-            driver_path=(self.workspace / "driver_from_scratch.py" if gen_ok else None),
-            validate_report=report, total_duration_sec=time.time() - t0,
-            total_tokens={"in": tok_in, "out": tok_out},
-            error=None if validate_ok else report.get("error"), phases=phases,
-            ok=bool(validate_ok),
+    def phase_demo(self) -> PhaseResult:
+        """Execute the configured ReCAP task with this run's scratch driver."""
+        if not self._is_local_mode():
+            return PhaseResult("05_demo", False, 0.0,
+                               error="configured ReCAP demo requires local mode")
+        from .agent.recap_demo import run_configured_demo
+
+        report = run_configured_demo(
+            workspace=self.workspace, robot_id=self.cfg.robot_id,
+            capability_design=self.capability_design,
+            scene_cases_path=self.scene_cases_path, from_scratch=True,
+            model=self.cfg.bedrock_model, provider=self.cfg.model_provider,
+            region=self.cfg.aws_region, max_tokens=self.cfg.max_tokens_per_turn,
+            demo_config_path=self.cfg.demo_config_path,
+        )
+        return PhaseResult(
+            "05_demo", report.get("ok") is True, report.get("duration_sec", 0.0),
+            trace_path=Path(report["trace_path"]) if report.get("trace_path") else None,
+            artifact_paths=[Path(report[key]) for key in ("report_path", "video_path")
+                            if report.get(key) and Path(report[key]).is_file()],
+            final_text="ReCAP diagnostic demo; physical task success has not been evaluated.",
+            error=report.get("error"), metadata=report,
         )
 
     def run(self, *, stop_after: str | None = None) -> FromScratchResult:
-        if getattr(self, "_dynamic_capabilities", False):
-            return self._dynamic_run(stop_after=stop_after)
-        if stop_after not in {None, "study", "generate", "validate"}:
-            raise ValueError(f"stop_after={stop_after!r} is not a scratch phase")
-        t0 = time.time()
-        tok_in = tok_out = 0
-        err: Optional[str] = None
-
-        # STUDY
-        r_study = self.phase_study()
-        tok_in += int(r_study.total_tokens.get("in", 0))
-        tok_out += int(r_study.total_tokens.get("out", 0))
-        # Phase OK if the expected artifact exists, regardless of whether the
-        # agent reached end_turn before max_iters. (Common pattern: agent
-        # writes study.json on the final iter then hits the iter cap.)
-        study_ok = bool(
-            getattr(r_study, "ok", True)
-            and (self.workspace / "study.json").is_file()
-        )
-        if not study_ok:
-            err = f"STUDY failed: {r_study.error}"
-            report = self._validate_from_scratch_driver()  # may report driver missing
-            (self.workspace / "validate_report.json").write_text(json.dumps(report, indent=2))
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=False, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report=report,
-                total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out},
-                error=err,
-                ok=False,
-            )
-
-        if stop_after == "study":
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, gen_ok=False, validate_ok=False,
-                driver_path=None, validate_report={}, total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, ok=True,
-            )
-
-        # GEN_ALGO
-        r_gen = self.phase_gen_algo()
-        tok_in += int(r_gen.total_tokens.get("in", 0))
-        tok_out += int(r_gen.total_tokens.get("out", 0))
-        gen_ok = bool(
-            getattr(r_gen, "ok", True)
-            and (self.workspace / "driver_from_scratch.py").is_file()
-        )
-        if not gen_ok:
-            err = f"GEN_ALGO failed: {r_gen.error}; no driver_from_scratch.py"
-
-        if stop_after == "generate":
-            return FromScratchResult(
-                robot_id=self.cfg.robot_id, workspace=self.workspace,
-                study_ok=True, gen_ok=gen_ok, validate_ok=False,
-                driver_path=(self.workspace / "driver_from_scratch.py" if gen_ok else None),
-                validate_report={}, total_duration_sec=time.time() - t0,
-                total_tokens={"in": tok_in, "out": tok_out}, error=err,
-                ok=bool(gen_ok),
-            )
-
-        # VALIDATE (framework, deterministic)
-        report = self._validate_from_scratch_driver()
-        # Repair admission is strict: every Framework check must pass.  The
-        # legacy structural subset is useful diagnostics, but cannot suppress
-        # a failed public check.
-        validate_ok = report.get("all_ok") is True
-
-        # OUTER VAL→GEN RETRY: if the held-out validator fails, feed the failing
-        # tests back to the agent and let it repair the driver in place. This is
-        # what makes the pipeline 'iterate until the structural-test suite
-        # passes' rather than giving up after a single shallow bug.
+        """Use one stage sequence for catalog and task-grounded designs."""
+        dynamic = getattr(self, "_dynamic_capabilities", False)
+        stages = ("study",) + (("design",) if dynamic else ()) + ("generate", "validate", "export", "demo")
+        if stop_after is not None and stop_after not in stages:
+            raise ValueError(f"stop_after={stop_after!r} not in {stages}")
+        started = time.monotonic()
+        tokens = {"in": 0, "out": 0}
+        phases: list[dict[str, Any]] = []
+        driver_path = self.workspace / "driver_from_scratch.py"
+        if dynamic:
+            for relative in (
+                "study.json", "driver_from_scratch.py", "validate_report.json",
+                "design/capability_design.json", "design/capability_preparation.json",
+                "design/scene_cases.yaml", "design/probe_report.json",
+            ):
+                (self.workspace / relative).unlink(missing_ok=True)
+            self.capability_design = None
+            self.scene_cases_path = None
+            self.scene_paths = {}
+        study_ok = design_ok = gen_ok = validate_ok = export_ok = False
+        demo_ok: bool | None = None
+        report: dict[str, Any] = {}
+        error: str | None = None
+        stopped = False
+        validation_recorded = False
         outer_attempts = 0
-        while (not validate_ok and gen_ok and report.get("repairable", True)
-               and outer_attempts < self.cfg.max_outer_retries):
-            outer_attempts += 1
-            r_rep = self.phase_gen_repair(
-                validate_failure_feedback(report), outer_attempts
-            )
-            tok_in += int(r_rep.total_tokens.get("in", 0))
-            tok_out += int(r_rep.total_tokens.get("out", 0))
-            gen_ok = bool(
-                getattr(r_rep, "ok", True)
-                and (self.workspace / "driver_from_scratch.py").is_file()
-            )
-            report = self._validate_from_scratch_driver()
-            validate_ok = report.get("all_ok") is True
-
-        report["outer_attempts"] = outer_attempts
-        (self.workspace / "validate_report.json").write_text(json.dumps(report, indent=2))
-
+        for name in stages:
+            if name == "validate" and validation_recorded:
+                pass
+            elif stopped:
+                phases.append({"name": name, "ok": False,
+                               "error": f"not run — stop_after={stop_after}"})
+            elif error is not None:
+                phases.append({"name": name, "ok": False,
+                               "error": f"skipped — upstream phase failed: {error}"})
+            elif name == "demo" and not self.cfg.enable_demo:
+                phases.append({"name": name, "ok": False, "error": "not run — demo disabled"})
+            elif name in {"study", "design"}:
+                result = self.phase_study() if name == "study" else self.phase_design()
+                for key in tokens:
+                    tokens[key] += int(result.total_tokens.get(key, 0))
+                if name == "study":
+                    study_ok = bool(getattr(result, "ok", True)
+                                    and (self.workspace / "study.json").is_file())
+                    phase_ok = study_ok
+                    missing = "study.json was not written by the current run"
+                else:
+                    design_ok = bool(result.ok and isinstance(self.capability_design, dict)
+                                     and (self.workspace / "design/capability_design.json").is_file())
+                    phase_ok = design_ok
+                    missing = "capability design was not written by the current run"
+                phase_error = None if phase_ok else (result.error or missing)
+                phases.append({"name": name, "ok": phase_ok, "error": phase_error})
+                if not phase_ok:
+                    error = phase_error
+            elif name == "generate":
+                for attempt in range(max(0, self.cfg.max_outer_retries) + 1):
+                    before = driver_path.stat().st_mtime_ns if driver_path.is_file() else None
+                    result = (self.phase_gen_algo() if attempt == 0 else
+                              self.phase_gen_repair(validate_failure_feedback(report), attempt))
+                    outer_attempts = attempt
+                    for key in tokens:
+                        tokens[key] += int(result.total_tokens.get(key, 0))
+                    gen_ok = bool(
+                        getattr(result, "ok", True) and driver_path.is_file()
+                        and (not dynamic or before is None or driver_path.stat().st_mtime_ns != before)
+                    )
+                    generation_error = None if gen_ok else (
+                        result.error or "GEN_ALGO did not write a current driver_from_scratch.py"
+                    )
+                    phases.append({"name": "generate" if attempt == 0 else f"repair_{attempt}",
+                                   "ok": gen_ok, "error": generation_error})
+                    if not gen_ok:
+                        error = generation_error
+                        break
+                    if stop_after == "generate":
+                        break
+                    report = self._validate_from_scratch_driver()
+                    validate_ok = report.get("all_ok") is True
+                    validation_recorded = True
+                    phases.append({"name": "validate", "ok": validate_ok, "error": report.get("error")})
+                    if validate_ok:
+                        break
+                    if not report.get("repairable", True) or attempt == max(0, self.cfg.max_outer_retries):
+                        error = report.get("error") or "Framework validation failed"
+                        break
+                if validation_recorded:
+                    report["outer_attempts"] = outer_attempts
+                    (self.workspace / "validate_report.json").write_text(json.dumps(report, indent=2))
+            else:
+                result = self.phase_export() if name == "export" else self.phase_demo()
+                for key in tokens:
+                    tokens[key] += int(result.token_usage.get(key, 0))
+                phases.append({
+                    "name": name, "ok": result.ok, "error": result.error,
+                    "duration_sec": result.duration_sec,
+                    "trace_path": str(result.trace_path) if result.trace_path else None,
+                    "artifact_paths": [str(path) for path in result.artifact_paths],
+                    "metadata": result.metadata,
+                })
+                if name == "export":
+                    export_ok = result.ok
+                else:
+                    demo_ok = result.ok
+                if not result.ok:
+                    error = result.error or f"{name} failed"
+            if stop_after == name:
+                stopped = True
         return FromScratchResult(
             robot_id=self.cfg.robot_id, workspace=self.workspace,
-            # Retry admission above uses the existing critical-test policy.
-            # The public result must still preserve a failed Framework check.
-            study_ok=True, gen_ok=gen_ok, validate_ok=report.get("all_ok") is True,
-            driver_path=(self.workspace / "driver_from_scratch.py" if gen_ok else None),
-            validate_report=report,
-            total_duration_sec=time.time() - t0,
-            total_tokens={"in": tok_in, "out": tok_out},
-            error=err,
-            ok=bool(study_ok and gen_ok and validate_ok),
+            study_ok=study_ok, design_ok=design_ok, gen_ok=gen_ok, validate_ok=validate_ok,
+            driver_path=driver_path if gen_ok else None, validate_report=report,
+            total_duration_sec=time.monotonic() - started, total_tokens=tokens,
+            error=error, phases=phases, ok=error is None,
+            export_ok=export_ok, demo_ok=demo_ok,
         )
 
 

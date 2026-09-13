@@ -96,6 +96,8 @@ ordered plan. Supply only a short action summary, not private chain-of-thought.
 Use abstract subtasks to decompose a task; use capability leaves with names and native
 requests from the supplied public catalogue. The runtime executes ONLY the first item,
 then asks you to revise the remaining plan using the latest public observation.
+For a task with multiple phases, first group its phases into a small number of abstract
+subtasks, then use capability leaves inside those children.
 An abstract first item opens a child node. Finish that child with an empty subtasks list;
 control then returns to its parent so you can revise the parent's remaining plan.
 Do not repeat completed actions. Do not assume pending siblings executed. Preserve any

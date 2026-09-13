@@ -1,22 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
-"""SelfAssemble: 5-phase orchestrator for the auto_adapter agent.
+"""SelfAssemble: driver generation, validation, export, and optional ReCAP demo.
 
 Implements DESIGN.md §0.7 (3-layer architecture) + §0.9 (ReAct loop spec).
 
 Pipeline:
     STUDY     — parse MJCF, build a capability map (joints / dof / class)
+    DESIGN    — prepare task-grounded capabilities when requested
     GENERATE  — pick a skeleton, fill its Spec, write driver.py
     VALIDATE  — scp driver.py to DGX, run a behavior test, fetch report
     EXPORT    — generate an MCP server stub exposing validated skills
-    DEMO      — run the end-to-end demo on DGX, record a video
+    DEMO      — optional configured local ReCAP task and video
 
 The orchestrator owns:
     * one AgentCore CodeInterpreter session (shared across phases)
     * one DGX ssh/scp binding (set up once, used by VALIDATE + DEMO)
     * the workspace layout under `<workspace_root>/<robot_id>/`
 
-Each phase is one `ReactLoop.run()` call with a phase-specific (system_prompt,
-tools, user_message) tuple. Phase output is parsed into a structured artifact
+Agent phases use `ReactLoop.run()` with phase-specific prompts and tools;
+the configured demo uses the ReCAP controller. Phase output is recorded as an artifact
 saved under `<workspace>/<artifact_name>`. A failing phase short-circuits the
 rest of the pipeline; partial results are still returned.
 """
@@ -130,8 +131,8 @@ class SelfAssembleConfig:
     robot_id: str
     mjcf_path: Path  # local path to the input MJCF
     workspace_root: Path  # `<workspace_root>/<robot_id>/` will be created
-    # "local" → run STUDY/GENERATE/VALIDATE/DEMO on this Mac via local_exec.
-    # "dgx"   → run VALIDATE/DEMO on `dgx_host` via ssh_dgx_exec + scp_*.
+    # "local" → run on this Mac; required for the optional ReCAP demo.
+    # "dgx"   → retains remote generation/validation tools.
     mode: str = "local"
     # "framework" → orchestrator deterministically exercises the driver
     #               (driver.build() + per-class smoke calls). No LLM. Fast,
@@ -157,6 +158,8 @@ class SelfAssembleConfig:
     max_iters_export: int = 8
     max_iters_demo: int = 18
     demo_task: str = "Demonstrate a short sequence of the available validated capabilities, using their documented request bounds and observing the robot between actions."
+    enable_demo: bool = False
+    demo_config_path: Path | None = None
 
     # Total submissions: initial generation plus at most three Framework
     # repairs. Set to 1 for an initial submission with no repair.
@@ -593,59 +596,12 @@ clear docstring, and returns a JSON-serializable dict.
 `python -c "import importlib; importlib.import_module('mcp_server'); print('import ok')"`. \
 DO NOT run the server itself — it would block on stdio.
   5. Reply with one sentence listing the registered tool names.
-"""
 
-
-_DEMO_SYSTEM_DGX = """\
-You are Phase 5 DEMO. Run an end-to-end demo on the DGX and capture a \
-video / log.
-
-Procedure:
-  1. scp_to_dgx mcp_server.py if not already there.
-  2. write_file a `demo.py` workspace-relative that runs a representative \
-behavior end-to-end (arm: home → grasp closest graspable body → lift 20cm; \
-quadruped: stand → walk forward 3s) and records frames via the skeleton's \
-render() method into an mp4.
-  3. scp_to_dgx demo.py.
-  4. ssh_dgx_exec to run demo.py.
-  5. scp_from_dgx the resulting mp4 back into the local workspace.
-  6. Reply with one sentence: behavior + path to local mp4.
-"""
-
-
-_DEMO_SYSTEM_LOCAL = """\
-You are Phase 5 DEMO. Run an end-to-end demo locally and capture an mp4. \
-No scp, no ssh — everything runs in the workspace.
-
-IMPORTANT: before writing demo.py, ALWAYS read the skeleton source first so \
-you know the exact method signatures — read_file is allowed against the \
-auto_adapter/skeletons/ directory (e.g. `read_file("arm_serial_dls.py")` or \
-`read_file("quadruped_pd_gait.py")` resolve under the skeletons root). \
-Do not guess signatures. `render()` returns (H, W, 3) uint8 RGB — call it \
-WITHOUT camera args; the skeleton picks a default camera. Use imageio: \
-`imageio.mimsave(path, frames, fps=30, codec="libx264")`.
-
-Procedure:
-  1. read_file validate_report.json AND the skeleton source for the methods \
-you'll call.
-  2. write_file `demo.py` (workspace-relative). The behavior depends on the \
-robot class (from study.json):
-       - ARM: home → grasp the first graspable body → lift 20 cm (REMEMBER \
-to DESCEND to within 2 cm of the body before gripper_close — see VALIDATE)
-       - QUADRUPED: stand_up → (optional) walk_forward → sit. CHECK \
-validate_report.json: if `walk_forward` test was OK, include a short \
-walk_forward(secs=2.0, speed=0.2) between stand and sit; if it FAILED \
-(robot toppled, displacement negative or near zero), SKIP walk_forward \
-and demo just stand_up → settle (~1s) → sit. The point is to show a \
-WORKING demo — don't include behaviors that fall over. Render throughout.
-       - Other: any sensible end-to-end behavior the skeleton exposes.
-  3. The script must:
-       - render() every few sim steps; target ~60-150 total frames (2-5 s of \
-video at 30 fps)
-       - save both `demo.mp4` (workspace root) AND `recordings/demo_<int(time.time())>.mp4`
-       - print final JSON line `{"behavior":"...","frames":<int>,"mp4_path":"demo.mp4","ok":<bool>}`
-  4. local_exec to run `python demo.py 2>&1`. timeout_sec=240.
-  5. Reply with one sentence: behavior + frame count + path to demo.mp4.
+When the user message supplies a current public capability design, it takes
+precedence over the generic method examples above. Export its validated
+method_name/request_schema contracts as tools that call method(request=...).
+Use introspection to confirm these interfaces; do not add inherited methods
+absent from that design or reload a different design from the robot catalog.
 """
 
 
@@ -1806,12 +1762,17 @@ class SelfAssemble:
     def _phase_export(self) -> PhaseResult:
         # EXPORT also needs local_exec so the agent can syntax-check the
         # generated mcp_server.py via a one-shot `python -c "import ..."`.
+        (self.workspace / "mcp_server.py").unlink(missing_ok=True)
         tools = self._local_tools() + self._runtime_tools()
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
             "driver.py and validate_report.json are in the workspace. "
             "Write mcp_server.py per the procedure."
         )
+        if self.capability_design is not None:
+            user_msg += "\nCurrent public capability design:\n" + json.dumps(
+                self.capability_design, indent=2, ensure_ascii=False
+            )
         return self._run_phase(
             name="04_export",
             system=_EXPORT_SYSTEM,
@@ -1822,69 +1783,37 @@ class SelfAssemble:
         )
 
     def _phase_demo(self) -> PhaseResult:
-        if self.cfg.mode == "local" and self.capability_design:
-            return self._phase_recap_demo()
-        tools = self._local_tools() + self._runtime_tools()
-        if self.cfg.mode == "local":
-            system = _DEMO_SYSTEM_LOCAL
-            user_msg = (
-                f"Robot ID: {self.cfg.robot_id}\n"
-                "mcp_server.py, driver.py, mjcf.xml, validate_report.json are "
-                "in the workspace. Run the demo locally per the procedure."
-            )
-        else:
-            system = _DEMO_SYSTEM_DGX
-            user_msg = (
-                f"Robot ID: {self.cfg.robot_id}\n"
-                "mcp_server.py and driver.py and mjcf.xml are in the workspace. "
-                "Run the demo per the procedure."
-            )
-        return self._run_phase(
-            name="05_demo",
-            system=system,
-            user_msg=user_msg,
-            tools=tools,
-            max_iters=self.cfg.max_iters_demo,
-            expected_artifacts=["demo.mp4"],
-        )
+        if self.cfg.mode != "local":
+            return PhaseResult("05_demo", False, 0.0,
+                               error="configured ReCAP demo requires local mode")
+        return self._phase_recap_demo()
 
     def _phase_recap_demo(self) -> PhaseResult:
-        """Run the canonical controller in a bounded local diagnostic process."""
-        started = time.monotonic()
-        report_path = self.workspace / "recap_demo_report.json"
-        report_path.unlink(missing_ok=True)
-        env = dict(os.environ)
-        env["PYTHONPATH"] = os.pathsep.join(filter(None, (
-            str(REPO_ROOT), str(REPO_ROOT.parent / "autoadapter" / "src"),
-            env.get("PYTHONPATH"))))
-        command = [sys.executable, "-m", "auto_adapter.agent.recap_demo",
-                   "--workspace", str(self.workspace), "--robot-id", self.cfg.robot_id,
-                   "--task", self.cfg.demo_task, "--model", self.cfg.bedrock_model,
-                   "--provider", self.cfg.model_provider, "--region", self.cfg.aws_region,
-                   "--max-tokens", str(self.cfg.max_tokens_per_turn)]
-        log_path = self.workspace / "traces" / "recap_demo_process.log"
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            with log_path.open("w") as log:
-                process = subprocess.run(command, env=env, cwd=REPO_ROOT,
-                                         stdout=log, stderr=subprocess.STDOUT, timeout=600)
-            report = json.loads(report_path.read_text()) if report_path.exists() else {}
-            ok = process.returncode == 0 and report.get("ok") is True
-            return PhaseResult(
-                name="05_demo", ok=ok, duration_sec=time.monotonic() - started,
-                trace_path=Path(report["trace_path"]) if report.get("trace_path") else log_path,
-                artifact_paths=[p for p in (report_path, self.workspace / "demo.mp4") if p.exists()],
-                final_text="ReCAP diagnostic demo; physical task success has not been evaluated.",
-                error=None if ok else "ReCAP demo failed; inspect recap_demo_report.json and process log",
-                metadata=report)
-        except subprocess.TimeoutExpired:
-            return PhaseResult(name="05_demo", ok=False, duration_sec=time.monotonic() - started,
-                               trace_path=log_path, error="ReCAP demo exceeded 600 seconds")
+        """Use this run's design and validation for the configured demo."""
+        from .agent.recap_demo import run_configured_demo
+
+        report = run_configured_demo(
+            workspace=self.workspace, robot_id=self.cfg.robot_id,
+            capability_design=self.capability_design,
+            scene_cases_path=self.scene_cases_path,
+            model=self.cfg.bedrock_model, provider=self.cfg.model_provider,
+            region=self.cfg.aws_region, max_tokens=self.cfg.max_tokens_per_turn,
+            demo_config_path=self.cfg.demo_config_path,
+        )
+        return PhaseResult(
+            name="05_demo", ok=report.get("ok") is True,
+            duration_sec=report.get("duration_sec", 0.0),
+            trace_path=Path(report["trace_path"]) if report.get("trace_path") else None,
+            artifact_paths=[Path(report[key]) for key in ("report_path", "video_path")
+                            if report.get(key) and Path(report[key]).is_file()],
+            final_text="ReCAP diagnostic demo; physical task success has not been evaluated.",
+            error=report.get("error"), metadata=report,
+        )
 
     # ─── Top-level entrypoint ─────────────────────────────────────────────
 
     PHASES = ("study", "generate", "validate", "export", "demo")
-    DYNAMIC_PHASES = ("study", "design", "generate", "validate")
+    DYNAMIC_PHASES = ("study", "design", "generate", "validate", "export", "demo")
 
     def _finish_result(
         self,
@@ -1893,11 +1822,10 @@ class SelfAssemble:
         ok_override: bool | None = None,
     ) -> SelfAssembleResult:
         """Persist the aggregate result and narrative for either route."""
-        # ``not run — stop_after=...`` is an intentional prefix marker and
-        # must not make a successful requested prefix report as failed.
+        # Intentional stops and a disabled demo do not fail the requested run.
         executed = [
             phase for phase in results
-            if not (phase.error or "").startswith("not run — stop_after=")
+            if not (phase.error or "").startswith("not run — ")
         ]
         aggregate_ok = bool(executed) and all(phase.ok for phase in executed)
         if ok_override is not None:
@@ -1913,224 +1841,87 @@ class SelfAssemble:
         self._write_narrative(out)
         return out
 
-    def _run_dynamic(self, *, stop_after: Optional[str]) -> SelfAssembleResult:
-        if stop_after is not None and stop_after not in self.DYNAMIC_PHASES:
-            raise ValueError(f"dynamic stop_after={stop_after!r} not in {self.DYNAMIC_PHASES}")
-        # A dynamic invocation owns a fresh current-output boundary.  The
-        # prior run's study, candidate, validation report, or design handoff
-        # cannot certify this invocation after a transport/model failure.
-        for path in (
-            self.workspace / "study.json",
-            self.workspace / "driver.py",
-            self.workspace / "validate_report.json",
-            self.workspace / "design" / "capability_design.json",
-            self.workspace / "design" / "capability_preparation.json",
-            self.workspace / "design" / "scene_cases.yaml",
-            self.workspace / "design" / "probe_report.json",
-        ):
-            path.unlink(missing_ok=True)
-        self.capability_design = None
-        self.scene_cases_path = None
-        self.scene_paths = {}
-        results: list[PhaseResult] = []
-        phase_methods = {
-            "study": self._phase_study,
-            "design": self._phase_design,
-        }
-        failed: str | None = None
-        for name in ("study", "design"):
-            if failed is not None:
-                results.append(PhaseResult(name=name, ok=False, duration_sec=0.0, error=failed))
-                continue
-            phase = phase_methods[name]()
-            if name == "study" and not (self.workspace / "study.json").is_file():
-                phase.ok = False
-                phase.error = phase.error or "study.json was not written by the current run"
-            if name == "design" and not (
-                isinstance(self.capability_design, dict)
-                and (self.workspace / "design" / "capability_design.json").is_file()
-            ):
-                phase.ok = False
-                phase.error = phase.error or "capability design was not written by the current run"
-            results.append(phase)
-            if not phase.ok:
-                failed = f"skipped — upstream `{name}` failed: {phase.error}"
-                continue
-            if stop_after == name:
-                break
-        if failed is None and (stop_after is None or stop_after not in {"study", "design"}):
-            max_outer = max(1, int(self.cfg.max_outer_gen_val_iters))
-            gen: PhaseResult | None = None
-            val: PhaseResult | None = None
-            attempts = 0
-            feedback: str | None = None
-            while attempts < max_outer:
-                attempts += 1
-                gen = self._phase_generate() if feedback is None else self._phase_repair(feedback, attempts - 1)
-                gen.metadata = dict(gen.metadata or {})
-                gen.metadata["outer_gen_val_iters"] = attempts
-                if not gen.ok:
-                    results.append(gen)
-                    results.append(PhaseResult(
-                        name="validate", ok=False, duration_sec=0.0,
-                        error=f"skipped — upstream `generate` failed: {gen.error}",
-                    ))
-                    failed = f"skipped — upstream `generate` failed: {gen.error}"
-                    break
-                results.append(gen)
-                if stop_after == "generate":
-                    break
-                val = self._phase_validate()
-                results.append(val)
-                if val.ok:
-                    break
-                if not val.metadata.get("repairable", True):
-                    failed = f"skipped — dynamic validation preparation failed: {val.error}"
-                    break
-                feedback = self._summarise_validate_failures()
-            if stop_after == "validate" and val is None and failed is None:
-                # This is only reachable with a zero outer budget; keep the
-                # result explicit rather than implying that validation ran.
-                results.append(PhaseResult(
-                    name="validate", ok=False, duration_sec=0.0,
-                    error="dynamic validation was not run",
-                    metadata={"validation_error": True, "repairable": False},
-                ))
-            elif val is not None and not val.ok and failed is None:
-                failed = f"skipped — dynamic validation failed after {attempts} attempts: {val.error}"
-        if stop_after is not None:
-            try:
-                index = self.DYNAMIC_PHASES.index(stop_after)
-            except ValueError:
-                index = -1
-            names = self.DYNAMIC_PHASES[index + 1 :] if index >= 0 else []
-            existing = {phase.name for phase in results}
-            for name in names:
-                if name not in existing:
-                    results.append(PhaseResult(
-                        name=name, ok=False, duration_sec=0.0,
-                        error=f"not run — stop_after={stop_after}",
-                    ))
-        elif failed is not None:
-            existing = {phase.name for phase in results}
-            for name in ("generate", "validate"):
-                if name not in existing:
-                    results.append(PhaseResult(
-                        name=name, ok=False, duration_sec=0.0, error=failed
-                    ))
-        if failed is not None:
-            effective_ok = False
-        elif stop_after in {"study", "design"}:
-            effective_ok = True
-        elif stop_after == "generate":
-            effective_ok = gen is not None and gen.ok
-        else:
-            effective_ok = val is not None and val.ok
-        return self._finish_result(results, ok_override=effective_ok)
-
     def run(self, *, stop_after: Optional[str] = None) -> SelfAssembleResult:
-        """Run phases sequentially. `stop_after` ∈ PHASES (inclusive) lets you
-        run just Phase 1, just Phase 1+2, etc. — useful when DGX is down.
-
-        On the first failing phase, later phases are skipped (each is recorded
-        as `ok=False, error="skipped — upstream <name> failed"`).
-        """
-        if getattr(self, "_dynamic_capabilities", False):
-            return self._run_dynamic(stop_after=stop_after)
-        if stop_after is not None and stop_after not in self.PHASES:
-            raise ValueError(f"stop_after={stop_after!r} not in {self.PHASES}")
-
-        method_for = {
-            "study":   self._phase_study,
-            "export":  self._phase_export,
-            "demo":    self._phase_demo,
+        """Run the selected design route, then export and optional ReCAP demo."""
+        dynamic = getattr(self, "_dynamic_capabilities", False)
+        phases = self.DYNAMIC_PHASES if dynamic else self.PHASES
+        if stop_after is not None and stop_after not in phases:
+            raise ValueError(f"stop_after={stop_after!r} not in {phases}")
+        if dynamic:
+            # Keep the existing current-output boundary for generated designs.
+            for relative in (
+                "study.json", "driver.py", "validate_report.json",
+                "design/capability_design.json", "design/capability_preparation.json",
+                "design/scene_cases.yaml", "design/probe_report.json",
+            ):
+                (self.workspace / relative).unlink(missing_ok=True)
+            self.capability_design = None
+            self.scene_cases_path = None
+            self.scene_paths = {}
+        methods = {
+            "study": self._phase_study, "design": self._phase_design,
+            "export": self._phase_export, "demo": self._phase_demo,
         }
-
         results: list[PhaseResult] = []
-        skipping = False
-        skip_reason = ""
-        for phase in self.PHASES:
-            if phase == "validate":
-                # Recorded inside GENERATE, including its failure/skip result.
+        failed: str | None = None
+        stopped = False
+        validation_recorded = False
+        for name in phases:
+            if name == "validate" and validation_recorded:
+                # Validation is recorded with each generation/repair attempt.
                 pass
-            elif skipping:
-                results.append(
-                    PhaseResult(name=phase, ok=False, duration_sec=0.0, error=skip_reason)
-                )
-            elif phase == "generate":
-                # Outer GEN←VAL retry loop. The first pass is GENERATE; later
-                # passes repair the existing driver with their own trace.
-                # If VALIDATE structural tests fail, feed only the sanitized
-                # failure detail back into a repair pass up to `max_outer`.
-                max_outer = max(1, int(self.cfg.max_outer_gen_val_iters))
-                gen_res: Optional[PhaseResult] = None
-                val_res: Optional[PhaseResult] = None
-                outer_iter = 0
-                attempts = 0
-                prior_failures: Optional[str] = None
-                while outer_iter < max_outer:
-                    attempts += 1
-                    if prior_failures is None:
-                        gen_res = self._phase_generate()
-                    else:
-                        gen_res = self._phase_repair(
-                            prior_failures, attempt=attempts - 1
-                        )
-                    if not gen_res.ok:
-                        # GENERATE itself failed — no point retrying VALIDATE
+            elif stopped:
+                results.append(PhaseResult(name, False, 0.0,
+                    error=f"not run — stop_after={stop_after}"))
+            elif failed is not None:
+                results.append(PhaseResult(name, False, 0.0, error=failed))
+            elif name == "demo" and not self.cfg.enable_demo:
+                results.append(PhaseResult(name, False, 0.0,
+                    error="not run — demo disabled"))
+            elif name == "generate":
+                feedback: str | None = None
+                max_attempts = max(1, int(self.cfg.max_outer_gen_val_iters))
+                for attempt in range(max_attempts):
+                    generated = (self._phase_generate() if feedback is None
+                                 else self._phase_repair(feedback, attempt))
+                    generated.metadata = dict(generated.metadata or {})
+                    generated.metadata["outer_gen_val_iters"] = attempt + 1
+                    results.append(generated)
+                    if not generated.ok:
+                        failed = f"skipped — upstream generate failed: {generated.error}"
                         break
                     if stop_after == "generate":
-                        # A generate-only canary must not silently run the
-                        # uncalibrated physical validation suite.
                         break
-                    val_res = self._phase_validate()
-                    if val_res.ok:
+                    validated = self._phase_validate()
+                    results.append(validated)
+                    validation_recorded = True
+                    if validated.ok:
                         break
-                    # Read structural failures from the validate_report.json
-                    prior_failures = self._summarise_validate_failures()
-                    outer_iter += 1
-                # Record both phases with the outer-loop count noted on GENERATE
-                if gen_res is not None:
-                    gen_res.metadata = dict(gen_res.metadata or {})
-                    gen_res.metadata["outer_gen_val_iters"] = attempts
-                    results.append(gen_res)
-                if val_res is not None:
-                    results.append(val_res)
-                    if not val_res.ok:
-                        skipping = True
-                        skip_reason = (
-                            f"skipped — outer GEN←VAL loop exhausted "
-                            f"({attempts} attempts) and structural tests still fail: "
-                            f"{val_res.error}"
-                        )
-                elif gen_res is not None and not gen_res.ok:
-                    # GENERATE failed and we never got to VALIDATE; pad it
-                    results.append(PhaseResult(
-                        name="validate", ok=False, duration_sec=0.0,
-                        error=f"skipped — upstream `generate` failed: {gen_res.error}"
-                    ))
-                    skipping = True
-                    skip_reason = f"skipped — upstream `generate` failed: {gen_res.error}"
+                    if (not validated.metadata.get("repairable", True)
+                            or attempt + 1 == max_attempts):
+                        failed = (f"skipped — validation failed after {attempt + 1} "
+                                  f"attempts: {validated.error}")
+                        break
+                    feedback = self._summarise_validate_failures()
             else:
-                res = method_for[phase]()
-                results.append(res)
-                if not res.ok:
-                    skipping = True
-                    skip_reason = f"skipped — upstream `{phase}` failed: {res.error}"
-            if stop_after is not None and phase == stop_after:
-                # Pad remaining phases with explicit "not run" markers
-                for remaining in self.PHASES[self.PHASES.index(phase) + 1 :]:
-                    results.append(
-                        PhaseResult(
-                            name=remaining,
-                            ok=False,
-                            duration_sec=0.0,
-                            error=f"not run — stop_after={stop_after}",
-                        )
-                    )
-                break
-
-        return self._finish_result(results)
+                result = methods[name]()
+                if dynamic and name == "study" and not (self.workspace / "study.json").is_file():
+                    result.ok = False
+                    result.error = result.error or "study.json was not written by the current run"
+                if dynamic and name == "design" and not (
+                    isinstance(self.capability_design, dict)
+                    and (self.workspace / "design/capability_design.json").is_file()
+                ):
+                    result.ok = False
+                    result.error = result.error or "capability design was not written by the current run"
+                results.append(result)
+                if not result.ok:
+                    failed = f"skipped — upstream {name} failed: {result.error}"
+            if stop_after == name:
+                stopped = True
+        # Failed attempts remain visible, but a successful final repair owns
+        # generation/validation outcome. Demo never feeds back into repair.
+        return self._finish_result(results, ok_override=failed is None)
 
     def _write_narrative(self, result: "SelfAssembleResult") -> None:
         """Walk traces + artifacts + recordings → narrative.md timeline."""
