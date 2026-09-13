@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from auto_adapter.agent import ToolSpec
+import pytest
+
 from auto_adapter.orchestrator_from_scratch import (
     FromScratchConfig,
     FromScratchOrchestrator,
@@ -35,6 +36,11 @@ def _capture_loop(runner: FromScratchOrchestrator, monkeypatch):
 
 def test_local_context_does_not_create_agentcore_session(tmp_path, monkeypatch):
     runner = _runner(tmp_path)
+    source = tmp_path / "scene.xml"
+
+    assert runner.capability_design is None
+    assert runner.cfg.mjcf_path == source
+    assert (runner.workspace / "mjcf.xml").resolve() == source.resolve()
 
     def fail_import(name, *args, **kwargs):
         if name == "boto3" or name.startswith("botocore"):
@@ -44,23 +50,16 @@ def test_local_context_does_not_create_agentcore_session(tmp_path, monkeypatch):
     original_import = __import__
     monkeypatch.setattr("builtins.__import__", fail_import)
     assert runner.__enter__() is runner
-    assert runner._exec_python_tool is None
 
 
 def test_local_study_and_generate_only_expose_workspace_tools(tmp_path, monkeypatch):
     runner = _runner(tmp_path)
-    # A stale remote handle must not leak into an explicitly local phase.
-    runner._exec_python_tool = ToolSpec(
-        name="execute_python",
-        description="remote test double",
-        input_schema={"type": "object"},
-        handler=lambda _input: (_ for _ in ()).throw(
-            AssertionError("remote execute_python was routed in local mode")
-        ),
-    )
     captured = _capture_loop(runner, monkeypatch)
 
     runner.phase_study()
+    runner.capability_design = {
+        "capabilities": [{"method_name": "move", "capability_id": "move"}]
+    }
     runner.phase_gen_algo()
 
     assert len(captured) == 2
@@ -73,17 +72,12 @@ def test_local_study_and_generate_only_expose_workspace_tools(tmp_path, monkeypa
         assert "execute_python" not in phase["system"]
         assert "fresh process" in phase["system"]
         assert "workspace" in phase["system"]
+    assert '"method_name": "move"' in captured[1]["user_msg"]
 
 
 def test_local_repair_uses_same_route_and_capability_override(tmp_path, monkeypatch):
     runner = _runner(tmp_path)
     runner.capability_design = {"capabilities": [{"method_name": "drive"}]}
-    runner._exec_python_tool = ToolSpec(
-        name="execute_python",
-        description="remote test double",
-        input_schema={"type": "object"},
-        handler=lambda _input: None,
-    )
     captured = _capture_loop(runner, monkeypatch)
 
     runner.phase_gen_repair("failure feedback", 1)
@@ -93,130 +87,55 @@ def test_local_repair_uses_same_route_and_capability_override(tmp_path, monkeypa
     assert "execute_python" not in {tool.name for tool in phase["tools"]}
     assert "execute_python" not in phase["system"]
     assert "complete method(request) interface" in phase["system"]
+    assert '"method_name": "drive"' in phase["user_msg"]
 
 
 def test_from_scratch_config_keeps_historical_positional_model_argument(tmp_path):
     cfg = FromScratchConfig("fixture", tmp_path / "scene.xml", tmp_path, "legacy-model")
 
     assert cfg.bedrock_model == "legacy-model"
-    assert cfg.mode == "agentcore"
+    assert cfg.mode == "local"
 
 
-def test_h1_required_evidence_unavailable_cannot_pass(tmp_path, monkeypatch):
-    from auto_adapter import robot_catalog
-    from auto_adapter import orchestrator_from_scratch as module
-
-    class FakeTrace:
-        def __init__(self, _robot, _state_refs):
-            self.model = SimpleNamespace(
-                opt=SimpleNamespace(timestep=0.002),
-            )
-            self.samples = [
-                {"time": 0.0, "base_xyz": [0.0, 0.0, 1.0],
-                 "base_upright": 1.0, "finite": True},
-                {"time": 2.0, "base_xyz": [0.0, 0.0, 1.0],
-                 "base_upright": 1.0, "finite": True},
-            ]
-            self.tool = "initial"
-            self.idx = -1
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_exc):
-            return None
-
-    class FakeVideo:
-        def __init__(self, _robot, _path, **_kwargs):
-            pass
-
-        def capture(self, **_kwargs):
-            pass
-
-        def finish(self):
-            return {"ok": False, "frame_count": 0,
-                    "errors": ["renderer unavailable"]}
-
-    class FakeRobot:
-        def stand_balance(self, *, secs):
-            assert secs == 2.0
-
-    monkeypatch.setattr(
-        robot_catalog,
-        "find_robot_definition",
-        lambda *_args: {"state_refs": {"base_body": "pelvis"}},
-    )
-    monkeypatch.setattr("autoadapter_bench.physics.PhysicsTrace", FakeTrace)
-    monkeypatch.setattr("autoadapter_bench.capability_eval._VideoRecorder", FakeVideo)
-
-    result = module._validate_humanoid_stand_balance(
-        FakeRobot(), "h1", tmp_path / "scene.xml", secs=2.0,
-        trace_path=tmp_path / "stand.json", video_path=tmp_path / "stand.mp4",
-    )
-
-    assert result["ok"] is False
-    assert result["sim_elapsed_s"] == 2.0
-    assert result["physics_steps"] == 1
-    assert (tmp_path / "stand.json").is_file()
-    assert result["video"]["errors"] == ["renderer unavailable"]
-    assert "required stand_balance video unavailable" in result["detail"]
+def test_nonlocal_mode_is_rejected_at_config_boundary(tmp_path):
+    with pytest.raises(ValueError, match="requires mode='local'"):
+        FromScratchConfig(
+            "fixture", tmp_path / "scene.xml", tmp_path, mode="agentcore"
+        )
 
 
-def test_h1_stand_exception_keeps_partial_trace_duration(tmp_path, monkeypatch):
-    from auto_adapter import robot_catalog
-    from auto_adapter import orchestrator_from_scratch as module
+def test_default_run_enters_design_after_current_study(tmp_path, monkeypatch):
+    runner = _runner(tmp_path)
+    events = []
 
-    expected_samples = [
-        {"time": 0.0, "base_xyz": [0.0, 0.0, 1.0],
-         "base_upright": 1.0, "finite": True},
-        {"time": 2.0, "base_xyz": [0.0, 0.0, 1.0],
-         "base_upright": 1.0, "finite": True},
-    ]
+    def study():
+        events.append("study")
+        (runner.workspace / "study.json").write_text(
+            '{"robot_id": "fixture"}', encoding="utf-8"
+        )
+        return SimpleNamespace(ok=True, error=None, total_tokens={})
 
-    class ExplodingTrace:
-        def __init__(self, _robot, _state_refs):
-            self.model = SimpleNamespace(opt=SimpleNamespace(timestep=0.002))
-            self.samples = list(expected_samples)
-            self.tool = "initial"
-            self.idx = -1
+    def design():
+        events.append("design")
+        runner.capability_design = {
+            "capabilities": [{"capability_id": "move", "method_name": "move"}]
+        }
+        output = runner.workspace / "design"
+        output.mkdir(exist_ok=True)
+        (output / "capability_design.json").write_text("{}", encoding="utf-8")
+        return SimpleNamespace(ok=True, error=None, total_tokens={})
 
-        def __enter__(self):
-            return self
+    monkeypatch.setattr(runner, "phase_study", study)
+    monkeypatch.setattr(runner, "phase_design", design)
 
-        def __exit__(self, *_exc):
-            return None
+    result = runner.run(stop_after="design")
 
-    class FinishedVideo:
-        def __init__(self, _robot, _path, **_kwargs):
-            pass
-
-        def capture(self, **_kwargs):
-            pass
-
-        def finish(self):
-            return {"ok": True, "frame_count": 1, "errors": []}
-
-    class ExplodingRobot:
-        def stand_balance(self, *, secs):
-            assert secs == 2.0
-            raise RuntimeError("driver stopped after real samples")
-
-    monkeypatch.setattr(
-        robot_catalog,
-        "find_robot_definition",
-        lambda *_args: {"state_refs": {"base_body": "pelvis"}},
-    )
-    monkeypatch.setattr("autoadapter_bench.physics.PhysicsTrace", ExplodingTrace)
-    monkeypatch.setattr("autoadapter_bench.capability_eval._VideoRecorder", FinishedVideo)
-
-    trace_path = tmp_path / "stand.json"
-    result = module._validate_humanoid_stand_balance(
-        ExplodingRobot(), "h1", tmp_path / "scene.xml", secs=2.0,
-        trace_path=trace_path, video_path=tmp_path / "stand.mp4",
-    )
-
-    assert result["ok"] is False
-    assert result["sim_elapsed_s"] == 2.0
-    assert result["physics_steps"] == 1
-    assert json.loads(trace_path.read_text())["samples"] == expected_samples
-    assert "RuntimeError" in result["detail"]
+    assert result.ok is True
+    assert result.study_ok is True
+    assert result.design_ok is True
+    assert events == ["study", "design"]
+    assert not hasattr(runner.cfg, "prepare_capabilities")
+    assert result.to_json()["design_ok"] is True
+    assert json.loads(json.dumps(result.to_json()))["stage1_ok"] is False
+    assert (runner.workspace / "summary.json").is_file()
+    assert (runner.workspace / "narrative.md").is_file()

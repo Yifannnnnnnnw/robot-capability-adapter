@@ -7,7 +7,7 @@ from auto_adapter.orchestrator import PhaseResult, SelfAssemble, SelfAssembleCon
 from auto_adapter.orchestrator_from_scratch import FromScratchConfig, FromScratchOrchestrator
 
 
-def _fixture_runner(tmp_path, monkeypatch, *, scratch, dynamic, enabled=True,
+def _fixture_runner(tmp_path, monkeypatch, *, scratch, enabled=True,
                     fail=None, repair=False):
     scene = tmp_path / "scene.xml"
     scene.write_text("<mujoco/>")
@@ -15,13 +15,11 @@ def _fixture_runner(tmp_path, monkeypatch, *, scratch, dynamic, enabled=True,
     runner_cls = FromScratchOrchestrator if scratch else SelfAssemble
     runner = runner_cls(config_cls(
         "fixture", scene, tmp_path / "runs", mode="local",
-        prepare_capabilities=dynamic, enable_demo=enabled,
+        enable_demo=enabled,
     ))
     calls = []
     validation_count = 0
     current_design = {"capabilities": [{"method_name": "current_capability"}]}
-    if not dynamic:
-        runner.capability_design = current_design
 
     def phase(name):
         def execute(*_args, **_kwargs):
@@ -68,15 +66,15 @@ def _fixture_runner(tmp_path, monkeypatch, *, scratch, dynamic, enabled=True,
     return runner, calls
 
 
-@pytest.mark.parametrize("scratch,dynamic", [(False, False), (False, True), (True, False), (True, True)])
+@pytest.mark.parametrize("scratch", [False, True])
 @pytest.mark.parametrize("scenario", ["off", "on", "stop_validate", "stop_export",
                                       "validate_failure", "export_failure", "demo_failure", "repair_pass"])
-def test_fixed_and_dynamic_routes_share_export_and_optional_demo(
-    tmp_path, monkeypatch, scratch, dynamic, scenario
+def test_design_routes_share_export_and_optional_demo(
+    tmp_path, monkeypatch, scratch, scenario
 ):
     failure = scenario.removesuffix("_failure") if scenario.endswith("_failure") else None
     runner, calls = _fixture_runner(
-        tmp_path, monkeypatch, scratch=scratch, dynamic=dynamic,
+        tmp_path, monkeypatch, scratch=scratch,
         enabled=scenario != "off", fail=failure, repair=scenario == "repair_pass",
     )
     # One failed validation is sufficient to establish downstream gating.
@@ -87,7 +85,7 @@ def test_fixed_and_dynamic_routes_share_export_and_optional_demo(
             runner.cfg.max_outer_gen_val_iters = 1
     stop = scenario.removeprefix("stop_") if scenario.startswith("stop_") else None
     result = runner.run(stop_after=stop)
-    expected = ["study"] + (["design"] if dynamic else []) + ["generate", "validate"]
+    expected = ["study", "design", "generate", "validate"]
     if scenario == "repair_pass":
         expected += ["repair", "validate"]
     if scenario not in {"stop_validate", "validate_failure"}:
@@ -131,6 +129,7 @@ def test_demo_phase_passes_current_design_and_cases_to_bridge(tmp_path, monkeypa
     assert captured["capability_design"] is runner.capability_design
     assert captured["scene_cases_path"] == runner.scene_cases_path
     assert captured["demo_config_path"] == runner.cfg.demo_config_path
+    assert captured["export_server_path"] == runner.workspace / "mcp_server.py"
     assert captured.get("from_scratch", False) is scratch
 
 
@@ -138,6 +137,9 @@ def test_scratch_export_adapts_existing_prompt_and_rejects_stale_file(tmp_path, 
     scene = tmp_path / "scene.xml"
     scene.write_text("<mujoco/>")
     runner = FromScratchOrchestrator(FromScratchConfig("fixture", scene, tmp_path / "runs", mode="local"))
+    runner.capability_design = {"capabilities": [{"method_name": "move",
+                                                "request_schema": {"type": "object"}}]}
+    (runner.workspace / "validate_report.json").write_text('{"all_ok": true}')
     artifact = runner.workspace / "mcp_server.py"
     artifact.write_text("# stale export")
     captured = {}
@@ -162,6 +164,9 @@ def test_standard_export_cannot_pass_from_an_old_server(tmp_path, monkeypatch):
     scene = tmp_path / "scene.xml"
     scene.write_text("<mujoco/>")
     runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "runs"))
+    runner.capability_design = {"capabilities": [{"method_name": "move",
+                                                "request_schema": {"type": "object"}}]}
+    (runner.workspace / "validate_report.json").write_text('{"all_ok": true}')
     (runner.workspace / "mcp_server.py").write_text("# old server")
     loop_result = SimpleNamespace(ok=True, error=None, trace=[], total_tokens={}, final_text="no file written")
     monkeypatch.setattr(orchestrator, "ReactLoop", lambda **_kwargs:
@@ -181,12 +186,26 @@ def test_export_receives_the_current_public_design(tmp_path, monkeypatch, scratc
     runner_cls = FromScratchOrchestrator if scratch else SelfAssemble
     runner = runner_cls(config_cls("fixture", scene, tmp_path / "runs", mode="local"))
     runner.capability_design = {"capabilities": [{"method_name": "only_current_method",
-                                                "request_schema": {"type": "object"}}]}
+                                                "request_schema": {"type": "object", "properties": {}}}]}
+    (runner.workspace / "validate_report.json").write_text('{"all_ok": true}')
     captured = {}
+    source = '''from mcp.server.fastmcp import FastMCP
+from typing_extensions import TypedDict
+class Request(TypedDict):
+    pass
+mcp = FastMCP("fixture")
+@mcp.tool()
+def only_current_method(request: Request) -> dict:
+    robot = runtime.robot
+    return robot.only_current_method(request=request)
+@mcp.resource("robot://state")
+def state() -> dict:
+    return {"sim_time_s": 0.0}
+'''
 
     def export(**kwargs):
         captured.update(kwargs)
-        (runner.workspace / "mcp_server.py").write_text("# current fixture server")
+        (runner.workspace / "mcp_server.py").write_text(source)
         if scratch:
             return SimpleNamespace(ok=True, error=None, total_tokens={}, final_text="fixture")
         return PhaseResult("export", True, 0.0)
@@ -196,17 +215,12 @@ def test_export_receives_the_current_public_design(tmp_path, monkeypatch, scratc
     assert result.ok
     assert '"method_name": "only_current_method"' in captured["user_msg"]
     assert '"request_schema"' in captured["user_msg"]
-    assert "method(request=...)" in captured["system"]
+    assert "request=<request payload>" in captured["system"]
 
 
 @pytest.mark.parametrize("scratch", [False, True])
-def test_remote_demo_fails_explicitly_without_running_another_task(tmp_path, scratch):
-    scene = tmp_path / "scene.xml"
-    scene.write_text("<mujoco/>")
+def test_remote_mode_is_rejected_before_pipeline_execution(tmp_path, scratch):
     config_cls = FromScratchConfig if scratch else SelfAssembleConfig
-    runner_cls = FromScratchOrchestrator if scratch else SelfAssemble
-    runner = runner_cls(config_cls("fixture", scene, tmp_path / "runs",
-                                  mode="agentcore" if scratch else "dgx"))
-    result = runner.phase_demo() if scratch else runner._phase_demo()
-    assert not result.ok
-    assert "requires local mode" in result.error
+    with pytest.raises(ValueError, match="local"):
+        config_cls("fixture", tmp_path / "scene.xml", tmp_path / "runs",
+                   mode="agentcore" if scratch else "dgx")

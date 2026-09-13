@@ -711,24 +711,6 @@ def tool_registry_for(
     return None
 
 
-def capability_tool_registry(skel, robot_definition: dict, *, from_scratch: bool = False) -> dict:
-    """Use the trusted public profile for both live tools and replay arguments."""
-    from auto_adapter.robot_catalog import validate_capability_driver
-    design = validate_capability_driver(skel, robot_definition, from_scratch=from_scratch)
-    registry = {
-        cap["method_name"]: {
-            "description": cap["description"], "schema": cap["request_schema"],
-            "args": lambda inp: [], "kwargs": lambda inp: {"request": inp},
-        }
-        for cap in design["capabilities"]
-    }
-    observations = _ARM_TOOL_SPECS if robot_definition["class"] == "arm" else _QUADRUPED_TOOL_SPECS
-    for name, info in observations.items():
-        if name.startswith("get_") and callable(getattr(skel, name, None)):
-            registry[name] = info
-    return registry
-
-
 def _trusted_robot_class_for_mjcf(mjcf_path: Path) -> Optional[str]:
     """Resolve a workspace MJCF only through the checked-in robot zoo."""
     if not mjcf_path.exists() and not mjcf_path.is_symlink():
@@ -940,12 +922,7 @@ class TaskPlanner:
             if expected_robot_class is not None
             else _trusted_robot_class_for_mjcf(self.workspace / "mjcf.xml")
         )
-        from auto_adapter.robot_catalog import find_robot_definition, load_capability_design
-        self.robot_definition = find_robot_definition(robot_id, self.workspace / "mjcf.xml")
-        self.capability_design = load_capability_design(self.robot_definition)
         self.from_scratch = from_scratch
-        if self.capability_design and self.expected_robot_class != self.robot_definition["class"]:
-            raise ValueError("task planner morphology conflicts with capability catalog")
         self.bedrock_model = bedrock_model
         self.model_provider = model_provider
         self.region = region
@@ -1025,9 +1002,7 @@ class TaskPlanner:
         complete method surface. Legacy from-scratch classes retain their
         historical method-based dispatch.
         """
-        registry = capability_tool_registry(
-            skel, self.robot_definition, from_scratch=self.from_scratch
-        ) if self.capability_design else tool_registry_for(skel, self.expected_robot_class)
+        registry = tool_registry_for(skel, self.expected_robot_class)
 
         if registry is None:
             # Last-resort generic fallback: every public callable becomes a
@@ -1194,13 +1169,7 @@ class TaskPlanner:
 
         # Compute robot-class-specific hints to help the planner
         cls_name = type(skel).__name__
-        hint_key = (self.robot_definition["capability_skeleton"]
-                    if self.capability_design else cls_name)
-        hint = _CLASS_HINTS.get(hint_key, "")
-        if self.capability_design:
-            hint = ("Invoke the catalogued capabilities with their request fields. "
-                    "Respect request durations and capability hold requirements. "
-                    "Tool completion is not an independent physical verdict.")
+        hint = _CLASS_HINTS.get(cls_name, "")
 
         system = _PLANNER_SYSTEM.format(
             cls_name=cls_name,

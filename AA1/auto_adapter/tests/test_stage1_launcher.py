@@ -20,11 +20,10 @@ launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)
 
 
-def test_default_selection_skips_the_five_already_passed_robots():
-    args = launcher.build_parser().parse_args([])
-
-    assert args.robots == list(launcher.DEFAULT_ROBOTS)
-    assert set(args.robots).isdisjoint(launcher.PASSED_ROBOTS)
+def test_launcher_requires_explicit_robot_selection():
+    with pytest.raises(SystemExit):
+        launcher.build_parser().parse_args([])
+    assert launcher.build_parser().parse_args(["--robots", "piper"]).robots == ["piper"]
 
 
 def test_launcher_forwards_api_arguments_and_accepts_pipeline_result_without_files(
@@ -36,7 +35,7 @@ def test_launcher_forwards_api_arguments_and_accepts_pipeline_result_without_fil
         calls.append(kwargs)
         # The launcher must consume the pipeline verdict, rather than trying
         # to evaluate a workspace or run another validation subprocess.
-        return {"stage1_ok": True, "external_blocked": False}
+        return {"ok": True, "stage1_ok": True, "external_blocked": False}
 
     code, aggregate = launcher.run_selected(
         robots=["franka"],
@@ -52,13 +51,16 @@ def test_launcher_forwards_api_arguments_and_accepts_pipeline_result_without_fil
         "workspace_root": (tmp_path / "shared-batch").resolve(),
         "model": "test-model",
         "max_repairs": 2,
+        "stop_after": None,
+        "enable_demo": False,
+        "demo_config_path": None,
     }]
     assert aggregate["selected_robots"] == ["franka"]
-    assert aggregate["results"][0]["status"] == "stage1_ok"
+    assert aggregate["results"][0]["status"] == "ok"
     launch_path = Path(aggregate["launch_path"])
     assert launch_path.is_file()
     persisted = json.loads(launch_path.read_text())
-    assert persisted["results"][0]["status"] == "stage1_ok"
+    assert persisted["results"][0]["status"] == "ok"
     assert "franka:" in capsys.readouterr().out
 
 
@@ -81,6 +83,7 @@ def test_row_duration_uses_utc_wall_interval_and_keeps_monotonic_measurement(
         max_repairs=0,
         output_root=tmp_path,
         pipeline_runner=lambda **_kwargs: {
+            "ok": True,
             "stage1_ok": True,
             "external_blocked": False,
         },
@@ -160,13 +163,44 @@ def test_launcher_exception_is_recorded_as_error(tmp_path):
     assert "pipeline setup failed" in row["error"]
 
 
-@pytest.mark.parametrize("robot", sorted(launcher.PASSED_ROBOTS))
-def test_already_passed_robot_is_rejected(robot):
-    with pytest.raises(ValueError, match="already-passed"):
-        launcher.run_selected(
-            robots=[robot],
-            model="test-model",
-            max_repairs=3,
-            output_root=None,
-            pipeline_runner=lambda **_kwargs: {"stage1_ok": True},
-        )
+def test_catalog_robot_is_not_excluded_by_old_diagnostic_results(tmp_path):
+    code, result = launcher.run_selected(
+        robots=["piper"], model="fixture", max_repairs=0, output_root=tmp_path,
+        pipeline_runner=lambda **_kwargs: {"ok": True, "stage1_ok": True})
+    assert code == 0
+    assert result["selected_robots"] == ["piper"]
+
+
+def test_launcher_export_failure_cannot_be_hidden_by_successful_validation(tmp_path):
+    code, aggregate = launcher.run_selected(
+        robots=["piper"], model="fixture", max_repairs=0, output_root=tmp_path,
+        pipeline_runner=lambda **_kwargs: {
+            "ok": False, "stage1_ok": True, "export_ok": False, "error": "export failed",
+        },
+    )
+    assert code == 1
+    assert aggregate["all_ok"] is False
+    assert aggregate["all_stage1_ok"] is True
+    assert aggregate["results"][0]["status"] == "failed"
+
+
+def test_launcher_early_stop_and_demo_arguments_are_forwarded_without_validation_claim(tmp_path):
+    demo = tmp_path / "demo.yaml"
+    def pipeline(**kwargs):
+        assert kwargs["stop_after"] == "design"
+        assert kwargs["enable_demo"] is True
+        assert kwargs["demo_config_path"] == demo
+        return {"ok": True, "stage1_ok": False, "stop_after": "design"}
+    code, aggregate = launcher.run_selected(
+        robots=["piper"], model="fixture", max_repairs=0, output_root=tmp_path,
+        stop_after="design", enable_demo=True, demo_config_path=demo,
+        pipeline_runner=pipeline,
+    )
+    assert code == 0
+    assert aggregate["all_ok"] is True
+    assert aggregate["all_stage1_ok"] is False
+    assert aggregate["results"][0]["stop_after"] == "design"
+    args = launcher.build_parser().parse_args([
+        "--robots", "piper", "--stop-after", "export", "--enable-demo", "--demo-config", str(demo),
+    ])
+    assert args.stop_after == "export" and args.enable_demo and args.demo_config == demo

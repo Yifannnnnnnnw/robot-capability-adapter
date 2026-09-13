@@ -1,186 +1,76 @@
-"""Focused checks for the fresh unified Stage 1 entrypoint."""
-
+"""Focused checks that the launcher wrapper uses the public DESIGN pipeline."""
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 from auto_adapter import orchestrator as module
+from auto_adapter import orchestrator_from_scratch as scratch_module
 
 
-class _FixtureRunner:
-    def __init__(self, robot_id, workspace_root, route, *, generate_missing=True):
-        self.workspace = Path(workspace_root) / robot_id
-        (self.workspace / "traces").mkdir(parents=True)
-        (self.workspace / "recordings").mkdir()
-        self.route = route
-        self.generate_missing = generate_missing
-
-    def _raw(self, name, *, ok=True, error=None, stop_reason="end_turn", tokens=None):
-        trace_path = self.workspace / "traces" / f"{name}.jsonl"
-        trace_path.write_text(
-            '{"token_usage":{"in":1,"out":2},"stop_reason":"%s"}\n'
-            % stop_reason
-        )
-        return SimpleNamespace(
-            ok=ok,
-            error=error,
-            final_text="",
-            trace=[SimpleNamespace(stop_reason=stop_reason)],
-            total_tokens=tokens or {"in": 1, "out": 2},
-            trace_path=trace_path,
-        )
-
-    def _phase_study(self):
-        (self.workspace / "study.json").write_text('{"fixture": true}\n')
-        return self._raw("01_study")
-
-    def _phase_generate(self):
-        if not self.generate_missing:
-            (self.workspace / "driver.py").write_text("# initial\n")
-        return self._raw(
-            "02_generate", ok=not self.generate_missing,
-            error="driver missing" if self.generate_missing else None,
-        )
-
-    def _phase_repair(self, feedback, attempt):
-        (self.workspace / "driver.py").write_text(f"# repair {attempt}\n")
-        return self._raw(f"03_repair_{attempt}")
-
-
-def _fixture_definition(route="skeleton"):
-    return {
-        "id": "fixture",
-        "mjcf": "assets/mjcf/so101_mujoco.xml",
-        "class": "arm",
-        "generation_route": route,
-    }
-
-
-def test_stage1_initial_missing_candidate_repairs_three_times_and_preserves_rounds(
-    tmp_path, monkeypatch
+@pytest.mark.parametrize("route", ["skeleton", "from_scratch"])
+@pytest.mark.parametrize("outcome", ["export", "early_stop", "export_failure"])
+def test_stage1_public_run_keeps_requested_stages_and_validation_distinct(
+    tmp_path, monkeypatch, route, outcome
 ):
-    runners = []
-    framework_calls = []
+    scene = tmp_path / "input.xml"
+    scene.write_text("<mujoco/>")
+    monkeypatch.setattr(module, "find_robot_definition", lambda _: {
+        "id": "fixture", "mjcf": str(scene), "generation_route": route,
+        "capability_mjcf": str(tmp_path / "retired_scene.xml"),
+    })
+    calls = []
+    stop = "design" if outcome == "early_stop" else None
+    validated = outcome != "early_stop"
+    completed = outcome != "export_failure"
+    exported = outcome == "export"
+    demo_config = tmp_path / "demo.yaml"
 
-    monkeypatch.setattr(module, "_stage1_canonical_definition", lambda _: _fixture_definition())
+    class FixtureRunner:
+        def __init__(self, cfg):
+            assert cfg.mjcf_path == scene
+            assert cfg.mode == "local"
+            budget = cfg.max_outer_gen_val_iters if route == "skeleton" else cfg.max_outer_retries + 1
+            assert budget == 3
+            assert cfg.enable_demo is True
+            assert cfg.demo_config_path == demo_config
+            self.workspace = cfg.workspace_root / "fixture"
 
-    def make_runner(robot_id, mjcf_path, workspace_root, model):
-        runner = _FixtureRunner(robot_id, workspace_root, "skeleton")
-        runners.append(runner)
-        return runner
+        def __enter__(self):
+            return self
 
-    monkeypatch.setattr(module, "_stage1_standard_runner", make_runner)
+        def __exit__(self, *_args):
+            pass
 
-    def framework(**kwargs):
-        framework_calls.append(kwargs["workspace"])
-        ok = len(framework_calls) == 4
-        return ({"tests": [{"test": "fixture", "ok": ok}], "all_ok": ok},
-                {"child_ok": True, "duration_sec": 0.01})
-
-    monkeypatch.setattr(module, "_stage1_framework_subprocess", framework)
-    result = module.run_stage1(
-        robot_id="fixture", workspace_root=tmp_path, model="fixture-model", max_repairs=3
-    )
-
-    assert result["attempts"] == 4
-    assert result["effective_repairs"] == 3
-    assert result["framework_ok"] is True
-    assert result["stage1_ok"] is True
-    assert not (tmp_path / "initial" / "fixture" / "driver.py").exists()
-    assert (tmp_path / "repair_1" / "fixture" / "study.json").exists()
-    assert (tmp_path / "repair_1" / "fixture" / "driver.py").exists()
-    assert len(framework_calls) == 4
-    assert len(result["rounds"]) == 4
-    assert (tmp_path / "initial" / "fixture" / "run_context.json").exists()
-    assert (tmp_path / "repair_3" / "fixture" / "run_context.json").exists()
-
-    with pytest.raises(FileExistsError):
-        module.run_stage1(
-            robot_id="fixture", workspace_root=tmp_path, model="fixture-model", max_repairs=3
-        )
-
-
-def test_stage1_invoke_error_stops_without_framework_or_effective_repair(tmp_path, monkeypatch):
-    framework_calls = []
-    monkeypatch.setattr(module, "_stage1_canonical_definition", lambda _: _fixture_definition())
-
-    def make_runner(robot_id, mjcf_path, workspace_root, model):
-        runner = _FixtureRunner(robot_id, workspace_root, "skeleton", generate_missing=False)
-
-        def failed_generate():
-            (runner.workspace / "driver.py").write_text("# copied candidate\n")
-            return runner._raw(
-                "02_generate", ok=False, error="holistic invoke failed",
-                stop_reason="invoke_error",
+        def run(self, *, stop_after):
+            calls.append(stop_after)
+            if route == "skeleton":
+                return module.SelfAssembleResult("fixture", self.workspace, [
+                    module.PhaseResult("01_study", True, 0.0),
+                    module.PhaseResult("design", True, 0.0),
+                    module.PhaseResult("02_generate", validated, 0.0),
+                    module.PhaseResult("03_validate", validated, 0.0),
+                    module.PhaseResult("04_export", exported, 0.0,
+                                       error="export failed" if not completed else None),
+                ], completed)
+            return scratch_module.FromScratchResult(
+                "fixture", self.workspace, True, validated, validated, None, {}, 0.0, {},
+                design_ok=True, ok=completed, export_ok=exported,
+                error="export failed" if not completed else None,
             )
 
-        runner._phase_generate = failed_generate
-        return runner
-
-    monkeypatch.setattr(module, "_stage1_standard_runner", make_runner)
-    monkeypatch.setattr(
-        module,
-        "_stage1_framework_subprocess",
-        lambda **kwargs: framework_calls.append(kwargs) or ({"all_ok": True}, {"child_ok": True}),
-    )
-
+    if route == "skeleton":
+        monkeypatch.setattr(module, "SelfAssemble", FixtureRunner)
+    else:
+        monkeypatch.setattr(scratch_module, "FromScratchOrchestrator", FixtureRunner)
     result = module.run_stage1(
-        robot_id="fixture", workspace_root=tmp_path, model="fixture-model", max_repairs=3
+        robot_id="fixture", workspace_root=tmp_path, model="fixture", max_repairs=2,
+        stop_after=stop, enable_demo=True, demo_config_path=demo_config,
     )
-
-    assert result["external_blocked"] is True
-    assert result["generation_ok"] is False
-    assert result["framework_ok"] is False
-    assert result["effective_repairs"] == 0
-    assert result["attempts"] == 1
-    assert not framework_calls
-    assert "invoke" in result["error"]
-
-
-def test_profile_framework_requires_every_trusted_case_id():
-    definition = module._stage1_canonical_definition("so101")
-    report = {"all_ok": True, "tests": [{"case_id": "so101-a4-nominal", "ok": True}]}
-    assert module._stage1_framework_ok(report, "so101", definition, "skeleton") is False
-
-
-def test_stage1_uses_one_entry_for_named_scratch_fixture(tmp_path, monkeypatch):
-    calls = []
-    monkeypatch.setattr(module, "_stage1_canonical_definition",
-                        lambda _: _fixture_definition("from_scratch"))
-
-    class Scratch(_FixtureRunner):
-        def phase_study(self):
-            calls.append("study")
-            (self.workspace / "study.json").write_text("{}\n")
-            return self._raw("01_study")
-
-        def phase_gen_algo(self):
-            calls.append("generate")
-            (self.workspace / "driver_from_scratch.py").write_text("# candidate\n")
-            return self._raw("02_gen_algo")
-
-        def phase_gen_repair(self, feedback, attempt):
-            calls.append(f"repair_{attempt}")
-            (self.workspace / "driver_from_scratch.py").write_text("# repaired\n")
-            return self._raw(f"03_gen_repair_{attempt}")
-
-    monkeypatch.setattr(
-        module, "_stage1_scratch_runner",
-        lambda robot_id, mjcf_path, workspace_root, model: Scratch(
-            robot_id, workspace_root, "from_scratch", generate_missing=False
-        ),
-    )
-    monkeypatch.setattr(
-        module, "_stage1_framework_subprocess",
-        lambda **kwargs: ({"all_ok": True, "tests": []},
-                          {"child_ok": True, "duration_sec": 0.01}),
-    )
-
-    result = module.run_stage1(
-        robot_id="fixture", workspace_root=tmp_path, model="fixture-model", max_repairs=3
-    )
-    assert calls == ["study", "generate"]
-    assert result["route"] == "from_scratch"
-    assert result["stage1_ok"] is True
-    assert result["final_candidate"].endswith("driver_from_scratch.py")
+    assert calls == [stop]
+    assert result["ok"] is completed
+    assert result["stage1_ok"] is validated
+    assert result["export_ok"] is exported
+    assert result["stop_after"] == stop
+    assert result["route"] == route
+    assert Path(result["summary_path"]) == tmp_path / "fixture" / "summary.json"
+    assert Path(result["workspace"]) == tmp_path / "fixture"

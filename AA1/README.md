@@ -17,14 +17,38 @@ formal experiments.
 **An LLM agent that synthesizes deployable robot drivers from a formal
 specification (MJCF/URDF), validated in physics simulation.**
 
-![Auto-Adapter pipeline: an LLM agent loop (Study → Generate → Validate → Export → Demo) synthesizes a physics-validated robot driver, then serves it to any tool-using agent across arms, quadrupeds, drone, and humanoid.](docs/overview.png)
+![Auto-Adapter pipeline: an LLM agent loop (Study → Design → Generate → Validate → Export → Demo) synthesizes a physics-validated robot driver, then serves it to any tool-using agent across arms, quadrupeds, drone, and humanoid.](docs/overview.png)
 
 Auto-Adapter takes a robot description in MJCF/URDF and runs a closed-loop
-LLM-agent loop (STUDY → GENERATE → VALIDATE → EXPORT → DEMO) to produce a
+LLM-agent loop (STUDY → DESIGN → GENERATE → VALIDATE → EXPORT → DEMO) to produce a
 self-contained Python driver implementing high-level skill primitives
 (`move_cartesian`, `gripper_close`, `get_object_position`, ...). Downstream
 tool-using LLMs (our ReAct loop, Code-as-Policies, etc.) consume the
 synthesized driver to execute natural-language tasks.
+
+## Current local pipeline
+
+The default standard and from-scratch entrypoints execute
+STUDY → DESIGN → GENERATE → VALIDATE → EXPORT, followed by an optional ReCAP
+DEMO. Each run uses the caller's MJCF and its current capability design, scene
+cases and measurement criteria. Supply `capability_design_path` and
+`scene_cases_path` to reuse an existing design; otherwise DESIGN runs after
+STUDY. The old fixed A1–A5/G1–G5 catalog and validation routes have been retired.
+
+For a diagnostic through EXPORT, select robots explicitly:
+
+```bash
+.venv/bin/python scripts/run/run_stage1.py --robots piper --max-repairs 0
+```
+
+The launcher calls the same public `run()` path. Use `--stop-after validate`
+to stop before EXPORT, or `--enable-demo` to run the fixed task through the
+exported MCP server. Outputs are written under `AA1/artifacts/` by default.
+It does not select robots using historical pass results. The fixed DEMO task
+and scene mapping covers 22 configuration IDs across 17 robot families; see
+[DEMO configuration](docs/DEMO_CONFIGURATION.md). The nine relocated scenes
+retain their geometry and initial states. Base models, meshes and skeletons
+remain shared.
 
 ## Quick facts
 

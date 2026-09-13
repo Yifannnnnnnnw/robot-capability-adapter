@@ -343,7 +343,11 @@ class AA1CapabilityAdapter:
 
     def __init__(self, design, invoke):
         self.robot_configuration_id = design["robot_configuration_id"]
-        self.capability_design_id = self.robot_configuration_id + "::aa1-catalog"
+        self.capability_design_id = str(
+            design.get("task_snapshot_id")
+            or design.get("package_version")
+            or self.robot_configuration_id + "::current-design"
+        )
         self.capabilities = {c["method_name"]: c for c in design["capabilities"]}
         self.invoke = invoke
 
@@ -383,13 +387,10 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
                  scene_cases_path=None, demo_config_path=None, from_scratch=False):
     """Resolve generation artifacts once; never replace an explicitly selected design."""
     import yaml
-    from auto_adapter.robot_catalog import (
-        REPO_ROOT, find_robot_definition, load_capability_design, load_capability_suite,
-    )
+    from auto_adapter.robot_catalog import REPO_ROOT
     from auto_adapter.scene_runtime import load_scene_cases
 
     workspace = Path(workspace).resolve()
-    robot = find_robot_definition(robot_id)
     config_path = Path(demo_config_path or REPO_ROOT / "auto_adapter/demo_tasks.yaml").resolve()
     config = yaml.safe_load(config_path.read_text())["robots"].get(robot_id)
     if not config:
@@ -397,9 +398,7 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
     design = capability_design
     if design is None:
         saved = workspace / "design/capability_design.json"
-        if not saved.is_file():
-            saved = workspace / "capability_design.json"
-        design = json.loads(saved.read_text()) if saved.is_file() else load_capability_design(robot)
+        design = json.loads(saved.read_text()) if saved.is_file() else None
     if not design:
         raise ValueError(f"{robot_id}: no capability design supplied for the existing driver")
     if design.get("robot_configuration_id") != robot_id:
@@ -407,15 +406,9 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
     cases_path = Path(scene_cases_path).resolve() if scene_cases_path else workspace / "design/scene_cases.yaml"
     if scene_cases_path is not None and not cases_path.is_file():
         raise ValueError(f"supplied scene_cases_path does not exist: {cases_path}")
-    if scene_cases_path is None and not cases_path.is_file():
-        cases_path = workspace / "scene_cases.yaml"
-    if cases_path.is_file():
-        suite = load_scene_cases(cases_path, design=design)
-    else:
-        # The catalog suite is valid only for that exact public contract.
-        if design != load_capability_design(robot):
-            raise ValueError("current capability design requires its corresponding scene_cases_path")
-        suite = load_capability_suite(robot)
+    if not cases_path.is_file():
+        raise ValueError("current capability design requires its corresponding scene_cases_path")
+    suite = load_scene_cases(cases_path, design=design)
     scene = Path(config["scene"])
     if not scene.is_absolute():
         scene = REPO_ROOT / scene
@@ -426,7 +419,6 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
         validation_report=json.loads((workspace / "validate_report.json").read_text()),
         task_description=config["task"], scene_path=str(scene.resolve()),
         initial_state=config.get("initial_state", {}), parameters=config.get("parameters", {}),
-        required_capabilities=config.get("required_capabilities", []),
     )
 
 
@@ -487,7 +479,7 @@ def run_demo(*, workspace, robot_id, task_description=None, model, provider="hol
     inputs = _task_inputs(workspace=workspace, robot_id=robot_id,
                           from_scratch=from_scratch, demo_config_path=demo_config_path)
     if task_description:
-        inputs.update(task_description=task_description, required_capabilities=[])
+        inputs["task_description"] = task_description
     if output_dir is None:
         root = Path(workspace).resolve() / "demos"
         root.mkdir(parents=True, exist_ok=True)

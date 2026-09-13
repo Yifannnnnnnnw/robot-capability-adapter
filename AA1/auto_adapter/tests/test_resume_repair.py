@@ -58,6 +58,9 @@ def test_standard_repair_keeps_generation_trace_and_uses_local_tools(tmp_path, m
     scene = tmp_path / "fixture.xml"
     scene.write_text("<mujoco/>")
     runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "output"))
+    runner.capability_design = {
+        "capabilities": [{"capability_id": "move", "method_name": "move"}]
+    }
     original_trace = runner.workspace / "traces" / "02_generate.jsonl"
     original_trace.write_text("original generation trace\n")
     captured = {}
@@ -100,9 +103,9 @@ def test_from_scratch_repair_can_run_local_without_agentcore(tmp_path, monkeypat
     )
     runner.workspace = tmp_path / "workspace"
     runner.workspace.mkdir()
-    runner._exec_python_tool = None
-    runner.robot_definition = None
-    runner.capability_design = None
+    runner.capability_design = {
+        "capabilities": [{"capability_id": "move", "method_name": "move"}]
+    }
     captured = {}
 
     def fake_run_loop(**kwargs):
@@ -126,12 +129,38 @@ def test_from_scratch_all_ok_failure_gets_three_repairs_after_initial_gen(
     runner.cfg = FromScratchConfig("h1", tmp_path / "scene.xml", tmp_path)
     runner.workspace = tmp_path / "workspace"
     runner.workspace.mkdir()
-    (runner.workspace / "study.json").write_text("{}\n")
-    (runner.workspace / "driver_from_scratch.py").write_text("class Robot: pass\n")
 
-    phase_result = SimpleNamespace(total_tokens={"in": 0, "out": 0}, error=None)
-    monkeypatch.setattr(runner, "phase_study", lambda: phase_result)
-    monkeypatch.setattr(runner, "phase_gen_algo", lambda: phase_result)
+    phase_result = SimpleNamespace(
+        ok=True, total_tokens={"in": 0, "out": 0}, error=None
+    )
+
+    def study():
+        (runner.workspace / "study.json").write_text(
+            '{"robot_id": "h1"}\n', encoding="utf-8"
+        )
+        return phase_result
+
+    def design():
+        runner.capability_design = {
+            "capabilities": [{"capability_id": "walk", "method_name": "walk"}]
+        }
+        output = runner.workspace / "design"
+        output.mkdir(exist_ok=True)
+        (output / "capability_design.json").write_text("{}\n", encoding="utf-8")
+        runner.scene_cases_path = output / "scene_cases.yaml"
+        runner.scene_cases_path.write_text("scenes: {}\ncases: []\n", encoding="utf-8")
+        runner.scene_paths = {"base": runner.cfg.mjcf_path}
+        return phase_result
+
+    def generate():
+        (runner.workspace / "driver_from_scratch.py").write_text(
+            "class Robot: pass\n", encoding="utf-8"
+        )
+        return phase_result
+
+    monkeypatch.setattr(runner, "phase_study", study)
+    monkeypatch.setattr(runner, "phase_design", design)
+    monkeypatch.setattr(runner, "phase_gen_algo", generate)
     repairs = []
 
     def fake_validate():
@@ -145,6 +174,9 @@ def test_from_scratch_all_ok_failure_gets_three_repairs_after_initial_gen(
 
     def fake_repair(feedback, attempt):
         repairs.append((feedback, attempt))
+        (runner.workspace / "driver_from_scratch.py").write_text(
+            f"class Robot: attempt = {attempt}\n", encoding="utf-8"
+        )
         return phase_result
 
     monkeypatch.setattr(runner, "_validate_from_scratch_driver", fake_validate)
@@ -163,7 +195,27 @@ def test_standard_default_budget_is_initial_generation_plus_three_repairs(tmp_pa
     scene.write_text("<mujoco/>")
     runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "output"))
     calls = []
-    monkeypatch.setattr(runner, "_phase_study", lambda: PhaseResult("study", True, 0.0))
+
+    def study():
+        (runner.workspace / "study.json").write_text(
+            '{"robot_id": "fixture"}\n', encoding="utf-8"
+        )
+        return PhaseResult("study", True, 0.0)
+
+    def design():
+        runner.capability_design = {
+            "capabilities": [{"capability_id": "move", "method_name": "move"}]
+        }
+        output = runner.workspace / "design"
+        output.mkdir(exist_ok=True)
+        (output / "capability_design.json").write_text("{}\n", encoding="utf-8")
+        runner.scene_cases_path = output / "scene_cases.yaml"
+        runner.scene_cases_path.write_text("scenes: {}\ncases: []\n", encoding="utf-8")
+        runner.scene_paths = {"base": scene}
+        return PhaseResult("design", True, 0.0)
+
+    monkeypatch.setattr(runner, "_phase_study", study)
+    monkeypatch.setattr(runner, "_phase_design", design)
     monkeypatch.setattr(runner, "_phase_generate", lambda: PhaseResult("generate", True, 0.0))
 
     def repair(feedback, attempt):

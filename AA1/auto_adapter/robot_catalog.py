@@ -23,54 +23,20 @@ def find_robot_definition(robot_id: str | None = None,
         if robot["id"] == robot_id:
             return robot
         if mjcf_path is not None:
-            paths = [robot["mjcf"]]
-            if robot.get("capability_mjcf"):
-                paths.append(robot["capability_mjcf"])
-            if any((REPO_ROOT / path).resolve() == Path(mjcf_path).resolve() for path in paths):
+            if (REPO_ROOT / robot["mjcf"]).resolve() == Path(mjcf_path).resolve():
                 return robot
     return None
-
-
-def load_capability_design(robot: dict | None) -> dict | None:
-    """Read the public contract selected by the trusted robot catalog."""
-    if not robot or not robot.get("capability_profile"):
-        return None
-    path = REPO_ROOT / robot["capability_profile"] / "capability_design.json"
-    design = json.loads(path.read_text())
-    if design.get("robot_configuration_id") != robot["id"]:
-        raise ValueError("capability design does not match the catalog robot")
-    capabilities = design.get("capabilities", [])
-    names = [item["method_name"] for item in capabilities]
-    if not names or len(names) != len(set(names)):
-        raise ValueError("capability design needs distinct required methods")
-    return design
-
-
-def load_capability_suite(robot: dict) -> dict:
-    """Private physical conditions; only Framework and task evaluation use this."""
-    path = REPO_ROOT / robot["capability_profile"] / "capability_validation_suite.json"
-    suite = json.loads(path.read_text())
-    if suite.get("robot_configuration_id") != robot["id"] or not suite.get("cases"):
-        raise ValueError("missing or mismatched trusted capability conditions")
-    return suite
 
 
 def capability_generation_context(
     robot: dict | None,
     *,
+    design: dict,
     from_scratch: bool = False,
-    design: dict | None = None,
 ) -> str:
-    """Public generation input; never include the validation suite or references.
-
-    ``design`` is supplied by the orchestrator after TGCD (or an explicit
-    design-file load).  Keeping that object in memory avoids accidentally
-    falling back to a trusted legacy contract after a dynamic design has been
-    selected.  Calls that do not pass it retain the historical catalog path.
-    """
-    design = design if design is not None else load_capability_design(robot)
+    """Render the current public design for generation and repair prompts."""
     if design is None:
-        return ""
+        raise ValueError("capability_generation_context requires the current design")
     signatures = "\n".join(
         f"def {cap['method_name']}(self, request): ..."
         for cap in design["capabilities"]
@@ -92,7 +58,7 @@ def capability_generation_context(
         "Robot.from_mjcf(..., spec=...)."
     )
     return (
-        "\n\nREQUIRED PUBLIC CAPABILITY CONTRACT (selected by the robot catalog):\n"
+        "\n\nREQUIRED PUBLIC CAPABILITY CONTRACT (current DESIGN artifact):\n"
         + json.dumps(design, ensure_ascii=False)
         + "\nRequired interface:\n" + signatures + "\n" + implementation
         + "\nImplement request handling, feedback, ordering, holds and bounded failure "
@@ -103,26 +69,3 @@ def capability_generation_context(
         "seconds), never time.time(), monotonic(), or wall-clock sleeps. "
         "Do not read validation suites or reference control implementations.\n"
     )
-
-
-def validate_capability_driver(driver, robot: dict, *, from_scratch: bool = False) -> dict:
-    """Validate the required interface without letting candidates choose a profile."""
-    from auto_adapter import skeletons
-
-    design = load_capability_design(robot)
-    if design is None:
-        raise ValueError("catalog robot has no capability profile")
-    if from_scratch:
-        if isinstance(driver, skeletons.SkeletonBase):
-            raise ValueError("from-scratch driver must not use a supplied skeleton")
-    else:
-        expected = getattr(skeletons, robot["capability_skeleton"], None)
-        if expected is None or not isinstance(driver, expected):
-            raise ValueError(f"catalog requires {robot['capability_skeleton']}")
-        if type(driver) is expected:
-            raise ValueError("Spec-only driver: build() must return the generated capability subclass")
-    missing = [cap["method_name"] for cap in design["capabilities"]
-               if not callable(getattr(driver, cap["method_name"], None))]
-    if missing:
-        raise ValueError("missing required capabilities: " + ", ".join(missing))
-    return design

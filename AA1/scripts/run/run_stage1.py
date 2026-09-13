@@ -1,7 +1,7 @@
-"""Thin launcher for the bounded Stage 1 capability diagnostic.
+"""Thin launcher for the bounded DESIGN capability diagnostic.
 
 The pipeline owns generation, Framework validation, repair admission and all
-per-robot artifacts.  This module only selects the allowed robots, forwards
+per-robot artifacts. This module selects zoo robots, forwards
 the public pipeline arguments, records one compact invocation aggregate, and
 prints a short handoff line for each selected robot.
 """
@@ -19,26 +19,8 @@ from typing import Any, Callable
 AA1_ROOT = Path(__file__).resolve().parents[2]
 if str(AA1_ROOT) not in sys.path:
     sys.path.insert(0, str(AA1_ROOT))
-DEFAULT_BATCH_PARENT = (
-    AA1_ROOT / "autoadapter_bench" / "diagnostics" / "capability_update_20260909"
-).resolve()
+DEFAULT_BATCH_PARENT = AA1_ROOT / "artifacts"
 DEFAULT_MODEL = "eu.anthropic.claude-opus-4-8"
-DEFAULT_ROBOTS = (
-    "franka",
-    "so101",
-    "kuka_iiwa14",
-    "ufactory_xarm7",
-    "kinova_gen3_robotiq_2f85",
-    "universal_robots_ur5e_robotiq_2f85",
-    "go2",
-    "unitree_a1",
-    "anymal_c",
-    "h1",
-)
-PASSED_ROBOTS = frozenset(
-    {"piper", "leap_hand", "hello_robot_stretch_2", "aloha_2", "skydio_x2"}
-)
-ALLOWED_ROBOTS = frozenset(DEFAULT_ROBOTS)
 
 
 def run_stage1(
@@ -47,6 +29,9 @@ def run_stage1(
     workspace_root: Path,
     model: str,
     max_repairs: int = 3,
+    stop_after: str | None = None,
+    enable_demo: bool = False,
+    demo_config_path: Path | None = None,
 ) -> Any:
     """Resolve and call the pipeline entrypoint lazily.
 
@@ -61,21 +46,28 @@ def run_stage1(
         workspace_root=workspace_root,
         model=model,
         max_repairs=max_repairs,
+        stop_after=stop_after,
+        enable_demo=enable_demo,
+        demo_config_path=demo_config_path,
     )
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run the fresh, bounded Stage 1 diagnostic for selected robots."
+        description="Run the fresh, bounded DESIGN diagnostic for selected robots."
     )
     parser.add_argument(
         "--robots",
         nargs="+",
         metavar="ROBOT",
-        default=list(DEFAULT_ROBOTS),
-        help="one or more remaining canonical robot IDs (default: Stage 1 set)",
+        required=True,
+        help="one or more robot IDs from robot_zoo.yaml",
     )
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--stop-after", choices=("study", "design", "generate", "validate", "export", "demo"),
+                        help="stop after this stage (default: export, plus demo when enabled)")
+    parser.add_argument("--enable-demo", action="store_true", help="run the configured ReCAP demo after export")
+    parser.add_argument("--demo-config", type=Path, help="explicit demo task configuration")
     parser.add_argument(
         "--max-repairs",
         type=int,
@@ -108,7 +100,7 @@ def _wall_duration_sec(started: datetime, finished: datetime) -> float:
 
 
 def _compact_result(robot_id: str, value: Any, duration_sec: float) -> dict[str, Any]:
-    """Translate the fixed pipeline result into a small launch row."""
+    """Translate the pipeline result into a small launch row."""
     if not isinstance(value, dict):
         return {
             "robot_id": robot_id,
@@ -117,9 +109,8 @@ def _compact_result(robot_id: str, value: Any, duration_sec: float) -> dict[str,
             "error": "run_stage1 returned a non-dict result",
         }
     external_blocked = value.get("external_blocked") is True
-    stage1_ok = value.get("stage1_ok") is True
-    if stage1_ok and not external_blocked:
-        status = "stage1_ok"
+    if value.get("ok") is True and not external_blocked:
+        status = "ok"
     elif external_blocked:
         status = "external_blocked"
     else:
@@ -129,6 +120,10 @@ def _compact_result(robot_id: str, value: Any, duration_sec: float) -> dict[str,
         "robot_id": robot_id,
         "status": status,
         "duration_sec": round(float(duration_sec), 3),
+        "stage1_ok": value.get("stage1_ok") is True,
+        "export_ok": value.get("export_ok") is True,
+        "demo_ok": value.get("demo_ok"),
+        "stop_after": value.get("stop_after"),
     }
     if error:
         result["error"] = str(error)
@@ -163,18 +158,11 @@ def _validate_robot_selection(robots: list[str]) -> None:
     duplicates = sorted({robot for robot in robots if robots.count(robot) > 1})
     if duplicates:
         raise ValueError("duplicate robot IDs are not allowed: " + ", ".join(duplicates))
-    rejected = [robot for robot in robots if robot in PASSED_ROBOTS]
-    if rejected:
-        raise ValueError(
-            "already-passed robots are excluded from this Stage 1 diagnostic "
-            "and cannot be selected: "
-            + ", ".join(rejected)
-        )
-    unknown = [robot for robot in robots if robot not in ALLOWED_ROBOTS]
+    from auto_adapter.robot_catalog import find_robot_definition
+
+    unknown = [robot for robot in robots if find_robot_definition(robot) is None]
     if unknown:
-        raise ValueError(
-            "unknown or unsupported Stage 1 robot ID(s): " + ", ".join(unknown)
-        )
+        raise ValueError("unknown robot ID(s): " + ", ".join(unknown))
 
 
 def run_selected(
@@ -184,16 +172,19 @@ def run_selected(
     max_repairs: int,
     output_root: Path | None,
     pipeline_runner: Callable[..., Any] | None = None,
+    stop_after: str | None = None,
+    enable_demo: bool = False,
+    demo_config_path: Path | None = None,
 ) -> tuple[int, dict[str, Any]]:
     """Run selected robots sequentially and write one invocation aggregate."""
     _validate_robot_selection(robots)
-    if max_repairs not in range(4):
+    if isinstance(max_repairs, bool) or not isinstance(max_repairs, int) or max_repairs not in range(4):
         raise ValueError("max_repairs must be between 0 and 3")
 
     started = _utc_now()
     if output_root is None:
         stamp = started.strftime("%Y%m%dT%H%M%SZ")
-        root = DEFAULT_BATCH_PARENT / f"stage1_full_opus48_{stamp}"
+        root = DEFAULT_BATCH_PARENT / f"design_{stamp}"
     else:
         # A shared existing root is intentional: the pipeline decides whether
         # a particular robot workspace is safe to reuse.
@@ -207,10 +198,14 @@ def run_selected(
         "duration_sec": None,
         "model": model,
         "max_repairs": max_repairs,
+        "stop_after": stop_after,
+        "enable_demo": enable_demo,
+        "demo_config_path": str(demo_config_path) if demo_config_path else None,
         "output_root": str(root),
         "selected_robots": list(robots),
         "results": [],
         "all_stage1_ok": False,
+        "all_ok": False,
         "exit_code": 1,
         "launch_path": str(launch_path),
     }
@@ -228,6 +223,9 @@ def run_selected(
                 workspace_root=root,
                 model=model,
                 max_repairs=max_repairs,
+                stop_after=stop_after,
+                enable_demo=enable_demo,
+                demo_config_path=demo_config_path,
             )
         except Exception as exc:  # noqa: BLE001
             pipeline_error = exc
@@ -279,12 +277,13 @@ def run_selected(
 
     finished = _utc_now()
     all_ok = bool(results) and len(results) == len(robots) and all(
-        item["status"] == "stage1_ok" for item in results
+        item["status"] == "ok" for item in results
     )
     aggregate["finished_at_utc"] = _utc_text(finished)
     aggregate["duration_sec"] = round((finished - started).total_seconds(), 3)
     aggregate["results"] = results
-    aggregate["all_stage1_ok"] = all_ok
+    aggregate["all_ok"] = all_ok
+    aggregate["all_stage1_ok"] = bool(results) and all(item.get("stage1_ok") is True for item in results)
     aggregate["exit_code"] = 0 if all_ok else 1
     _update_launch_aggregate(launch_path, aggregate)
     return (0 if all_ok else 1), aggregate
@@ -300,6 +299,9 @@ def main(argv: list[str] | None = None) -> int:
             model=args.model,
             max_repairs=args.max_repairs,
             output_root=args.output_root,
+            stop_after=args.stop_after,
+            enable_demo=args.enable_demo,
+            demo_config_path=args.demo_config,
         )
         return code
     except ValueError as exc:

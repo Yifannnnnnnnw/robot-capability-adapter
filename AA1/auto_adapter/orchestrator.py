@@ -5,16 +5,14 @@ Implements DESIGN.md §0.7 (3-layer architecture) + §0.9 (ReAct loop spec).
 
 Pipeline:
     STUDY     — parse MJCF, build a capability map (joints / dof / class)
-    DESIGN    — prepare task-grounded capabilities when requested
+    DESIGN    — prepare or load this robot's task-grounded capabilities
     GENERATE  — pick a skeleton, fill its Spec, write driver.py
-    VALIDATE  — scp driver.py to DGX, run a behavior test, fetch report
+    VALIDATE  — execute the design's cases in fresh MuJoCo workers
     EXPORT    — generate an MCP server stub exposing validated skills
     DEMO      — optional configured local ReCAP task and video
 
-The orchestrator owns:
-    * one AgentCore CodeInterpreter session (shared across phases)
-    * one DGX ssh/scp binding (set up once, used by VALIDATE + DEMO)
-    * the workspace layout under `<workspace_root>/<robot_id>/`
+The orchestrator owns the local workspace under `<workspace_root>/<robot_id>/`,
+phase ordering, model budgets, repair and result records.
 
 Agent phases use `ReactLoop.run()` with phase-specific prompts and tools;
 the configured demo uses the ReCAP controller. Phase output is recorded as an artifact
@@ -27,27 +25,28 @@ import json
 import os
 import re
 import shutil
-import subprocess
-import sys
 import time
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
 from .agent import ReactLoop, ReactResult, ToolSpec
+from .export_support import (
+    collect_design_artifacts,
+    collect_validation_artifacts,
+    dynamic_export_prompt,
+    validate_dynamic_export_source,
+    validation_case_metadata,
+)
 from .robot_catalog import (
     REPO_ROOT, SKELETON_FOR_CLASS, find_robot_definition,
-    capability_generation_context, load_capability_design,
+    capability_generation_context,
 )
 from .agent.tools import (
-    make_execute_python_tool,
     make_inspect_skeleton_tool,
     make_list_skeletons_tool,
     make_local_exec_tool,
     make_read_file_tool,
-    make_scp_tools,
-    make_ssh_dgx_exec_tool,
     make_write_file_tool,
 )
 
@@ -131,33 +130,16 @@ class SelfAssembleConfig:
     robot_id: str
     mjcf_path: Path  # local path to the input MJCF
     workspace_root: Path  # `<workspace_root>/<robot_id>/` will be created
-    # "local" → run on this Mac; required for the optional ReCAP demo.
-    # "dgx"   → retains remote generation/validation tools.
+    # All generated code, validation and optional ReCAP execution are local.
     mode: str = "local"
-    # "framework" → orchestrator deterministically exercises the driver
-    #               (driver.build() + per-class smoke calls). No LLM. Fast,
-    #               reliable, doesn't burn iters trying to write a test
-    #               script.  Default — matches the benchmark choke fix.
-    # "agent"     → LLM writes validate.py + behavior tests + records mp4
-    #               (the old behavior). Use when you want deeper validation
-    #               including agent-judged behavior correctness.
-    validate_mode: str = "framework"
     aws_region: str = "us-east-1"
     bedrock_model: str = "us.anthropic.claude-sonnet-4-6"
     model_provider: str = "holistic"
-    dgx_host: str = "YOUR_DGX_HOST"
-    dgx_remote_workspace: str = "/home/USER/auto_adapter_workspace"
-    ci_id: str = "aws.codeinterpreter.v1"
-    ci_session_timeout_sec: int = 900
 
-    # Per-phase iteration caps. STUDY+GENERATE are LLM-heavy; VALIDATE+DEMO
-    # mostly shell out, so they need fewer turns.
+    # Iteration caps for the model-driven stages; VALIDATE is deterministic.
     max_iters_study: int = 16
     max_iters_generate: int = 22
-    max_iters_validate: int = 25
     max_iters_export: int = 8
-    max_iters_demo: int = 18
-    demo_task: str = "Demonstrate a short sequence of the available validated capabilities, using their documented request bounds and observing the robot between actions."
     enable_demo: bool = False
     demo_config_path: Path | None = None
 
@@ -173,25 +155,17 @@ class SelfAssembleConfig:
     # generated study.json never determines which morphology must pass.
     expected_robot_class: Optional[str] = None
 
-    # Optional task-grounded capability preparation.  The historical path
-    # remains the default; a prepared design is deliberately a local-only
-    # diagnostic input and is selected after the public STUDY artifact.
-    prepare_capabilities: bool = False
+    # Every run prepares a task-grounded design after STUDY, or loads one.
     capability_design_path: Path | None = None
     scene_cases_path: Path | None = None
     max_iters_capability_design: int = 30
 
     def __post_init__(self) -> None:
-        if self.prepare_capabilities and self.capability_design_path is not None:
-            raise ValueError(
-                "prepare_capabilities and capability_design_path are mutually exclusive"
-            )
         if self.scene_cases_path is not None and self.capability_design_path is None:
             raise ValueError(
                 "scene_cases_path requires capability_design_path"
             )
-        if (self.prepare_capabilities or self.capability_design_path is not None) \
-                and self.mode != "local":
+        if self.mode != "local":
             raise ValueError("task-grounded capability preparation is local-only")
         if (isinstance(self.max_iters_capability_design, bool)
                 or not isinstance(self.max_iters_capability_design, int)
@@ -199,17 +173,7 @@ class SelfAssembleConfig:
             raise ValueError("max_iters_capability_design must be a positive integer")
 
 
-def _capability_options_enabled(cfg: Any) -> bool:
-    """Whether this run uses a post-STUDY capability design."""
-    return bool(
-        getattr(cfg, "prepare_capabilities", False)
-        or getattr(cfg, "capability_design_path", None) is not None
-    )
-
-
 def _actual_mjcf_context(cfg: Any) -> str:
-    if not _capability_options_enabled(cfg):
-        return ""
     return (
         f"\nActual MJCF source: {Path(cfg.mjcf_path).resolve()}\n"
         "Resolve the workspace symlink before locating relative includes "
@@ -220,9 +184,9 @@ def _actual_mjcf_context(cfg: Any) -> str:
 def _trusted_skeleton_context(robot: dict | None, expected_class: str | None) -> str:
     """Return a compact public low-level skeleton summary for TGCD.
 
-    TGCD may use this to avoid authoring capabilities that the selected
-    implementation route cannot expose.  It receives names/signatures only;
-    the fixed capability contract remains a later Generate input.
+    DESIGN may use this to avoid authoring capabilities that the selected
+    implementation route cannot expose. It receives names/signatures only;
+    generation then implements the resulting current capability design.
     """
     skeleton_name = (robot or {}).get("capability_skeleton")
     if not skeleton_name:
@@ -297,12 +261,12 @@ class PhaseResult:
 
 @dataclass
 class SelfAssembleResult:
-    """Aggregate result across the 5 phases."""
+    """Aggregate result across the requested stages."""
 
     robot_id: str
     workspace: Path
     phases: list[PhaseResult]
-    ok: bool  # True iff all phases reached `ok=True`
+    ok: bool  # Requested stages succeeded, including a final successful repair.
 
     @property
     def generation_ok(self) -> bool:
@@ -316,15 +280,17 @@ class SelfAssembleResult:
 
     @property
     def framework_ok(self) -> bool:
-        """Whether the legacy Framework validation phase passed."""
-        return any(phase.name in {"validate", "03_validate"} and phase.ok
-                   for phase in self.phases)
+        """Whether the final recorded design validation passed."""
+        validations = [p for p in self.phases if p.name in {"validate", "03_validate"}]
+        return bool(validations and validations[-1].ok)
 
     @property
     def stage1_ok(self) -> bool:
-        """Whether the legacy result contains a successful phase-one path."""
+        """Whether STUDY, DESIGN, generation and validation all succeeded."""
         return bool(self.phases and self.phases[0].name in {"study", "01_study"}
-                    and self.phases[0].ok and self.generation_ok
+                    and self.phases[0].ok
+                    and any(p.name == "design" and p.ok for p in self.phases)
+                    and self.generation_ok
                     and self.framework_ok)
 
     def to_json(self) -> dict:
@@ -398,69 +364,6 @@ the chosen class + dof.
 """
 
 
-_GENERATE_SYSTEM = """\
-You are Phase 2 GENERATE. Phase 1 STUDY produced study.json. Your job is to \
-pick a skeleton from the framework and produce a `driver.py` that instantiates \
-it with a correctly filled Spec.
-
-IMPORTANT: keep each execute_python call short (≤150 lines). Split across \
-calls if needed — CI session state persists.
-
-Procedure:
-  1. read_file study.json.
-  2. list_skeletons to see what's available.
-  3. inspect_skeleton on the most appropriate one (arm → ArmSerialDLSSkeleton; \
-quadruped → QuadrupedPDGaitSkeleton; dexterous_hand → HandFingertipDLSSkeleton; \
-mobile_manipulator → StretchMobileManipulationSkeleton; bimanual → \
-BimanualSerialDLSSkeleton) to get the Spec field schema. For bimanual, \
-inspect ArmSerialDLSSkeleton too: the bimanual spec contains left/right \
-ArmSpec values, both operating on one shared model/data. Read the model \
-keyframes: for ALOHA use the collision-free `neutral_pose` as \
-`initial_keyframe`, and derive both arm home_qpos vectors from that keyframe \
-rather than the all-zero qpos0. The hand must \
-map all four fingertips (index, middle, ring, thumb); Stretch must expose \
-both base and arm control. Never substitute an ordinary arm for these \
-composite morphologies. For arm specs, NOTE the `grasp_backend` field — pick:
-       - `"weld"` if the MJCF has explicit `<equality><weld .../>` constraints \
-between the gripper body and any graspable bodies (typical for demo MJCFs \
-like SO-101)
-       - `"contact"` if the gripper is a physical 2-finger / parallel-jaw \
-that should grasp via actual contact + friction (typical for Franka, UR5)
-       - `"noop"` if the robot has no gripper at all
-       - leave as `None` to let the framework auto-pick based on spec content
-  4. execute_python: re-open the MJCF to derive any spec values the study \
-missed (joint_limits dict, home_qpos guess, ee_site_name or ee_body_name, \
-etc.). For the EE reference: prefer ee_site_name when the MJCF defines a \
-`<site>` near the end-effector. If NO suitable site exists (e.g. Franka \
-panda.xml has none), set ee_body_name to the EE BODY instead (e.g. 'hand', \
-'gripper_link', or the leaf body of the arm chain). Don't set both. PRINT \
-a draft spec dict literally so you can paste it into driver.py.
-  5. **Gripper-direction probe (arms only).** Determining which ctrlrange \
-end CLOSES the gripper is non-obvious from the MJCF alone — actively probe \
-it. Use local_exec to run a short python script:
-       - load the MJCF via `mujoco.MjModel.from_xml_path(...)` + `mujoco.MjData(model)`
-       - find the gripper actuator id, find the gripper joint id (qpos slot)
-       - try ctrl=ctrlrange.min(): `data.ctrl[a]=min; for _ in range(200): mj_step(...)`; \
-record `data.qpos[j]` as `qpos_at_min`
-       - reset, repeat with ctrl=ctrlrange.max(); record `qpos_at_max`
-       - print both. The end whose qpos is CLOSER TO ZERO (smaller |qpos|) is \
-the CLOSED position for a typical revolute jaw. For a prismatic finger, the \
-end with smaller stroke is closed.
-       - Use the probe result to set gripper_close_ctrl / gripper_open_ctrl \
-in the spec — DO NOT just guess based on ctrlrange.min() vs max().
-  6. write_file `driver.py` (workspace-relative). It must:
-       - import the chosen Skeleton + Spec from auto_adapter.skeletons
-       - define a `build()` function that returns the constructed skeleton \
-         (loading the MJCF via SkeletonBase.from_mjcf classmethod)
-       - keep the Spec values verbatim from your derived draft — no \
-         placeholders, no "TODO".
-  7. local_exec: `python -c "import driver; skel = driver.build(); print(skel.describe())"` \
-to prove the driver constructs without errors.
-  8. Reply with one sentence summarizing what you wrote + which ctrl is close \
-vs open per your probe.
-"""
-
-
 _CAPABILITY_GENERATE_SYSTEM = """\
 You are Phase 2 GENERATE for the provided capability design.
 Read study.json, list_skeletons and inspect_skeleton to examine the required
@@ -492,127 +395,13 @@ every required capability method exists, and summarize the bindings/control.
 """
 
 
-_VALIDATE_SYSTEM_DGX = """\
-You are Phase 3 VALIDATE. Your job is to copy driver.py to the DGX, run a \
-behavior smoke test there, and pull back a report.
-
-Procedure:
-  1. scp_to_dgx driver.py and the MJCF (workspace-relative names; remote \
-relpaths under the same basename).
-  2. write_file a `validate.py` test script (workspace-relative) that:
-       - imports driver, builds the skeleton, runs a minimal behavior \
-(arm: home() then move_cartesian to a small offset; quadruped: walk \
-forward 1s), prints a JSON line `{"behavior":"...","ok":true/false,...}`
-  3. scp_to_dgx validate.py.
-  4. ssh_dgx_exec to run validate.py with `python validate.py` (assume \
-mujoco is on the DGX PYTHONPATH inside the conda env you used before).
-  5. Parse the stdout JSON line. write_file the parsed result as \
-`validate_report.json`.
-  6. Reply with one sentence: behavior + ok/fail + key metric.
-"""
-
-
-_VALIDATE_SYSTEM_LOCAL = """\
-You are Phase 3 VALIDATE. driver.py is in the workspace and you run everything \
-locally — no scp, no ssh. The workspace cwd already has driver.py + mjcf.xml \
-+ study.json, and PYTHONPATH includes both the workspace and the auto_adapter \
-repo, so scripts can `import driver` and `import auto_adapter.skeletons` \
-directly.
-
-RECORDING: every behavior you test MUST also record video frames so a human \
-reviewer can see what the robot actually did (jitter, falls, near-miss \
-grasps, etc.). A `recordings/` directory exists in the workspace — save \
-attempt mp4s there with names like `recordings/validate_<test>_<int(time.time())>.mp4`. \
-Use imageio: `imageio.mimsave(path, frames, fps=30, codec="libx264")`.
-
-Procedure:
-  1. read_file study.json. Note `estimated_class` — the test set depends on it.
-  2. write_file a `validate.py` test script (workspace-relative). For each \
-test, capture frames (skel.render() every ~5 sim steps; aim for 30-60 frames) \
-and print one JSON line per test:
-       {"test":"<name>","ok":<bool>,"detail":"<what happened>","metric":<number>,"recording":"recordings/validate_<name>_<ts>.mp4"}
-     End the script with `print("___END___")`.
-
-  ── If estimated_class == "arm" ──
-       test_a "ik_roundtrip": move_cartesian(home_pose + [0.05, 0, 0.05]), \
-read back ee pose. metric = position error in meters (ok if < 0.01).
-       test_b "grasp_lift": (a) APPROACH 5cm above the first graspable body, \
-(b) DESCEND to 2cm above — THIS DESCENT IS REQUIRED, otherwise gripper_close \
-fires while EE is still outside grasp_radius, (c) gripper_close, (d) LIFT \
-+0.10 m in Z, (e) read body Z height. metric = lift_height_m (ok if > 0.05).
-
-  ── If estimated_class == "quadruped" ──
-       test_a "stand_up": call skel.stand_up(duration=2.0). \
-metric = final body height in meters (ok if > 0.20). Capture frames \
-throughout the stand_up motion.
-       test_b "walk_forward": call skel.walk_forward(secs=3.0, speed=0.3). \
-metric = forward displacement (X) in meters (ok if > 0.05). Capture frames \
-throughout the walk. NOTE: the hand-tuned trot can be fragile — record what \
-actually happened even if displacement is small.
-       test_c "sit": call skel.sit(duration=1.5). \
-metric = final body height in meters (ok if < spec body_height_target × 0.7).
-
-  ── For any other class ──
-       Run whatever behavior tests the skeleton exposes (introspect via \
-`dir(skel)`), capture frames, report metrics.
-
-  3. local_exec to run `python validate.py 2>&1`. timeout_sec=240.
-  4. Parse stdout JSON lines. write_file `validate_report.json` with \
-`{"tests": [...], "all_ok": <bool>}`.
-  5. Reply with one sentence: test names + each ok/fail + key metrics + \
-recording paths.
-"""
-
-
-_EXPORT_SYSTEM = """\
-You are Phase 4 EXPORT. Phase 2 produced driver.py and Phase 3 confirmed \
-it works. Generate an MCP server stub that exposes the skeleton's behaviors \
-as MCP tools.
-
-Use the official Python MCP SDK (already installed): \
-`from mcp.server.fastmcp import FastMCP`.
-
-CRITICAL: Only register MCP tools that wrap methods that ACTUALLY exist on the \
-skeleton. DO NOT INVENT methods like `grasp(body_name)` or `release()` — these \
-are not on ArmSerialDLSSkeleton. ALWAYS introspect first (step 2 below) and \
-use the EXACT signatures you discover, including default values.
-
-Procedure:
-  1. read_file driver.py and validate_report.json.
-  2. local_exec to introspect the actual skeleton API: \
-`python -c "import driver, inspect; skel=driver.build(); methods=[(m, str(inspect.signature(getattr(skel,m)))) for m in dir(skel) if not m.startswith('_') and callable(getattr(skel,m))]; [print(f'{n}{s}') for n,s in methods]"`. \
-This shows every callable + its exact signature. Use ONLY these.
-  3. write_file `mcp_server.py` (workspace-relative). It must:
-       - `from mcp.server.fastmcp import FastMCP` and create one `mcp = FastMCP("<robot_id>")`
-       - Lazy-build the skeleton on first tool call (don't build at import time)
-       - Register one `@mcp.tool()` per skeleton method from step 2 that an LLM \
-planner would plausibly call (typical arm: home, move_cartesian, gripper_open, \
-gripper_close, get_ee_pose, is_holding, get_joint_positions). Each tool \
-forwards its args to the underlying method with the EXACT signature, has a \
-clear docstring, and returns a JSON-serializable dict.
-       - Be runnable as `python mcp_server.py` (stdio transport). End with \
-`if __name__ == "__main__": mcp.run()` so it serves on stdio.
-  4. local_exec to verify it imports cleanly: \
-`python -c "import importlib; importlib.import_module('mcp_server'); print('import ok')"`. \
-DO NOT run the server itself — it would block on stdio.
-  5. Reply with one sentence listing the registered tool names.
-
-When the user message supplies a current public capability design, it takes
-precedence over the generic method examples above. Export its validated
-method_name/request_schema contracts as tools that call method(request=...).
-Use introspection to confirm these interfaces; do not add inherited methods
-absent from that design or reload a different design from the robot catalog.
-"""
-
-
 # ──────────────────────────────────────────────────────────────────────────
 # Orchestrator
 # ──────────────────────────────────────────────────────────────────────────
 
 
 class SelfAssemble:
-    """5-phase orchestrator. Use as a context manager so the CI session
-    is always stopped, even on phase failure:
+    """Local six-stage orchestrator. The public entry supports a context manager:
 
         with SelfAssemble(cfg) as sa:
             result = sa.run()
@@ -620,24 +409,16 @@ class SelfAssemble:
 
     def __init__(self, cfg: SelfAssembleConfig) -> None:
         self.cfg = cfg
-        self._dynamic_capabilities = _capability_options_enabled(cfg)
         self.robot_definition = find_robot_definition(cfg.robot_id, cfg.mjcf_path)
         catalog_class = self.robot_definition["class"] if self.robot_definition else None
         if catalog_class and cfg.expected_robot_class and catalog_class != cfg.expected_robot_class:
             raise ValueError("expected_robot_class conflicts with robot zoo")
         self.expected_robot_class = catalog_class or cfg.expected_robot_class
-        # Dynamic/supplied designs are selected only after a successful public
-        # STUDY.  In particular, do not replace the caller's MJCF with the
-        # catalog capability scene on this route.  The default path retains
-        # the historical catalog behavior verbatim.
+        # Select this run's design after STUDY and retain the caller's MJCF.
         self.capability_design = None
         self.scene_cases_path: Path | None = None
         self.scene_paths: dict[str, Path] = {}
         self._last_capability_preparation: dict | None = None
-        if not self._dynamic_capabilities:
-            self.capability_design = load_capability_design(self.robot_definition)
-            if self.capability_design and self.robot_definition.get("capability_mjcf"):
-                cfg.mjcf_path = REPO_ROOT / self.robot_definition["capability_mjcf"]
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         (self.workspace / "traces").mkdir(parents=True, exist_ok=True)
@@ -658,43 +439,13 @@ class SelfAssemble:
         dst.symlink_to(src)
         self.mjcf_workspace_path = "mjcf.xml"
 
-        # Filled in __enter__ to be lifecycle-safe
-        self._ci_client: Any = None
-        self._ci_session_id: Optional[str] = None
-        self._exec_python_tool: Optional[ToolSpec] = None
-
-    # ─── Lifecycle (CI session) ───────────────────────────────────────────
+    # ─── Context manager ─────────────────────────────────────────────────
 
     def __enter__(self) -> "SelfAssemble":
-        # Local runs use the venv-backed local_exec tool for every phase; do
-        # not start an AgentCore session that could become an accidental
-        # execution/artifact world for STUDY or GENERATE.
-        if self.cfg.mode == "local":
-            return self
-
-        import boto3  # noqa: PLC0415
-
-        self._ci_client = boto3.client("bedrock-agentcore", region_name=self.cfg.aws_region)
-        sess = self._ci_client.start_code_interpreter_session(
-            codeInterpreterIdentifier=self.cfg.ci_id,
-            name=f"auto-adapter-{self.cfg.robot_id}",
-            sessionTimeoutSeconds=self.cfg.ci_session_timeout_sec,
-        )
-        self._ci_session_id = sess["sessionId"]
-        self._exec_python_tool = make_execute_python_tool(
-            self._ci_client, self._ci_session_id, ci_id=self.cfg.ci_id
-        )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if self._ci_session_id is not None:
-            try:
-                self._ci_client.stop_code_interpreter_session(
-                    codeInterpreterIdentifier=self.cfg.ci_id,
-                    sessionId=self._ci_session_id,
-                )
-            except Exception:  # noqa: BLE001
-                pass
+        pass
 
     # ─── Tool bundles per phase ───────────────────────────────────────────
 
@@ -721,22 +472,9 @@ class SelfAssemble:
     def _skeleton_tools(self) -> list[ToolSpec]:
         return [make_list_skeletons_tool(), make_inspect_skeleton_tool()]
 
-    def _dgx_tools(self) -> list[ToolSpec]:
-        ssh_tool = make_ssh_dgx_exec_tool(
-            self.cfg.dgx_host, remote_workspace=self.cfg.dgx_remote_workspace
-        )
-        scp_to, scp_from = make_scp_tools(
-            self.cfg.dgx_host,
-            local_workspace=self.workspace,
-            remote_workspace=self.cfg.dgx_remote_workspace,
-        )
-        return [ssh_tool, scp_to, scp_from]
 
     def _local_runtime_tools(self) -> list[ToolSpec]:
-        """Mac-local counterpart to _dgx_tools: just `local_exec`. The agent
-        writes scripts via write_file (already operating on this workspace)
-        and runs them in-place; no scp needed.
-        """
+        """Run generated code and MuJoCo probes in the current workspace."""
         from . import skeletons as _sk  # noqa: PLC0415
 
         repo_root = Path(_sk.__file__).resolve().parents[2]  # vector-os-nano/
@@ -747,13 +485,12 @@ class SelfAssemble:
         ]
 
     def _runtime_tools(self) -> list[ToolSpec]:
-        return self._local_runtime_tools() if self.cfg.mode == "local" else self._dgx_tools()
+        return self._local_runtime_tools()
 
     # ─── Task-grounded capability preparation ────────────────────────────
 
     def _require_capability_design(self, phase: str) -> None:
-        if getattr(self, "_dynamic_capabilities", False) \
-                and not isinstance(self.capability_design, dict):
+        if not isinstance(self.capability_design, dict):
             raise RuntimeError(
                 f"dynamic {phase} requires a successful STUDY and capability design; "
                 "catalog fallback is disabled"
@@ -767,8 +504,6 @@ class SelfAssemble:
         preparation record, so an invocation failure cannot be made successful
         by a stale artifact from an earlier diagnostic.
         """
-        if not getattr(self, "_dynamic_capabilities", False):
-            return {}
         if not isinstance(study, Mapping):
             raise ValueError("STUDY artifact must be one JSON object")
         robot_id = str(study.get("robot_id", self.cfg.robot_id))
@@ -805,7 +540,8 @@ class SelfAssemble:
                     "trace_path": None,
                     "error": None,
                 }
-                shutil.copy2(supplied_path, design_output)
+                if supplied_path != design_output.resolve():
+                    shutil.copy2(supplied_path, design_output)
             else:
                 # A current preparation record is part of the generated
                 # design handoff.  Remove the previous record before asking
@@ -906,7 +642,7 @@ class SelfAssemble:
             if not supplied_cases.is_absolute():
                 supplied_cases = output_dir / supplied_cases
         if supplied_cases is None:
-            if self.cfg.prepare_capabilities:
+            if self.cfg.capability_design_path is None:
                 raise ValueError(
                     "automatic capability preparation did not produce scene cases"
                 )
@@ -943,8 +679,6 @@ class SelfAssemble:
 
     def _phase_design(self) -> PhaseResult:
         """Prepare or load the capability design after a successful STUDY."""
-        if not getattr(self, "_dynamic_capabilities", False):
-            return PhaseResult("design", True, 0.0, metadata={"legacy": True})
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
@@ -956,12 +690,12 @@ class SelfAssemble:
                 raise FileNotFoundError("study.json missing after STUDY")
             study = json.loads(study_path.read_text(encoding="utf-8"))
             preparation = self._prepare_capability_design(study)
+            design_trace = self.workspace / "design" / "trace.jsonl"
+            design_artifacts = collect_design_artifacts(self.workspace)
             return PhaseResult(
                 name="design", ok=True, duration_sec=max(0.0, time.time() - started),
-                artifact_paths=[p for p in (
-                    self.workspace / "design" / "capability_design.json",
-                    self.workspace / "design" / "capability_preparation.json",
-                ) if p.is_file()],
+                trace_path=design_trace if design_trace.is_file() else None,
+                artifact_paths=design_artifacts,
                 token_usage=_numeric_token_usage(preparation.get("token_usage")),
                 metadata={
                     "capability_design_path": preparation.get("design_path"),
@@ -989,25 +723,6 @@ class SelfAssemble:
                 metadata={"capability_preparation_error": str(exc)},
             )
 
-    def _attach_capability_metadata(
-        self, study_result: PhaseResult, preparation: Mapping[str, Any]
-    ) -> None:
-        """Record TGCD resources on STUDY and include them in phase totals."""
-        metadata = dict(study_result.metadata or {})
-        metadata["capability_design_path"] = preparation.get("design_path")
-        metadata["capability_preparation"] = dict(preparation)
-        metadata["capability_design_duration_sec"] = preparation.get("duration_sec", 0.0)
-        metadata["capability_design_token_usage"] = dict(
-            preparation.get("token_usage") or {}
-        )
-        study_result.metadata = metadata
-        study_result.token_usage = _merge_numeric_usage(
-            study_result.token_usage, preparation.get("token_usage")
-        )
-        try:
-            study_result.duration_sec += max(0.0, float(preparation.get("duration_sec", 0.0)))
-        except (TypeError, ValueError):
-            pass
 
     # ─── Phase runner ─────────────────────────────────────────────────────
 
@@ -1054,9 +769,7 @@ class SelfAssemble:
                     or p.stat().st_mtime_ns != before_mtimes[rel]
                 )
             )
-            if p.exists() and (
-                not getattr(self, "_dynamic_capabilities", False) or current_write
-            ):
+            if current_write:
                 artifact_paths.append(p)
             else:
                 missing.append(rel)
@@ -1101,30 +814,22 @@ class SelfAssemble:
     def _phase_study(self) -> PhaseResult:
         # A repeated STUDY starts a new design handoff.  Never let an earlier
         # dynamic design make a failed/partial STUDY look generation-ready.
-        if getattr(self, "_dynamic_capabilities", False):
-            self.capability_design = None
-            self.scene_cases_path = None
-            self.scene_paths = {}
-            self._last_capability_preparation = None
-        if self.cfg.mode == "local":
-            # The workspace is the authoritative artifact world in local
-            # mode.  Keep MuJoCo probing in the same venv/cwd as write_file.
-            tools = self._local_tools() + self._local_runtime_tools()
-            system = (
-                _STUDY_SYSTEM
-                .replace("execute_python", "local_exec")
-                .replace(
-                    "the CI session preserves Python state across calls "
-                    "(imports persist, variables persist).",
-                    "each local_exec call starts a fresh process; include "
-                    "imports and setup in every command or save intermediates "
-                    "in workspace files.",
-                )
+        self.capability_design = None
+        self.scene_cases_path = None
+        self.scene_paths = {}
+        self._last_capability_preparation = None
+        tools = self._local_tools() + self._local_runtime_tools()
+        system = (
+            _STUDY_SYSTEM
+            .replace("execute_python", "local_exec")
+            .replace(
+                "the CI session preserves Python state across calls "
+                "(imports persist, variables persist).",
+                "each local_exec call starts a fresh process; include "
+                "imports and setup in every command or save intermediates "
+                "in workspace files.",
             )
-        else:
-            assert self._exec_python_tool is not None
-            tools = self._local_tools() + [self._exec_python_tool]
-            system = _STUDY_SYSTEM
+        )
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
             f"MJCF file (workspace-relative): {self.mjcf_workspace_path}\n"
@@ -1143,34 +848,22 @@ class SelfAssemble:
 
     def _phase_generate(self, prior_validate_failures: Optional[str] = None) -> PhaseResult:
         self._require_capability_design("GENERATE")
-        system = _CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM
-        if self.cfg.mode == "local":
-            # All Python/MuJoCo probes and generated files must stay in the
-            # local workspace.  AgentCore is intentionally absent here.
-            tools = (
-                self._local_tools()
-                + self._skeleton_tools()
-                + self._local_runtime_tools()
+        system = _CAPABILITY_GENERATE_SYSTEM
+        tools = (
+            self._local_tools()
+            + self._skeleton_tools()
+            + self._local_runtime_tools()
+        )
+        system = (
+            system
+            .replace("execute_python", "local_exec")
+            .replace(
+                "CI session state persists.",
+                "each local_exec call starts a fresh process; include "
+                "imports and setup in every command or save intermediates "
+                "in workspace files.",
             )
-            system = (
-                system
-                .replace("execute_python", "local_exec")
-                .replace(
-                    "CI session state persists.",
-                    "each local_exec call starts a fresh process; include "
-                    "imports and setup in every command or save intermediates "
-                    "in workspace files.",
-                )
-            )
-        else:
-            assert self._exec_python_tool is not None
-            # DGX mode retains the existing CodeInterpreter + DGX routing.
-            tools = (
-                self._local_tools()
-                + self._skeleton_tools()
-                + [self._exec_python_tool]
-                + self._runtime_tools()
-            )
+        )
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
             f"study.json is in the workspace. MJCF is at {self.mjcf_workspace_path}.\n"
@@ -1181,7 +874,7 @@ class SelfAssemble:
             self.robot_definition, design=self.capability_design
         )
         if prior_validate_failures:
-            verification_tool = "local_exec" if self.cfg.mode == "local" else "execute_python"
+            verification_tool = "local_exec"
             user_msg += (
                 "\n\nIMPORTANT — your previous driver.py was generated but the "
                 "outer VALIDATE harness reported the following structural "
@@ -1209,33 +902,24 @@ class SelfAssemble:
         :func:`validate_failure_feedback` output.
         """
         self._require_capability_design("REPAIR")
-        system = _CAPABILITY_GENERATE_SYSTEM if self.capability_design else _GENERATE_SYSTEM
-        if self.cfg.mode == "local":
-            tools = (
-                self._local_tools()
-                + self._skeleton_tools()
-                + self._local_runtime_tools()
+        system = _CAPABILITY_GENERATE_SYSTEM
+        tools = (
+            self._local_tools()
+            + self._skeleton_tools()
+            + self._local_runtime_tools()
+        )
+        system = (
+            system
+            .replace("execute_python", "local_exec")
+            .replace(
+                "CI session state persists.",
+                "each local_exec call starts a fresh process; include "
+                "imports and setup in every command or save intermediates "
+                "in workspace files.",
             )
-            system = (
-                system
-                .replace("execute_python", "local_exec")
-                .replace(
-                    "CI session state persists.",
-                    "each local_exec call starts a fresh process; include "
-                    "imports and setup in every command or save intermediates "
-                    "in workspace files.",
-                )
-            )
-        else:
-            assert self._exec_python_tool is not None
-            tools = (
-                self._local_tools()
-                + self._skeleton_tools()
-                + [self._exec_python_tool]
-                + self._runtime_tools()
-            )
+        )
 
-        verification_tool = "local_exec" if self.cfg.mode == "local" else "execute_python"
+        verification_tool = "local_exec"
         user_msg = (
             f"Robot ID: {self.cfg.robot_id}\n"
             f"This is repair attempt {int(attempt)}. A prior driver.py may "
@@ -1283,504 +967,105 @@ class SelfAssemble:
         return validate_failure_feedback(report)
 
     def _phase_validate(self) -> PhaseResult:
-        if getattr(self, "_dynamic_capabilities", False):
-            self._require_capability_design("VALIDATE")
-            if self.scene_cases_path is None or not self.scene_paths:
-                return PhaseResult(
-                    name="03_validate", ok=False, duration_sec=0.0,
-                    error="dynamic validation requires scene cases and prepared scenes",
-                    metadata={"validation_error": True, "repairable": False},
-                )
-            from .design_validation import validate_design_driver  # noqa: PLC0415
-
-            started = time.time()
-            report_path = self.workspace / "validate_report.json"
-            # A failed current invocation cannot inherit a previous report.
-            report_path.unlink(missing_ok=True)
-            report = validate_design_driver(
-                driver_path=self.workspace / "driver.py",
-                design=self.capability_design,
-                scene_cases_path=self.scene_cases_path,
-                scene_paths=self.scene_paths,
-                output_dir=self.workspace / "validation",
-            )
-            report_path.write_text(
-                json.dumps(report, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
-            validation_error = bool(report.get("validation_error"))
-            repairable = bool(report.get("repairable", not validation_error))
+        self._require_capability_design("VALIDATE")
+        if self.scene_cases_path is None or not self.scene_paths:
             return PhaseResult(
-                name="03_validate",
-                ok=report.get("all_ok") is True,
-                duration_sec=max(0.0, time.time() - started),
-                artifact_paths=[report_path],
-                final_text=(
-                    f"design validation: {report.get('n_passed', 0)}/"
-                    f"{report.get('n_total', 0)} cases passed"
-                ),
-                error=None if report.get("all_ok") is True else report.get("error") or "design validation failed",
-                token_usage={"in": 0, "out": 0},
-                metadata={
-                    "validation_error": validation_error,
-                    "repairable": repairable,
-                    "validation_report": report,
-                },
+                name="03_validate", ok=False, duration_sec=0.0,
+                error="dynamic validation requires scene cases and prepared scenes",
+                metadata={"validation_error": True, "repairable": False},
             )
-        if self.cfg.validate_mode == "framework":
-            return self._phase_validate_framework()
-        tools = self._local_tools() + self._runtime_tools()
-        if self.cfg.mode == "local":
-            system = _VALIDATE_SYSTEM_LOCAL
-            user_msg = (
-                f"Robot ID: {self.cfg.robot_id}\n"
-                "driver.py, mjcf.xml, study.json are in the workspace. "
-                "Run locally per the procedure and write validate_report.json."
-            )
-        else:
-            system = _VALIDATE_SYSTEM_DGX
-            user_msg = (
-                f"Robot ID: {self.cfg.robot_id}\n"
-                f"driver.py is in the workspace; mjcf.xml is too. "
-                f"DGX host: {self.cfg.dgx_host}, remote workspace: {self.cfg.dgx_remote_workspace}\n"
-                "Validate per the procedure and write validate_report.json."
-            )
-        return self._run_phase(
-            name="03_validate",
-            system=system,
-            user_msg=user_msg,
-            tools=tools,
-            max_iters=self.cfg.max_iters_validate,
-            expected_artifacts=["validate_report.json"],
-        )
+        from .design_validation import validate_design_driver  # noqa: PLC0415
 
-    def _phase_validate_framework(self) -> PhaseResult:
-        """Deterministic framework-level validation. No LLM, no test-script
-        generation. Loads the agent-built driver, exercises each public method
-        the skeleton class advertises, records frames per behavior, writes a
-        structural validate_report.json.
-
-        Replaces the agent-written validate.py that often burned max_iters
-        debugging numpy / signature mistakes (benchmark choke).
-        """
-        if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError(
-                "dynamic capability designs cannot enter the legacy Framework evaluator"
-            )
-        import importlib.util  # noqa: PLC0415
-        import sys as _sys  # noqa: PLC0415
-
-        t0 = time.time()
-        rec_dir = self.workspace / "recordings"
-        rec_dir.mkdir(exist_ok=True)
+        started = time.time()
         report_path = self.workspace / "validate_report.json"
-
-        def _record_phase(name: str, ok: bool, detail: str, metric: float,
-                          tests: list, mp4_rel: Optional[str] = None) -> None:
-            entry = {"test": name, "ok": ok, "detail": detail, "metric": metric}
-            if mp4_rel:
-                entry["recording"] = mp4_rel
-            tests.append(entry)
-
-        tests: list[dict] = []
-        load_error: Optional[str] = None
-
-        # Side-load the driver
-        driver_path = self.workspace / "driver.py"
-        if not driver_path.exists():
-            report_path.write_text(json.dumps(
-                {"tests": [], "all_ok": False,
-                 "error": "driver.py missing"}, indent=2))
-            return PhaseResult(
-                name="03_validate", ok=False,
-                duration_sec=time.time() - t0,
-                trace_path=None,
-                artifact_paths=[report_path],
-                final_text="",
-                error="driver.py missing",
-                token_usage={},
-            )
-
-        sys_path_added = False
-        if str(self.workspace) not in _sys.path:
-            _sys.path.insert(0, str(self.workspace))
-            sys_path_added = True
-        _sys.modules.pop("driver", None)
-        orig_cwd = os.getcwd()
-        try:
-            os.chdir(self.workspace)
-            try:
-                spec = importlib.util.spec_from_file_location("driver", str(driver_path))
-                assert spec is not None and spec.loader is not None
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
-                skel = mod.build()
-            except Exception as e:  # noqa: BLE001
-                load_error = f"{type(e).__name__}: {e}"
-                _record_phase("driver_build", False, load_error, 0.0, tests)
-                report_path.write_text(json.dumps(
-                    {"tests": tests, "all_ok": False, "error": load_error}, indent=2))
-                return PhaseResult(
-                    name="03_validate", ok=False,
-                    duration_sec=time.time() - t0,
-                    trace_path=None,
-                    artifact_paths=[report_path],
-                    final_text=f"driver.build() failed: {load_error}",
-                    error=load_error,
-                    token_usage={},
-                )
-
-            # driver_build smoke
-            _record_phase("driver_build", True,
-                          f"driver.build() returned {type(skel).__name__}",
-                          1.0, tests)
-
-            cls_name = type(skel).__name__
-            try:
-                expected_skeleton = SKELETON_FOR_CLASS.get(self.expected_robot_class)
-                if self.capability_design:
-                    from auto_adapter.robot_catalog import validate_capability_driver
-                    from autoadapter_bench.capability_eval import run_capability_suite
-                    validate_capability_driver(skel, self.robot_definition)
-                    outcome = run_capability_suite(
-                        skel, self.robot_definition, self.workspace / "capability_validation",
-                        driver_origin="real_model_generation")
-                    tests.extend(outcome["tests"])
-                    if not outcome["tests"]:
-                        raise ValueError("capability suite produced no checks")
-                elif self.expected_robot_class and cls_name != expected_skeleton:
-                    _record_phase("expected_morphology", False,
-                                  f"catalog expects {self.expected_robot_class} "
-                                  f"({expected_skeleton}), got {cls_name}", 0.0, tests)
-                elif cls_name == "ArmSerialDLSSkeleton":
-                    self._validate_arm(skel, tests, rec_dir)
-                elif cls_name == "QuadrupedPDGaitSkeleton":
-                    self._validate_quadruped(skel, tests, rec_dir)
-                elif cls_name in {"HandFingertipDLSSkeleton",
-                                  "StretchMobileManipulationSkeleton",
-                                  "BimanualSerialDLSSkeleton"}:
-                    self._validate_new_morphology(skel, tests, rec_dir)
-                else:
-                    _record_phase("supported_skeleton", False,
-                                  f"unknown skeleton class {cls_name}; "
-                                  f"no framework behavior validator available",
-                                  0.0, tests)
-            except Exception as e:  # noqa: BLE001
-                _record_phase("behavior_smoke", False,
-                              f"{type(e).__name__}: {e}", 0.0, tests)
-        finally:
-            os.chdir(orig_cwd)
-            if sys_path_added:
-                _sys.path.remove(str(self.workspace))
-
-        # A non-negative metric can still describe a failed movement. Keep
-        # build status separate; every required behavior must pass validation.
-        structural_ok = all(t["ok"] for t in tests
-                            if t["test"] in {"driver_build", "expected_morphology", "supported_skeleton",
-                                             "behavior_smoke"})
-        all_metrics_ok = all(t["ok"] for t in tests)
-        n_ok = sum(1 for t in tests if t["ok"])
-        report_path.write_text(json.dumps({
-            "tests": tests,
-            "all_ok": all_metrics_ok,
-            "structural_ok": structural_ok,
-            "n_passed": n_ok,
-            "n_total": len(tests),
-        }, indent=2))
-
-        dur = time.time() - t0
+        # A failed current invocation cannot inherit a previous report.
+        report_path.unlink(missing_ok=True)
+        report = validate_design_driver(
+            driver_path=self.workspace / "driver.py",
+            design=self.capability_design,
+            scene_cases_path=self.scene_cases_path,
+            scene_paths=self.scene_paths,
+            output_dir=self.workspace / "validation",
+        )
+        report_path.write_text(
+            json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        validation_error = bool(report.get("validation_error"))
+        repairable = bool(report.get("repairable", not validation_error))
         return PhaseResult(
-            name="03_validate", ok=all_metrics_ok,
-            duration_sec=dur,
-            trace_path=None,
-            artifact_paths=[report_path],
+            name="03_validate",
+            ok=report.get("all_ok") is True,
+            duration_sec=max(0.0, time.time() - started),
+            artifact_paths=collect_validation_artifacts(self.workspace, report, report_path),
             final_text=(
-                f"framework validate: {n_ok}/{len(tests)} behavior thresholds met"
+                f"design validation: {report.get('n_passed', 0)}/"
+                f"{report.get('n_total', 0)} cases passed"
             ),
-            error=None if all_metrics_ok else "required framework validation failed",
+            error=None if report.get("all_ok") is True else report.get("error") or "design validation failed",
             token_usage={"in": 0, "out": 0},
+            metadata={
+                "validation_error": validation_error,
+                "repairable": repairable,
+                "validation_report": report,
+                "validation_cases": validation_case_metadata(report, self.workspace),
+            },
         )
 
-    # ─── Framework validators per skeleton class ──────────────────────────
-
-    def _validate_new_morphology(self, skel, tests: list, rec_dir: Path) -> None:
-        """Exercise the calibrated task on a generated driver using MuJoCo truth."""
-        if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError(
-                "dynamic capability designs cannot use the legacy fixed task evaluator"
-            )
-        from types import SimpleNamespace
-        import imageio.v2 as imageio
-        from .agent.task_planner import _FrameCapture
-        from autoadapter_bench.eval import (
-            load_task_suite, _replay_tool_calls, _truth_state, evaluate_success,
-        )
-
-        if not self.robot_definition or not self.robot_definition.get("state_refs"):
-            raise ValueError("new morphology validation requires trusted robot zoo bindings")
-        task = load_task_suite(self.expected_robot_class)["suites"]["simple"]["tasks"][0]
-        refs = self.robot_definition["state_refs"]
-        skel.home()
-        before = _truth_state(skel, refs)
-        actions = task["reference_actions"]
-        tag = f"framework_{task['id']}_{time.time_ns()}"
-        trace_path = rec_dir / f"{tag}.json"
-        video_path = rec_dir / f"{tag}.mp4"
-        capture = _FrameCapture(skel, capture_every=max(1, round(1 / (30 * skel.model.opt.timestep))))
-        samples: list = []
-        try:
-            clean = _replay_tool_calls(skel, actions, state_refs=refs, trace_samples=samples)
-            before["_physics_samples"] = samples
-            before["_replay_clean"] = clean
-            ok, detail, metrics = evaluate_success(
-                skel, before, task["success"],
-                SimpleNamespace(tool_call_log=actions, ok=clean), task["id"],
-            )
-            capture.snapshot()
-        finally:
-            capture.uninstall()
-            trace_path.write_text(json.dumps({"task": task["id"], "actions": actions,
-                                             "samples": samples}, indent=2))
-        if not capture.frames:
-            raise RuntimeError("framework validation produced no video frames")
-        imageio.mimsave(video_path, capture.frames, fps=30, codec="libx264")
-        tests.append({"test": task["id"], "ok": bool(clean and ok),
-                      "detail": detail, "metric": 1.0 if clean and ok else 0.0,
-                      "metrics": metrics,
-                      "recording": str(video_path.relative_to(self.workspace)),
-                      "trace": str(trace_path.relative_to(self.workspace))})
-
-    def _validate_arm(self, skel, tests: list, rec_dir: Path) -> None:
-        """Run a fixed sequence on an ArmSerialDLSSkeleton + capture frames."""
-        if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError("dynamic capability designs cannot use fixed arm validation")
-        import imageio  # noqa: PLC0415
-        import numpy as np  # noqa: PLC0415
-
-        # Hook step() to capture frames
-        frames: list = []
-        orig_step = skel.step
-
-        def _capture_step(n: int = 1) -> None:
-            for _ in range(int(n)):
-                orig_step(1)
-                if len(frames) < 600 and (len(frames) * 10) % 10 == 0:
-                    try:
-                        frames.append(skel.render())
-                    except Exception:  # noqa: BLE001
-                        pass
-
-        # Wrap once; restore at end via try/finally
-        skel.step = _capture_step  # type: ignore[method-assign]
-        capture_every = 10  # frames every 10 sim steps
-        try:
-            # ── home_settle ───────────────────────────────────────────────
-            t0 = time.time()
-            try:
-                skel.home()
-                ee_pos, _ = skel.get_ee_pose()
-                tests.append({
-                    "test": "home_settle",
-                    "ok": True,
-                    "detail": f"home() converged; EE at {ee_pos.tolist()}",
-                    "metric": float(time.time() - t0),
-                })
-            except Exception as e:  # noqa: BLE001
-                tests.append({"test": "home_settle", "ok": False,
-                              "detail": f"{type(e).__name__}: {e}",
-                              "metric": -1.0})
-                return  # subsequent tests assume home() worked
-
-            # ── ik_roundtrip ──────────────────────────────────────────────
-            try:
-                ee0, _ = skel.get_ee_pose()
-                target = ee0 + np.array([0.03, 0.0, 0.03])
-                skel.move_cartesian(target, duration=1.5)
-                ee1, _ = skel.get_ee_pose()
-                err = float(np.linalg.norm(ee1 - target))
-                tests.append({
-                    "test": "ik_roundtrip",
-                    "ok": bool(err < 0.02),
-                    "detail": f"target {target.tolist()}, "
-                              f"reached {ee1.tolist()}, err {err:.4f} m",
-                    "metric": err,
-                })
-            except Exception as e:  # noqa: BLE001
-                tests.append({"test": "ik_roundtrip", "ok": False,
-                              "detail": f"{type(e).__name__}: {e}",
-                              "metric": -1.0})
-
-            # ── gripper_cycle ─────────────────────────────────────────────
-            if skel.spec.gripper_actuator_names:
-                try:
-                    skel.gripper_open()
-                    skel.gripper_close()
-                    skel.gripper_open()
-                    tests.append({
-                        "test": "gripper_cycle",
-                        "ok": True,
-                        "detail": "open/close/open completed without exception",
-                        "metric": 1.0,
-                    })
-                except Exception as e:  # noqa: BLE001
-                    tests.append({"test": "gripper_cycle", "ok": False,
-                                  "detail": f"{type(e).__name__}: {e}",
-                                  "metric": -1.0})
-            else:
-                tests.append({"test": "gripper_cycle", "ok": True,
-                              "detail": "no gripper actuator (skipped)",
-                              "metric": 0.0})
-
-            # ── grasp_lift (if there are weld-graspable bodies in the scene) ─
-            graspables = skel.spec.weld_graspable_bodies or []
-            if graspables:
-                try:
-                    body_name = graspables[0]
-                    body_pos = skel.get_object_position(body_name)
-                    pre_z = float(body_pos[2])
-                    # APPROACH 5cm above, DESCEND to 2cm, close, LIFT 10cm
-                    skel.move_cartesian(body_pos + np.array([0, 0, 0.05]), duration=1.5)
-                    skel.move_cartesian(body_pos + np.array([0, 0, 0.02]), duration=1.0)
-                    skel.gripper_close()
-                    skel.move_cartesian(body_pos + np.array([0, 0, 0.12]), duration=1.5)
-                    post = np.asarray(skel.get_object_position(body_name), dtype=float)
-                    post_z = float(post[2])
-                    lift = post_z - pre_z
-                    # The object must also still be HELD at the gripper, not
-                    # merely higher: a weld grasp activated without capturing the
-                    # current relative pose flings the object away while it still
-                    # "rose" in Z (height-only checks miss this).
-                    try:
-                        ee = np.asarray(skel.get_ee_pose()[0], dtype=float)
-                        gap = float(np.linalg.norm(post - ee))
-                    except Exception:  # noqa: BLE001
-                        gap = 0.0
-                    tests.append({
-                        "test": "grasp_lift",
-                        "ok": bool(lift > 0.05 and gap < 0.12),
-                        "detail": f"{body_name}: lift={lift:.3f} m, held {gap*100:.1f}cm "
-                                  f"from EE (need lift>0.05, gap<0.12)",
-                        "metric": lift,
-                    })
-                except Exception as e:  # noqa: BLE001
-                    tests.append({"test": "grasp_lift", "ok": False,
-                                  "detail": f"{type(e).__name__}: {e}",
-                                  "metric": -1.0})
-
-        finally:
-            skel.step = orig_step  # type: ignore[method-assign]
-            if frames:
-                try:
-                    mp4 = rec_dir / f"validate_framework_{int(time.time())}.mp4"
-                    imageio.mimsave(str(mp4), frames, fps=30, codec="libx264")
-                    if tests:
-                        tests[-1].setdefault("recording", str(mp4.relative_to(self.workspace)))
-                except Exception:  # noqa: BLE001
-                    pass
-
-    def _validate_quadruped(self, skel, tests: list, rec_dir: Path) -> None:
-        """Run stand / sit / walk smoke on a QuadrupedPDGaitSkeleton."""
-        if getattr(self, "_dynamic_capabilities", False):
-            raise ValueError(
-                "dynamic capability designs cannot use fixed quadruped validation"
-            )
-        import imageio  # noqa: PLC0415
-
-        frames: list = []
-        orig_step = skel.step
-
-        def _capture_step(n: int = 1) -> None:
-            for _ in range(int(n)):
-                orig_step(1)
-                if len(frames) < 600:
-                    try:
-                        frames.append(skel.render())
-                    except Exception:  # noqa: BLE001
-                        pass
-
-        skel.step = _capture_step  # type: ignore[method-assign]
-        try:
-            try:
-                h0 = float(skel.get_body_height())
-                ret = skel.stand_up(duration=2.0)
-                h1 = float(skel.get_body_height())
-                tests.append({
-                    "test": "stand_up",
-                    "ok": bool(h1 > 0.15),  # ≥ 15cm means it lifted off
-                    "detail": f"body height {h0:.3f} → {h1:.3f}, returned {ret}",
-                    "metric": h1,
-                })
-            except Exception as e:  # noqa: BLE001
-                tests.append({"test": "stand_up", "ok": False,
-                              "detail": f"{type(e).__name__}: {e}",
-                              "metric": -1.0})
-
-            try:
-                ret = skel.sit(duration=1.5)
-                h2 = float(skel.get_body_height())
-                tests.append({
-                    "test": "sit",
-                    "ok": bool(h2 < skel.spec.body_height_target * 0.7),
-                    "detail": f"body height after sit: {h2:.3f}, returned {ret}",
-                    "metric": h2,
-                })
-            except Exception as e:  # noqa: BLE001
-                tests.append({"test": "sit", "ok": False,
-                              "detail": f"{type(e).__name__}: {e}",
-                              "metric": -1.0})
-
-            try:
-                # walk is fragile — succeed if it runs without exception,
-                # report the displacement either way
-                skel.stand_up(duration=1.5)
-                p0, _ = skel.get_base_pose()
-                skel.walk_forward(secs=1.0, speed=0.15)
-                p1, _ = skel.get_base_pose()
-                dx = float(p1[0] - p0[0])
-                tests.append({
-                    "test": "walk_forward",
-                    "ok": True,  # framework validator: pass if no crash
-                    "detail": f"forward displacement {dx:+.3f} m "
-                              f"(positive = forward; v1 trot is fragile)",
-                    "metric": dx,
-                })
-            except Exception as e:  # noqa: BLE001
-                tests.append({"test": "walk_forward", "ok": False,
-                              "detail": f"{type(e).__name__}: {e}",
-                              "metric": -1.0})
-        finally:
-            skel.step = orig_step  # type: ignore[method-assign]
-            if frames:
-                try:
-                    mp4 = rec_dir / f"validate_framework_{int(time.time())}.mp4"
-                    imageio.mimsave(str(mp4), frames, fps=30, codec="libx264")
-                    if tests:
-                        tests[-1].setdefault("recording", str(mp4.relative_to(self.workspace)))
-                except Exception:  # noqa: BLE001
-                    pass
 
     def _phase_export(self) -> PhaseResult:
         # EXPORT also needs local_exec so the agent can syntax-check the
         # generated mcp_server.py via a one-shot `python -c "import ..."`.
         (self.workspace / "mcp_server.py").unlink(missing_ok=True)
         tools = self._local_tools() + self._runtime_tools()
-        user_msg = (
-            f"Robot ID: {self.cfg.robot_id}\n"
-            "driver.py and validate_report.json are in the workspace. "
-            "Write mcp_server.py per the procedure."
-        )
-        if self.capability_design is not None:
-            user_msg += "\nCurrent public capability design:\n" + json.dumps(
-                self.capability_design, indent=2, ensure_ascii=False
+        self._require_capability_design("EXPORT")
+        report_path = self.workspace / "validate_report.json"
+        if not report_path.is_file():
+            return PhaseResult(
+                name="04_export", ok=False, duration_sec=0.0,
+                error="dynamic export requires a current validate_report.json",
             )
-        return self._run_phase(
+        try:
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            return PhaseResult(
+                name="04_export", ok=False, duration_sec=0.0,
+                error=f"dynamic export cannot read validation report: {exc}",
+            )
+        if report.get("all_ok") is not True:
+            return PhaseResult(
+                name="04_export", ok=False, duration_sec=0.0,
+                error="dynamic export requires successful design validation",
+            )
+        try:
+            system, user_msg = dynamic_export_prompt(
+                robot_id=self.cfg.robot_id,
+                driver_name="driver.py",
+                design=self.capability_design,
+            )
+        except (TypeError, ValueError) as exc:
+            return PhaseResult(
+                name="04_export", ok=False, duration_sec=0.0,
+                error=f"dynamic export design surface is invalid: {exc}",
+            )
+        phase = self._run_phase(
             name="04_export",
-            system=_EXPORT_SYSTEM,
+            system=system,
             user_msg=user_msg,
             tools=tools,
             max_iters=self.cfg.max_iters_export,
             expected_artifacts=["mcp_server.py"],
         )
+        if phase.ok:
+            try:
+                phase.metadata["dynamic_export_surface"] = validate_dynamic_export_source(
+                    self.workspace / "mcp_server.py", self.capability_design
+                )
+            except Exception as exc:  # noqa: BLE001 - generated surface is the gate
+                phase.ok = False
+                phase.error = f"dynamic export surface check failed: {exc}"
+                phase.metadata["dynamic_export_error"] = str(exc)
+        return phase
 
     def _phase_demo(self) -> PhaseResult:
         if self.cfg.mode != "local":
@@ -1794,6 +1079,7 @@ class SelfAssemble:
 
         report = run_configured_demo(
             workspace=self.workspace, robot_id=self.cfg.robot_id,
+            export_server_path=self.workspace / "mcp_server.py",
             capability_design=self.capability_design,
             scene_cases_path=self.scene_cases_path,
             model=self.cfg.bedrock_model, provider=self.cfg.model_provider,
@@ -1812,8 +1098,7 @@ class SelfAssemble:
 
     # ─── Top-level entrypoint ─────────────────────────────────────────────
 
-    PHASES = ("study", "generate", "validate", "export", "demo")
-    DYNAMIC_PHASES = ("study", "design", "generate", "validate", "export", "demo")
+    PHASES = ("study", "design", "generate", "validate", "export", "demo")
 
     def _finish_result(
         self,
@@ -1821,7 +1106,7 @@ class SelfAssemble:
         *,
         ok_override: bool | None = None,
     ) -> SelfAssembleResult:
-        """Persist the aggregate result and narrative for either route."""
+        """Persist the aggregate result and narrative for the requested stages."""
         # Intentional stops and a disabled demo do not fail the requested run.
         executed = [
             phase for phase in results
@@ -1842,22 +1127,27 @@ class SelfAssemble:
         return out
 
     def run(self, *, stop_after: Optional[str] = None) -> SelfAssembleResult:
-        """Run the selected design route, then export and optional ReCAP demo."""
-        dynamic = getattr(self, "_dynamic_capabilities", False)
-        phases = self.DYNAMIC_PHASES if dynamic else self.PHASES
+        """Run DESIGN, generation, validation, export and optional ReCAP demo."""
+        phases = self.PHASES
         if stop_after is not None and stop_after not in phases:
             raise ValueError(f"stop_after={stop_after!r} not in {phases}")
-        if dynamic:
-            # Keep the existing current-output boundary for generated designs.
-            for relative in (
-                "study.json", "driver.py", "validate_report.json",
-                "design/capability_design.json", "design/capability_preparation.json",
-                "design/scene_cases.yaml", "design/probe_report.json",
-            ):
-                (self.workspace / relative).unlink(missing_ok=True)
-            self.capability_design = None
-            self.scene_cases_path = None
-            self.scene_paths = {}
+        supplied_inputs = {
+            Path(path).expanduser().resolve()
+            for path in (self.cfg.capability_design_path, self.cfg.scene_cases_path)
+            if path is not None
+        }
+        # Keep the existing current-output boundary for generated designs.
+        for relative in (
+            "study.json", "driver.py", "validate_report.json", "mcp_server.py",
+            "design/capability_design.json", "design/capability_preparation.json",
+            "design/scene_cases.yaml", "design/probe_report.json",
+        ):
+            output = self.workspace / relative
+            if output.resolve() not in supplied_inputs:
+                output.unlink(missing_ok=True)
+        self.capability_design = None
+        self.scene_cases_path = None
+        self.scene_paths = {}
         methods = {
             "study": self._phase_study, "design": self._phase_design,
             "export": self._phase_export, "demo": self._phase_demo,
@@ -1905,10 +1195,10 @@ class SelfAssemble:
                     feedback = self._summarise_validate_failures()
             else:
                 result = methods[name]()
-                if dynamic and name == "study" and not (self.workspace / "study.json").is_file():
+                if name == "study" and not (self.workspace / "study.json").is_file():
                     result.ok = False
                     result.error = result.error or "study.json was not written by the current run"
-                if dynamic and name == "design" and not (
+                if name == "design" and not (
                     isinstance(self.capability_design, dict)
                     and (self.workspace / "design/capability_design.json").is_file()
                 ):
@@ -1925,6 +1215,12 @@ class SelfAssemble:
 
     def _write_narrative(self, result: "SelfAssembleResult") -> None:
         """Walk traces + artifacts + recordings → narrative.md timeline."""
+        def relative(path: Path) -> str:
+            try:
+                return str(path.resolve().relative_to(self.workspace.resolve()))
+            except ValueError:
+                return str(path)
+
         lines: list[str] = []
         lines.append(f"# SelfAssemble narrative — `{self.cfg.robot_id}`")
         lines.append("")
@@ -1945,9 +1241,20 @@ class SelfAssemble:
                     n_steps = sum(1 for _ in p.trace_path.open())
                 except OSError:
                     n_steps = -1
-                lines.append(f"  - trace: `{p.trace_path.name}`  ({n_steps} LLM turns)")
+                lines.append(f"  - trace: `{relative(p.trace_path)}`  ({n_steps} trace entries)")
             if p.artifact_paths:
-                lines.append(f"  - artifacts: " + ", ".join(f"`{a.name}`" for a in p.artifact_paths))
+                lines.append(f"  - artifacts: " + ", ".join(f"`{relative(a)}`" for a in p.artifact_paths))
+            for case in p.metadata.get("validation_cases", []):
+                values = "; ".join(
+                    f"{item.get('value')} {item.get('unit', '')} "
+                    f"{item.get('comparator', '')} {item.get('threshold')}"
+                    for item in case.get("measurements", [])
+                )
+                lines.append(
+                    f"  - case `{case.get('case_id')}`: "
+                    f"{'OK' if case.get('ok') else 'FAIL'}; {values}; "
+                    f"video=`{case.get('video', {}).get('path') or 'none'}`"
+                )
             if p.final_text:
                 snippet = p.final_text.replace("\n", " ").strip()
                 if len(snippet) > 240:
@@ -1976,849 +1283,50 @@ class SelfAssemble:
 # ──────────────────────────────────────────────────────────────────────────
 
 
-_STAGE1_MAX_REPAIRS = 3
-_STAGE1_FRAMEWORK_TIMEOUT_SEC = 900
-_STAGE1_SCRATCH_CHECKS = {
-    # These are the checks emitted by FromScratchOrchestrator's existing
-    # validator.  Requiring the complete set prevents a truthful all_ok=True
-    # on a report that simply omitted one of the trusted behaviours.
-    "h1": {
-        "no_skeleton_import", "robot_class_present", "build_from_mjcf",
-        "home", "stand_balance", "squat", "humanoid_walk", "describe",
-    },
-    "skydio_x2": {
-        "no_skeleton_import", "robot_class_present", "build_from_mjcf",
-        "home", "takeoff", "move_to", "describe",
-    },
-}
-
-
-def _stage1_write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False, default=str)
-        + "\n",
-        encoding="utf-8",
-    )
-
-
-def _stage1_read_json(path: Path) -> Optional[dict]:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return value if isinstance(value, dict) else None
-
-
-def _stage1_pointer(value: Any) -> Optional[str]:
-    if value is None:
-        return None
-    path = Path(value)
-    if not path.is_absolute():
-        path = Path.cwd() / path
-    try:
-        return str(path.resolve().relative_to(REPO_ROOT.parent.resolve()))
-    except ValueError:
-        return str(path.resolve())
-
-
-def _stage1_python() -> str:
-    venv_python = REPO_ROOT / ".venv" / "bin" / "python"
-    return str(venv_python) if venv_python.is_file() else sys.executable
-
-
-def _stage1_git_commit() -> Optional[str]:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=REPO_ROOT.parent,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except Exception:  # noqa: BLE001 - metadata must not block a run
-        return None
-    if getattr(result, "returncode", 1) != 0:
-        return None
-    value = str(getattr(result, "stdout", "") or "").strip()
-    return value or None
-
-
-def _stage1_utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def _stage1_transport_error(result: Any) -> bool:
-    metadata = getattr(result, "metadata", None)
-    if isinstance(metadata, Mapping) and bool(metadata.get("transport_error")):
-        return True
-    trace = getattr(result, "trace", None) or []
-    if not trace:
-        return False
-    last = trace[-1]
-    reason = last.get("stop_reason") if isinstance(last, Mapping) else getattr(last, "stop_reason", None)
-    return reason == "invoke_error"
-
-
-def _stage1_external_exception(exc: BaseException) -> bool:
-    """Identify model/session failures without labelling local bugs blocked."""
-    if isinstance(exc, (TimeoutError, ConnectionError)):
-        return True
-    if isinstance(exc, ValueError) and "missing holistic api credential" in str(exc).lower():
-        return True
-    if isinstance(exc, (AttributeError, AssertionError, KeyError, NameError,
-                        TypeError, ValueError, UnboundLocalError)):
-        return False
-    text = (type(exc).__name__ + " " + str(exc)).lower()
-    return any(token in text for token in (
-        "invoke", "holistic", "bedrock", "agentcore", "credential",
-        "throttl", "rate limit", "network", "connection", "timeout",
-        "timed out", "dns", "authentication", "unauthorized",
-    ))
-
-
-def _stage1_trace_usage(path: Path) -> dict:
-    """Recover usage from a partially written JSONL trace after an exception."""
-    totals: dict[str, int | float] = {}
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return totals
-    for line in lines:
-        try:
-            step = json.loads(line)
-        except (TypeError, json.JSONDecodeError):
-            continue
-        usage = step.get("token_usage") if isinstance(step, dict) else None
-        if not isinstance(usage, Mapping):
-            continue
-        for key, value in usage.items():
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
-                continue
-            totals[key] = totals.get(key, 0) + value
-    return totals
-
-
-def _stage1_phase_result(
-    runner: Any,
-    result: Any,
-    *,
-    name: str,
-    started: float,
-    artifact_names: tuple[str, ...],
-) -> PhaseResult:
-    """Normalize a raw scratch ReactResult or standard PhaseResult."""
-    elapsed = max(0.0, time.time() - started)
-    trace_path = getattr(result, "trace_path", None)
-    if trace_path is None:
-        trace_path = runner.workspace / "traces" / f"{name}.jsonl"
-    else:
-        trace_path = Path(trace_path)
-    artifacts = [runner.workspace / rel for rel in artifact_names
-                 if (runner.workspace / rel).is_file()]
-    transport_error = _stage1_transport_error(result)
-    token_usage = getattr(result, "token_usage", None)
-    if token_usage is None:
-        token_usage = getattr(result, "total_tokens", None)
-    if not isinstance(token_usage, Mapping):
-        token_usage = _stage1_trace_usage(trace_path)
-    else:
-        token_usage = dict(token_usage)
-    existing = result if isinstance(result, PhaseResult) else None
-    if existing is not None:
-        duration = float(existing.duration_sec) if existing.duration_sec > 0 else elapsed
-        metadata = dict(existing.metadata or {})
-        if transport_error:
-            metadata["transport_error"] = True
-        return PhaseResult(
-            name=existing.name or name,
-            ok=bool(existing.ok) and not transport_error,
-            duration_sec=duration,
-            trace_path=Path(existing.trace_path) if existing.trace_path else trace_path,
-            artifact_paths=list(existing.artifact_paths or artifacts),
-            final_text=existing.final_text,
-            error=existing.error,
-            token_usage=dict(existing.token_usage or token_usage),
-            metadata=metadata,
-        )
-
-    ok = bool(artifacts) and not transport_error
-    error = getattr(result, "error", None)
-    if error is not None:
-        error = str(error)
-    return PhaseResult(
-        name=name,
-        ok=ok,
-        duration_sec=elapsed,
-        trace_path=trace_path if trace_path.exists() else None,
-        artifact_paths=artifacts,
-        final_text=str(getattr(result, "final_text", "") or ""),
-        error=error,
-        token_usage=dict(token_usage),
-        metadata={"transport_error": True} if transport_error else {},
-    )
-
-
-def _stage1_exception_result(
-    runner: Any,
-    *,
-    name: str,
-    started: float,
-    exc: BaseException,
-    artifact_names: tuple[str, ...],
-    external_blocked: bool = False,
-) -> PhaseResult:
-    trace_path = runner.workspace / "traces" / f"{name}.jsonl"
-    artifacts = [runner.workspace / rel for rel in artifact_names
-                 if (runner.workspace / rel).is_file()]
-    return PhaseResult(
-        name=name,
-        ok=False,
-        duration_sec=max(0.0, time.time() - started),
-        trace_path=trace_path if trace_path.exists() else None,
-        artifact_paths=artifacts,
-        error=f"{type(exc).__name__}: {exc}",
-        token_usage=_stage1_trace_usage(trace_path),
-        metadata={"transport_error": True} if external_blocked else {},
-    )
-
-
-def _stage1_phase_payload(result: Optional[PhaseResult]) -> Optional[dict]:
-    if result is None:
-        return None
-    return {
-        "name": result.name,
-        "ok": bool(result.ok),
-        "duration_sec": float(result.duration_sec),
-        "trace_path": _stage1_pointer(result.trace_path),
-        "artifacts": [_stage1_pointer(path) for path in result.artifact_paths],
-        "error": result.error,
-        "token_usage": dict(result.token_usage or {}),
-        "metadata": dict(result.metadata or {}),
-    }
-
-
-def _stage1_add_tokens(total: dict, usage: Mapping[str, Any] | None) -> None:
-    if not isinstance(usage, Mapping):
-        return
-    for key, value in usage.items():
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            continue
-        total[key] = total.get(key, 0) + value
-
-
-def _stage1_physics_seconds(report: Mapping[str, Any] | None) -> float:
-    if not isinstance(report, Mapping):
-        return 0.0
-    for key in ("physics_duration_sec", "physics_time_sec", "sim_elapsed_s"):
-        try:
-            value = report.get(key)
-            if value is not None:
-                return max(0.0, float(value))
-        except (TypeError, ValueError):
-            pass
-    total = 0.0
-    for item in report.get("tests", []) or []:
-        if not isinstance(item, Mapping):
-            continue
-        value = item.get("sim_elapsed_s")
-        if value is None:
-            metrics = item.get("metrics")
-            measurements = metrics.get("measurements") if isinstance(metrics, Mapping) else None
-            value = measurements.get("sim_elapsed_s") if isinstance(measurements, Mapping) else None
-        try:
-            if value is not None:
-                total += max(0.0, float(value))
-        except (TypeError, ValueError):
-            continue
-    return total
-
-
-def _stage1_route(definition: Mapping[str, Any]) -> str:
-    route = definition.get("generation_route")
-    if route not in {"skeleton", "from_scratch"}:
-        raise ValueError(f"unsupported generation_route={route!r}")
-    return str(route)
-
-
-def _stage1_canonical_definition(robot_id: str) -> dict:
-    definition = find_robot_definition(robot_id)
-    if not isinstance(definition, Mapping) or definition.get("id") != robot_id:
-        raise ValueError(f"robot is not present in the trusted zoo: {robot_id}")
-    return dict(definition)
-
-
-def _stage1_canonical_mjcf(definition: Mapping[str, Any]) -> Path:
-    relative = definition.get("capability_mjcf") or definition.get("mjcf")
-    if not isinstance(relative, str) or not relative:
-        raise ValueError("trusted robot definition has no MJCF")
-    return (REPO_ROOT / relative).resolve()
-
-
-def _stage1_reserved_outputs(root: Path, robot_id: str) -> list[Path]:
-    paths = [root / f"summary_{robot_id}.json", root / "initial" / robot_id]
-    try:
-        repair_roots = [path for path in root.iterdir()
-                        if path.name.startswith("repair_")]
-    except OSError:
-        repair_roots = []
-    paths.extend(path / robot_id for path in repair_roots)
-    return [path for path in paths if path.exists() or path.is_symlink()]
-
-
-def _stage1_copy_candidate(source: Optional[Path], destination: Path,
-                           route: str) -> list[Path]:
-    """Copy only public Study + candidate inputs into a fresh repair round."""
-    if source is None:
-        return []
-    source = source.resolve()
-    if source.is_file():
-        source = source.parent
-    if not source.is_dir():
-        raise FileNotFoundError(f"candidate source directory not found: {source}")
-    names = ("driver.py", "study.json") if route == "skeleton" else (
-        "driver_from_scratch.py", "driver.py", "study.json")
-    copied: list[Path] = []
-    for name in names:
-        src = source / name
-        if src.is_file():
-            dst = destination / name
-            shutil.copy2(src, dst)
-            copied.append(dst)
-    return copied
-
-
-def _stage1_standard_runner(
-    robot_id: str, mjcf_path: Path, workspace_root: Path, model: str
-) -> SelfAssemble:
-    cfg = SelfAssembleConfig(
-        robot_id=robot_id,
-        mjcf_path=mjcf_path,
-        workspace_root=workspace_root,
-        mode="local",
-        validate_mode="framework",
-        bedrock_model=model,
-        model_provider="holistic",
-        max_outer_gen_val_iters=1,
-    )
-    return SelfAssemble(cfg)
-
-
-def _stage1_scratch_runner(
-    robot_id: str, mjcf_path: Path, workspace_root: Path, model: str
-) -> Any:
-    from .orchestrator_from_scratch import FromScratchConfig, FromScratchOrchestrator
-
-    kwargs = dict(
-        robot_id=robot_id,
-        mjcf_path=mjcf_path,
-        workspace_root=workspace_root,
-        bedrock_model=model,
-        model_provider="holistic",
-    )
-    cfg = FromScratchConfig(**kwargs, mode="local")
-    return FromScratchOrchestrator(cfg)
-
-
-def _stage1_child_config(payload: Mapping[str, Any]) -> Any:
-    """Build the original local orchestrator for the clean worker process."""
-    workspace = Path(str(payload["workspace"])).resolve()
-    robot_id = str(payload["robot_id"])
-    mjcf_path = Path(str(payload["mjcf_path"])).resolve()
-    model = str(payload["model"])
-    route = str(payload["route"])
-    if route == "skeleton":
-        return _stage1_standard_runner(robot_id, mjcf_path, workspace.parent, model)
-    return _stage1_scratch_runner(robot_id, mjcf_path, workspace.parent, model)
-
-
-def _stage1_framework_child(payload: Mapping[str, Any]) -> int:
-    """Private ``python -c`` target for a clean Framework process."""
-    workspace = Path(str(payload["workspace"])).resolve()
-    report_path = workspace / "validate_report.json"
-    original_cwd = os.getcwd()
-    try:
-        os.chdir(workspace)
-        runner = _stage1_child_config(payload)
-        if str(payload["route"]) == "skeleton":
-            phase = runner._phase_validate_framework()
-            report = _stage1_read_json(report_path)
-            if report is None:
-                report = {
-                    "tests": [],
-                    "all_ok": False,
-                    "error": getattr(phase, "error", None)
-                             or "Framework phase did not write validate_report.json",
-                }
-                _stage1_write_json(report_path, report)
-                return 2
-        else:
-            report = runner._validate_from_scratch_driver()
-            _stage1_write_json(report_path, report)
-        print(json.dumps({"all_ok": report.get("all_ok"),
-                          "n_tests": len(report.get("tests", []) or [])}))
-        return 0
-    except Exception as exc:  # noqa: BLE001
-        report = {
-            "tests": [],
-            "all_ok": False,
-            "error": f"framework subprocess exception: {type(exc).__name__}: {exc}",
-        }
-        _stage1_write_json(report_path, report)
-        print(report["error"], file=sys.stderr)
-        return 2
-    finally:
-        os.chdir(original_cwd)
-
-
-def _stage1_framework_ok(
-    report: Mapping[str, Any] | None,
-    robot_id: str,
-    definition: Mapping[str, Any],
-    route: str,
-) -> bool:
-    if not isinstance(report, Mapping) or report.get("all_ok") is not True:
-        return False
-    tests = [item for item in (report.get("tests", []) or [])
-             if isinstance(item, Mapping)]
-    if route == "skeleton" and definition.get("capability_profile"):
-        from .robot_catalog import load_capability_suite
-
-        try:
-            suite = load_capability_suite(dict(definition))
-        except Exception:
-            return False
-        expected = {
-            str(item.get("case_id", item.get("id")))
-            for item in suite.get("cases", suite.get("tests", []))
-            if isinstance(item, Mapping) and item.get("case_id", item.get("id"))
-        }
-        if not expected:
-            return False
-        for case_id in expected:
-            matching = [item for item in tests if str(
-                item.get("case_id", item.get("id", item.get("test")))) == case_id]
-            if not matching or not all(item.get("ok") is True for item in matching):
-                return False
-        return True
-    required = _STAGE1_SCRATCH_CHECKS.get(robot_id) if route == "from_scratch" else None
-    if required:
-        by_name = {str(item.get("test")): item for item in tests}
-        return required.issubset(by_name) and all(
-            by_name[name].get("ok") is True for name in required
-        )
-    return True
-
-
-def _stage1_framework_subprocess(
-    *,
-    robot_id: str,
-    workspace: Path,
-    definition: Mapping[str, Any],
-    route: str,
-    mjcf_path: Path,
-    model: str,
-) -> tuple[dict, dict]:
-    """Run the original Framework validator in a fresh AA1 venv process."""
-    report_path = workspace / "validate_report.json"
-    if report_path.exists() and report_path.is_file():
-        report_path.unlink()
-    payload = {
-        "robot_id": robot_id,
-        "workspace": str(workspace.resolve()),
-        "mjcf_path": str(mjcf_path.resolve()),
-        "route": route,
-        "model": model,
-        "robot_definition": dict(definition),
-    }
-    code = (
-        "import json, sys; "
-        "from auto_adapter.orchestrator import _stage1_framework_child; "
-        "raise SystemExit(_stage1_framework_child(json.loads(sys.argv[1])))"
-    )
-    command = [_stage1_python(), "-c", code, json.dumps(payload, default=str)]
-    env = os.environ.copy()
-    current = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = str(REPO_ROOT) + (os.pathsep + current if current else "")
-    started = time.time()
-    info: dict[str, Any] = {
-        "command": command,
-        "timeout_sec": _STAGE1_FRAMEWORK_TIMEOUT_SEC,
-        "route": route,
-        "model": model,
-    }
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=workspace,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=_STAGE1_FRAMEWORK_TIMEOUT_SEC,
-            check=False,
-        )
-        info.update({
-            "returncode": getattr(completed, "returncode", None),
-            "duration_sec": max(0.0, time.time() - started),
-            "stdout_tail": str(getattr(completed, "stdout", "") or "")[-4000:],
-            "stderr_tail": str(getattr(completed, "stderr", "") or "")[-4000:],
-        })
-    except subprocess.TimeoutExpired as exc:
-        info.update({
-            "returncode": None,
-            "duration_sec": max(0.0, time.time() - started),
-            "timed_out": True,
-            "stdout_tail": str(exc.stdout)[-4000:] if exc.stdout else "",
-            "stderr_tail": str(exc.stderr)[-4000:] if exc.stderr else "",
-        })
-    except OSError as exc:
-        info.update({
-            "returncode": None,
-            "duration_sec": max(0.0, time.time() - started),
-            "spawn_error": f"{type(exc).__name__}: {exc}",
-        })
-    report = _stage1_read_json(report_path)
-    report_valid = report is not None
-    if report is None:
-        info["report_missing"] = True
-        report = {
-            "tests": [],
-            "all_ok": False,
-            "error": info.get("spawn_error")
-                     or ("Framework subprocess timed out" if info.get("timed_out")
-                         else "Framework subprocess did not write validate_report.json"),
-        }
-        _stage1_write_json(report_path, report)
-    child_ok = (
-        info.get("returncode") == 0
-        and not info.get("timed_out")
-        and not info.get("spawn_error")
-        and report_valid
-        and report_path.is_file()
-    )
-    info["child_ok"] = bool(child_ok)
-    if not child_ok:
-        report = dict(report)
-        report["all_ok"] = False
-        report["error"] = (
-            "Framework subprocess failed; report is not accepted: "
-            + str(info.get("spawn_error") or info.get("stderr_tail")
-                  or "nonzero returncode")
-        )
-        _stage1_write_json(report_path, report)
-    info["report_path"] = _stage1_pointer(report_path)
-    _stage1_write_json(workspace / "framework_subprocess.json", info)
-    return report, info
-
-
-def _stage1_run_phase(runner: Any, name: str, fn: Any,
-                      artifact_names: tuple[str, ...]) -> PhaseResult:
-    started = time.time()
-    try:
-        raw = fn()
-    except BaseException as exc:  # noqa: BLE001 - preserve partial traces
-        return _stage1_exception_result(
-            runner, name=name, started=started, exc=exc,
-            artifact_names=artifact_names,
-            external_blocked=_stage1_external_exception(exc),
-        )
-    return _stage1_phase_result(
-        runner, raw, name=name, started=started,
-        artifact_names=artifact_names,
-    )
-
-
-def _stage1_round_context(
-    workspace: Path,
-    *,
-    robot_id: str,
-    model: str,
-    route: str,
-    attempt: int,
-    max_repairs: int,
-    started_at: str,
-    git_commit: Optional[str],
-) -> dict:
-    return {
-        "robot_id": robot_id,
-        "provider": "holistic",
-        "model": model,
-        "route": route,
-        "round": "initial" if attempt == 0 else f"repair_{attempt}",
-        "attempt": attempt,
-        "started_at": started_at,
-        "finished_at": None,
-        "git_commit": git_commit,
-        "parameters": {"max_repairs": max_repairs},
-        "actual_generation_cost_usd": None,
-    }
-
-
-def _stage1_update_summary(path: Path, summary: dict) -> None:
-    _stage1_write_json(path, summary)
-
-
 def run_stage1(*, robot_id: str, workspace_root: Path | str, model: str,
-               max_repairs: int = 3) -> dict:
-    """Run one fresh Study → Generate → Framework → bounded repair path.
-
-    The entrypoint deliberately accepts no resume/source argument.  Every
-    output round is created under ``initial`` or ``repair_N`` and an existing
-    robot output is rejected before any round is constructed.
-    """
-    if isinstance(max_repairs, bool) or not isinstance(max_repairs, int):
-        raise TypeError("max_repairs must be an integer from 0 to 3")
-    if not 0 <= max_repairs <= _STAGE1_MAX_REPAIRS:
-        raise ValueError("max_repairs must be from 0 to 3")
-    if not isinstance(robot_id, str) or not robot_id:
-        raise ValueError("robot_id must be a non-empty string")
-    if not isinstance(model, str) or not model:
-        raise ValueError("model must be a non-empty string")
-
-    definition = _stage1_canonical_definition(robot_id)
-    route = _stage1_route(definition)
-    mjcf_path = _stage1_canonical_mjcf(definition)
-    root = Path(workspace_root).expanduser().resolve()
-    reserved = _stage1_reserved_outputs(root, robot_id)
-    if reserved:
-        raise FileExistsError(
-            "refusing to overwrite existing phase-one output: "
-            + ", ".join(_stage1_pointer(path) or str(path) for path in reserved)
-        )
-
-    summary_path = root / f"summary_{robot_id}.json"
-    git_commit = _stage1_git_commit()
-    run_started = time.time()
-    summary: dict[str, Any] = {
-        "robot_id": robot_id,
-        "provider": "holistic",
-        "model": model,
-        "route": route,
-        "git_commit": git_commit,
-        "max_repairs": max_repairs,
-        "attempts": 0,
-        "effective_repairs": 0,
-        "rounds": [],
-        "generation_ok": False,
-        "framework_ok": False,
-        "stage1_ok": False,
-        "external_blocked": False,
-        "error": None,
-        "total_tokens": {},
-        "total_duration_sec": 0.0,
-        "generation_duration_sec": 0.0,
-        "framework_duration_sec": 0.0,
-        "physics_duration_sec": 0.0,
-        "physics_time_sec": 0.0,
-        "actual_generation_cost_usd": None,
-        "workspace": None,
-        "summary_path": _stage1_pointer(summary_path),
-        "final_candidate": None,
-        "final_report": None,
-    }
-    _stage1_update_summary(summary_path, summary)
-
-    total_tokens: dict[str, Any] = {}
-    candidate_path: Optional[Path] = None
-    previous_workspace: Optional[Path] = None
-    report: Optional[dict] = None
-    report_path: Optional[Path] = None
-    last_error: Optional[str] = None
-    external_blocked = False
-    generation_ok = False
-    framework_ok = False
-
-    for attempt in range(max_repairs + 1):
-        round_root = root / ("initial" if attempt == 0 else f"repair_{attempt}")
-        round_started = _stage1_utc_now()
-        round_summary: dict[str, Any] = {
-            "attempt": attempt,
-            "round": "initial" if attempt == 0 else f"repair_{attempt}",
-            "workspace": _stage1_pointer(round_root / robot_id),
-            "copied_files": [],
-        }
-        summary["rounds"].append(round_summary)
-        summary["attempts"] = attempt + 1
-        _stage1_update_summary(summary_path, summary)
-
-        context: Optional[dict] = None
-        workspace: Optional[Path] = None
-        try:
-            if route == "skeleton":
-                runner = _stage1_standard_runner(robot_id, mjcf_path, round_root, model)
-                candidate_name = "driver.py"
-                study_name = "study.json"
-            else:
-                runner = _stage1_scratch_runner(robot_id, mjcf_path, round_root, model)
-                candidate_name = "driver_from_scratch.py"
-                study_name = "study.json"
-            workspace = Path(runner.workspace)
-            summary["workspace"] = _stage1_pointer(workspace)
-            context = _stage1_round_context(
-                workspace, robot_id=robot_id, model=model, route=route,
-                attempt=attempt, max_repairs=max_repairs,
-                started_at=round_started, git_commit=git_commit,
-            )
-            _stage1_write_json(workspace / "run_context.json", context)
-            round_summary["run_context"] = _stage1_pointer(workspace / "run_context.json")
-            if attempt > 0:
-                copied = _stage1_copy_candidate(previous_workspace,
-                                                workspace, route)
-                round_summary["copied_files"] = [_stage1_pointer(path) for path in copied]
-                _stage1_update_summary(summary_path, summary)
-
-            # The Study phase is only run once.  Repairs receive the original
-            # public study artifact and never regenerate it.
-            if attempt == 0:
-                study_fn = (runner._phase_study if route == "skeleton"
-                            else runner.phase_study)
-                study = _stage1_run_phase(
-                    runner, "01_study", study_fn,
-                    (study_name,),
-                )
-                round_summary["study"] = _stage1_phase_payload(study)
-                _stage1_add_tokens(total_tokens, study.token_usage)
-                summary["total_tokens"] = dict(total_tokens)
-                summary["generation_duration_sec"] += study.duration_sec
-                _stage1_update_summary(summary_path, summary)
-                context["study"] = _stage1_phase_payload(study)
-                _stage1_write_json(workspace / "run_context.json", context)
-                if not study.ok or _stage1_transport_error(study):
-                    last_error = study.error or "STUDY failed"
-                    external_blocked = bool(_stage1_transport_error(study))
-                    round_summary["framework_ok"] = False
-                    context["finished_at"] = _stage1_utc_now()
-                    _stage1_write_json(workspace / "run_context.json", context)
-                    break
-            elif not (workspace / study_name).is_file():
-                last_error = "study.json missing from repair input"
-                context["finished_at"] = _stage1_utc_now()
-                _stage1_write_json(workspace / "run_context.json", context)
-                break
-
-            if attempt == 0:
-                generate_fn = (runner._phase_generate if route == "skeleton"
-                               else runner.phase_gen_algo)
-                generation = _stage1_run_phase(
-                    runner, ("02_generate" if route == "skeleton" else "02_gen_algo"),
-                    generate_fn,
-                    (candidate_name,),
-                )
-            else:
-                feedback = validate_failure_feedback(report or {})
-                _stage1_write_json(workspace / "feedback_input.json", {"feedback": feedback})
-                round_summary["feedback_input"] = _stage1_pointer(workspace / "feedback_input.json")
-                _stage1_update_summary(summary_path, summary)
-                repair_fn = (lambda: runner._phase_repair(feedback, attempt)
-                             if route == "skeleton"
-                             else runner.phase_gen_repair(feedback, attempt))
-                generation = _stage1_run_phase(
-                    runner,
-                    (f"03_repair_{attempt}" if route == "skeleton"
-                     else f"03_gen_repair_{attempt}"),
-                    repair_fn,
-                    (candidate_name,),
-                )
-            round_summary["generation"] = _stage1_phase_payload(generation)
-            _stage1_add_tokens(total_tokens, generation.token_usage)
-            summary["total_tokens"] = dict(total_tokens)
-            summary["generation_duration_sec"] += generation.duration_sec
-            _stage1_update_summary(summary_path, summary)
-            context["generation"] = _stage1_phase_payload(generation)
-            _stage1_write_json(workspace / "run_context.json", context)
-
-            candidate = workspace / candidate_name
-            candidate_path = candidate if candidate.is_file() else None
-            generation_ok = bool(
-                generation.ok and candidate_path and not _stage1_transport_error(generation)
-            )
-            previous_workspace = workspace
-            round_summary["candidate"] = _stage1_pointer(candidate_path)
-            if attempt > 0 and generation.ok and generation_ok:
-                summary["effective_repairs"] += 1
-            summary["generation_ok"] = generation_ok
-            _stage1_update_summary(summary_path, summary)
-
-            if _stage1_transport_error(generation):
-                last_error = generation.error or "model invocation failed"
-                external_blocked = True
-                generation_ok = False
-                round_summary["framework_ok"] = False
-                context["finished_at"] = _stage1_utc_now()
-                _stage1_write_json(workspace / "run_context.json", context)
-                break
-
-            # Framework runs even when Generate omitted the candidate, so the
-            # missing-build signal reaches the repair prompt.
-            report, framework_info = _stage1_framework_subprocess(
-                robot_id=robot_id, workspace=workspace, definition=definition,
-                route=route, mjcf_path=mjcf_path, model=model,
-            )
-            report_path = workspace / "validate_report.json"
-            framework_seconds = float(framework_info.get("duration_sec") or 0.0)
-            summary["framework_duration_sec"] += framework_seconds
-            summary["physics_duration_sec"] += _stage1_physics_seconds(report)
-            summary["physics_time_sec"] = summary["physics_duration_sec"]
-            framework_ok = bool(framework_info.get("child_ok")) and _stage1_framework_ok(
-                report, robot_id, definition, route,
-            )
-            candidate_path = candidate if candidate.is_file() else None
-            generation_ok = bool(candidate_path) and generation_ok
-            summary["generation_ok"] = generation_ok
-            summary["framework_ok"] = framework_ok
-            round_summary["validate_report"] = _stage1_pointer(report_path)
-            round_summary["framework_report"] = round_summary["validate_report"]
-            round_summary["framework_subprocess"] = framework_info
-            round_summary["framework_ok"] = framework_ok
-            context["validate_report"] = _stage1_pointer(report_path)
-            context["framework_subprocess"] = framework_info
-            context["finished_at"] = _stage1_utc_now()
-            _stage1_write_json(workspace / "run_context.json", context)
-            _stage1_update_summary(summary_path, summary)
-
-            if framework_ok and generation_ok:
-                last_error = None
-                break
-            if framework_ok and not generation_ok:
-                # A Framework pass cannot hide a failed generation call.  Keep
-                # the generation error visible and use the remaining repair
-                # budget to obtain a completed model response.
-                last_error = generation.error or "generation failed"
-                if attempt >= max_repairs:
-                    break
-                continue
-            last_error = str(report.get("error") or "Framework validation failed")
-            if attempt >= max_repairs:
-                break
-        except BaseException as exc:  # noqa: BLE001 - preserve round evidence
-            last_error = f"{type(exc).__name__}: {exc}"
-            external_blocked = _stage1_external_exception(exc)
-            round_summary["error"] = last_error
-            if context is not None and workspace is not None:
-                context["finished_at"] = _stage1_utc_now()
-                _stage1_write_json(workspace / "run_context.json", context)
-            _stage1_update_summary(summary_path, summary)
-            # The workspace and context exist whenever construction completed;
-            # keep the finished timestamp absent only for a failed constructor.
-            break
-
-        if framework_ok and generation_ok:
-            break
-
-    summary["total_tokens"] = total_tokens
-    summary["generation_ok"] = bool(
-        generation_ok and candidate_path and candidate_path.is_file()
-    )
-    summary["framework_ok"] = bool(framework_ok)
-    summary["stage1_ok"] = bool(summary["generation_ok"] and framework_ok
-                                and not external_blocked)
-    summary["external_blocked"] = bool(external_blocked)
-    summary["error"] = last_error
-    summary["total_duration_sec"] = max(0.0, time.time() - run_started)
-    summary["final_candidate"] = _stage1_pointer(candidate_path)
-    summary["final_report"] = _stage1_pointer(report_path)
-    summary["final_candidate_path"] = summary["final_candidate"]
-    summary["final_report_path"] = summary["final_report"]
-    summary["final_framework_report"] = summary["final_report"]
-    _stage1_update_summary(summary_path, summary)
-    return summary
+               max_repairs: int = 3, stop_after: str | None = None,
+               enable_demo: bool = False, demo_config_path: Path | None = None) -> dict:
+    """Run one zoo robot through the public DESIGN pipeline and requested stages."""
+    if isinstance(max_repairs, bool) or not isinstance(max_repairs, int) or not 0 <= max_repairs <= 3:
+        raise ValueError("max_repairs must be an integer from 0 to 3")
+    definition = find_robot_definition(robot_id)
+    if not definition or definition.get("id") != robot_id:
+        raise ValueError(f"robot is not present in the trusted zoo: {robot_id}")
+    route = definition.get("generation_route", "skeleton")
+    options = dict(robot_id=robot_id, mjcf_path=REPO_ROOT / definition["mjcf"],
+                   workspace_root=Path(workspace_root).expanduser().resolve(),
+                   bedrock_model=model, mode="local", enable_demo=enable_demo,
+                   demo_config_path=demo_config_path)
+    if route == "skeleton":
+        runner = SelfAssemble(SelfAssembleConfig(
+            **options, max_outer_gen_val_iters=max_repairs + 1))
+    elif route == "from_scratch":
+        from .orchestrator_from_scratch import FromScratchConfig, FromScratchOrchestrator
+        runner = FromScratchOrchestrator(FromScratchConfig(
+            **options, max_outer_retries=max_repairs))
+    else:
+        raise ValueError(f"unsupported generation_route={route!r}")
+    with runner:
+        result = runner.run(stop_after=stop_after)
+    payload = result.to_json()
+    generation_ok = result.generation_ok if route == "skeleton" else result.gen_ok
+    framework_ok = result.framework_ok if route == "skeleton" else result.validate_ok
+    if route == "skeleton":
+        stage1_ok = result.stage1_ok
+        exported = [phase for phase in result.phases if phase.name in {"export", "04_export"}]
+        demos = [phase for phase in result.phases if phase.name in {"demo", "05_demo"}
+                 and not (phase.error or "").startswith("not run — ")]
+        export_ok = bool(exported and exported[-1].ok)
+        demo_ok = demos[-1].ok if demos else None
+        errors = [phase.error for phase in result.phases if not phase.ok and phase.error
+                  and not phase.error.startswith(("not run — ", "skipped — "))]
+        error = errors[-1] if not result.ok and errors else None
+    else:
+        stage1_ok = bool(result.study_ok and result.design_ok and generation_ok and framework_ok)
+        export_ok, demo_ok, error = result.export_ok, result.demo_ok, result.error
+    payload.update(route=route, ok=result.ok, stop_after=stop_after,
+                   workspace=str(result.workspace), generation_ok=generation_ok,
+                   framework_ok=framework_ok, stage1_ok=stage1_ok,
+                   export_ok=export_ok, demo_ok=demo_ok, error=error,
+                   summary_path=str(runner.workspace / "summary.json"))
+    return payload

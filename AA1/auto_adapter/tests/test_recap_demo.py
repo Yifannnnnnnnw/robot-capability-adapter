@@ -6,15 +6,19 @@ from types import SimpleNamespace
 import pytest
 
 from auto_adapter.agent.recap import AA1CapabilityAdapter, AA1RecapModel, passed_design
-from auto_adapter.robot_catalog import find_robot_definition, load_capability_design, load_capability_suite
 from auto_adapter.agent.recap import run_recap
 
 
-@pytest.mark.parametrize('robot_id', ['so101', 'universal_robots_ur5e_robotiq_2f85'])
-def test_only_complete_framework_capabilities_reach_real_recap(robot_id):
-    robot = find_robot_definition(robot_id)
-    design, suite = load_capability_design(robot), load_capability_suite(robot)
-    cases = [c for c in suite['cases'] if c['capability_id'] == 'A1']
+def test_only_complete_current_design_capabilities_reach_real_recap():
+    design = {'robot_configuration_id': 'fixture', 'task_snapshot_id': 'current-fixture',
+              'capabilities': [{'capability_id': 'C1', 'method_name': 'advance',
+                                'description': 'Advance physics.',
+                                'request_schema': {'type': 'object'}}]}
+    cases = [{'case_id': 'nominal', 'capability_id': 'C1', 'method_name': 'advance',
+              'request': {'steps': 1}},
+             {'case_id': 'boundary', 'capability_id': 'C1', 'method_name': 'advance',
+              'request': {'steps': 2}}]
+    suite = {'scene_cases': cases}
     tests = [{'case_id': c['case_id'], 'ok': True} for c in cases]
     with pytest.raises(ValueError, match='no fully Framework-passed'):
         passed_design(design, suite, {'tests': tests[:-1]})
@@ -62,7 +66,7 @@ def test_model_bridge_preserves_official_json_history_and_records_request_respon
     assert json.loads(model.trace_path.read_text()) == {'messages': messages, 'response': response}
 
 
-def test_local_catalog_demo_dispatches_to_recap():
+def test_local_dynamic_demo_dispatches_to_recap():
     from auto_adapter.orchestrator import SelfAssemble
     runner = object.__new__(SelfAssemble)
     runner.cfg = SimpleNamespace(mode='local')

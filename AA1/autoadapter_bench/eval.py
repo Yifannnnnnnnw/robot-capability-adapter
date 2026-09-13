@@ -256,7 +256,7 @@ def _replay_tool_calls(skel, tool_call_log: list, snapshots: list | None = None,
     the trace without changing the historical boolean return value.
     """
     from contextlib import nullcontext  # noqa: PLC0415
-    from auto_adapter.agent.task_planner import tool_registry_for, capability_tool_registry
+    from auto_adapter.agent.task_planner import tool_registry_for
 
     import numpy as np  # noqa: PLC0415
 
@@ -299,9 +299,7 @@ def _replay_tool_calls(skel, tool_call_log: list, snapshots: list | None = None,
         return True
 
     # Share the exact argument conversion and defaults used by live tools.
-    registry = (capability_tool_registry(skel, robot_definition, from_scratch=from_scratch)
-                if robot_definition and robot_definition.get("capability_profile")
-                else tool_registry_for(skel)) or {}
+    registry = tool_registry_for(skel) or {}
 
     def _invoke(method, tool, inp):
         if tool in registry:
@@ -1475,57 +1473,9 @@ def _path_str(path) -> str | None:
     return str(path) if path else None
 
 
-def run_capability_task(planner, robot_dict: dict, task: dict, n_trials: int) -> list[dict]:
-    """Use real planner tools and the Framework scorer in the same MuJoCo world."""
-    from auto_adapter.robot_catalog import load_capability_suite
-    from autoadapter_bench.capability_eval import run_capability_case
-    suite = load_capability_suite(robot_dict)
-    case = next(item for item in suite["cases"] if item["case_id"] == task["capability_case_id"])
-    report_path = planner.workspace / "validate_report.json"
-    framework = json.loads(report_path.read_text()) if report_path.exists() else {}
-    trials = []
-    for trial_idx in range(n_trials):
-        task_id = f"{task['id']}_t{trial_idx}"
-        task_result = None
-        driver = planner._load_driver()
-
-        def execute():
-            nonlocal task_result
-            task_result = planner.execute_task(
-                task["prompt"], task_id=task_id, driver=driver, initialize=False,
-                capture_video=False)
-            return task_result.summary
-
-        output = planner.trace_dir / f"{task_id}_physics"
-        outcome = run_capability_case(driver, case, output, execute=execute,
-                                      robot_definition=robot_dict, driver_origin="provided_driver")
-        llm_ok = bool(task_result and task_result.ok)
-        physical_ok = bool(outcome["ok"])
-        trials.append({
-            "trial": trial_idx, "llm_ok": llm_ok, "physics_ok": physical_ok,
-            "agreement": llm_ok == physical_ok,
-            "framework_ok": framework.get("all_ok") is True,
-            "validated_driver_task_ok": physical_ok and framework.get("all_ok") is True,
-            "n_tool_calls": task_result.n_tool_calls if task_result else 0,
-            "frames": outcome.get("n_frames", 0),
-            "duration_sec": task_result.duration_sec if task_result else 0.,
-            "tokens": task_result.token_usage if task_result else {},
-            "summary": task_result.summary if task_result else "",
-            "error": outcome.get("error") or (task_result.error if task_result else None),
-            "physics_detail": outcome.get("detail", ""),
-            "physics_metrics": outcome.get("metrics", {}),
-            "mp4_path": outcome.get("video_path"),
-            "trace_path": str(task_result.trace_path) if task_result else None,
-            "physics_trace_path": outcome.get("trace_path"),
-        })
-    return trials
-
-
 def run_task(planner, robot_dict: dict, task: dict,
              n_trials: int) -> list[dict]:
     """Execute one task n_trials times, return list of trial results."""
-    if task.get("capability_case_id"):
-        return run_capability_task(planner, robot_dict, task, n_trials)
     import numpy as np  # noqa: PLC0415
 
     workspace = getattr(planner, "workspace", None)
@@ -1755,7 +1705,7 @@ def main() -> None:
     print(f"Robot: {robot['id']}  class: {robot['class']}  workspace: {workspace}")
 
     # Ensure mjcf.xml is a symlink to the real MJCF
-    real_mjcf = (REPO_ROOT / robot.get("capability_mjcf", robot["mjcf"])).resolve()
+    real_mjcf = (REPO_ROOT / robot["mjcf"]).resolve()
     mjcf_link = workspace / "mjcf.xml"
     if not (mjcf_link.exists() and mjcf_link.is_symlink() and
             Path(os.readlink(mjcf_link)).resolve() == real_mjcf):
@@ -1765,17 +1715,6 @@ def main() -> None:
         print(f"  re-symlinked mjcf.xml → {real_mjcf}")
 
     suite_yaml = load_task_suite(robot["class"])
-    if robot.get("capability_profile"):
-        from auto_adapter.robot_catalog import load_capability_suite
-        conditions = load_capability_suite(robot)
-        selected = "A1" if robot["class"] == "arm" else ("G1" if robot["id"] == "go2" else "G4")
-        case = next(item for item in conditions["cases"] if item["capability_id"] == selected)
-        suite_yaml["suites"]["capability"] = {"tasks": [{
-            "id": f"{selected}_diagnostic", "capability_case_id": case["case_id"],
-            "prompt": "Execute " + case["method_name"] + " with request " + json.dumps(case["request"])
-                      + ". Meet the capability's physical hold and timing requirements.",
-            "success": {"capability_id": selected, "n_trials": 1},
-        }]}
     requested = [s.strip() for s in args.suites.split(",") if s.strip()]
     task_filter = set(t.strip() for t in args.tasks.split(",")) if args.tasks else None
 

@@ -27,17 +27,9 @@ def _piper_scene() -> Path:
     return Path(__file__).resolve().parents[2] / "assets" / "mjcf" / "piper" / "scene.xml"
 
 
-def test_config_options_are_mutually_exclusive_local_only_and_case_bound(tmp_path: Path):
+def test_config_is_local_only_and_case_bound(tmp_path: Path):
     scene = tmp_path / "scene.xml"
     scene.write_text("<mujoco/>", encoding="utf-8")
-    with pytest.raises(ValueError, match="mutually exclusive"):
-        SelfAssembleConfig(
-            "fixture",
-            scene,
-            tmp_path / "runs",
-            prepare_capabilities=True,
-            capability_design_path=scene,
-        )
     with pytest.raises(ValueError, match="scene_cases_path"):
         SelfAssembleConfig(
             "fixture",
@@ -45,15 +37,14 @@ def test_config_options_are_mutually_exclusive_local_only_and_case_bound(tmp_pat
             tmp_path / "runs",
             scene_cases_path=scene,
         )
-    with pytest.raises(ValueError, match="local-only"):
+    with pytest.raises(ValueError, match="local"):
         SelfAssembleConfig(
             "fixture",
             scene,
             tmp_path / "runs",
             mode="dgx",
-            prepare_capabilities=True,
         )
-    with pytest.raises(ValueError, match="local-only"):
+    with pytest.raises(ValueError, match="local"):
         FromScratchConfig(
             "fixture",
             scene,
@@ -66,16 +57,20 @@ def test_config_options_are_mutually_exclusive_local_only_and_case_bound(tmp_pat
             "fixture",
             scene,
             tmp_path / "runs",
-            prepare_capabilities=True,
             max_iters_capability_design=0,
         )
 
 
-def test_default_legacy_path_keeps_catalog_mjcf(tmp_path: Path):
+@pytest.mark.parametrize("config,runner", [(SelfAssembleConfig, SelfAssemble),
+                                           (FromScratchConfig, FromScratchOrchestrator)])
+def test_default_pipeline_retains_input_model_and_requires_design(tmp_path, config, runner):
     actual = _piper_scene()
-    legacy = SelfAssemble(SelfAssembleConfig("piper", actual, tmp_path / "legacy"))
-    assert legacy.capability_design is not None
-    assert "capabilities" in str(legacy.cfg.mjcf_path)
+    instance = runner(config("piper", actual, tmp_path / "runs"))
+    assert instance.cfg.mode == "local"
+    assert instance.cfg.mjcf_path == actual
+    assert instance.capability_design is None
+    with pytest.raises(RuntimeError, match="requires"):
+        instance._require_capability_design("GENERATE")
 
 
 def test_standard_study_does_not_run_design_and_design_has_own_resources(
@@ -85,7 +80,7 @@ def test_standard_study_does_not_run_design_and_design_has_own_resources(
     scene.write_text("<mujoco/>", encoding="utf-8")
     runner = SelfAssemble(
         SelfAssembleConfig(
-            "fixture", scene, tmp_path / "runs", prepare_capabilities=True
+            "fixture", scene, tmp_path / "runs"
         )
     )
     calls: list[str] = []
@@ -142,7 +137,7 @@ def test_dynamic_standard_stage_order_and_failure_gating(
     scene.write_text("<mujoco/>", encoding="utf-8")
     runner = SelfAssemble(
         SelfAssembleConfig(
-            "fixture", scene, tmp_path / "runs", prepare_capabilities=True
+            "fixture", scene, tmp_path / "runs"
         )
     )
     events: list[str] = []
@@ -187,7 +182,7 @@ def test_dynamic_standard_stage_order_and_failure_gating(
 
     failed_runner = SelfAssemble(
         SelfAssembleConfig(
-            "fixture", scene, tmp_path / "failed", prepare_capabilities=True
+            "fixture", scene, tmp_path / "failed"
         )
     )
     failed_events: list[str] = []
@@ -215,7 +210,7 @@ def test_dynamic_repair_pass_sets_effective_result_but_keeps_failed_attempt(
     scene.write_text("<mujoco/>", encoding="utf-8")
     runner = SelfAssemble(
         SelfAssembleConfig(
-            "fixture", scene, tmp_path / "runs", prepare_capabilities=True
+            "fixture", scene, tmp_path / "runs"
         )
     )
     validation_calls = 0
@@ -271,7 +266,7 @@ def test_scratch_dynamic_stop_after_study_uses_current_react_artifact(
     scene.write_text("<mujoco/>", encoding="utf-8")
     runner = FromScratchOrchestrator(
         FromScratchConfig(
-            "fixture", scene, tmp_path / "runs", mode="local", prepare_capabilities=True
+            "fixture", scene, tmp_path / "runs", mode="local"
         )
     )
     events: list[str] = []
@@ -360,3 +355,64 @@ def test_feedback_formatter_exposes_measurements_without_private_paths():
     )
     assert "tool_error" in feedback
     assert "/private/tmp/run" not in feedback
+
+
+@pytest.mark.parametrize("scratch", [False, True])
+def test_public_run_reloads_supplied_design_and_cases_inside_workspace(tmp_path, monkeypatch, scratch):
+    """Only STUDY is a fixture; DESIGN uses the real loader and scene builder."""
+    from auto_adapter import capability_design
+
+    scene = tmp_path / "scene.xml"
+    scene.write_text('<mujoco><worldbody><body><joint name="hinge"/>'
+                     '<geom type="sphere" size="0.01"/></body></worldbody></mujoco>')
+    workspace = tmp_path / "runs" / "fixture"
+    design_dir = workspace / "design"
+    design_dir.mkdir(parents=True)
+    design_path = design_dir / "capability_design.json"
+    cases_path = design_dir / "scene_cases.yaml"
+    design = {
+        "robot_configuration_id": "fixture",
+        "capabilities": [{
+            "capability_id": "hold", "method_name": "hold",
+            "request_schema": {"type": "object", "properties": {}, "additionalProperties": False},
+            "criteria": [{"metric": "joint_drift", "unit": "rad", "comparator": "<=",
+                          "threshold": 0.1, "temporal": {"kind": "terminal"},
+                          "aggregation": {"kind": "last"}}],
+        }],
+    }
+    cases = {"scenes": {"base": {"objects": []}}, "cases": [{
+        "case_id": "hold_case", "scene": "base", "capability_id": "hold",
+        "request": {}, "initial_state": {},
+        "execution": {"max_sim_time_s": 0.1, "wall_timeout_s": 1.0},
+        "measurements": [{"criterion_index": 0, "operator": "joint_drift",
+                          "bindings": {"joint": "hinge"}}],
+    }]}
+    design_path.write_text(json.dumps(design))
+    cases_path.write_text(json.dumps(cases))  # JSON is also valid YAML.
+    original_design, original_cases = design_path.read_bytes(), cases_path.read_bytes()
+    stale_driver = workspace / ("driver_from_scratch.py" if scratch else "driver.py")
+    stale_driver.write_text("# stale generated output")
+    config_cls = FromScratchConfig if scratch else SelfAssembleConfig
+    runner_cls = FromScratchOrchestrator if scratch else SelfAssemble
+    runner = runner_cls(config_cls("fixture", scene, tmp_path / "runs",
+                                  capability_design_path=design_path, scene_cases_path=cases_path))
+
+    def study():
+        (workspace / "study.json").write_text('{"robot_id": "fixture"}')
+        return (SimpleNamespace(ok=True, error=None, total_tokens={}) if scratch
+                else PhaseResult("01_study", True, 0.0))
+
+    def unexpected_design_model(**_kwargs):
+        raise AssertionError("supplied DESIGN must not call the model")
+
+    monkeypatch.setattr(runner, "phase_study" if scratch else "_phase_study", study)
+    monkeypatch.setattr(capability_design, "generate_capability_design", unexpected_design_model)
+    result = runner.run(stop_after="design")
+
+    assert result.ok, result.to_json()
+    assert runner.capability_design == design
+    assert design_path.read_bytes() == original_design
+    assert cases_path.read_bytes() == original_cases
+    assert runner.scene_cases_path == cases_path
+    assert runner.scene_paths["base"].is_file()
+    assert not stale_driver.exists()

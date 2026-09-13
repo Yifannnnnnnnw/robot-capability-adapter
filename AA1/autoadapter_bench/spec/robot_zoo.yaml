@@ -27,8 +27,6 @@ robots:
   - id: so101
     mjcf: assets/mjcf/so101_mujoco.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/so101/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/so101
     capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: ee_site}
     class: arm
@@ -97,8 +95,6 @@ robots:
   - id: piper
     mjcf: assets/mjcf/piper/scene.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/piper/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/piper
     capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: ee_site}
     class: arm
@@ -112,8 +108,6 @@ robots:
     source: Unitree (mujoco_menagerie style)
 
   - id: franka
-    capability_mjcf: assets/mjcf/capabilities/franka/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/franka
     capability_skeleton: ArmSerialDLSSkeleton
     mjcf: assets/mjcf/franka_panda/scene.xml
     generation_route: skeleton
@@ -140,8 +134,6 @@ robots:
     source: mujoco_menagerie
 
   - id: kuka_iiwa14
-    capability_mjcf: assets/mjcf/capabilities/kuka_iiwa14/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/kuka_iiwa14
     capability_skeleton: ArmSerialDLSSkeleton
     mjcf: assets/mjcf/kuka_iiwa_14/scene.xml
     generation_route: skeleton
@@ -156,7 +148,6 @@ robots:
     source: mujoco_menagerie
 
   - id: go2
-    capability_profile: autoadapter_bench/spec/capabilities/go2
     capability_skeleton: Go2VelocityPolicySkeleton
     mjcf: assets/mjcf/go2/go2_scene.xml
     generation_route: skeleton
@@ -175,8 +166,6 @@ robots:
   - id: unitree_a1
     mjcf: assets/mjcf/unitree_a1/scene.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/unitree_a1/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/unitree_a1
     capability_skeleton: QuadrupedPDGaitSkeleton
     state_refs: {base_body: trunk}
     class: quadruped
@@ -191,8 +180,6 @@ robots:
   - id: anymal_c
     mjcf: assets/mjcf/anybotics_anymal_c/scene.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/anymal_c/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/anymal_c
     capability_skeleton: QuadrupedPDGaitSkeleton
     state_refs: {base_body: base}
     class: quadruped
@@ -208,8 +195,6 @@ robots:
   - id: kinova_gen3_robotiq_2f85
     mjcf: assets/mjcf/kinova_gen3_robotiq_2f85/scene.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/kinova_gen3_robotiq_2f85/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/kinova_gen3_robotiq_2f85
     capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: pinch_site}
     class: arm
@@ -226,8 +211,6 @@ robots:
   - id: ufactory_xarm7
     mjcf: assets/mjcf/ufactory_xarm7/scene.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/ufactory_xarm7/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/ufactory_xarm7
     capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: link_tcp}
     class: arm
@@ -244,8 +227,6 @@ robots:
   - id: universal_robots_ur5e_robotiq_2f85
     mjcf: assets/mjcf/universal_robots_ur5e_robotiq_2f85/scene.xml
     generation_route: skeleton
-    capability_mjcf: assets/mjcf/capabilities/universal_robots_ur5e_robotiq_2f85/fixed_scene.xml
-    capability_profile: autoadapter_bench/spec/capabilities/universal_robots_ur5e_robotiq_2f85
     capability_skeleton: ArmSerialDLSSkeleton
     state_refs: {ee_site: pinch_site}
     class: arm
