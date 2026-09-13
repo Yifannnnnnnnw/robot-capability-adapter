@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "h1",
+  "package_version": "1.0.0",
+  "sources": [
+    {
+      "source_id": "SRC-MENAGERIE-H1",
+      "title": "MuJoCo Menagerie Unitree H1 model",
+      "organization": "Google DeepMind",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_h1",
+      "specific_reference": "Model origin only. Local authority is AA1/assets/mjcf/h1/h1.xml and scene.xml: free pelvis, 19 torque motors, four-joint arms, no hand joints. Distal forearm collision sphere at local [0.28,0,-0.015] on each elbow link. No upstream/local revision equivalence asserted."
+    },
+    {
+      "source_id": "SRC-HB-LOCOMOTION",
+      "title": "HumanoidBench locomotion task implementations",
+      "organization": "HumanoidBench authors",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py",
+      "specific_reference": "Classes Walk, Stand, Run, Crawl, Hurdle, Sit, Stair and Slide. The public repository lists no-hand h1 tasks. We adapt operations only; original reward formulas, success bars, controller rates and task geometry are not reused."
+    },
+    {
+      "source_id": "SRC-HB-REACH",
+      "title": "HumanoidBench reaching task",
+      "organization": "HumanoidBench authors",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/reach.py",
+      "specific_reference": "Reach task implementation; endpoint-to-goal reaching. Local forearm endpoint replaces a hand reference; source hand morphology is not assumed."
+    },
+    {
+      "source_id": "SRC-HB-MAZE",
+      "title": "HumanoidBench maze task",
+      "organization": "HumanoidBench authors",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/maze.py",
+      "specific_reference": "MazeBase and Maze: ordered checkpoints through a multi-turn corridor."
+    },
+    {
+      "source_id": "SRC-HB-BALANCE",
+      "title": "HumanoidBench balance tasks",
+      "organization": "HumanoidBench authors",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/balance.py",
+      "specific_reference": "BalanceBase and BalanceSimple: balancing on a movable support board above the floor."
+    },
+    {
+      "source_id": "SRC-HB-POLE",
+      "title": "HumanoidBench pole avoidance task",
+      "organization": "HumanoidBench authors",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/pole.py",
+      "specific_reference": "Pole.get_reward: locomotion with collision penalties for poles; this is obstacle avoidance, not pole climbing."
+    },
+    {
+      "source_id": "SRC-HB-PUSH",
+      "title": "HumanoidBench box-pushing task",
+      "organization": "HumanoidBench authors",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/push.py",
+      "specific_reference": "Push.goal_dist and Push.get_reward: move a tabletop box to a declared target through reaching/contact."
+    },
+    {
+      "source_id": "SRC-SAFETY-GYM",
+      "title": "Safety Gym task and constraint implementations",
+      "organization": "OpenAI",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py",
+      "specific_reference": "Engine goal/button/circle tasks, goal_met, reward and cost; hazards are excluded areas and gremlins are moving obstacles. Source robot is not H1; source numerical settings are not adopted."
+    },
+    {
+      "source_id": "SRC-HUMANOID-PARKOUR",
+      "title": "Humanoid Parkour Learning",
+      "organization": "Zhuang, Yao and Zhao",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://humanoid4parkour.github.io/",
+      "specific_reference": "CoRL 2024 project: Jump Up, Leap and Robust Walking. Use task families only; published obstacle dimensions and performance are not claims about the local H1."
+    }
+  ]
+}

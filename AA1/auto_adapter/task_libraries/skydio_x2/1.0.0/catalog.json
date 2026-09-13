@@ -1,0 +1,3243 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "skydio_x2",
+  "package_version": "1.0.0",
+  "snapshot_id": "skydio_x2-public-proposed-tasks-2026-09-13-v1",
+  "numerical_requirements_status": "local_proposed_uncalibrated",
+  "model_limitations": [
+    "The track camera is an external tracking view; it is not a controllable onboard camera. IMU sensors exist, but GPS, visual navigation, subject detection, battery state and flight SDK software are absent.",
+    "Photo/scan tasks retain aircraft-path and geometric-observation requirements only. Passing them would not establish image quality, reconstructed coverage or real product behavior.",
+    "All numerical requirements and scene arrangements are local proposed, uncalibrated values. Stock scene has only a floor; external structures and task trajectories are not supplied here."
+  ],
+  "tasks": [
+    {
+      "task_id": "X2-T01",
+      "name": "Ground takeoff to hover",
+      "description": "Lift from a resting ground state and settle at an airborne holding point.",
+      "source_task_or_operation": "Lift from a resting ground state and settle at an airborne holding point.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Ground support uses the existing rigid geometry; the source 2 m launch altitude is not retained. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Start at rest with the existing non-rotor body collision geoms supported by the plane and zero thrust; holding point is 1 m above the initial x2 origin.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from the declared holding point during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Step 3 - Launch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Step 3 - Launch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all robot-floor contact ends by t=5 s and no subsequent floor contact occurs; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Step 3 - Launch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Step 3 - Launch.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T01",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T02",
+      "name": "Controlled landing and motor stop",
+      "description": "Descend from hover into a landing region, establish support and remove thrust.",
+      "source_task_or_operation": "Descend from hover into a landing region, establish support and remove thrust.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Only landing mechanics are scored. No battery system or physical docking mechanism is assumed. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Start 1 m above a clear 0.6 m radius landing disk; floor is level and no moving object enters the descent corridor.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if a non-rotor body collision geom is in floor contact continuously during the final 2 s, with the x2 projection inside the landing disk; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Land Once Returned and Wait Before Land.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "touchdown_vertical_speed",
+          "metric": "touchdown_vertical_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.25,
+          "metric_definition": "Absolute vertical speed immediately before the first robot-floor contact; no contact means failure.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Land Once Returned and Wait Before Land.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_total_thrust_command",
+          "metric": "terminal_total_thrust_command",
+          "unit": "N",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum sum of the four nonnegative site-thrust commands in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Land Once Returned and Wait Before Land.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Land Once Returned and Wait Before Land.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Rotor geoms contacting the floor are forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Land Once Returned and Wait Before Land.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Land Once Returned and Wait Before Land.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T02",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T03",
+      "name": "Stationary airborne hold",
+      "description": "Remain at one airborne point while awaiting a further command.",
+      "source_task_or_operation": "Remain at one airborne point while awaiting a further command.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A declared wait request replaces actual connection loss; radio communications are not modeled. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Begin in hover at [0,0,1] m over the floor; hold for the complete task interval.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "maximum_hold_position_error",
+          "metric": "maximum_hold_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D distance of x2 origin from its initial position over 60 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SIGNAL",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/17250457819163-What-happens-when-Skydio-X2-loses-signal \u2014 Waiting/hovering behavior before a configured return.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_hold_heading_error",
+          "metric": "maximum_hold_heading_error",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 10,
+          "metric_definition": "Maximum wrapped yaw difference from the initial heading over 60 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SIGNAL",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/17250457819163-What-happens-when-Skydio-X2-loses-signal \u2014 Waiting/hovering behavior before a configured return.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SIGNAL",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/17250457819163-What-happens-when-Skydio-X2-loses-signal \u2014 Waiting/hovering behavior before a configured return.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SIGNAL",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/17250457819163-What-happens-when-Skydio-X2-loses-signal \u2014 Waiting/hovering behavior before a configured return.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T03",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T04",
+      "name": "Climb-transit-descend return",
+      "description": "Return to a home point using a specified transit altitude before descending to a hover.",
+      "source_task_or_operation": "Return to a home point using a specified transit altitude before descending to a hover.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Begin 3 m horizontally from home at height 1 m; transit altitude is 2 m and terminal holding point is 1 m above home.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if x2 first reaches height 1.9 m before moving more than 0.3 m horizontally toward home, remains at least 1.8 m high until within 0.2 m horizontally of home, and only then descends; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Absolute return height, return speed and hover before landing.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from the home holding point during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Absolute return height, return speed and hover before landing.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Absolute return height, return speed and hover before landing.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Absolute return height, return speed and hover before landing.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-EMERGENCY",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors \u2014 Set Return Behaviors: Absolute return height, return speed and hover before landing.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T04",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "home_xy_m"
+            ],
+            "properties": {
+              "home_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared home point on the floor; start satisfies the stated separation."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T05",
+      "name": "Ordered waypoint mission",
+      "description": "Visit an ordered sequence of positions and headings, then hold at the final waypoint.",
+      "source_task_or_operation": "Visit an ordered sequence of positions and headings, then hold at the final waypoint.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "World-coordinate waypoints substitute for GPS locations; camera gimbal angles are omitted. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Four waypoints lie inside a 4 m by 4 m region at heights from 1 to 2 m; each has a declared heading and a 0.20 m arrival radius.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "ordered_waypoint_visits",
+          "metric": "ordered_waypoint_visits",
+          "unit": "waypoint",
+          "comparator": "==",
+          "threshold": 4,
+          "metric_definition": "Count distinct waypoint arrivals in declared order; each requires 3D position error <=0.20 m and yaw error <=10 degrees simultaneously for 0.5 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-WAYPOINT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805235150-How-to-use-Skydio-X2E-Waypoints-skill \u2014 Steps 5-7 waypoint altitude/heading and Step 11 mission completion hover.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from the last waypoint during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-WAYPOINT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805235150-How-to-use-Skydio-X2E-Waypoints-skill \u2014 Steps 5-7 waypoint altitude/heading and Step 11 mission completion hover.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-WAYPOINT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805235150-How-to-use-Skydio-X2E-Waypoints-skill \u2014 Steps 5-7 waypoint altitude/heading and Step 11 mission completion hover.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-WAYPOINT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805235150-How-to-use-Skydio-X2E-Waypoints-skill \u2014 Steps 5-7 waypoint altitude/heading and Step 11 mission completion hover.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-WAYPOINT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805235150-How-to-use-Skydio-X2E-Waypoints-skill \u2014 Steps 5-7 waypoint altitude/heading and Step 11 mission completion hover.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T05",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "waypoints_xyz_m",
+              "waypoint_headings_rad"
+            ],
+            "properties": {
+              "waypoints_xyz_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 3
+                },
+                "unit": "m",
+                "frame": "world",
+                "description": "Exactly four ordered waypoint positions in the stated region."
+              },
+              "waypoint_headings_rad": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 4,
+                "unit": "rad",
+                "frame": "world",
+                "description": "World-yaw target for each corresponding waypoint."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T06",
+      "name": "Continuous cinematic path",
+      "description": "Traverse a smooth time-parameterized flight path without cutting its corners.",
+      "source_task_or_operation": "Traverse a smooth time-parameterized flight path without cutting its corners.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Spline coefficients and timing are task inputs. Camera motion and saved-path software are outside this motion task. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A declared collision-free cubic spline spans 4 m with horizontal and vertical turns at heights 1 to 2 m; traversal is scheduled for t=5 to 25 s.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "spline_tracking_rmse",
+          "metric": "spline_tracking_rmse",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.2,
+          "metric_definition": "RMS 3D error from the declared time-parameterized reference spline over t=5 to 25 s; all scheduled samples contribute.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-KEYFRAME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4414023709723-How-to-use-Skydio-X2E-KeyFrame-skill \u2014 Quick Steps: continuous spline playback and slowing near sharp turns.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from the final spline position during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-KEYFRAME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4414023709723-How-to-use-Skydio-X2E-KeyFrame-skill \u2014 Quick Steps: continuous spline playback and slowing near sharp turns.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-KEYFRAME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4414023709723-How-to-use-Skydio-X2E-KeyFrame-skill \u2014 Quick Steps: continuous spline playback and slowing near sharp turns.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-KEYFRAME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4414023709723-How-to-use-Skydio-X2E-KeyFrame-skill \u2014 Quick Steps: continuous spline playback and slowing near sharp turns.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-KEYFRAME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4414023709723-How-to-use-Skydio-X2E-KeyFrame-skill \u2014 Quick Steps: continuous spline playback and slowing near sharp turns.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T06",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "reference_samples_t_xyz"
+            ],
+            "properties": {
+              "reference_samples_t_xyz": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 4
+                },
+                "unit": "s,m,m,m",
+                "frame": "world",
+                "description": "Ordered [time,x,y,z] samples defining the agreed interpolated reference spline during t=5..25 s; endpoints and interpolation rule are fixed before execution."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T07",
+      "name": "Point-of-interest orbit",
+      "description": "Fly one circuit around a stationary point of interest while orienting the body toward it.",
+      "source_task_or_operation": "Fly one circuit around a stationary point of interest while orienting the body toward it.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Body heading is an explicit surrogate for horizontal framing; no gimbal or image-center claim. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Start on a 1.5 m radius level orbit at height 1.5 m around the declared center.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "signed_orbit_progress",
+          "metric": "signed_orbit_progress",
+          "unit": "rad",
+          "comparator": ">=",
+          "threshold": 6.283185307179586,
+          "metric_definition": "Unwrapped x2 azimuth around the center in the declared positive direction; reverse travel subtracts progress.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-ORBIT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill \u2014 Flight Skill - Orbit Point and Quick Steps orbit controls.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_orbit_radius_error",
+          "metric": "maximum_orbit_radius_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.2,
+          "metric_definition": "Maximum absolute difference of horizontal radius from 1.5 m.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-ORBIT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill \u2014 Flight Skill - Orbit Point and Quick Steps orbit controls.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_orbit_height_error",
+          "metric": "maximum_orbit_height_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum absolute difference of x2 origin height from 1.5 m.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-ORBIT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill \u2014 Flight Skill - Orbit Point and Quick Steps orbit controls.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "orbit_bearing_rmse",
+          "metric": "orbit_bearing_rmse",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 12,
+          "metric_definition": "RMS horizontal angle between x2 local +x and the center direction during the circuit.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-ORBIT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill \u2014 Flight Skill - Orbit Point and Quick Steps orbit controls.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-ORBIT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill \u2014 Flight Skill - Orbit Point and Quick Steps orbit controls.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-ORBIT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill \u2014 Flight Skill - Orbit Point and Quick Steps orbit controls.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T07",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "center_xy_m"
+            ],
+            "properties": {
+              "center_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Stationary orbit center."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T08",
+      "name": "Track a moving bearing from a fixed point",
+      "description": "Hold the aircraft position while yawing to follow a moving subject bearing.",
+      "source_task_or_operation": "Hold the aircraft position while yawing to follow a moving subject bearing.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Translate only the horizontal pointing requirement into body yaw. No recognition, gimbal pitch or autonomous selection of a person/vehicle. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Aircraft begins at [0,0,1.5] m; a geometric subject moves at the same height on a 3 m radius quarter-circle over t=5 to 25 s.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "maximum_station_drift",
+          "metric": "maximum_station_drift",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum x2-origin distance from the initial hold point.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRACK",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805234130-How-to-use-Skydio-X2E-Track-in-Place-skill \u2014 Flight Skill - Track: fixed-position tracking.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "bearing_tracking_rmse",
+          "metric": "bearing_tracking_rmse",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 10,
+          "metric_definition": "RMS horizontal bearing error of body +x toward the declared subject over t=5 to 25 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRACK",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805234130-How-to-use-Skydio-X2E-Track-in-Place-skill \u2014 Flight Skill - Track: fixed-position tracking.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRACK",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805234130-How-to-use-Skydio-X2E-Track-in-Place-skill \u2014 Flight Skill - Track: fixed-position tracking.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRACK",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/1260805234130-How-to-use-Skydio-X2E-Track-in-Place-skill \u2014 Flight Skill - Track: fixed-position tracking.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T08",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T09",
+      "name": "Subject-relative escort",
+      "description": "Follow a moving reference while maintaining a prescribed spatial offset.",
+      "source_task_or_operation": "Follow a moving reference while maintaining a prescribed spatial offset.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A supplied subject trajectory replaces GPS/Beacon measurements; actual Scout software is not used. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Reference moves along a two-segment 4 m ground route at 0.25 m/s; desired aircraft offset is 1.5 m behind and 1.5 m above the reference, with a smooth turn.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "escort_offset_rmse",
+          "metric": "escort_offset_rmse",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.25,
+          "metric_definition": "RMS 3D error from the declared subject-relative offset over t=5 to 25 s; the horizontal offset rotates with the smoothed subject heading.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SCOUT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8133162052379-How-to-use-the-Scout-Skill-on-Skydio-X2E \u2014 Scout settings: Positioning Behavior and subject-height handling.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_subject_separation",
+          "metric": "minimum_subject_separation",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 1.0,
+          "metric_definition": "Minimum Euclidean distance of aircraft origin from the reference point.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SCOUT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8133162052379-How-to-use-the-Scout-Skill-on-Skydio-X2E \u2014 Scout settings: Positioning Behavior and subject-height handling.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SCOUT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8133162052379-How-to-use-the-Scout-Skill-on-Skydio-X2E \u2014 Scout settings: Positioning Behavior and subject-height handling.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-SCOUT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8133162052379-How-to-use-the-Scout-Skill-on-Skydio-X2E \u2014 Scout settings: Positioning Behavior and subject-height handling.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T09",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T10",
+      "name": "Horizontal panorama motion",
+      "description": "Visit a full sequence of yaw headings while holding position, then restore the initial heading.",
+      "source_task_or_operation": "Visit a full sequence of yaw headings while holding position, then restore the initial heading.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "This is an aircraft yaw-acquisition pattern only. It produces no panorama photos and does not test stitching or spherical gimbal coverage. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Begin at [0,0,1.5] m; eight heading stations cover one full yaw circuit, with a 0.5 s dwell at each.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "ordered_heading_stations",
+          "metric": "ordered_heading_stations",
+          "unit": "station",
+          "comparator": "==",
+          "threshold": 8,
+          "metric_definition": "Count the eight successive yaw stations at 45-degree increments; each requires absolute yaw error <=8 degrees for 0.5 s, without skipping or re-counting.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-PANORAMA",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/10254175302555-What-is-the-Panorama-Skill \u2014 How to use Panorama: horizontal mode and return to original yaw.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_panorama_drift",
+          "metric": "maximum_panorama_drift",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum x2-origin distance from the initial holding point.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-PANORAMA",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/10254175302555-What-is-the-Panorama-Skill \u2014 How to use Panorama: horizontal mode and return to original yaw.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_heading_error",
+          "metric": "terminal_heading_error",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 8,
+          "metric_definition": "Maximum wrapped difference from the initial yaw during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-PANORAMA",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/10254175302555-What-is-the-Panorama-Skill \u2014 How to use Panorama: horizontal mode and return to original yaw.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-PANORAMA",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/10254175302555-What-is-the-Panorama-Skill \u2014 How to use Panorama: horizontal mode and return to original yaw.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-PANORAMA",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/10254175302555-What-is-the-Panorama-Skill \u2014 How to use Panorama: horizontal mode and return to original yaw.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T10",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T11",
+      "name": "Structure approach and stop",
+      "description": "Approach a structure, reduce speed and hold at a prescribed stand-off.",
+      "source_task_or_operation": "Approach a structure, reduce speed and hold at a prescribed stand-off.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The stand-off and speed limits are local proposed motion requirements, not the product activation distances. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid wall is ahead; aircraft begins 2 m from it at height 1.5 m and moves toward a 0.8 m stand-off point.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_wall_standoff_error",
+          "metric": "terminal_wall_standoff_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum absolute error of x2-origin perpendicular wall distance from 0.8 m in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-STOP",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/14993795011483-How-to-use-Stop-at-Structure-on-Skydio-X2 \u2014 Opening description: reduce speed and maintain position near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-STOP",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/14993795011483-How-to-use-Stop-at-Structure-on-Skydio-X2 \u2014 Opening description: reduce speed and maintain position near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_surface_clearance",
+          "metric": "minimum_surface_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.3,
+          "metric_definition": "Minimum distance between any actual aircraft collision geom and the wall.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-STOP",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/14993795011483-How-to-use-Stop-at-Structure-on-Skydio-X2 \u2014 Opening description: reduce speed and maintain position near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-STOP",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/14993795011483-How-to-use-Stop-at-Structure-on-Skydio-X2 \u2014 Opening description: reduce speed and maintain position near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-STOP",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/14993795011483-How-to-use-Stop-at-Structure-on-Skydio-X2 \u2014 Opening description: reduce speed and maintain position near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T11",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T12",
+      "name": "Obstacle-aware transit",
+      "description": "Reach a waypoint by detouring around an obstacle that blocks the direct path.",
+      "source_task_or_operation": "Reach a waypoint by detouring around an obstacle that blocks the direct path.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Collision geometry is supplied; no onboard obstacle detector or proprietary avoidance mode is assumed. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid 1 m high and 0.5 m wide box blocks a 3 m path at flight height 0.8 m; free space exists on both sides.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from goal_position_m during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-AVOID",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12902885365019-How-to-adjust-Obstacle-Avoidance-on-Skydio-X2 \u2014 Obstacle Avoidance near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-AVOID",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12902885365019-How-to-adjust-Obstacle-Avoidance-on-Skydio-X2 \u2014 Obstacle Avoidance near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_obstacle_clearance",
+          "metric": "minimum_obstacle_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.2,
+          "metric_definition": "Minimum distance between aircraft collision geometry and the box.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-AVOID",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12902885365019-How-to-adjust-Obstacle-Avoidance-on-Skydio-X2 \u2014 Obstacle Avoidance near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-AVOID",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12902885365019-How-to-adjust-Obstacle-Avoidance-on-Skydio-X2 \u2014 Obstacle Avoidance near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-AVOID",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12902885365019-How-to-adjust-Obstacle-Avoidance-on-Skydio-X2 \u2014 Obstacle Avoidance near structures.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T12",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_position_m"
+            ],
+            "properties": {
+              "goal_position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Destination on the far side of the blocking box."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T13",
+      "name": "Flight beneath a height bound",
+      "description": "Reach a destination over a low obstacle while respecting an altitude ceiling.",
+      "source_task_or_operation": "Reach a destination over a low obstacle while respecting an altitude ceiling.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A bounded-clearance route is tested; the ceiling is a local scene requirement, not an aviation rule or advertised product limit. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 0.4 m high barrier spans a 3 m route; aircraft starts at height 0.8 m, target is beyond it at height 0.8 m; maximum allowed x2-origin height is 1.2 m.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from goal_position_m during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-HEIGHT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits \u2014 Height settings restrict vertical flight.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_flight_height",
+          "metric": "maximum_flight_height",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 1.2,
+          "metric_definition": "Maximum x2-origin height above the plane over the whole interval.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-HEIGHT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits \u2014 Height settings restrict vertical flight.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_barrier_clearance",
+          "metric": "minimum_barrier_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.15,
+          "metric_definition": "Minimum distance between aircraft collision geometry and the barrier.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-HEIGHT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits \u2014 Height settings restrict vertical flight.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-HEIGHT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits \u2014 Height settings restrict vertical flight.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-HEIGHT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits \u2014 Height settings restrict vertical flight.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if body x2 crosses the vertical plane through the barrier center from the approach side to the destination side while its origin is inside the barrier lateral projection and every aircraft collision geom is wholly above the barrier top at that crossing; otherwise 0. Reaching the goal by going around either lateral edge does not satisfy this event.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-HEIGHT",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits \u2014 Height settings restrict vertical flight.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T13",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_position_m"
+            ],
+            "properties": {
+              "goal_position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Target beyond the low barrier at the stated height."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T14",
+      "name": "Planar survey-lane coverage",
+      "description": "Traverse every declared survey lane at a specified height above a planar area.",
+      "source_task_or_operation": "Traverse every declared survey lane at a specified height above a planar area.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Position-lane coverage is a surrogate for acquisition; camera field of view, overlap, GSD and reconstruction completeness are not evaluated. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 3 m by 2 m region has four 3 m scan lanes at height 1.5 m connected at alternating ends; start at the first lane entrance.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "ordered_scan_lanes",
+          "metric": "ordered_scan_lanes",
+          "unit": "lane",
+          "comparator": "==",
+          "threshold": 4,
+          "metric_definition": "Number of lanes traversed from entry to exit in order while remaining within 0.20 m of that 3D lane; lane endpoints must be reached within 0.20 m.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Scan Surface, Set Boundaries and scan workflow.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_scan_height_error",
+          "metric": "maximum_scan_height_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum absolute difference of x2-origin height from 1.5 m during lane traversal.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Scan Surface, Set Boundaries and scan workflow.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Scan Surface, Set Boundaries and scan workflow.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-2D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan \u2014 Scan Surface, Set Boundaries and scan workflow.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T14",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T15",
+      "name": "Multi-level tower inspection route",
+      "description": "Visit observation stations around a vertical structure at multiple heights.",
+      "source_task_or_operation": "Visit observation stations around a vertical structure at multiple heights.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "This is multi-height spatial coverage, not another constant-altitude orbit variant. All station geometry is local and no surface reconstruction is scored. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid tower is 0.4 m in radius and 2.5 m high; twelve stations lie at four azimuths and heights 0.8, 1.5 and 2.2 m, each 1.5 m horizontally from its axis.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "distinct_tower_stations",
+          "metric": "distinct_tower_stations",
+          "unit": "station",
+          "comparator": "==",
+          "threshold": 12,
+          "metric_definition": "Count distinct declared stations where position error <=0.20 m, body-yaw error toward the tower <=12 degrees and translational speed <=0.15 m/s hold simultaneously for 0.5 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TOWER",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/5049637379355-How-to-use-Tower-Capture-with-Skydio-3D-Scan \u2014 Tower Capture: Floor, Ceiling, boundaries and scanning.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_tower_clearance",
+          "metric": "minimum_tower_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.3,
+          "metric_definition": "Minimum distance from any aircraft collision geom to the tower.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TOWER",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/5049637379355-How-to-use-Tower-Capture-with-Skydio-3D-Scan \u2014 Tower Capture: Floor, Ceiling, boundaries and scanning.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TOWER",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/5049637379355-How-to-use-Tower-Capture-with-Skydio-3D-Scan \u2014 Tower Capture: Floor, Ceiling, boundaries and scanning.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TOWER",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/5049637379355-How-to-use-Tower-Capture-with-Skydio-3D-Scan \u2014 Tower Capture: Floor, Ceiling, boundaries and scanning.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T15",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T16",
+      "name": "Concave-structure observation route",
+      "description": "Visit viewpoints for exterior and recessed surfaces without crossing the structure.",
+      "source_task_or_operation": "Visit viewpoints for exterior and recessed surfaces without crossing the structure.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A geometric line-of-sight surrogate replaces image capture. Stations and targets are supplied before execution; occluded or skipped viewpoints receive no credit. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Three rigid walls form an open U-shaped structure 2 m high, 2 m wide and 1.5 m deep; six declared free-space stations include two within the recess and four outside.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "distinct_surface_viewpoints",
+          "metric": "distinct_surface_viewpoints",
+          "unit": "viewpoint",
+          "comparator": "==",
+          "threshold": 6,
+          "metric_definition": "Number of declared station-target pairs achieved with x2 position within 0.20 m of the station and unobstructed geometric line from x2 origin to its surface target for 0.5 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-3D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402964028571-How-to-use-3D-Capture-with-Skydio-3D-Scan \u2014 3D Capture: volume bounds and surface acquisition.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_structure_clearance",
+          "metric": "minimum_structure_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.2,
+          "metric_definition": "Minimum aircraft collision-geometry distance to any wall.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-3D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402964028571-How-to-use-3D-Capture-with-Skydio-3D-Scan \u2014 3D Capture: volume bounds and surface acquisition.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-3D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402964028571-How-to-use-3D-Capture-with-Skydio-3D-Scan \u2014 3D Capture: volume bounds and surface acquisition.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-3D",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402964028571-How-to-use-3D-Capture-with-Skydio-3D-Scan \u2014 3D Capture: volume bounds and surface acquisition.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T16",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "viewpoints_xyz_m",
+              "surface_targets_xyz_m"
+            ],
+            "properties": {
+              "viewpoints_xyz_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 3
+                },
+                "unit": "m",
+                "frame": "world",
+                "description": "Six distinct collision-free aircraft stations satisfying the recess/exterior distribution."
+              },
+              "surface_targets_xyz_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 3
+                },
+                "unit": "m",
+                "frame": "world",
+                "description": "Six corresponding target points on the structure surfaces."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T17",
+      "name": "Under-bridge inspection traverse",
+      "description": "Traverse beneath a bridge deck while preserving overhead and lateral clearance.",
+      "source_task_or_operation": "Traverse beneath a bridge deck while preserving overhead and lateral clearance.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Only aircraft placement below the deck is retained; the absent upward gimbal and imaging pipeline are not approximated by claiming camera control. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 3 m long, 2 m wide bridge deck has underside height 2 m; two supports leave a 1.2 m wide passage; route follows three underside stations at aircraft height 1 m.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "ordered_underdeck_stations",
+          "metric": "ordered_underdeck_stations",
+          "unit": "station",
+          "comparator": "==",
+          "threshold": 3,
+          "metric_definition": "Count underside-route stations visited in order within 0.20 m 3D position error for 0.5 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-UNDERSIDE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8306299066907-How-to-scan-the-underside-of-a-structure \u2014 Upward Capture and Bridge use case example.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "minimum_overhead_clearance",
+          "metric": "minimum_overhead_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.4,
+          "metric_definition": "Minimum distance from aircraft collision geometry to the deck underside while underneath it.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-UNDERSIDE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8306299066907-How-to-scan-the-underside-of-a-structure \u2014 Upward Capture and Bridge use case example.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-UNDERSIDE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8306299066907-How-to-scan-the-underside-of-a-structure \u2014 Upward Capture and Bridge use case example.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-UNDERSIDE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/8306299066907-How-to-scan-the-underside-of-a-structure \u2014 Upward Capture and Bridge use case example.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T17",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T18",
+      "name": "Lateral baseline acquisition",
+      "description": "Move between two observation positions while keeping a point of interest in the horizontal body-bearing direction.",
+      "source_task_or_operation": "Move between two observation positions while keeping a point of interest in the horizontal body-bearing direction.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The task supplies a geometric target and measures the motion baseline. It does not infer target coordinates, simulate GPS or claim triangulation accuracy. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Two same-height stations separated laterally by 1 m view a point 3 m away at the same height; begin at the first station.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both stations are occupied in order within 0.15 m position error for 0.5 s; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRIANGULATION",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12587703600923-How-to-Use-the-Triangulation-Skill-on-Skydio-X2 \u2014 Quick Steps 3-5: orient to target, then fly laterally.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "baseline_bearing_rmse",
+          "metric": "baseline_bearing_rmse",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 10,
+          "metric_definition": "RMS body +x horizontal bearing error toward the target during the station-to-station transit.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRIANGULATION",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12587703600923-How-to-Use-the-Triangulation-Skill-on-Skydio-X2 \u2014 Quick Steps 3-5: orient to target, then fly laterally.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "achieved_lateral_baseline",
+          "metric": "achieved_lateral_baseline",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.9,
+          "metric_definition": "Lateral separation of the two achieved station-dwell mean positions relative to the initial target bearing.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRIANGULATION",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12587703600923-How-to-Use-the-Triangulation-Skill-on-Skydio-X2 \u2014 Quick Steps 3-5: orient to target, then fly laterally.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRIANGULATION",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12587703600923-How-to-Use-the-Triangulation-Skill-on-Skydio-X2 \u2014 Quick Steps 3-5: orient to target, then fly laterally.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-TRIANGULATION",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/12587703600923-How-to-Use-the-Triangulation-Skill-on-Skydio-X2 \u2014 Quick Steps 3-5: orient to target, then fly laterally.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T18",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T19",
+      "name": "Pause-return-resume a scan route",
+      "description": "Interrupt an acquisition route, visit a rally point and resume at the first unvisited station.",
+      "source_task_or_operation": "Interrupt an acquisition route, visit a rally point and resume at the first unvisited station.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Explicit task events replace battery replacement; battery capacity, persistence across power cycles and re-localization are not modeled. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A four-station route at height 1.5 m has 0.20 m arrival radii; after station two issue a pause event. Rally point lies 1 m off the route and requires 2 s dwell before a resume event.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if stations one and two are visited, followed by the complete rally dwell, then stations three and four in order; visiting later stations before the rally does not count; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-RESUME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402419015067-Scanning-with-multiple-batteries-in-3D-Scan \u2014 Resume scanning and return to Launch/Rally Point.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from the last scan station during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-RESUME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402419015067-Scanning-with-multiple-batteries-in-3D-Scan \u2014 Resume scanning and return to Launch/Rally Point.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-RESUME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402419015067-Scanning-with-multiple-batteries-in-3D-Scan \u2014 Resume scanning and return to Launch/Rally Point.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-RESUME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402419015067-Scanning-with-multiple-batteries-in-3D-Scan \u2014 Resume scanning and return to Launch/Rally Point.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-RESUME",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402419015067-Scanning-with-multiple-batteries-in-3D-Scan \u2014 Resume scanning and return to Launch/Rally Point.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T19",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "X2-T20",
+      "name": "Geofenced volume entry and exit",
+      "description": "Enter an allowed inspection volume through a designated opening, visit an interior station and leave through the same opening.",
+      "source_task_or_operation": "Enter an allowed inspection volume through a designated opening, visit an interior station and leave through the same opening.",
+      "applicability": "Local x2.xml contains one free aircraft body x2 and four nonnegative site-thrust motors named thrust1..thrust4, with differential yaw torque. There are no articulated rotor joints, camera gimbal joints, arms or landing-leg actuators.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A geometric constrained route models the geofence requirement. No visual navigation or product geofence implementation is asserted. The canonical four-thrust aircraft executes the motion; all waypoint/target state is provided geometrically. No GPS, visual tracker, flight SDK, optical quality, image stitching or gimbal control is evaluated. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A virtual box spans x=[0,3], y=[-1,1], z=[0.7,2.0] m; its only entrance is a 1 m wide opening in x=0. Aircraft starts and finishes 0.5 m outside that opening; interior station is [2,0,1.2] m.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if x2 enters through the specified opening, dwells within 0.20 m of the interior station for 1 s, and exits through the same opening before returning to its start; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-GEOFENCE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan \u2014 Opening description and Quick Steps: strict boundaries and shared entry/exit location.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_boundary_crossings",
+          "metric": "forbidden_boundary_crossings",
+          "unit": "crossing",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Count any aircraft collision geom crossing a virtual box face other than the designated opening during volume entry, inspection and exit.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-GEOFENCE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan \u2014 Opening description and Quick Steps: strict boundaries and shared entry/exit location.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_position_error",
+          "metric": "terminal_position_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Maximum 3D Euclidean distance of body x2 origin from the initial airborne position during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-GEOFENCE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan \u2014 Opening description and Quick Steps: strict boundaries and shared entry/exit location.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_translation_speed",
+          "metric": "terminal_translation_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "metric_definition": "Maximum world translational speed of x2 origin during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-GEOFENCE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan \u2014 Opening description and Quick Steps: strict boundaries and shared entry/exit location.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 20,
+          "metric_definition": "Maximum angle between x2 local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 60,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-GEOFENCE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan \u2014 Opening description and Quick Steps: strict boundaries and shared entry/exit location.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any robot contact with floor, obstacles or other fixtures is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 60
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-X2-GEOFENCE",
+              "specific_reference": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan \u2014 Opening description and Quick Steps: strict boundaries and shared entry/exit location.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "X2-T20",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed geometric/task inputs vary. Empty parameters request the fixed scene and schedule. Scoring thresholds are not request inputs."
+          }
+        }
+      }
+    }
+  ]
+}

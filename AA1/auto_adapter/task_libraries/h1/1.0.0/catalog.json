@@ -1,0 +1,2923 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "h1",
+  "package_version": "1.0.0",
+  "snapshot_id": "h1-public-proposed-tasks-2026-09-13-v1",
+  "numerical_requirements_status": "local_proposed_uncalibrated",
+  "model_limitations": [
+    "The handless canonical H1 is preserved. Forearm endpoint tasks use actual collision geometry and require no added end effector.",
+    "HumanoidBench operations are rewritten as local requirements; its Shadow-Hand model, source return thresholds and exact task fixtures are not adopted.",
+    "Additional scene fixtures and controllers are not included. All numbers, deadlines and event tolerances are local proposals, not calibrated results."
+  ],
+  "tasks": [
+    {
+      "task_id": "H1-T01",
+      "name": "Sustained alternating-foot walk",
+      "description": "Walk along a level route using alternating foot support.",
+      "source_task_or_operation": "Walk along a level route using alternating foot support.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "An explicit contact-based walking requirement replaces the source return; source walking speed and 1000-step horizon are not retained. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A level 8 m long, 2 m wide corridor; requested forward speed 0.4 m/s over t=5 to 15 s; stop by 30 s.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "walking_speed_rmse",
+          "metric": "walking_speed_rmse",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.15,
+          "metric_definition": "Root-mean-square error of pelvis forward speed from 0.4 m/s over t=5 to 15 s; yaw is measured relative to initial heading.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Walk class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if each foot has at least three swing-to-stance transitions during t=5 to 15 s and at least one foot remains in contact throughout that interval; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Walk class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot-floor contacts outside the two ankle-link foot collision geoms are forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Walk class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Walk class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Walk class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T01",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T02",
+      "name": "Standing observation hold",
+      "description": "Maintain stationary biped support while waiting at an observation point.",
+      "source_task_or_operation": "Maintain stationary biped support while waiting at an observation point.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Unobstructed level floor; start at the canonical standing configuration.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "standing_planar_drift",
+          "metric": "standing_planar_drift",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "metric_definition": "Maximum pelvis planar displacement from its initial projection during the complete 30 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stand class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both ankle-link foot collision geoms remain in support contact during the complete 30 s; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stand class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Any non-foot robot-floor contact is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stand class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stand class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stand class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T02",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T03",
+      "name": "Running gait with flight",
+      "description": "Run along a level route with repeated contact-free flight intervals.",
+      "source_task_or_operation": "Run along a level route with repeated contact-free flight intervals.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A contact-based flight condition distinguishes running from merely increasing a walking command; no 5 m/s source performance claim. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A level 15 m runway; requested speed 1.2 m/s during t=5 to 12 s; stop by 30 s.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "running_speed_rmse",
+          "metric": "running_speed_rmse",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.3,
+          "metric_definition": "Root-mean-square forward pelvis-speed error from 1.2 m/s over t=5 to 12 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Run class, distinct locomotion task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "running_flight_intervals",
+          "metric": "running_flight_intervals",
+          "unit": "interval",
+          "comparator": ">=",
+          "threshold": 3,
+          "metric_definition": "Number of disjoint intervals during t=5 to 12 s with no robot-ground contact for at least 0.02 s; each must be separated from the next by foot contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Run class, distinct locomotion task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot-floor contacts outside the ankle-link feet are forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Run class, distinct locomotion task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Run class, distinct locomotion task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Run class, distinct locomotion task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T03",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T04",
+      "name": "Distal forearm reach",
+      "description": "Bring the left forearm endpoint to a three-dimensional goal while maintaining balance.",
+      "source_task_or_operation": "Bring the left forearm endpoint to a three-dimensional goal while maintaining balance.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Uses the actual terminal forearm collision-sphere center. There is no wrist or articulated hand and no grasp requirement. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A fixed target is selected near the initial left forearm endpoint, within 0.20 m, with clearance from the torso and floor.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "forearm_target_error",
+          "metric": "forearm_target_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.06,
+          "metric_definition": "Maximum 3D Euclidean error from world transform of local [0.28,0,-0.015] on left_elbow_link to target_position_m during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-REACH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/reach.py \u2014 Reach task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot-floor contacts outside the ankle-link feet are forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-REACH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/reach.py \u2014 Reach task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-REACH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/reach.py \u2014 Reach task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-REACH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/reach.py \u2014 Reach task.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T04",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_position_m"
+            ],
+            "properties": {
+              "target_position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared collision-free left-forearm goal inside the stated local neighborhood; target reachability is not guaranteed."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T05",
+      "name": "Low-hurdle crossing",
+      "description": "Pass over a transverse obstacle and recover foot support on the far floor.",
+      "source_task_or_operation": "Pass over a transverse obstacle and recover foot support on the far floor.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 0.10 m high, 0.10 m thick hurdle spans a 1.2 m corridor; side routes are blocked.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both feet pass over the hurdle and finish beyond it; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Hurdle class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the hurdle or side walls is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Hurdle class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Hurdle class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Hurdle class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T05",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T06",
+      "name": "Low-tunnel crawl",
+      "description": "Reconfigure the whole body to pass beneath an obstruction, then stand beyond it.",
+      "source_task_or_operation": "Reconfigure the whole body to pass beneath an obstruction, then stand beyond it.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Forearms, knees and other existing robot geoms may support the crawl. No added hands or attachment constraints; standing is required only at the end. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid overhead plate has 1.0 m underside height and spans 1 m of a 1.2 m wide route; both approaches are level.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if all robot collision geoms pass under the plate and finish beyond it; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Crawl class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the plate is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Crawl class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Crawl class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Crawl class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T06",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T07",
+      "name": "Multi-turn corridor navigation",
+      "description": "Reach a destination through a corridor containing multiple right-angle turns.",
+      "source_task_or_operation": "Reach a destination through a corridor containing multiple right-angle turns.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A rigid-walled 1.2 m wide corridor contains two right-angle turns and a 5 m route to the declared exit.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if the pelvis visits both corner checkpoint disks of radius 0.25 m in route order; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-MAZE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/maze.py \u2014 Maze: ordered checkpoints.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_goal_planar_error",
+          "metric": "terminal_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.2,
+          "metric_definition": "Maximum planar Euclidean distance from pelvis origin to the declared goal during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-MAZE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/maze.py \u2014 Maze: ordered checkpoints.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the corridor walls is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-MAZE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/maze.py \u2014 Maze: ordered checkpoints.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-MAZE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/maze.py \u2014 Maze: ordered checkpoints.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-MAZE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/maze.py \u2014 Maze: ordered checkpoints.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T07",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Exit goal fixed by the declared maze geometry."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T08",
+      "name": "Transfer into a supported seat",
+      "description": "Move from standing to a supported seated position on a bench.",
+      "source_task_or_operation": "Move from standing to a supported seated position on a bench.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The bench is a local fixture; actual support contact is required rather than rewarding pelvis position alone. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A fixed bench seat is 0.55 m high, 0.8 m wide and 0.6 m deep, initially behind the robot; no backrest is required.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if the hip/pelvis collision geometry contacts the seat top, both feet remain on the floor and those support conditions hold continuously in the final 2 s; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Sit class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "seated_pelvis_planar_error",
+          "metric": "seated_pelvis_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.12,
+          "metric_definition": "Maximum pelvis planar distance from the declared seat center in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Sit class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Sit class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "seated_planar_speed",
+          "metric": "seated_planar_speed",
+          "unit": "m/s",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "metric_definition": "Maximum pelvis planar speed in the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Sit class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T08",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T09",
+      "name": "Balance on a tilting board",
+      "description": "Stay on a movable support board as it tilts under load.",
+      "source_task_or_operation": "Stay on a movable support board as it tilts under load.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A passive bounded board replaces the source board/pivot assembly; this is a local balance requirement, not the source benchmark return. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 1.0 m by 0.8 m board is supported by a passive two-axis joint at 0.20 m height; rotation limits +/-5 degrees, damping 30 N m s/rad; start with both feet on it and initial board tilt 3 degrees.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if at least one foot remains supported on the board throughout the interval and both feet are on it in the final 2 s; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-BALANCE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/balance.py \u2014 BalanceBase and BalanceSimple.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the surrounding floor or support mechanism is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-BALANCE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/balance.py \u2014 BalanceBase and BalanceSimple.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-BALANCE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/balance.py \u2014 BalanceBase and BalanceSimple.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-BALANCE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/balance.py \u2014 BalanceBase and BalanceSimple.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T09",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T10",
+      "name": "Stair access to a landing",
+      "description": "Walk up a short stair flight and settle on the upper landing.",
+      "source_task_or_operation": "Walk up a short stair flight and settle on the upper landing.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Three rigid steps have 0.08 m risers, 0.40 m treads and 1.2 m width; landing supports both feet.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both feet finish on the upper landing after passing every riser; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stair class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Head or torso collision geoms touching stairs or floor are forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stair class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stair class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Stair class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T10",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T11",
+      "name": "Inclined walkway traversal",
+      "description": "Cross an inclined walkway and reach its elevated landing.",
+      "source_task_or_operation": "Cross an inclined walkway and reach its elevated landing.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Retain the inclined-surface traversal family; the source Slide geometry and speed are not imported. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A fixed 8-degree ramp is 1.5 m long and 1.2 m wide, with a level upper landing.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both feet finish on the upper landing; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Slide class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_cross_track_error",
+          "metric": "maximum_cross_track_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.25,
+          "metric_definition": "Maximum pelvis planar distance from the ramp centerline during ramp occupancy.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Slide class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Slide class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-LOCOMOTION",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/basic_locomotion_envs.py \u2014 Slide class.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T11",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T12",
+      "name": "Pole slalom",
+      "description": "Weave through an ordered line of poles without contact.",
+      "source_task_or_operation": "Weave through an ordered line of poles without contact.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "This is weaving around poles, not climbing or grasping them. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Three fixed 1.5 m tall poles of radius 0.08 m alternate about a 4 m route; successive poles are 1 m apart, with a declared alternating pass side.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "correct_pole_passes",
+          "metric": "correct_pole_passes",
+          "unit": "pole",
+          "comparator": "==",
+          "threshold": 3,
+          "metric_definition": "Number of poles passed in order on the declared alternating sides; pelvis must pass the corresponding longitudinal plane at least 0.25 m from pole center.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-POLE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/pole.py \u2014 Pole.get_reward collision treatment.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with any pole is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-POLE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/pole.py \u2014 Pole.get_reward collision treatment.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-POLE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/pole.py \u2014 Pole.get_reward collision treatment.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-POLE",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/pole.py \u2014 Pole.get_reward collision treatment.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T12",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T13",
+      "name": "Forearm tabletop push",
+      "description": "Push a tabletop object into its destination region using the left forearm.",
+      "source_task_or_operation": "Push a tabletop object into its destination region using the left forearm.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Only existing forearm collision geoms push the cube. No hand articulation, grasp, weld or copied reward. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 0.15 m cube of mass 0.5 kg rests on a 0.80 m high rigid table; its target is 0.25 m away on the same support.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if left_elbow_link collision geometry contacts the cube and the cube remains supported by the table at the deadline; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-PUSH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/push.py \u2014 Push.goal_dist and Push.get_reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "object_goal_planar_error",
+          "metric": "object_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "metric_definition": "Maximum planar cube-center distance from goal_xy_m during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-PUSH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/push.py \u2014 Push.goal_dist and Push.get_reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-PUSH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/push.py \u2014 Push.goal_dist and Push.get_reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HB-PUSH",
+              "specific_reference": "https://github.com/carlosferrazza/humanoid-bench/blob/main/humanoid_bench/envs/push.py \u2014 Push.goal_dist and Push.get_reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T13",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Cube destination on the table, satisfying the stated displacement."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T14",
+      "name": "Select and touch a target button",
+      "description": "Touch the selected contact target without touching distractors.",
+      "source_task_or_operation": "Touch the selected contact target without touching distractors.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "These are contact targets, not articulated pushbuttons. Contact selects the requested target without requiring fingers. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Three fixed spherical targets of radius 0.06 m sit on a panel at 0.95 m height, separated by 0.25 m; one index is selected.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if an existing distal forearm collision geom contacts the selected sphere; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine.goal_met for button and constrain_buttons.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with either non-selected sphere is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine.goal_met for button and constrain_buttons.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine.goal_met for button and constrain_buttons.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine.goal_met for button and constrain_buttons.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T14",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_index"
+            ],
+            "properties": {
+              "target_index": {
+                "type": "integer",
+                "unit": "index",
+                "frame": "target_set",
+                "description": "Selected target index in [0,2]."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T15",
+      "name": "Circular inspection walk",
+      "description": "Complete one circuit of a point of interest while remaining within an annular walking corridor.",
+      "source_task_or_operation": "Complete one circuit of a point of interest while remaining within an annular walking corridor.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "A full ordered circuit replaces the source continuous reward; it is not a collection of directional velocity variants. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Start on a level 1.5 m radius circle about center_xy_m; the allowed annulus extends 0.25 m either side of the circle.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "signed_circuit_progress",
+          "metric": "signed_circuit_progress",
+          "unit": "rad",
+          "comparator": ">=",
+          "threshold": 6.283185307179586,
+          "metric_definition": "Unwrapped signed pelvis azimuth about the center accumulated in the declared traversal direction; backtracking subtracts progress.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine circle task and circle reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "maximum_radius_error",
+          "metric": "maximum_radius_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.25,
+          "metric_definition": "Maximum absolute difference between pelvis planar radius and 1.5 m.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine circle task and circle reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine circle task and circle reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine circle task and circle reward.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T15",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "center_xy_m"
+            ],
+            "properties": {
+              "center_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared center of the annular route."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T16",
+      "name": "Navigate around excluded ground",
+      "description": "Reach a goal without placing either foot in excluded floor regions.",
+      "source_task_or_operation": "Reach a goal without placing either foot in excluded floor regions.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Hazards are declared geometric exclusion zones, not toxic materials or perceptually inferred terrain. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A level 3 m route contains two marked forbidden disks of radius 0.30 m; a collision-free walking path remains between and around them.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_goal_planar_error",
+          "metric": "terminal_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.2,
+          "metric_definition": "Maximum planar Euclidean distance from pelvis origin to the declared goal during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine goal task and constrain_hazards.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_foot_placements",
+          "metric": "forbidden_foot_placements",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Number of simulation steps with any foot-floor contact point inside either forbidden disk.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine goal task and constrain_hazards.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine goal task and constrain_hazards.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine goal task and constrain_hazards.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T16",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared destination beyond the excluded floor regions."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T17",
+      "name": "Cross a route with moving obstacles",
+      "description": "Reach a destination while avoiding obstacles whose positions change during the approach.",
+      "source_task_or_operation": "Reach a destination while avoiding obstacles whose positions change during the approach.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Known obstacle trajectories are task input; source lidar, moving-obstacle controller and model are not copied. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Two rigid boxes of 0.15 m half-width move along known nonintersecting circular paths of radius 0.40 m with period 8 s beside a 3 m route; a free route exists.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_goal_planar_error",
+          "metric": "terminal_goal_planar_error",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.2,
+          "metric_definition": "Maximum planar Euclidean distance from pelvis origin to the declared goal during the final 2 s.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine constrain_gremlins and moving-obstacle updates.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with either moving obstacle is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine constrain_gremlins and moving-obstacle updates.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine constrain_gremlins and moving-obstacle updates.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "https://github.com/openai/safety-gym/blob/master/safety_gym/envs/engine.py \u2014 Engine constrain_gremlins and moving-obstacle updates.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T17",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "goal_xy_m"
+            ],
+            "properties": {
+              "goal_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2,
+                "unit": "m",
+                "frame": "world",
+                "description": "Declared destination beyond the moving obstacle region."
+              }
+            },
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T18",
+      "name": "Gap leap and landing",
+      "description": "Leap across a break in the floor and establish support on the far bank.",
+      "source_task_or_operation": "Leap across a break in the floor and establish support on the far bank.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "Two level platforms have a 0.15 m gap with a catch floor 0.2 m below them.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both feet are out of support contact together for at least 0.02 s while crossing the gap, and both finish on the far bank; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Robot contact with the catch floor is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Leap.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T18",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T19",
+      "name": "Jump onto an elevated platform",
+      "description": "Jump from level ground onto a raised platform and settle with both feet on top.",
+      "source_task_or_operation": "Jump from level ground onto a raised platform and settle with both feet on top.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "The flight event distinguishes this task from stair climbing; the proposed platform height is not the source demonstration height. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A fixed 0.12 m high, 1.2 m by 1.2 m platform stands ahead with no stairs or side access.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if a contact-free flight interval of at least 0.02 s precedes first platform contact, and both feet remain supported on the top throughout the final 2 s; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Jump Up.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Head or torso contact with the platform is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Jump Up.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Jump Up.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Jump Up.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T19",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    },
+    {
+      "task_id": "H1-T20",
+      "name": "Uneven outdoor-route traversal",
+      "description": "Traverse a patch of irregular rigid terrain and regain stable support.",
+      "source_task_or_operation": "Traverse a patch of irregular rigid terrain and regain stable support.",
+      "applicability": "Local h1.xml is a free-base biped with 19 torque motors, five joints per leg, one torso joint and four joints per arm. There are no articulated hands or wrists; feet are collision geoms on left_ankle_link and right_ankle_link.  Task applicability is not a reachability or success claim.",
+      "adaptation": "Rigid height variation represents uneven footing only; the task does not claim outdoor perception or sim-to-real performance. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+      "scene_assumptions": [
+        "A 2 m by 1.2 m terrain patch has fixed heights from 0.02 to 0.06 m with level approach and exit.",
+        "The checked stock scene contains only the robot and a plane. Any fixtures, terrain, objects or scheduled events described here are requirements for a future task scene and are not supplied by this package. Robot morphology, actuators and collision geometry remain the canonical model."
+      ],
+      "observation_assumptions": [
+        "Use MuJoCo state, forward kinematics, collision contacts and simulation time. Goals, routes and fixture state are declared task inputs; onboard perception or a navigation SDK is not assumed."
+      ],
+      "scoring": [
+        {
+          "clause_id": "completed_operation",
+          "metric": "completed_operation",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "metric_definition": "1 only if both feet finish beyond the uneven patch; otherwise 0.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "at_final_time",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Robust Walking and outdoor demonstrations.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "forbidden_contact_samples",
+          "metric": "forbidden_contact_samples",
+          "unit": "sample",
+          "comparator": "==",
+          "threshold": 0,
+          "metric_definition": "Head or torso touching terrain is forbidden. Count simulation steps with at least one such contact.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "throughout",
+            "max_duration_s": 30
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Robust Walking and outdoor demonstrations.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_body_tilt",
+          "metric": "terminal_body_tilt",
+          "unit": "deg",
+          "comparator": "<=",
+          "threshold": 25,
+          "metric_definition": "Maximum angle between torso_link local +z and world +z during the final 2 s; no Euler-yaw contribution.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Robust Walking and outdoor demonstrations.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        },
+        {
+          "clause_id": "terminal_pelvis_clearance",
+          "metric": "terminal_pelvis_clearance",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.65,
+          "metric_definition": "Minimum pelvis-origin height above the declared local support surface during the final 2 s. The surface is floor, landing or support board as applicable.",
+          "threshold_provenance": "Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance.",
+          "temporal": {
+            "kind": "final_window",
+            "max_duration_s": 30,
+            "window_duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HUMANOID-PARKOUR",
+              "specific_reference": "https://humanoid4parkour.github.io/ \u2014 Robust Walking and outdoor demonstrations.",
+              "support": "adapted",
+              "adaptation": "Operation motivation only. Local proposed requirement, uncalibrated. The source supports the operation family only; this threshold, its time window and all scene dimensions below are not source success limits or demonstrated performance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "H1-T20",
+          "task_parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {},
+            "additional_properties": false,
+            "description": "Only listed task inputs vary; an empty object requests the fixed scene described above. Scoring limits are not request parameters."
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "skydio_x2",
+  "package_version": "1.0.0",
+  "sources": [
+    {
+      "source_id": "SRC-MENAGERIE-X2",
+      "title": "MuJoCo Menagerie Skydio X2 model",
+      "organization": "Google DeepMind",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://github.com/google-deepmind/mujoco_menagerie/tree/main/skydio_x2",
+      "specific_reference": "Model origin only. Local authority: AA1/assets/mjcf/skydio_x2/x2.xml and scene.xml; free body x2, four site-thrust motors, nonnegative control range 0..13, alternating yaw torque, IMU. The track camera is a viewer, not an actuated aircraft camera."
+    },
+    {
+      "source_id": "SRC-X2-2D",
+      "title": "How to use 2D Capture with Skydio 3D Scan",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4403006753179-How-to-use-2D-Capture-with-Skydio-3D-Scan",
+      "specific_reference": "Step 3 Launch, Step 4 Rally Point and scan workflow: bounded surface coverage."
+    },
+    {
+      "source_id": "SRC-X2-EMERGENCY",
+      "title": "Understanding Skydio X2 emergency behaviors",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4407974255515-Understanding-Skydio-X2-emergency-behaviors",
+      "specific_reference": "Set Return Behaviors: return height, transit, hover and land; battery and connection behaviors."
+    },
+    {
+      "source_id": "SRC-X2-SIGNAL",
+      "title": "What happens when Skydio X2 loses signal?",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/17250457819163-What-happens-when-Skydio-X2-loses-signal",
+      "specific_reference": "Lost-connection behavior and waiting/hovering before return."
+    },
+    {
+      "source_id": "SRC-X2-WAYPOINT",
+      "title": "How to use Skydio X2E Waypoints skill",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/1260805235150-How-to-use-Skydio-X2E-Waypoints-skill",
+      "specific_reference": "Quick Steps: ordered waypoints, altitude and heading settings; mission completion hover."
+    },
+    {
+      "source_id": "SRC-X2-KEYFRAME",
+      "title": "How to use Skydio X2E KeyFrame skill",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4414023709723-How-to-use-Skydio-X2E-KeyFrame-skill",
+      "specific_reference": "Quick Steps and playback: continuous custom spline path and slowing around turns."
+    },
+    {
+      "source_id": "SRC-X2-ORBIT",
+      "title": "How to use Skydio X2E Orbit Point skill",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/1260805186090-How-to-use-Skydio-X2E-Orbit-Point-skill",
+      "specific_reference": "Flight Skill - Orbit Point: circular flight around a selected point of interest."
+    },
+    {
+      "source_id": "SRC-X2-TRACK",
+      "title": "How to use Skydio X2E Track in Place skill",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/1260805234130-How-to-use-Skydio-X2E-Track-in-Place-skill",
+      "specific_reference": "Flight Skill - Track: fixed-position tracking of a moving subject."
+    },
+    {
+      "source_id": "SRC-X2-SCOUT",
+      "title": "How to use the Scout Skill on Skydio X2E",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/8133162052379-How-to-use-the-Scout-Skill-on-Skydio-X2E",
+      "specific_reference": "Scout settings: subject-relative positioning and subject-height behavior."
+    },
+    {
+      "source_id": "SRC-X2-PANORAMA",
+      "title": "What is the Panorama Skill?",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/10254175302555-What-is-the-Panorama-Skill",
+      "specific_reference": "How to use Panorama: horizontal acquisition and return to original yaw after capture."
+    },
+    {
+      "source_id": "SRC-X2-STOP",
+      "title": "How to use Stop at Structure on Skydio X2",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/14993795011483-How-to-use-Stop-at-Structure-on-Skydio-X2",
+      "specific_reference": "Opening description: slow and hold position near a structure rather than diverting."
+    },
+    {
+      "source_id": "SRC-X2-AVOID",
+      "title": "How to adjust Obstacle Avoidance on Skydio X2",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/12902885365019-How-to-adjust-Obstacle-Avoidance-on-Skydio-X2",
+      "specific_reference": "Obstacle Avoidance: controlling flight near obstacles. Public mode distances are not adopted."
+    },
+    {
+      "source_id": "SRC-X2-HEIGHT",
+      "title": "Understanding Skydio X2E Height Limits",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4408046834331-Understanding-Skydio-X2E-Height-Limits",
+      "specific_reference": "Height settings restrict vertical flight. These product settings are not legal altitude limits or local simulator performance."
+    },
+    {
+      "source_id": "SRC-X2-TOWER",
+      "title": "How to use Tower Capture with Skydio 3D Scan",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/5049637379355-How-to-use-Tower-Capture-with-Skydio-3D-Scan",
+      "specific_reference": "Tower Capture workflow: Floor, Ceiling, boundaries, exploration and scanning a vertical structure."
+    },
+    {
+      "source_id": "SRC-X2-3D",
+      "title": "How to use 3D Capture with Skydio 3D Scan",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4402964028571-How-to-use-3D-Capture-with-Skydio-3D-Scan",
+      "specific_reference": "3D Capture workflow: volume bounds, exploration, scan settings and surface acquisition."
+    },
+    {
+      "source_id": "SRC-X2-UNDERSIDE",
+      "title": "How to scan the underside of a structure",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/8306299066907-How-to-scan-the-underside-of-a-structure",
+      "specific_reference": "Upward Capture and Bridge use case example: position the aircraft below the scan surface."
+    },
+    {
+      "source_id": "SRC-X2-TRIANGULATION",
+      "title": "How to Use the Triangulation Skill on Skydio X2",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/12587703600923-How-to-Use-the-Triangulation-Skill-on-Skydio-X2",
+      "specific_reference": "Quick Steps 3-5: orient to a point of interest and fly laterally to acquire a baseline."
+    },
+    {
+      "source_id": "SRC-X2-RESUME",
+      "title": "Scanning with multiple batteries in 3D Scan",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4402419015067-Scanning-with-multiple-batteries-in-3D-Scan",
+      "specific_reference": "Resume scanning; return to Launch/Rally Point during interruptions."
+    },
+    {
+      "source_id": "SRC-X2-GEOFENCE",
+      "title": "How to use Visual Geofencing in 3D Scan",
+      "organization": "Skydio",
+      "version_or_date": "accessed 2026-09-13; live page, no revision pin claimed",
+      "locator": "https://support.skydio.com/hc/en-us/articles/4402400480411-How-to-use-Visual-Geofencing-in-3D-Scan",
+      "specific_reference": "Opening description and Quick Steps: strict floor, ceiling and walls; shared entry/exit location."
+    }
+  ]
+}

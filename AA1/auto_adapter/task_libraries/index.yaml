@@ -14,13 +14,17 @@ libraries:
   aloha_2: aloha_2/1.0.0
   unitree_a1: unitree_a1/1.0.0
   anybotics_anymal_c: anybotics_anymal_c/1.0.0
+  h1: h1/1.0.0
+  skydio_x2: skydio_x2/1.0.0
   google_barkour_vb: google_barkour_vb/1.0.0
   unitree_g1: unitree_g1/1.0.0
 robots:
   piper: piper
+  piper_push: piper  # Same piper.xml, with task objects added to the scene.
   menagerie_so101: robotstudio_so101
   go2: unitree-go2-stock-12dof
   franka: franka_panda
+  franka_push: franka_panda  # Same panda.xml, with task objects added.
   kuka_iiwa14: kuka_iiwa_14
   ufactory_xarm7: ufactory_xarm7
   kinova_gen3_robotiq_2f85: kinova_gen3_robotiq_2f85
@@ -30,3 +34,8 @@ robots:
   aloha_2: aloha_2
   unitree_a1: unitree_a1
   anymal_c: anybotics_anymal_c
+  h1: h1
+  skydio_x2: skydio_x2
+# G1/Barkour packages are retained without inventing absent AA1 model bindings.
+# Legacy so101/so101_push and bare ur5e cannot reuse full gripper task packages;
+# see COMPLETION_NOTES.md for the actual collision/gripper differences.
