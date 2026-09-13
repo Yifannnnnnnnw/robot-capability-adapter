@@ -1,0 +1,151 @@
+{
+  "robot_configuration_id": "piper",
+  "criteria": [
+    {
+      "criterion_id": "ee_position_error",
+      "metric": "Euclidean distance from ee_site to target_position at terminal state",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal"
+      },
+      "aggregation": {
+        "kind": "last"
+      },
+      "rationale": "Adapted from Meta-World sawyer_reach_v3 success criterion: reach_dist <= 0.05 m (actual_study: metaworld/envs/sawyer_reach_v3.py lines 74-98).",
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 74-98: success is reach_dist <= 0.05.",
+          "support": "adapted"
+        }
+      ],
+      "capability_id": "move_to_position",
+      "method_name": "move_to_position",
+      "criterion_index": 0
+    },
+    {
+      "criterion_id": "gripper_joint_error",
+      "metric": "Absolute error of joint7 position from target_opening at terminal state",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.003,
+      "temporal": {
+        "kind": "terminal"
+      },
+      "aggregation": {
+        "kind": "last"
+      },
+      "rationale": "proposed: 3 mm tolerance on a 35 mm travel slide gripper (~8.6% of full range), consistent with position-controlled actuator settling.",
+      "source_refs": [
+        {
+          "source_id": "proposed",
+          "specific_reference": "Proposed 3 mm tolerance on joint7 slide position (35 mm range); no direct Meta-World gripper position criterion exists.",
+          "support": "proposed"
+        }
+      ],
+      "capability_id": "set_gripper_aperture",
+      "method_name": "set_gripper_aperture",
+      "criterion_index": 0
+    },
+    {
+      "criterion_id": "wrist_roll_error",
+      "metric": "Absolute error of joint6 position from target_angle at terminal state",
+      "unit": "rad",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal"
+      },
+      "aggregation": {
+        "kind": "last"
+      },
+      "rationale": "proposed: 0.05 rad (~2.9 deg) wrist-roll positioning tolerance for grasp alignment tasks (pick-place, bin-picking).",
+      "source_refs": [
+        {
+          "source_id": "proposed",
+          "specific_reference": "Proposed 0.05 rad tolerance on joint6 wrist-roll; derived from grasp alignment requirements in mw_pick_place and mw_bin_picking.",
+          "support": "proposed"
+        }
+      ],
+      "capability_id": "set_wrist_roll",
+      "method_name": "set_wrist_roll",
+      "criterion_index": 0
+    },
+    {
+      "criterion_id": "ordered_waypoints_error",
+      "metric": "Ordered trajectory matching: ee_site visits all provided waypoints in order; terminal error to final waypoint",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal"
+      },
+      "aggregation": {
+        "kind": "last"
+      },
+      "rationale": "proposed: 0.05 m terminal error at final waypoint, consistent with Meta-World reach/push/pick-place thresholds. Ordered traversal required for wall-routing tasks (mw_push_wall, mw_pick_place_wall, mw_door_open, mw_faucet_open, mw_dial_turn, mw_lever_pull).",
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_push_wall_v3.py evaluate_state and sawyer_pick_place_wall_v3.py evaluate_state: ordered routing around obstacle required before terminal placement.",
+          "support": "adapted"
+        }
+      ],
+      "capability_id": "traverse_waypoints",
+      "method_name": "traverse_waypoints",
+      "criterion_index": 0
+    },
+    {
+      "criterion_id": "tool_target_position_error",
+      "metric": "Euclidean distance from ee_site to tool_target_position at terminal state",
+      "unit": "m",
+      "comparator": "<=",
+      "threshold": 0.05,
+      "temporal": {
+        "kind": "terminal"
+      },
+      "aggregation": {
+        "kind": "last"
+      },
+      "rationale": "proposed: 0.05 m terminal ee_site error at tool_target_position, consistent with Meta-World push/button/handle/drawer thresholds.",
+      "source_refs": [
+        {
+          "source_id": "metaworld_repo",
+          "specific_reference": "metaworld/envs/sawyer_push_v3.py evaluate_state lines 88-112; sawyer_button_press_v3.py evaluate_state lines 60-82; sawyer_handle_press_v3.py evaluate_state lines 64-86.",
+          "support": "adapted"
+        }
+      ],
+      "capability_id": "apply_contact_displacement",
+      "method_name": "apply_contact_displacement",
+      "criterion_index": 0
+    },
+    {
+      "criterion_id": "contact_force_generated",
+      "metric": "Peak contact normal force between ee geoms and scene object during displacement phase",
+      "unit": "N",
+      "comparator": ">=",
+      "threshold": 0.5,
+      "temporal": {
+        "kind": "window",
+        "start_s": 0.5,
+        "end_s": 4.0
+      },
+      "aggregation": {
+        "kind": "max"
+      },
+      "rationale": "proposed: at least 0.5 N peak contact normal force confirms physical contact was made during the displacement. Threshold is conservative for a lightweight tabletop object.",
+      "source_refs": [
+        {
+          "source_id": "proposed",
+          "specific_reference": "Proposed 0.5 N minimum peak contact force to confirm physical contact during push/press/sweep motions.",
+          "support": "proposed"
+        }
+      ],
+      "capability_id": "apply_contact_displacement",
+      "method_name": "apply_contact_displacement",
+      "criterion_index": 1
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "token_usage": {
+    "in": 1078794,
+    "out": 21861,
+    "cache_read": 0
+  },
+  "duration_sec": 234.70820808410645,
+  "trace_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/trace.jsonl",
+  "error": null,
+  "scene_paths": {
+    "scene_empty": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_empty/scene.xml",
+    "scene_contact_box": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_contact_box/scene.xml"
+  },
+  "scene_cases_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scene_cases.yaml",
+  "probe_report_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/probe_report.json"
+}

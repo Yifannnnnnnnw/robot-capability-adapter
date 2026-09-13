@@ -1,0 +1,43 @@
+[
+  {
+    "scene_id": "scene_empty",
+    "case_id": "case_move_to_position",
+    "actual_mjcf": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_empty/scene.xml",
+    "image": "/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/scene-images-r2/scene_empty.png",
+    "sim_time_s": 0.5000000000000003,
+    "nq": 8,
+    "nu": 7,
+    "ngeom": 89,
+    "request": {
+      "target_position": [
+        0.45,
+        0.1,
+        0.35
+      ],
+      "duration_s": 3.0
+    }
+  },
+  {
+    "scene_id": "scene_contact_box",
+    "case_id": "case_apply_contact_displacement_pos",
+    "actual_mjcf": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_contact_box/scene.xml",
+    "image": "/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/scene-images-r2/scene_contact_box.png",
+    "sim_time_s": 0.5000000000000003,
+    "nq": 8,
+    "nu": 7,
+    "ngeom": 90,
+    "request": {
+      "contact_position": [
+        0.5,
+        0.0,
+        0.36
+      ],
+      "tool_target_position": [
+        0.5,
+        0.0,
+        0.3
+      ],
+      "duration_s": 4.0
+    }
+  }
+]

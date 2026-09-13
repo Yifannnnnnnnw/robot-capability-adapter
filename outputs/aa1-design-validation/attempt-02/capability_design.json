@@ -1,0 +1,588 @@
+{
+  "robot_configuration_id": "piper",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "piper-metaworld-source-protocols-2026-08-20-v1",
+  "capabilities": [
+    {
+      "capability_id": "move_to_position",
+      "method_name": "move_to_position",
+      "description": "Move the Piper end-effector site (ee_site) to a specified world-frame Cartesian position. Single terminal effect; no object interaction assumed.",
+      "effect": "ee_site reaches target_position within tolerance at end of motion.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_position"
+        ],
+        "properties": {
+          "target_position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0.1
+          }
+        }
+      },
+      "preconditions": [
+        "target_position is within the Piper reachable workspace.",
+        "No joint is at a hard limit that would prevent IK convergence."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect"
+      },
+      "invariants": [
+        "joint1..joint6 remain within their ctrlrange throughout motion.",
+        "joint7 (gripper) state is not modified by this capability."
+      ],
+      "failure_behavior": "Returns False and holds last joint configuration if IK fails or target is unreachable.",
+      "criteria": [
+        {
+          "criterion_id": "ee_position_error",
+          "metric": "Euclidean distance from ee_site to target_position at terminal state",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal"
+          },
+          "aggregation": {
+            "kind": "last"
+          },
+          "rationale": "Adapted from Meta-World sawyer_reach_v3 success criterion: reach_dist <= 0.05 m (actual_study: metaworld/envs/sawyer_reach_v3.py lines 74-98).",
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 74-98: success is reach_dist <= 0.05.",
+              "support": "adapted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "set_gripper_aperture",
+      "method_name": "set_gripper_aperture",
+      "description": "Set the Piper gripper slide-position (joint7 actuator 'gripper') to a specified opening in metres. joint8 follows passively via equality constraint joint8 = -joint7.",
+      "effect": "joint7 reaches target_opening within tolerance; joint8 mirrors it.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_opening"
+        ],
+        "properties": {
+          "target_opening": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 0.035
+          },
+          "settle_s": {
+            "type": "number",
+            "minimum": 0.0
+          }
+        }
+      },
+      "preconditions": [
+        "target_opening is in [0.0, 0.035] m.",
+        "Arm is in a stable configuration (not mid-motion)."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect"
+      },
+      "invariants": [
+        "joint7 stays within [0.0, 0.035] m.",
+        "joint8 = -joint7 via equality constraint at all times.",
+        "Arm joint positions (joint1-joint6) are not modified."
+      ],
+      "failure_behavior": "Clamps target_opening to [0.0, 0.035] and applies clamped value; logs warning.",
+      "criteria": [
+        {
+          "criterion_id": "gripper_joint_error",
+          "metric": "Absolute error of joint7 position from target_opening at terminal state",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.003,
+          "temporal": {
+            "kind": "terminal"
+          },
+          "aggregation": {
+            "kind": "last"
+          },
+          "rationale": "proposed: 3 mm tolerance on a 35 mm travel slide gripper (~8.6% of full range), consistent with position-controlled actuator settling.",
+          "source_refs": [
+            {
+              "source_id": "proposed",
+              "specific_reference": "Proposed 3 mm tolerance on joint7 slide position (35 mm range); no direct Meta-World gripper position criterion exists.",
+              "support": "proposed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "set_wrist_roll",
+      "method_name": "set_wrist_roll",
+      "description": "Set Piper joint6 (wrist roll) to a specified angle in radians while holding all other arm joints fixed.",
+      "effect": "joint6 reaches target_angle within tolerance.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_angle"
+        ],
+        "properties": {
+          "target_angle": {
+            "type": "number",
+            "minimum": -3.14159,
+            "maximum": 3.14159
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0.1
+          }
+        }
+      },
+      "preconditions": [
+        "target_angle is within joint6 ctrlrange [-3.14, 3.14] rad.",
+        "Arm is in a stable configuration."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect"
+      },
+      "invariants": [
+        "joint6 stays within [-3.14, 3.14] rad.",
+        "joint1-joint5 positions are not modified by this capability.",
+        "Gripper state is not modified."
+      ],
+      "failure_behavior": "Clamps target_angle to ctrlrange and applies clamped value; logs warning.",
+      "criteria": [
+        {
+          "criterion_id": "wrist_roll_error",
+          "metric": "Absolute error of joint6 position from target_angle at terminal state",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal"
+          },
+          "aggregation": {
+            "kind": "last"
+          },
+          "rationale": "proposed: 0.05 rad (~2.9 deg) wrist-roll positioning tolerance for grasp alignment tasks (pick-place, bin-picking).",
+          "source_refs": [
+            {
+              "source_id": "proposed",
+              "specific_reference": "Proposed 0.05 rad tolerance on joint6 wrist-roll; derived from grasp alignment requirements in mw_pick_place and mw_bin_picking.",
+              "support": "proposed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "traverse_waypoints",
+      "method_name": "traverse_waypoints",
+      "description": "Move ee_site through an ordered sequence of up to four world-frame Cartesian waypoints. Each waypoint is visited in order before proceeding to the next.",
+      "effect": "ee_site visits waypoint_1, then waypoint_2 (if provided), then waypoint_3 (if provided), then waypoint_4 (if provided) in order.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "waypoint_1"
+        ],
+        "properties": {
+          "waypoint_1": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "waypoint_2": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "waypoint_3": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "waypoint_4": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0.1
+          }
+        }
+      },
+      "preconditions": [
+        "All provided waypoints are within the Piper reachable workspace.",
+        "Waypoints are provided in the order they must be visited."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect"
+      },
+      "invariants": [
+        "joint1..joint6 remain within ctrlrange throughout.",
+        "Waypoints are visited strictly in order: waypoint_1 before waypoint_2 before waypoint_3 before waypoint_4.",
+        "Gripper state is not modified by this capability."
+      ],
+      "failure_behavior": "Stops at the last successfully reached waypoint and returns False if any waypoint is unreachable.",
+      "criteria": [
+        {
+          "criterion_id": "ordered_waypoints_error",
+          "metric": "Ordered trajectory matching: ee_site visits all provided waypoints in order; terminal error to final waypoint",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal"
+          },
+          "aggregation": {
+            "kind": "last"
+          },
+          "rationale": "proposed: 0.05 m terminal error at final waypoint, consistent with Meta-World reach/push/pick-place thresholds. Ordered traversal required for wall-routing tasks (mw_push_wall, mw_pick_place_wall, mw_door_open, mw_faucet_open, mw_dial_turn, mw_lever_pull).",
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_wall_v3.py evaluate_state and sawyer_pick_place_wall_v3.py evaluate_state: ordered routing around obstacle required before terminal placement.",
+              "support": "adapted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capability_id": "apply_contact_displacement",
+      "method_name": "apply_contact_displacement",
+      "description": "Move ee_site to a contact_position and then continue to a tool_target_position, maintaining contact force throughout. Used for pressing, pushing, and sweeping motions.",
+      "effect": "ee_site reaches contact_position, then moves to tool_target_position; contact normal force is generated during the displacement phase.",
+      "request_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contact_position",
+          "tool_target_position"
+        ],
+        "properties": {
+          "contact_position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "tool_target_position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0.1
+          }
+        }
+      },
+      "preconditions": [
+        "contact_position and tool_target_position are within the Piper reachable workspace.",
+        "A scene object or fixture is present at or near contact_position to generate contact force."
+      ],
+      "temporal_semantics": {
+        "kind": "bounded_terminal_effect"
+      },
+      "invariants": [
+        "joint1..joint6 remain within ctrlrange throughout.",
+        "ee_site visits contact_position before tool_target_position.",
+        "Gripper state is not modified by this capability."
+      ],
+      "failure_behavior": "Returns False if contact_position or tool_target_position is unreachable; holds last configuration.",
+      "criteria": [
+        {
+          "criterion_id": "tool_target_position_error",
+          "metric": "Euclidean distance from ee_site to tool_target_position at terminal state",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal"
+          },
+          "aggregation": {
+            "kind": "last"
+          },
+          "rationale": "proposed: 0.05 m terminal ee_site error at tool_target_position, consistent with Meta-World push/button/handle/drawer thresholds.",
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_v3.py evaluate_state lines 88-112; sawyer_button_press_v3.py evaluate_state lines 60-82; sawyer_handle_press_v3.py evaluate_state lines 64-86.",
+              "support": "adapted"
+            }
+          ]
+        },
+        {
+          "criterion_id": "contact_force_generated",
+          "metric": "Peak contact normal force between ee geoms and scene object during displacement phase",
+          "unit": "N",
+          "comparator": ">=",
+          "threshold": 0.5,
+          "temporal": {
+            "kind": "window",
+            "start_s": 0.5,
+            "end_s": 4.0
+          },
+          "aggregation": {
+            "kind": "max"
+          },
+          "rationale": "proposed: at least 0.5 N peak contact normal force confirms physical contact was made during the displacement. Threshold is conservative for a lightweight tabletop object.",
+          "source_refs": [
+            {
+              "source_id": "proposed",
+              "specific_reference": "Proposed 0.5 N minimum peak contact force to confirm physical contact during push/press/sweep motions.",
+              "support": "proposed"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "task_support": [
+    {
+      "task_id": "mw_reach_target",
+      "capability_id": "move_to_position",
+      "rationale": "Direct reach: move ee_site to target_position; criterion matches source 0.05 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Push: contact object then displace ee to tool_target_position; source 0.05 m object-goal threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "capability_id": "move_to_position",
+      "rationale": "Approach phase: position ee_site at contact_position before push."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "move_to_position",
+      "rationale": "Approach and release phases: move ee_site to grasp_position and release_position."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Grasp and release: set gripper to grasp_gripper (closed) then open for release."
+    },
+    {
+      "task_id": "mw_pick_place",
+      "capability_id": "set_wrist_roll",
+      "rationale": "Wrist alignment: set joint6 to grasp_wrist_roll before grasping object."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Route around wall: ordered waypoints (grasp, lift, route_position, release_position) required (actual_study)."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Grasp and release: gripper control for pick-place-wall."
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "capability_id": "set_wrist_roll",
+      "rationale": "Wrist alignment for grasp in pick-place-wall."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Route around wall: ordered waypoints for push-wall routing (actual_study)."
+    },
+    {
+      "task_id": "mw_push_wall",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Contact push phase after routing around wall."
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Sweep: contact object and displace to tool_target_position; source 0.05 m object-goal threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Pull drawer: contact handle and displace to tool_target_position; source 0.03 m handle error (actual_study)."
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Push drawer closed: contact and displace; source 0.065 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_button_press",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Press button: contact and displace along y-axis; source 0.02 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Top-down press: contact and displace along z-axis; source 0.024 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_handle_press",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Press handle: contact and displace; source 0.02 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Pull handle: contact and displace; source 0.05 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Door open: ordered waypoints for arc motion; source 0.08 m x-axis error (actual_study)."
+    },
+    {
+      "task_id": "mw_door_open",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Contact and push/pull door handle during open motion."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Door close: ordered waypoints for arc motion around hinge."
+    },
+    {
+      "task_id": "mw_door_close",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Contact and push door to closed position; source 0.08 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Faucet open: ordered waypoints for rotary handle approach and turn; source 0.07 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Contact faucet handle and displace through rotation arc."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Dial turn: ordered waypoints for rotary contact approach and arc; source 0.07 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Contact dial and displace through turn arc."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Lever pull: ordered waypoints for approach, contact, and pull arc; source pi/24 rad threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "capability_id": "apply_contact_displacement",
+      "rationale": "Contact lever and displace through pull arc."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Peg insertion: ordered waypoints for grasp, align, route, insert; source 0.07 m weighted threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Grasp peg before insertion."
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "capability_id": "set_wrist_roll",
+      "rationale": "Wrist alignment for peg orientation during insertion."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Bin picking: ordered waypoints for approach, grasp, extract, place; source 0.05 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Grasp object in bin and release at target."
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "capability_id": "set_wrist_roll",
+      "rationale": "Wrist alignment for bin grasp orientation."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "traverse_waypoints",
+      "rationale": "Pick out of hole: ordered waypoints for descent, grasp, extract, place; source 0.07 m threshold (actual_study)."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "set_gripper_aperture",
+      "rationale": "Grasp object in hole and release at target."
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "capability_id": "set_wrist_roll",
+      "rationale": "Wrist alignment for hole grasp orientation."
+    }
+  ],
+  "artifact_type": "capability_design",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)",
+    "request_required": [
+      "request"
+    ]
+  },
+  "task_ids": [
+    "mw_reach_target",
+    "mw_push_to_goal",
+    "mw_pick_place",
+    "mw_pick_place_wall",
+    "mw_push_wall",
+    "mw_sweep_into_goal",
+    "mw_drawer_open",
+    "mw_drawer_close",
+    "mw_button_press",
+    "mw_button_press_topdown",
+    "mw_handle_press",
+    "mw_handle_pull",
+    "mw_door_open",
+    "mw_door_close",
+    "mw_faucet_open",
+    "mw_dial_turn",
+    "mw_lever_pull",
+    "mw_peg_insertion_side",
+    "mw_bin_picking",
+    "mw_pick_out_of_hole"
+  ]
+}

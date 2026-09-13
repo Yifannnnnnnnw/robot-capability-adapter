@@ -1,0 +1,156 @@
+scenes:
+  scene_empty:
+    objects: []
+
+  scene_contact_box:
+    objects:
+      - name: contact_target
+        motion: fixed
+        shape: box
+        size_m: [0.05, 0.05, 0.05]
+        position_m: [0.5, 0.0, 0.28]
+        quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]
+        friction: [1.0, 0.005, 0.0001]
+
+cases:
+  - case_id: case_move_to_position
+    scene: scene_empty
+    capability_id: move_to_position
+    request:
+      target_position: [0.45, 0.10, 0.35]
+      duration_s: 3.0
+    initial_state:
+      robot:
+        keyframe: home
+        qpos_by_joint: {}
+      free_bodies: {}
+      ctrl_by_actuator: {}
+      settle_s: 0.5
+    execution:
+      max_sim_time_s: 6.0
+      wall_timeout_s: 60.0
+    measurements:
+      - criterion_index: 0
+        operator: site_position_error
+        bindings:
+          site: ee_site
+          target_request_field: target_position
+
+  - case_id: case_set_gripper_aperture
+    scene: scene_empty
+    capability_id: set_gripper_aperture
+    request:
+      target_opening: 0.025
+      settle_s: 0.5
+    initial_state:
+      robot:
+        keyframe: home
+        qpos_by_joint: {}
+      free_bodies: {}
+      ctrl_by_actuator: {}
+      settle_s: 0.3
+    execution:
+      max_sim_time_s: 4.0
+      wall_timeout_s: 30.0
+    measurements:
+      - criterion_index: 0
+        operator: joint_position_error
+        bindings:
+          joint: joint7
+          target_request_field: target_opening
+
+  - case_id: case_set_wrist_roll
+    scene: scene_empty
+    capability_id: set_wrist_roll
+    request:
+      target_angle: 1.0
+      duration_s: 1.5
+    initial_state:
+      robot:
+        keyframe: home
+        qpos_by_joint: {}
+      free_bodies: {}
+      ctrl_by_actuator: {}
+      settle_s: 0.3
+    execution:
+      max_sim_time_s: 5.0
+      wall_timeout_s: 30.0
+    measurements:
+      - criterion_index: 0
+        operator: joint_position_error
+        bindings:
+          joint: joint6
+          target_request_field: target_angle
+
+  - case_id: case_traverse_waypoints
+    scene: scene_empty
+    capability_id: traverse_waypoints
+    request:
+      waypoint_1: [0.50, 0.00, 0.45]
+      waypoint_2: [0.45, 0.15, 0.40]
+      waypoint_3: [0.40, 0.00, 0.35]
+      duration_s: 2.5
+    initial_state:
+      robot:
+        keyframe: home
+        qpos_by_joint: {}
+      free_bodies: {}
+      ctrl_by_actuator: {}
+      settle_s: 0.5
+    execution:
+      max_sim_time_s: 12.0
+      wall_timeout_s: 90.0
+    measurements:
+      - criterion_index: 0
+        operator: ordered_site_targets_error
+        bindings:
+          site: ee_site
+          target_request_fields: [waypoint_1, waypoint_2, waypoint_3]
+
+  - case_id: case_apply_contact_displacement_pos
+    scene: scene_contact_box
+    capability_id: apply_contact_displacement
+    request:
+      contact_position: [0.50, 0.00, 0.36]
+      tool_target_position: [0.50, 0.00, 0.30]
+      duration_s: 4.0
+    initial_state:
+      robot:
+        keyframe: home
+        qpos_by_joint: {}
+      free_bodies: {}
+      ctrl_by_actuator: {}
+      settle_s: 0.5
+    execution:
+      max_sim_time_s: 10.0
+      wall_timeout_s: 90.0
+    measurements:
+      - criterion_index: 0
+        operator: site_position_error
+        bindings:
+          site: ee_site
+          target_request_field: tool_target_position
+
+  - case_id: case_apply_contact_displacement_force
+    scene: scene_contact_box
+    capability_id: apply_contact_displacement
+    request:
+      contact_position: [0.50, 0.00, 0.36]
+      tool_target_position: [0.50, 0.00, 0.30]
+      duration_s: 4.0
+    initial_state:
+      robot:
+        keyframe: home
+        qpos_by_joint: {}
+      free_bodies: {}
+      ctrl_by_actuator: {}
+      settle_s: 0.5
+    execution:
+      max_sim_time_s: 10.0
+      wall_timeout_s: 90.0
+    measurements:
+      - criterion_index: 1
+        operator: contact_normal_force
+        bindings:
+          geom1: aa1_robot_geom_84
+          geom2: contact_target

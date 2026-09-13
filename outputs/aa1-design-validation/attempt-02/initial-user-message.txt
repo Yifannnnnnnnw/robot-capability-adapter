@@ -1,0 +1,12 @@
+Read both inputs with read_file before writing:
+robot_configuration_id: piper
+study_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/study/piper/study.json
+catalog_path: /Users/wangyifan/Projects/auto_adapter2.0/AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json
+actual_mjcf_path: /Users/wangyifan/Projects/auto_adapter2.0/AA1/assets/mjcf/piper/scene.xml
+skeleton_context_path: /private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/skeleton_context.json
+Use the catalog task descriptions, scoring, and task-local source_refs.
+Ignore legacy task invocation_schema and request_envelope when defining the capability interface.
+This is DESIGN mode: write a complete JSON design with write_file at draft/capability_design.json, then write the complete scene/case suite at draft/scene_cases.yaml. Start append=false for each file; use append=true only for remaining chunks of that same file.
+Response budget: max_iters=30. Batch-read the supplied study, catalog, and optional skeleton_context early; use bounded local_exec exploration only for concrete MJCF questions. Budget enough responses for both draft files, probe_case reports, corrections, and a clean end_turn.
+Use the exact scene/case schema and supported operators in the system documentation. Cover every criterion of every capability with at least one case, then probe each case with probe_case.
+Keep the root robot_configuration_id equal to the AA1 ID above. Do not write reports or canonical outputs yourself.

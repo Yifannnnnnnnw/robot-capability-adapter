@@ -1,0 +1,3047 @@
+{
+  "robot_configuration_id": "piper",
+  "reports": {
+    "case_move_to_position": {
+      "case_id": "case_move_to_position",
+      "probe_only": true,
+      "compiled": true,
+      "reloaded": true,
+      "bindings_resolved": true,
+      "steps": 25,
+      "errors": [],
+      "scene": "scene_empty",
+      "scene_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_empty/scene.xml",
+      "model_inventory": {
+        "base_geom_count": 89,
+        "unnamed_base_geoms": [
+          {
+            "base_geom_id": 1,
+            "generated_name": "aa1_robot_geom_1",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 2,
+            "generated_name": "aa1_robot_geom_2",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 3,
+            "generated_name": "aa1_robot_geom_3",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 4,
+            "generated_name": "aa1_robot_geom_4",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 5,
+            "generated_name": "aa1_robot_geom_5",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 6,
+            "generated_name": "aa1_robot_geom_6",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 7,
+            "generated_name": "aa1_robot_geom_7",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 8,
+            "generated_name": "aa1_robot_geom_8",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 9,
+            "generated_name": "aa1_robot_geom_9",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 10,
+            "generated_name": "aa1_robot_geom_10",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 11,
+            "generated_name": "aa1_robot_geom_11",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 12,
+            "generated_name": "aa1_robot_geom_12",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 13,
+            "generated_name": "aa1_robot_geom_13",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 14,
+            "generated_name": "aa1_robot_geom_14",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 15,
+            "generated_name": "aa1_robot_geom_15",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 16,
+            "generated_name": "aa1_robot_geom_16",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 17,
+            "generated_name": "aa1_robot_geom_17",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 18,
+            "generated_name": "aa1_robot_geom_18",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 19,
+            "generated_name": "aa1_robot_geom_19",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 20,
+            "generated_name": "aa1_robot_geom_20",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 21,
+            "generated_name": "aa1_robot_geom_21",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 22,
+            "generated_name": "aa1_robot_geom_22",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 23,
+            "generated_name": "aa1_robot_geom_23",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 24,
+            "generated_name": "aa1_robot_geom_24",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 25,
+            "generated_name": "aa1_robot_geom_25",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 26,
+            "generated_name": "aa1_robot_geom_26",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 27,
+            "generated_name": "aa1_robot_geom_27",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 28,
+            "generated_name": "aa1_robot_geom_28",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 29,
+            "generated_name": "aa1_robot_geom_29",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 30,
+            "generated_name": "aa1_robot_geom_30",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 31,
+            "generated_name": "aa1_robot_geom_31",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 32,
+            "generated_name": "aa1_robot_geom_32",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 33,
+            "generated_name": "aa1_robot_geom_33",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 34,
+            "generated_name": "aa1_robot_geom_34",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 35,
+            "generated_name": "aa1_robot_geom_35",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 36,
+            "generated_name": "aa1_robot_geom_36",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 37,
+            "generated_name": "aa1_robot_geom_37",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 38,
+            "generated_name": "aa1_robot_geom_38",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 39,
+            "generated_name": "aa1_robot_geom_39",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 40,
+            "generated_name": "aa1_robot_geom_40",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 41,
+            "generated_name": "aa1_robot_geom_41",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 42,
+            "generated_name": "aa1_robot_geom_42",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 43,
+            "generated_name": "aa1_robot_geom_43",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 44,
+            "generated_name": "aa1_robot_geom_44",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 45,
+            "generated_name": "aa1_robot_geom_45",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 46,
+            "generated_name": "aa1_robot_geom_46",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 47,
+            "generated_name": "aa1_robot_geom_47",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 48,
+            "generated_name": "aa1_robot_geom_48",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 49,
+            "generated_name": "aa1_robot_geom_49",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 50,
+            "generated_name": "aa1_robot_geom_50",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 51,
+            "generated_name": "aa1_robot_geom_51",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 52,
+            "generated_name": "aa1_robot_geom_52",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 53,
+            "generated_name": "aa1_robot_geom_53",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 54,
+            "generated_name": "aa1_robot_geom_54",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 55,
+            "generated_name": "aa1_robot_geom_55",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 56,
+            "generated_name": "aa1_robot_geom_56",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 57,
+            "generated_name": "aa1_robot_geom_57",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 58,
+            "generated_name": "aa1_robot_geom_58",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 59,
+            "generated_name": "aa1_robot_geom_59",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 60,
+            "generated_name": "aa1_robot_geom_60",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 61,
+            "generated_name": "aa1_robot_geom_61",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 62,
+            "generated_name": "aa1_robot_geom_62",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 63,
+            "generated_name": "aa1_robot_geom_63",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 64,
+            "generated_name": "aa1_robot_geom_64",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 65,
+            "generated_name": "aa1_robot_geom_65",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 66,
+            "generated_name": "aa1_robot_geom_66",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 67,
+            "generated_name": "aa1_robot_geom_67",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 68,
+            "generated_name": "aa1_robot_geom_68",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 69,
+            "generated_name": "aa1_robot_geom_69",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 70,
+            "generated_name": "aa1_robot_geom_70",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 71,
+            "generated_name": "aa1_robot_geom_71",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 72,
+            "generated_name": "aa1_robot_geom_72",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 73,
+            "generated_name": "aa1_robot_geom_73",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 74,
+            "generated_name": "aa1_robot_geom_74",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 75,
+            "generated_name": "aa1_robot_geom_75",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 76,
+            "generated_name": "aa1_robot_geom_76",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 77,
+            "generated_name": "aa1_robot_geom_77",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 78,
+            "generated_name": "aa1_robot_geom_78",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 79,
+            "generated_name": "aa1_robot_geom_79",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 80,
+            "generated_name": "aa1_robot_geom_80",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 81,
+            "generated_name": "aa1_robot_geom_81",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 82,
+            "generated_name": "aa1_robot_geom_82",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 83,
+            "generated_name": "aa1_robot_geom_83",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 84,
+            "generated_name": "aa1_robot_geom_84",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 85,
+            "generated_name": "aa1_robot_geom_85",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 86,
+            "generated_name": "aa1_robot_geom_86",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 87,
+            "generated_name": "aa1_robot_geom_87",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 88,
+            "generated_name": "aa1_robot_geom_88",
+            "body_name": "link8"
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "criterion_index": 0,
+          "operator": "site_position_error",
+          "resolved": true
+        }
+      ],
+      "initial_sample": {
+        "time": 0.5000000000000003,
+        "site_positions": {
+          "ee_site": [
+            0.49894995139633136,
+            0.0014141646717686029,
+            0.3652504521426624
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.1910776571638696e-13,
+          "joint2": 1.570000000003505,
+          "joint3": -1.3485000000068357,
+          "joint4": 2.116132421643929e-11,
+          "joint5": -5.92270737576884e-13,
+          "joint6": -2.7621398696451215e-11,
+          "joint7": 3.4817290806540943e-14,
+          "joint8": 3.504300667682057e-15
+        },
+        "contacts": []
+      },
+      "post_step_sample": {
+        "time": 0.5500000000000004,
+        "site_positions": {
+          "ee_site": [
+            0.498949951396693,
+            0.001414164671796659,
+            0.3652504521420935
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.7803120357702728e-13,
+          "joint2": 1.5700000000058274,
+          "joint3": -1.3485000000183092,
+          "joint4": 3.304336242934093e-11,
+          "joint5": 2.1589848774298106e-11,
+          "joint6": -4.735025999794814e-11,
+          "joint7": 1.1972098226043343e-13,
+          "joint8": 1.417961154656751e-14
+        },
+        "contacts": []
+      },
+      "sim_time_s": 0.5500000000000004,
+      "ok": true
+    },
+    "case_set_gripper_aperture": {
+      "case_id": "case_set_gripper_aperture",
+      "probe_only": true,
+      "compiled": true,
+      "reloaded": true,
+      "bindings_resolved": true,
+      "steps": 25,
+      "errors": [],
+      "scene": "scene_empty",
+      "scene_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_empty/scene.xml",
+      "model_inventory": {
+        "base_geom_count": 89,
+        "unnamed_base_geoms": [
+          {
+            "base_geom_id": 1,
+            "generated_name": "aa1_robot_geom_1",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 2,
+            "generated_name": "aa1_robot_geom_2",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 3,
+            "generated_name": "aa1_robot_geom_3",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 4,
+            "generated_name": "aa1_robot_geom_4",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 5,
+            "generated_name": "aa1_robot_geom_5",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 6,
+            "generated_name": "aa1_robot_geom_6",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 7,
+            "generated_name": "aa1_robot_geom_7",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 8,
+            "generated_name": "aa1_robot_geom_8",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 9,
+            "generated_name": "aa1_robot_geom_9",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 10,
+            "generated_name": "aa1_robot_geom_10",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 11,
+            "generated_name": "aa1_robot_geom_11",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 12,
+            "generated_name": "aa1_robot_geom_12",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 13,
+            "generated_name": "aa1_robot_geom_13",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 14,
+            "generated_name": "aa1_robot_geom_14",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 15,
+            "generated_name": "aa1_robot_geom_15",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 16,
+            "generated_name": "aa1_robot_geom_16",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 17,
+            "generated_name": "aa1_robot_geom_17",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 18,
+            "generated_name": "aa1_robot_geom_18",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 19,
+            "generated_name": "aa1_robot_geom_19",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 20,
+            "generated_name": "aa1_robot_geom_20",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 21,
+            "generated_name": "aa1_robot_geom_21",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 22,
+            "generated_name": "aa1_robot_geom_22",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 23,
+            "generated_name": "aa1_robot_geom_23",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 24,
+            "generated_name": "aa1_robot_geom_24",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 25,
+            "generated_name": "aa1_robot_geom_25",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 26,
+            "generated_name": "aa1_robot_geom_26",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 27,
+            "generated_name": "aa1_robot_geom_27",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 28,
+            "generated_name": "aa1_robot_geom_28",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 29,
+            "generated_name": "aa1_robot_geom_29",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 30,
+            "generated_name": "aa1_robot_geom_30",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 31,
+            "generated_name": "aa1_robot_geom_31",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 32,
+            "generated_name": "aa1_robot_geom_32",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 33,
+            "generated_name": "aa1_robot_geom_33",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 34,
+            "generated_name": "aa1_robot_geom_34",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 35,
+            "generated_name": "aa1_robot_geom_35",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 36,
+            "generated_name": "aa1_robot_geom_36",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 37,
+            "generated_name": "aa1_robot_geom_37",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 38,
+            "generated_name": "aa1_robot_geom_38",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 39,
+            "generated_name": "aa1_robot_geom_39",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 40,
+            "generated_name": "aa1_robot_geom_40",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 41,
+            "generated_name": "aa1_robot_geom_41",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 42,
+            "generated_name": "aa1_robot_geom_42",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 43,
+            "generated_name": "aa1_robot_geom_43",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 44,
+            "generated_name": "aa1_robot_geom_44",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 45,
+            "generated_name": "aa1_robot_geom_45",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 46,
+            "generated_name": "aa1_robot_geom_46",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 47,
+            "generated_name": "aa1_robot_geom_47",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 48,
+            "generated_name": "aa1_robot_geom_48",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 49,
+            "generated_name": "aa1_robot_geom_49",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 50,
+            "generated_name": "aa1_robot_geom_50",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 51,
+            "generated_name": "aa1_robot_geom_51",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 52,
+            "generated_name": "aa1_robot_geom_52",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 53,
+            "generated_name": "aa1_robot_geom_53",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 54,
+            "generated_name": "aa1_robot_geom_54",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 55,
+            "generated_name": "aa1_robot_geom_55",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 56,
+            "generated_name": "aa1_robot_geom_56",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 57,
+            "generated_name": "aa1_robot_geom_57",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 58,
+            "generated_name": "aa1_robot_geom_58",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 59,
+            "generated_name": "aa1_robot_geom_59",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 60,
+            "generated_name": "aa1_robot_geom_60",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 61,
+            "generated_name": "aa1_robot_geom_61",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 62,
+            "generated_name": "aa1_robot_geom_62",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 63,
+            "generated_name": "aa1_robot_geom_63",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 64,
+            "generated_name": "aa1_robot_geom_64",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 65,
+            "generated_name": "aa1_robot_geom_65",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 66,
+            "generated_name": "aa1_robot_geom_66",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 67,
+            "generated_name": "aa1_robot_geom_67",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 68,
+            "generated_name": "aa1_robot_geom_68",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 69,
+            "generated_name": "aa1_robot_geom_69",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 70,
+            "generated_name": "aa1_robot_geom_70",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 71,
+            "generated_name": "aa1_robot_geom_71",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 72,
+            "generated_name": "aa1_robot_geom_72",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 73,
+            "generated_name": "aa1_robot_geom_73",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 74,
+            "generated_name": "aa1_robot_geom_74",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 75,
+            "generated_name": "aa1_robot_geom_75",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 76,
+            "generated_name": "aa1_robot_geom_76",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 77,
+            "generated_name": "aa1_robot_geom_77",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 78,
+            "generated_name": "aa1_robot_geom_78",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 79,
+            "generated_name": "aa1_robot_geom_79",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 80,
+            "generated_name": "aa1_robot_geom_80",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 81,
+            "generated_name": "aa1_robot_geom_81",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 82,
+            "generated_name": "aa1_robot_geom_82",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 83,
+            "generated_name": "aa1_robot_geom_83",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 84,
+            "generated_name": "aa1_robot_geom_84",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 85,
+            "generated_name": "aa1_robot_geom_85",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 86,
+            "generated_name": "aa1_robot_geom_86",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 87,
+            "generated_name": "aa1_robot_geom_87",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 88,
+            "generated_name": "aa1_robot_geom_88",
+            "body_name": "link8"
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "criterion_index": 0,
+          "operator": "joint_position_error",
+          "resolved": true
+        }
+      ],
+      "initial_sample": {
+        "time": 0.3000000000000002,
+        "site_positions": {
+          "ee_site": [
+            0.49894995139695797,
+            0.0014141646717947757,
+            0.36525045214089963
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.7132997193308394e-13,
+          "joint2": 1.570000000007852,
+          "joint3": -1.3485000000285214,
+          "joint4": 4.383376934571495e-12,
+          "joint5": 4.402969502897363e-11,
+          "joint6": -8.634327476055435e-12,
+          "joint7": 4.083765453416638e-14,
+          "joint8": 1.7104107360390306e-15
+        },
+        "contacts": []
+      },
+      "post_step_sample": {
+        "time": 0.35000000000000026,
+        "site_positions": {
+          "ee_site": [
+            0.4989499513970499,
+            0.0014141646717999376,
+            0.36525045214087204
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.8173813976566767e-13,
+          "joint2": 1.5700000000085355,
+          "joint3": -1.3485000000338607,
+          "joint4": 4.6046051298689924e-12,
+          "joint5": 5.406272875089176e-11,
+          "joint6": -1.0267638845213577e-11,
+          "joint7": 2.5795502266553124e-14,
+          "joint8": -2.7768487426248882e-14
+        },
+        "contacts": []
+      },
+      "sim_time_s": 0.35000000000000026,
+      "ok": true
+    },
+    "case_set_wrist_roll": {
+      "case_id": "case_set_wrist_roll",
+      "probe_only": true,
+      "compiled": true,
+      "reloaded": true,
+      "bindings_resolved": true,
+      "steps": 25,
+      "errors": [],
+      "scene": "scene_empty",
+      "scene_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_empty/scene.xml",
+      "model_inventory": {
+        "base_geom_count": 89,
+        "unnamed_base_geoms": [
+          {
+            "base_geom_id": 1,
+            "generated_name": "aa1_robot_geom_1",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 2,
+            "generated_name": "aa1_robot_geom_2",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 3,
+            "generated_name": "aa1_robot_geom_3",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 4,
+            "generated_name": "aa1_robot_geom_4",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 5,
+            "generated_name": "aa1_robot_geom_5",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 6,
+            "generated_name": "aa1_robot_geom_6",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 7,
+            "generated_name": "aa1_robot_geom_7",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 8,
+            "generated_name": "aa1_robot_geom_8",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 9,
+            "generated_name": "aa1_robot_geom_9",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 10,
+            "generated_name": "aa1_robot_geom_10",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 11,
+            "generated_name": "aa1_robot_geom_11",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 12,
+            "generated_name": "aa1_robot_geom_12",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 13,
+            "generated_name": "aa1_robot_geom_13",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 14,
+            "generated_name": "aa1_robot_geom_14",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 15,
+            "generated_name": "aa1_robot_geom_15",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 16,
+            "generated_name": "aa1_robot_geom_16",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 17,
+            "generated_name": "aa1_robot_geom_17",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 18,
+            "generated_name": "aa1_robot_geom_18",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 19,
+            "generated_name": "aa1_robot_geom_19",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 20,
+            "generated_name": "aa1_robot_geom_20",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 21,
+            "generated_name": "aa1_robot_geom_21",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 22,
+            "generated_name": "aa1_robot_geom_22",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 23,
+            "generated_name": "aa1_robot_geom_23",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 24,
+            "generated_name": "aa1_robot_geom_24",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 25,
+            "generated_name": "aa1_robot_geom_25",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 26,
+            "generated_name": "aa1_robot_geom_26",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 27,
+            "generated_name": "aa1_robot_geom_27",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 28,
+            "generated_name": "aa1_robot_geom_28",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 29,
+            "generated_name": "aa1_robot_geom_29",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 30,
+            "generated_name": "aa1_robot_geom_30",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 31,
+            "generated_name": "aa1_robot_geom_31",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 32,
+            "generated_name": "aa1_robot_geom_32",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 33,
+            "generated_name": "aa1_robot_geom_33",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 34,
+            "generated_name": "aa1_robot_geom_34",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 35,
+            "generated_name": "aa1_robot_geom_35",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 36,
+            "generated_name": "aa1_robot_geom_36",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 37,
+            "generated_name": "aa1_robot_geom_37",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 38,
+            "generated_name": "aa1_robot_geom_38",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 39,
+            "generated_name": "aa1_robot_geom_39",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 40,
+            "generated_name": "aa1_robot_geom_40",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 41,
+            "generated_name": "aa1_robot_geom_41",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 42,
+            "generated_name": "aa1_robot_geom_42",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 43,
+            "generated_name": "aa1_robot_geom_43",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 44,
+            "generated_name": "aa1_robot_geom_44",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 45,
+            "generated_name": "aa1_robot_geom_45",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 46,
+            "generated_name": "aa1_robot_geom_46",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 47,
+            "generated_name": "aa1_robot_geom_47",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 48,
+            "generated_name": "aa1_robot_geom_48",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 49,
+            "generated_name": "aa1_robot_geom_49",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 50,
+            "generated_name": "aa1_robot_geom_50",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 51,
+            "generated_name": "aa1_robot_geom_51",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 52,
+            "generated_name": "aa1_robot_geom_52",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 53,
+            "generated_name": "aa1_robot_geom_53",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 54,
+            "generated_name": "aa1_robot_geom_54",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 55,
+            "generated_name": "aa1_robot_geom_55",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 56,
+            "generated_name": "aa1_robot_geom_56",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 57,
+            "generated_name": "aa1_robot_geom_57",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 58,
+            "generated_name": "aa1_robot_geom_58",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 59,
+            "generated_name": "aa1_robot_geom_59",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 60,
+            "generated_name": "aa1_robot_geom_60",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 61,
+            "generated_name": "aa1_robot_geom_61",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 62,
+            "generated_name": "aa1_robot_geom_62",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 63,
+            "generated_name": "aa1_robot_geom_63",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 64,
+            "generated_name": "aa1_robot_geom_64",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 65,
+            "generated_name": "aa1_robot_geom_65",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 66,
+            "generated_name": "aa1_robot_geom_66",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 67,
+            "generated_name": "aa1_robot_geom_67",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 68,
+            "generated_name": "aa1_robot_geom_68",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 69,
+            "generated_name": "aa1_robot_geom_69",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 70,
+            "generated_name": "aa1_robot_geom_70",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 71,
+            "generated_name": "aa1_robot_geom_71",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 72,
+            "generated_name": "aa1_robot_geom_72",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 73,
+            "generated_name": "aa1_robot_geom_73",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 74,
+            "generated_name": "aa1_robot_geom_74",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 75,
+            "generated_name": "aa1_robot_geom_75",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 76,
+            "generated_name": "aa1_robot_geom_76",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 77,
+            "generated_name": "aa1_robot_geom_77",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 78,
+            "generated_name": "aa1_robot_geom_78",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 79,
+            "generated_name": "aa1_robot_geom_79",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 80,
+            "generated_name": "aa1_robot_geom_80",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 81,
+            "generated_name": "aa1_robot_geom_81",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 82,
+            "generated_name": "aa1_robot_geom_82",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 83,
+            "generated_name": "aa1_robot_geom_83",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 84,
+            "generated_name": "aa1_robot_geom_84",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 85,
+            "generated_name": "aa1_robot_geom_85",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 86,
+            "generated_name": "aa1_robot_geom_86",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 87,
+            "generated_name": "aa1_robot_geom_87",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 88,
+            "generated_name": "aa1_robot_geom_88",
+            "body_name": "link8"
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "criterion_index": 0,
+          "operator": "joint_position_error",
+          "resolved": true
+        }
+      ],
+      "initial_sample": {
+        "time": 0.3000000000000002,
+        "site_positions": {
+          "ee_site": [
+            0.49894995139695797,
+            0.0014141646717947757,
+            0.36525045214089963
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.7132997193308394e-13,
+          "joint2": 1.570000000007852,
+          "joint3": -1.3485000000285214,
+          "joint4": 4.383376934571495e-12,
+          "joint5": 4.402969502897363e-11,
+          "joint6": -8.634327476055435e-12,
+          "joint7": 4.083765453416638e-14,
+          "joint8": 1.7104107360390306e-15
+        },
+        "contacts": []
+      },
+      "post_step_sample": {
+        "time": 0.35000000000000026,
+        "site_positions": {
+          "ee_site": [
+            0.4989499513970499,
+            0.0014141646717999376,
+            0.36525045214087204
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.8173813976566767e-13,
+          "joint2": 1.5700000000085355,
+          "joint3": -1.3485000000338607,
+          "joint4": 4.6046051298689924e-12,
+          "joint5": 5.406272875089176e-11,
+          "joint6": -1.0267638845213577e-11,
+          "joint7": 2.5795502266553124e-14,
+          "joint8": -2.7768487426248882e-14
+        },
+        "contacts": []
+      },
+      "sim_time_s": 0.35000000000000026,
+      "ok": true
+    },
+    "case_traverse_waypoints": {
+      "case_id": "case_traverse_waypoints",
+      "probe_only": true,
+      "compiled": true,
+      "reloaded": true,
+      "bindings_resolved": true,
+      "steps": 25,
+      "errors": [],
+      "scene": "scene_empty",
+      "scene_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_empty/scene.xml",
+      "model_inventory": {
+        "base_geom_count": 89,
+        "unnamed_base_geoms": [
+          {
+            "base_geom_id": 1,
+            "generated_name": "aa1_robot_geom_1",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 2,
+            "generated_name": "aa1_robot_geom_2",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 3,
+            "generated_name": "aa1_robot_geom_3",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 4,
+            "generated_name": "aa1_robot_geom_4",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 5,
+            "generated_name": "aa1_robot_geom_5",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 6,
+            "generated_name": "aa1_robot_geom_6",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 7,
+            "generated_name": "aa1_robot_geom_7",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 8,
+            "generated_name": "aa1_robot_geom_8",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 9,
+            "generated_name": "aa1_robot_geom_9",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 10,
+            "generated_name": "aa1_robot_geom_10",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 11,
+            "generated_name": "aa1_robot_geom_11",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 12,
+            "generated_name": "aa1_robot_geom_12",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 13,
+            "generated_name": "aa1_robot_geom_13",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 14,
+            "generated_name": "aa1_robot_geom_14",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 15,
+            "generated_name": "aa1_robot_geom_15",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 16,
+            "generated_name": "aa1_robot_geom_16",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 17,
+            "generated_name": "aa1_robot_geom_17",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 18,
+            "generated_name": "aa1_robot_geom_18",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 19,
+            "generated_name": "aa1_robot_geom_19",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 20,
+            "generated_name": "aa1_robot_geom_20",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 21,
+            "generated_name": "aa1_robot_geom_21",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 22,
+            "generated_name": "aa1_robot_geom_22",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 23,
+            "generated_name": "aa1_robot_geom_23",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 24,
+            "generated_name": "aa1_robot_geom_24",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 25,
+            "generated_name": "aa1_robot_geom_25",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 26,
+            "generated_name": "aa1_robot_geom_26",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 27,
+            "generated_name": "aa1_robot_geom_27",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 28,
+            "generated_name": "aa1_robot_geom_28",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 29,
+            "generated_name": "aa1_robot_geom_29",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 30,
+            "generated_name": "aa1_robot_geom_30",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 31,
+            "generated_name": "aa1_robot_geom_31",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 32,
+            "generated_name": "aa1_robot_geom_32",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 33,
+            "generated_name": "aa1_robot_geom_33",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 34,
+            "generated_name": "aa1_robot_geom_34",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 35,
+            "generated_name": "aa1_robot_geom_35",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 36,
+            "generated_name": "aa1_robot_geom_36",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 37,
+            "generated_name": "aa1_robot_geom_37",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 38,
+            "generated_name": "aa1_robot_geom_38",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 39,
+            "generated_name": "aa1_robot_geom_39",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 40,
+            "generated_name": "aa1_robot_geom_40",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 41,
+            "generated_name": "aa1_robot_geom_41",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 42,
+            "generated_name": "aa1_robot_geom_42",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 43,
+            "generated_name": "aa1_robot_geom_43",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 44,
+            "generated_name": "aa1_robot_geom_44",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 45,
+            "generated_name": "aa1_robot_geom_45",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 46,
+            "generated_name": "aa1_robot_geom_46",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 47,
+            "generated_name": "aa1_robot_geom_47",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 48,
+            "generated_name": "aa1_robot_geom_48",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 49,
+            "generated_name": "aa1_robot_geom_49",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 50,
+            "generated_name": "aa1_robot_geom_50",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 51,
+            "generated_name": "aa1_robot_geom_51",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 52,
+            "generated_name": "aa1_robot_geom_52",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 53,
+            "generated_name": "aa1_robot_geom_53",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 54,
+            "generated_name": "aa1_robot_geom_54",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 55,
+            "generated_name": "aa1_robot_geom_55",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 56,
+            "generated_name": "aa1_robot_geom_56",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 57,
+            "generated_name": "aa1_robot_geom_57",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 58,
+            "generated_name": "aa1_robot_geom_58",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 59,
+            "generated_name": "aa1_robot_geom_59",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 60,
+            "generated_name": "aa1_robot_geom_60",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 61,
+            "generated_name": "aa1_robot_geom_61",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 62,
+            "generated_name": "aa1_robot_geom_62",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 63,
+            "generated_name": "aa1_robot_geom_63",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 64,
+            "generated_name": "aa1_robot_geom_64",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 65,
+            "generated_name": "aa1_robot_geom_65",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 66,
+            "generated_name": "aa1_robot_geom_66",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 67,
+            "generated_name": "aa1_robot_geom_67",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 68,
+            "generated_name": "aa1_robot_geom_68",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 69,
+            "generated_name": "aa1_robot_geom_69",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 70,
+            "generated_name": "aa1_robot_geom_70",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 71,
+            "generated_name": "aa1_robot_geom_71",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 72,
+            "generated_name": "aa1_robot_geom_72",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 73,
+            "generated_name": "aa1_robot_geom_73",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 74,
+            "generated_name": "aa1_robot_geom_74",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 75,
+            "generated_name": "aa1_robot_geom_75",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 76,
+            "generated_name": "aa1_robot_geom_76",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 77,
+            "generated_name": "aa1_robot_geom_77",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 78,
+            "generated_name": "aa1_robot_geom_78",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 79,
+            "generated_name": "aa1_robot_geom_79",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 80,
+            "generated_name": "aa1_robot_geom_80",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 81,
+            "generated_name": "aa1_robot_geom_81",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 82,
+            "generated_name": "aa1_robot_geom_82",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 83,
+            "generated_name": "aa1_robot_geom_83",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 84,
+            "generated_name": "aa1_robot_geom_84",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 85,
+            "generated_name": "aa1_robot_geom_85",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 86,
+            "generated_name": "aa1_robot_geom_86",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 87,
+            "generated_name": "aa1_robot_geom_87",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 88,
+            "generated_name": "aa1_robot_geom_88",
+            "body_name": "link8"
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "criterion_index": 0,
+          "operator": "ordered_site_targets_error",
+          "resolved": true
+        }
+      ],
+      "initial_sample": {
+        "time": 0.5000000000000003,
+        "site_positions": {
+          "ee_site": [
+            0.49894995139633136,
+            0.0014141646717686029,
+            0.3652504521426624
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.1910776571638696e-13,
+          "joint2": 1.570000000003505,
+          "joint3": -1.3485000000068357,
+          "joint4": 2.116132421643929e-11,
+          "joint5": -5.92270737576884e-13,
+          "joint6": -2.7621398696451215e-11,
+          "joint7": 3.4817290806540943e-14,
+          "joint8": 3.504300667682057e-15
+        },
+        "contacts": []
+      },
+      "post_step_sample": {
+        "time": 0.5500000000000004,
+        "site_positions": {
+          "ee_site": [
+            0.498949951396693,
+            0.001414164671796659,
+            0.3652504521420935
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.7803120357702728e-13,
+          "joint2": 1.5700000000058274,
+          "joint3": -1.3485000000183092,
+          "joint4": 3.304336242934093e-11,
+          "joint5": 2.1589848774298106e-11,
+          "joint6": -4.735025999794814e-11,
+          "joint7": 1.1972098226043343e-13,
+          "joint8": 1.417961154656751e-14
+        },
+        "contacts": []
+      },
+      "sim_time_s": 0.5500000000000004,
+      "ok": true
+    },
+    "case_apply_contact_displacement_pos": {
+      "case_id": "case_apply_contact_displacement_pos",
+      "probe_only": true,
+      "compiled": true,
+      "reloaded": true,
+      "bindings_resolved": true,
+      "steps": 25,
+      "errors": [],
+      "scene": "scene_contact_box",
+      "scene_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_contact_box/scene.xml",
+      "model_inventory": {
+        "base_geom_count": 89,
+        "unnamed_base_geoms": [
+          {
+            "base_geom_id": 1,
+            "generated_name": "aa1_robot_geom_1",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 2,
+            "generated_name": "aa1_robot_geom_2",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 3,
+            "generated_name": "aa1_robot_geom_3",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 4,
+            "generated_name": "aa1_robot_geom_4",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 5,
+            "generated_name": "aa1_robot_geom_5",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 6,
+            "generated_name": "aa1_robot_geom_6",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 7,
+            "generated_name": "aa1_robot_geom_7",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 8,
+            "generated_name": "aa1_robot_geom_8",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 9,
+            "generated_name": "aa1_robot_geom_9",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 10,
+            "generated_name": "aa1_robot_geom_10",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 11,
+            "generated_name": "aa1_robot_geom_11",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 12,
+            "generated_name": "aa1_robot_geom_12",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 13,
+            "generated_name": "aa1_robot_geom_13",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 14,
+            "generated_name": "aa1_robot_geom_14",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 15,
+            "generated_name": "aa1_robot_geom_15",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 16,
+            "generated_name": "aa1_robot_geom_16",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 17,
+            "generated_name": "aa1_robot_geom_17",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 18,
+            "generated_name": "aa1_robot_geom_18",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 19,
+            "generated_name": "aa1_robot_geom_19",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 20,
+            "generated_name": "aa1_robot_geom_20",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 21,
+            "generated_name": "aa1_robot_geom_21",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 22,
+            "generated_name": "aa1_robot_geom_22",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 23,
+            "generated_name": "aa1_robot_geom_23",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 24,
+            "generated_name": "aa1_robot_geom_24",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 25,
+            "generated_name": "aa1_robot_geom_25",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 26,
+            "generated_name": "aa1_robot_geom_26",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 27,
+            "generated_name": "aa1_robot_geom_27",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 28,
+            "generated_name": "aa1_robot_geom_28",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 29,
+            "generated_name": "aa1_robot_geom_29",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 30,
+            "generated_name": "aa1_robot_geom_30",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 31,
+            "generated_name": "aa1_robot_geom_31",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 32,
+            "generated_name": "aa1_robot_geom_32",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 33,
+            "generated_name": "aa1_robot_geom_33",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 34,
+            "generated_name": "aa1_robot_geom_34",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 35,
+            "generated_name": "aa1_robot_geom_35",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 36,
+            "generated_name": "aa1_robot_geom_36",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 37,
+            "generated_name": "aa1_robot_geom_37",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 38,
+            "generated_name": "aa1_robot_geom_38",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 39,
+            "generated_name": "aa1_robot_geom_39",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 40,
+            "generated_name": "aa1_robot_geom_40",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 41,
+            "generated_name": "aa1_robot_geom_41",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 42,
+            "generated_name": "aa1_robot_geom_42",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 43,
+            "generated_name": "aa1_robot_geom_43",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 44,
+            "generated_name": "aa1_robot_geom_44",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 45,
+            "generated_name": "aa1_robot_geom_45",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 46,
+            "generated_name": "aa1_robot_geom_46",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 47,
+            "generated_name": "aa1_robot_geom_47",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 48,
+            "generated_name": "aa1_robot_geom_48",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 49,
+            "generated_name": "aa1_robot_geom_49",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 50,
+            "generated_name": "aa1_robot_geom_50",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 51,
+            "generated_name": "aa1_robot_geom_51",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 52,
+            "generated_name": "aa1_robot_geom_52",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 53,
+            "generated_name": "aa1_robot_geom_53",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 54,
+            "generated_name": "aa1_robot_geom_54",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 55,
+            "generated_name": "aa1_robot_geom_55",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 56,
+            "generated_name": "aa1_robot_geom_56",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 57,
+            "generated_name": "aa1_robot_geom_57",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 58,
+            "generated_name": "aa1_robot_geom_58",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 59,
+            "generated_name": "aa1_robot_geom_59",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 60,
+            "generated_name": "aa1_robot_geom_60",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 61,
+            "generated_name": "aa1_robot_geom_61",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 62,
+            "generated_name": "aa1_robot_geom_62",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 63,
+            "generated_name": "aa1_robot_geom_63",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 64,
+            "generated_name": "aa1_robot_geom_64",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 65,
+            "generated_name": "aa1_robot_geom_65",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 66,
+            "generated_name": "aa1_robot_geom_66",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 67,
+            "generated_name": "aa1_robot_geom_67",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 68,
+            "generated_name": "aa1_robot_geom_68",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 69,
+            "generated_name": "aa1_robot_geom_69",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 70,
+            "generated_name": "aa1_robot_geom_70",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 71,
+            "generated_name": "aa1_robot_geom_71",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 72,
+            "generated_name": "aa1_robot_geom_72",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 73,
+            "generated_name": "aa1_robot_geom_73",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 74,
+            "generated_name": "aa1_robot_geom_74",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 75,
+            "generated_name": "aa1_robot_geom_75",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 76,
+            "generated_name": "aa1_robot_geom_76",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 77,
+            "generated_name": "aa1_robot_geom_77",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 78,
+            "generated_name": "aa1_robot_geom_78",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 79,
+            "generated_name": "aa1_robot_geom_79",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 80,
+            "generated_name": "aa1_robot_geom_80",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 81,
+            "generated_name": "aa1_robot_geom_81",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 82,
+            "generated_name": "aa1_robot_geom_82",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 83,
+            "generated_name": "aa1_robot_geom_83",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 84,
+            "generated_name": "aa1_robot_geom_84",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 85,
+            "generated_name": "aa1_robot_geom_85",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 86,
+            "generated_name": "aa1_robot_geom_86",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 87,
+            "generated_name": "aa1_robot_geom_87",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 88,
+            "generated_name": "aa1_robot_geom_88",
+            "body_name": "link8"
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "criterion_index": 0,
+          "operator": "site_position_error",
+          "resolved": true
+        }
+      ],
+      "initial_sample": {
+        "time": 0.5000000000000003,
+        "site_positions": {
+          "ee_site": [
+            0.49894995139633136,
+            0.0014141646717686029,
+            0.3652504521426624
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.1910776571638696e-13,
+          "joint2": 1.570000000003505,
+          "joint3": -1.3485000000068357,
+          "joint4": 2.116132421643929e-11,
+          "joint5": -5.92270737576884e-13,
+          "joint6": -2.7621398696451215e-11,
+          "joint7": 3.4817290806540943e-14,
+          "joint8": 3.504300667682057e-15
+        },
+        "contacts": []
+      },
+      "post_step_sample": {
+        "time": 0.5500000000000004,
+        "site_positions": {
+          "ee_site": [
+            0.498949951396693,
+            0.001414164671796659,
+            0.3652504521420935
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.7803120357702728e-13,
+          "joint2": 1.5700000000058274,
+          "joint3": -1.3485000000183092,
+          "joint4": 3.304336242934093e-11,
+          "joint5": 2.1589848774298106e-11,
+          "joint6": -4.735025999794814e-11,
+          "joint7": 1.1972098226043343e-13,
+          "joint8": 1.417961154656751e-14
+        },
+        "contacts": []
+      },
+      "sim_time_s": 0.5500000000000004,
+      "ok": true
+    },
+    "case_apply_contact_displacement_force": {
+      "case_id": "case_apply_contact_displacement_force",
+      "probe_only": true,
+      "compiled": true,
+      "reloaded": true,
+      "bindings_resolved": true,
+      "steps": 25,
+      "errors": [],
+      "scene": "scene_contact_box",
+      "scene_path": "/private/var/folders/06/wkt8rx111gsfkcpys_m16_th0000gn/T/aa1-design-integration-yfb06px5/design-real-r2/piper/design/scenes/scene_contact_box/scene.xml",
+      "model_inventory": {
+        "base_geom_count": 89,
+        "unnamed_base_geoms": [
+          {
+            "base_geom_id": 1,
+            "generated_name": "aa1_robot_geom_1",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 2,
+            "generated_name": "aa1_robot_geom_2",
+            "body_name": "base_link"
+          },
+          {
+            "base_geom_id": 3,
+            "generated_name": "aa1_robot_geom_3",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 4,
+            "generated_name": "aa1_robot_geom_4",
+            "body_name": "link1"
+          },
+          {
+            "base_geom_id": 5,
+            "generated_name": "aa1_robot_geom_5",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 6,
+            "generated_name": "aa1_robot_geom_6",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 7,
+            "generated_name": "aa1_robot_geom_7",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 8,
+            "generated_name": "aa1_robot_geom_8",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 9,
+            "generated_name": "aa1_robot_geom_9",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 10,
+            "generated_name": "aa1_robot_geom_10",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 11,
+            "generated_name": "aa1_robot_geom_11",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 12,
+            "generated_name": "aa1_robot_geom_12",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 13,
+            "generated_name": "aa1_robot_geom_13",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 14,
+            "generated_name": "aa1_robot_geom_14",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 15,
+            "generated_name": "aa1_robot_geom_15",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 16,
+            "generated_name": "aa1_robot_geom_16",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 17,
+            "generated_name": "aa1_robot_geom_17",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 18,
+            "generated_name": "aa1_robot_geom_18",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 19,
+            "generated_name": "aa1_robot_geom_19",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 20,
+            "generated_name": "aa1_robot_geom_20",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 21,
+            "generated_name": "aa1_robot_geom_21",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 22,
+            "generated_name": "aa1_robot_geom_22",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 23,
+            "generated_name": "aa1_robot_geom_23",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 24,
+            "generated_name": "aa1_robot_geom_24",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 25,
+            "generated_name": "aa1_robot_geom_25",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 26,
+            "generated_name": "aa1_robot_geom_26",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 27,
+            "generated_name": "aa1_robot_geom_27",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 28,
+            "generated_name": "aa1_robot_geom_28",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 29,
+            "generated_name": "aa1_robot_geom_29",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 30,
+            "generated_name": "aa1_robot_geom_30",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 31,
+            "generated_name": "aa1_robot_geom_31",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 32,
+            "generated_name": "aa1_robot_geom_32",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 33,
+            "generated_name": "aa1_robot_geom_33",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 34,
+            "generated_name": "aa1_robot_geom_34",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 35,
+            "generated_name": "aa1_robot_geom_35",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 36,
+            "generated_name": "aa1_robot_geom_36",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 37,
+            "generated_name": "aa1_robot_geom_37",
+            "body_name": "link2"
+          },
+          {
+            "base_geom_id": 38,
+            "generated_name": "aa1_robot_geom_38",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 39,
+            "generated_name": "aa1_robot_geom_39",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 40,
+            "generated_name": "aa1_robot_geom_40",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 41,
+            "generated_name": "aa1_robot_geom_41",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 42,
+            "generated_name": "aa1_robot_geom_42",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 43,
+            "generated_name": "aa1_robot_geom_43",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 44,
+            "generated_name": "aa1_robot_geom_44",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 45,
+            "generated_name": "aa1_robot_geom_45",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 46,
+            "generated_name": "aa1_robot_geom_46",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 47,
+            "generated_name": "aa1_robot_geom_47",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 48,
+            "generated_name": "aa1_robot_geom_48",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 49,
+            "generated_name": "aa1_robot_geom_49",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 50,
+            "generated_name": "aa1_robot_geom_50",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 51,
+            "generated_name": "aa1_robot_geom_51",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 52,
+            "generated_name": "aa1_robot_geom_52",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 53,
+            "generated_name": "aa1_robot_geom_53",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 54,
+            "generated_name": "aa1_robot_geom_54",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 55,
+            "generated_name": "aa1_robot_geom_55",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 56,
+            "generated_name": "aa1_robot_geom_56",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 57,
+            "generated_name": "aa1_robot_geom_57",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 58,
+            "generated_name": "aa1_robot_geom_58",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 59,
+            "generated_name": "aa1_robot_geom_59",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 60,
+            "generated_name": "aa1_robot_geom_60",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 61,
+            "generated_name": "aa1_robot_geom_61",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 62,
+            "generated_name": "aa1_robot_geom_62",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 63,
+            "generated_name": "aa1_robot_geom_63",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 64,
+            "generated_name": "aa1_robot_geom_64",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 65,
+            "generated_name": "aa1_robot_geom_65",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 66,
+            "generated_name": "aa1_robot_geom_66",
+            "body_name": "link3"
+          },
+          {
+            "base_geom_id": 67,
+            "generated_name": "aa1_robot_geom_67",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 68,
+            "generated_name": "aa1_robot_geom_68",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 69,
+            "generated_name": "aa1_robot_geom_69",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 70,
+            "generated_name": "aa1_robot_geom_70",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 71,
+            "generated_name": "aa1_robot_geom_71",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 72,
+            "generated_name": "aa1_robot_geom_72",
+            "body_name": "link4"
+          },
+          {
+            "base_geom_id": 73,
+            "generated_name": "aa1_robot_geom_73",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 74,
+            "generated_name": "aa1_robot_geom_74",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 75,
+            "generated_name": "aa1_robot_geom_75",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 76,
+            "generated_name": "aa1_robot_geom_76",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 77,
+            "generated_name": "aa1_robot_geom_77",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 78,
+            "generated_name": "aa1_robot_geom_78",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 79,
+            "generated_name": "aa1_robot_geom_79",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 80,
+            "generated_name": "aa1_robot_geom_80",
+            "body_name": "link5"
+          },
+          {
+            "base_geom_id": 81,
+            "generated_name": "aa1_robot_geom_81",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 82,
+            "generated_name": "aa1_robot_geom_82",
+            "body_name": "link6"
+          },
+          {
+            "base_geom_id": 83,
+            "generated_name": "aa1_robot_geom_83",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 84,
+            "generated_name": "aa1_robot_geom_84",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 85,
+            "generated_name": "aa1_robot_geom_85",
+            "body_name": "link7"
+          },
+          {
+            "base_geom_id": 86,
+            "generated_name": "aa1_robot_geom_86",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 87,
+            "generated_name": "aa1_robot_geom_87",
+            "body_name": "link8"
+          },
+          {
+            "base_geom_id": 88,
+            "generated_name": "aa1_robot_geom_88",
+            "body_name": "link8"
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "criterion_index": 1,
+          "operator": "contact_normal_force",
+          "resolved": true
+        }
+      ],
+      "initial_sample": {
+        "time": 0.5000000000000003,
+        "site_positions": {
+          "ee_site": [
+            0.49894995139633136,
+            0.0014141646717686029,
+            0.3652504521426624
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.1910776571638696e-13,
+          "joint2": 1.570000000003505,
+          "joint3": -1.3485000000068357,
+          "joint4": 2.116132421643929e-11,
+          "joint5": -5.92270737576884e-13,
+          "joint6": -2.7621398696451215e-11,
+          "joint7": 3.4817290806540943e-14,
+          "joint8": 3.504300667682057e-15
+        },
+        "contacts": []
+      },
+      "post_step_sample": {
+        "time": 0.5500000000000004,
+        "site_positions": {
+          "ee_site": [
+            0.498949951396693,
+            0.001414164671796659,
+            0.3652504521420935
+          ]
+        },
+        "joint_positions": {
+          "joint1": 1.7803120357702728e-13,
+          "joint2": 1.5700000000058274,
+          "joint3": -1.3485000000183092,
+          "joint4": 3.304336242934093e-11,
+          "joint5": 2.1589848774298106e-11,
+          "joint6": -4.735025999794814e-11,
+          "joint7": 1.1972098226043343e-13,
+          "joint8": 1.417961154656751e-14
+        },
+        "contacts": []
+      },
+      "sim_time_s": 0.5500000000000004,
+      "ok": true
+    }
+  }
+}
