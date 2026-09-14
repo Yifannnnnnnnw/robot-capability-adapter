@@ -59,6 +59,7 @@ from .orchestrator import (
     _actual_mjcf_context,
     _capability_design_metadata,
     _merge_numeric_usage,
+    _scene_handoff_context,
     validate_failure_feedback,
 )
 
@@ -224,8 +225,11 @@ You are Phase 3 GENERATE. Write driver_from_scratch.py as one complete
 single-file driver based on the current study, capability design, and MJCF.
 
 Hard rules:
-  - Use mujoco, numpy, and the Python standard library only. Do not import
-    auto_adapter, supplied skeletons, retained policies, or reference drivers.
+  - The generated driver must use mujoco, numpy, and the Python standard
+    library only. It must not import auto_adapter, supplied skeletons,
+    retained policies, or reference drivers. A local_exec probe may import
+    auto_adapter.scene_runtime only to stage a disposable prepared scene and
+    apply its public initial state; that helper is not part of the driver.
   - Expose class Robot with classmethod
     build_from_mjcf(mjcf_path: str) -> Robot, plus home(),
     get_joint_positions(), step(n=1), render(), and describe().
@@ -255,8 +259,11 @@ Procedure:
   2. Choose the minimum controller and observation code that satisfies the
      current design, and probe uncertain bindings or dynamics on the real model.
   3. Write driver_from_scratch.py with the complete Robot class.
-  4. Use local_exec to import it, call build_from_mjcf('mjcf.xml'), home(), and
-     representative current-design methods against the real model.
+  4. If DESIGN supplied ``design/probe_scenes.json``, read it and use
+     ``build_scene_driver`` plus ``reset_scene_driver`` in a disposable
+     local_exec directory for representative current-design methods. Use the
+     base ``mjcf.xml`` only for robot structure checks. If no prepared scene
+     was supplied, state that explicitly and do not search old artifacts.
   5. Finish only after the driver imports and those focused probes run.
 """
 
@@ -274,6 +281,7 @@ class FromScratchOrchestrator:
         self.capability_design = None
         self.scene_cases_path: Path | None = None
         self.scene_paths: dict[str, Path] = {}
+        self.probe_scenes_path: Path | None = None
         self._last_capability_preparation: dict | None = None
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -335,7 +343,10 @@ class FromScratchOrchestrator:
 
         mjcf_src_dir = Path(self.cfg.mjcf_path).resolve().parent
         mujoco_src = Path(mujoco.__file__).parent
-        return [mjcf_src_dir, mujoco_src]
+        scene_roots = {
+            Path(path).resolve().parent for path in self.scene_paths.values()
+        }
+        return [mjcf_src_dir, mujoco_src, *sorted(scene_roots, key=str)]
 
     def _common_tools(self) -> list[ToolSpec]:
         return [
@@ -346,7 +357,9 @@ class FromScratchOrchestrator:
     def _local_runtime_tool(self) -> ToolSpec:
         return make_local_exec_tool(
             self.workspace,
-            python_path_prepend=[],  # critical: DO NOT add auto_adapter on path
+            # The generated driver remains no-skeleton/no-auto_adapter code.
+            # This path is only for the public scene_runtime probe helper.
+            python_path_prepend=[Path(__file__).resolve().parents[1]],
         )
 
     def _require_capability_design(self, phase: str) -> None:
@@ -462,8 +475,13 @@ class FromScratchOrchestrator:
     def _prepare_scene_inputs(
         self, design: Mapping[str, Any], preparation: dict[str, Any], output_dir: Path
     ) -> None:
-        from .scene_runtime import load_scene_cases, prepare_scenes
+        from .scene_runtime import (
+            export_probe_scenes,
+            load_scene_cases,
+            prepare_scenes,
+        )
 
+        self.probe_scenes_path = None
         supplied_cases = self.cfg.scene_cases_path
         raw_cases = preparation.get("scene_cases_path")
         if supplied_cases is None and raw_cases:
@@ -475,6 +493,7 @@ class FromScratchOrchestrator:
                 raise ValueError("automatic capability preparation did not produce scene cases")
             self.scene_cases_path = None
             self.scene_paths = {}
+            preparation.pop("probe_scenes_path", None)
             return
         case_path = Path(supplied_cases).expanduser().resolve()
         suite = load_scene_cases(case_path, design=dict(design))
@@ -501,6 +520,13 @@ class FromScratchOrchestrator:
         self.scene_paths = paths
         preparation["scene_cases_path"] = str(case_path)
         preparation["scene_paths"] = {key: str(path) for key, path in paths.items()}
+        probe_path = export_probe_scenes(
+            suite=suite,
+            scene_paths=paths,
+            output_path=output_dir / "probe_scenes.json",
+        )
+        self.probe_scenes_path = probe_path
+        preparation["probe_scenes_path"] = str(probe_path)
 
     # ─── Phases ───────────────────────────────────────────────────────────
 
@@ -529,6 +555,7 @@ class FromScratchOrchestrator:
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
+        self.probe_scenes_path = None
         self._last_capability_preparation = None
         tools = self._common_tools() + [self._local_runtime_tool()]
         system = self._localize_prompt(_STUDY_SYSTEM)
@@ -549,6 +576,7 @@ class FromScratchOrchestrator:
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
+        self.probe_scenes_path = None
         self._last_capability_preparation = None
         try:
             preparation = self._prepare_capability_design_from_study()
@@ -584,6 +612,11 @@ class FromScratchOrchestrator:
         )
         user += _actual_mjcf_context(self.cfg)
         user += _current_design_context(self.capability_design)
+        user += _scene_handoff_context(
+            self.probe_scenes_path,
+            driver_name="driver_from_scratch.py",
+            from_scratch=True,
+        )
         return self._run_loop(
             name="02_gen_algo", system=system, user_msg=user,
             tools=tools, max_iters=self.cfg.max_iters_gen_algo,
@@ -613,8 +646,9 @@ class FromScratchOrchestrator:
             "  1. read_file driver_from_scratch.py — find the cause of each failure.\n"
             "  2. Fix MuJoCo bindings, request handling, control, or observations.\n"
             "     Keep the public API and the no-skeleton-import rule.\n"
-            f"  3. {verification_tool} to re-run build_from_mjcf('mjcf.xml') + the failing\n"
-            "     behavior and confirm it works before finishing.\n"
+            f"  3. {verification_tool} to use the prepared-scene handoff and\n"
+            "     re-run the failing behavior in a disposable scene probe;\n"
+            "     confirm it works before finishing.\n"
             "  4. write_file the corrected driver_from_scratch.py.\n"
             "Do not read validate_report.json, private validation suites, score "
             "or reference control implementations; the feedback above is the "
@@ -622,6 +656,11 @@ class FromScratchOrchestrator:
         )
         user += _actual_mjcf_context(self.cfg)
         user += _current_design_context(self.capability_design)
+        user += _scene_handoff_context(
+            self.probe_scenes_path,
+            driver_name="driver_from_scratch.py",
+            from_scratch=True,
+        )
         return self._run_loop(
             name=f"03_gen_repair_{int(attempt)}", system=system,
             user_msg=user, tools=tools,
@@ -850,6 +889,7 @@ class FromScratchOrchestrator:
             "mcp_server.py",
             "design/capability_design.json", "design/capability_preparation.json",
             "design/scene_cases.yaml", "design/probe_report.json",
+            "design/probe_scenes.json",
         ):
             output = self.workspace / relative
             if output.resolve() not in supplied_inputs:
@@ -857,6 +897,7 @@ class FromScratchOrchestrator:
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
+        self.probe_scenes_path = None
         study_ok = design_ok = gen_ok = validate_ok = export_ok = False
         demo_ok: bool | None = None
         report: dict[str, Any] = {}

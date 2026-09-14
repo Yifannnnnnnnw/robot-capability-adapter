@@ -103,6 +103,8 @@ def test_from_scratch_repair_can_run_local_without_agentcore(tmp_path, monkeypat
     )
     runner.workspace = tmp_path / "workspace"
     runner.workspace.mkdir()
+    runner.scene_paths = {}
+    runner.probe_scenes_path = None
     runner.capability_design = {
         "capabilities": [{"capability_id": "move", "method_name": "move"}]
     }

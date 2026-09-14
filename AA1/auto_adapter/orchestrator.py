@@ -181,6 +181,70 @@ def _actual_mjcf_context(cfg: Any) -> str:
     )
 
 
+def _scene_handoff_context(
+    probe_scenes_path: Path | None,
+    *,
+    driver_name: str,
+    from_scratch: bool = False,
+) -> str:
+    """Describe the public prepared-scene handoff and its disposable probe."""
+
+    if probe_scenes_path is None:
+        return (
+            "\n\nNo prepared DESIGN scene handoff is available for this run. "
+            "Do not search old artifacts or old scene files. Use the base "
+            "mjcf.xml only for robot structure checks and state explicitly that "
+            "no prepared scene is available for an environment probe.\n"
+        )
+    driver_literal = driver_name.replace("'", "\\'")
+    scratch_literal = ", from_scratch=True" if from_scratch else ""
+    return f"""
+
+PUBLIC PREPARED DESIGN SCENE HANDOFF:
+  Read this file with read_file before doing environment probes:
+  {probe_scenes_path}
+  (workspace-relative path: design/probe_scenes.json)
+  It contains only an environments list. Each entry has scene_id,
+  capability_id, scene_path (the actual prepared scene XML), and initial_state
+  (robot keyframe/qpos, free_bodies, ctrl, settle). It intentionally has no
+  case IDs, requests, measurements, execution limits, scoring, or reference
+  controls. Choose the request from the current public capability contract.
+
+For each probe, choose both chosen_scene_id and chosen_capability_id from the
+handoff/design, then select the matching entry. Do not default to
+environments[0]. For contact or push behavior, inspect/select the prepared
+scene XML whose contents contain the corresponding physical object; the base
+mjcf.xml is for robot structure checks only.
+
+Use a disposable directory so the probe never changes the candidate in place:
+```python
+from pathlib import Path
+import json
+import tempfile
+from auto_adapter.scene_runtime import build_scene_driver, reset_scene_driver
+
+handoff = json.loads(Path("design/probe_scenes.json").read_text())
+chosen_scene_id = "<scene id selected from the handoff>"
+chosen_capability_id = "<capability id from the public design>"
+env = next(item for item in handoff["environments"]
+           if item["scene_id"] == chosen_scene_id
+           and item["capability_id"] == chosen_capability_id)
+probe_dir = Path(tempfile.mkdtemp(dir=Path.cwd()))
+driver_path = Path("{driver_literal}").resolve()
+robot = build_scene_driver(driver_path, env["scene_path"],
+                           work_dir=probe_dir{scratch_literal})
+reset_scene_driver(robot, env["initial_state"])
+model = getattr(robot, "model", getattr(robot, "_model", None))
+data = getattr(robot, "data", getattr(robot, "_data", None))
+print(model.nbody, data.time)
+# Select a request from the public capability contract and call the method.
+```
+The helper builds a copy in the disposable directory; edit only the original
+{driver_name}. Its use is limited to local_exec or a fresh validator worker.
+Never read a private suite or reference driver.
+"""
+
+
 def _trusted_skeleton_context(robot: dict | None, expected_class: str | None) -> str:
     """Return a compact public low-level skeleton summary for TGCD.
 
@@ -374,12 +438,15 @@ then IMPLEMENT every required method(request). The inherited low-level IK,
 actuator and gait primitives do not implement the complete public contracts.
 Generate feedback, request-dependent targets, ordering, holds, stopping and
 bounded failure handling. Do not hard-code test requests or success outcomes.
-The prepared validation scenes may contain additional free-joint objects and
-extra ``nq`` entries. Bind only the named robot joints, actuators and sites
-from the public study/design; ignore unrelated scene entities unless a public
-request explicitly observes them. ``build()`` must load the framework MJCF
-from the supplied ``mjcf.xml`` path and must not depend on cached initial-state
-files. Initialise any target from the current model/data on every call.
+  The prepared validation scenes may contain additional free-joint objects and
+  extra ``nq`` entries. Bind only the named robot joints, actuators and sites
+  from the public study/design; ignore unrelated scene entities in the robot
+  binding layer, while using the supplied scene object for a public contact or
+  push probe when the capability requires it. ``build()`` must load the
+  supplied ``mjcf.xml`` path and must not depend on cached initial-state files.
+  For a local_exec scene probe, use the public ``design/probe_scenes.json``
+  handoff and ``build_scene_driver`` rather than building against base
+  ``mjcf.xml``. Initialise any target from the current model/data on every call.
 Use native actuator commands and advance the same MuJoCo model/data. Never
 teleport or modify live state to complete an action. Kinematic calculations
 may use scratch data. Probe real gripper direction and joint limits as needed.
@@ -418,6 +485,7 @@ class SelfAssemble:
         self.capability_design = None
         self.scene_cases_path: Path | None = None
         self.scene_paths: dict[str, Path] = {}
+        self.probe_scenes_path: Path | None = None
         self._last_capability_preparation: dict | None = None
         self.workspace = (Path(cfg.workspace_root) / cfg.robot_id).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -461,7 +529,10 @@ class SelfAssemble:
 
         skel_root = Path(sk_pkg.__file__).parent.resolve()
         mjcf_src_dir = Path(self.cfg.mjcf_path).resolve().parent
-        return [skel_root, mjcf_src_dir]
+        scene_roots = {
+            Path(path).resolve().parent for path in self.scene_paths.values()
+        }
+        return [skel_root, mjcf_src_dir, *sorted(scene_roots, key=str)]
 
     def _local_tools(self) -> list[ToolSpec]:
         return [
@@ -633,8 +704,13 @@ class SelfAssemble:
         self, design: Mapping[str, Any], preparation: dict[str, Any], output_dir: Path
     ) -> None:
         """Resolve the current design's case suite and prepared scenes."""
-        from .scene_runtime import load_scene_cases, prepare_scenes
+        from .scene_runtime import (
+            export_probe_scenes,
+            load_scene_cases,
+            prepare_scenes,
+        )
 
+        self.probe_scenes_path = None
         supplied_cases = self.cfg.scene_cases_path
         raw_cases = preparation.get("scene_cases_path")
         if supplied_cases is None and raw_cases:
@@ -648,6 +724,7 @@ class SelfAssemble:
                 )
             self.scene_cases_path = None
             self.scene_paths = {}
+            preparation.pop("probe_scenes_path", None)
             return
         case_path = Path(supplied_cases).expanduser().resolve()
         suite = load_scene_cases(case_path, design=dict(design))
@@ -676,12 +753,20 @@ class SelfAssemble:
         self.scene_paths = paths
         preparation["scene_cases_path"] = str(case_path)
         preparation["scene_paths"] = {key: str(path) for key, path in paths.items()}
+        probe_path = export_probe_scenes(
+            suite=suite,
+            scene_paths=paths,
+            output_path=output_dir / "probe_scenes.json",
+        )
+        self.probe_scenes_path = probe_path
+        preparation["probe_scenes_path"] = str(probe_path)
 
     def _phase_design(self) -> PhaseResult:
         """Prepare or load the capability design after a successful STUDY."""
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
+        self.probe_scenes_path = None
         self._last_capability_preparation = None
         started = time.time()
         try:
@@ -706,12 +791,17 @@ class SelfAssemble:
                     "scene_paths": {
                         key: str(path) for key, path in self.scene_paths.items()
                     },
+                    "probe_scenes_path": (
+                        str(self.probe_scenes_path)
+                        if self.probe_scenes_path else None
+                    ),
                 },
             )
         except Exception as exc:  # noqa: BLE001
             self.capability_design = None
             self.scene_cases_path = None
             self.scene_paths = {}
+            self.probe_scenes_path = None
             preparation = getattr(self, "_last_capability_preparation", None) or {}
             return PhaseResult(
                 name="design", ok=False,
@@ -817,6 +907,7 @@ class SelfAssemble:
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
+        self.probe_scenes_path = None
         self._last_capability_preparation = None
         tools = self._local_tools() + self._local_runtime_tools()
         system = (
@@ -872,6 +963,10 @@ class SelfAssemble:
         user_msg += _actual_mjcf_context(self.cfg)
         user_msg += capability_generation_context(
             self.robot_definition, design=self.capability_design
+        )
+        user_msg += _scene_handoff_context(
+            self.probe_scenes_path,
+            driver_name="driver.py",
         )
         if prior_validate_failures:
             verification_tool = "local_exec"
@@ -945,6 +1040,10 @@ class SelfAssemble:
         user_msg += _actual_mjcf_context(self.cfg)
         user_msg += capability_generation_context(
             self.robot_definition, design=self.capability_design
+        )
+        user_msg += _scene_handoff_context(
+            self.probe_scenes_path,
+            driver_name="driver.py",
         )
         return self._run_phase(
             name=f"03_repair_{int(attempt)}",
@@ -1141,6 +1240,7 @@ class SelfAssemble:
             "study.json", "driver.py", "validate_report.json", "mcp_server.py",
             "design/capability_design.json", "design/capability_preparation.json",
             "design/scene_cases.yaml", "design/probe_report.json",
+            "design/probe_scenes.json",
         ):
             output = self.workspace / relative
             if output.resolve() not in supplied_inputs:
@@ -1148,6 +1248,7 @@ class SelfAssemble:
         self.capability_design = None
         self.scene_cases_path = None
         self.scene_paths = {}
+        self.probe_scenes_path = None
         methods = {
             "study": self._phase_study, "design": self._phase_design,
             "export": self._phase_export, "demo": self._phase_demo,

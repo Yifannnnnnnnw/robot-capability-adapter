@@ -4,8 +4,13 @@
 from __future__ import annotations
 
 import copy
+import importlib.util
+import json
 import math
+import os
 import re
+import shutil
+import uuid
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -622,6 +627,216 @@ def prepare_scenes(*, mjcf_path: Path, suite: dict, output_dir: Path) -> dict[st
     return result
 
 
+def _probe_initial_state(initial_state: Any, *, where: str) -> dict[str, Any]:
+    """Keep only the public initial-state fields used by scene probes."""
+
+    state = _object(initial_state, where=where)
+    _validate_initial_state(state, where=where)
+    robot = _object(state.get("robot", {}), where=f"{where}.robot")
+    qpos_by_joint = _object(
+        robot.get("qpos_by_joint", {}),
+        where=f"{where}.robot.qpos_by_joint",
+    )
+    free_bodies = _object(
+        state.get("free_bodies", {}),
+        where=f"{where}.free_bodies",
+    )
+    public_free_bodies: dict[str, Any] = {}
+    for name, raw_body in free_bodies.items():
+        body = _object(raw_body, where=f"{where}.free_bodies.{name}")
+        public_free_bodies[str(name)] = {
+            key: copy.deepcopy(body[key])
+            for key in (
+                "position_m",
+                "quaternion_wxyz",
+                "linear_velocity_m_s",
+                "angular_velocity_rad_s",
+            )
+            if key in body
+        }
+    ctrl_by_actuator = _object(
+        state.get("ctrl_by_actuator", {}),
+        where=f"{where}.ctrl_by_actuator",
+    )
+    return {
+        "robot": {
+            "keyframe": copy.deepcopy(robot.get("keyframe")),
+            "qpos_by_joint": copy.deepcopy(dict(qpos_by_joint)),
+        },
+        "free_bodies": public_free_bodies,
+        "ctrl_by_actuator": copy.deepcopy(dict(ctrl_by_actuator)),
+        "settle_s": copy.deepcopy(state.get("settle_s", 0.0)),
+    }
+
+
+def export_probe_scenes(
+    *,
+    suite: Mapping[str, Any],
+    scene_paths: Mapping[str, str | Path],
+    output_path: Path,
+) -> Path:
+    """Write the small public DESIGN scene handoff consumed by GEN/REPAIR.
+
+    Each environment is tied to a scene/capability/initial-state combination
+    from the loaded suite.  Requests, cases, measurements, execution limits,
+    and scoring remain in the trusted DESIGN inputs and are intentionally not
+    copied into this handoff.
+    """
+
+    root = _object(suite, where="scene/case suite")
+    scenes = root.get("scenes")
+    if not isinstance(scenes, Mapping) or not scenes:
+        raise SceneCaseError("scenes must be a non-empty object")
+    if not isinstance(scene_paths, Mapping):
+        raise SceneCaseError("scene_paths must be a mapping keyed by scene id")
+
+    resolved_paths: dict[str, Path] = {}
+    for raw_scene_id in scenes:
+        scene_id = _safe_path_id(raw_scene_id, where="scene id")
+        if raw_scene_id not in scene_paths:
+            raise SceneCaseError(f"scene_paths is missing scene {scene_id!r}")
+        path = Path(scene_paths[raw_scene_id]).expanduser().resolve()
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"prepared scene for {scene_id!r} does not exist: {path}"
+            )
+        resolved_paths[scene_id] = path
+
+    cases = root.get("cases")
+    if not isinstance(cases, list):
+        raise SceneCaseError("cases must be an array")
+    environments: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, raw_case in enumerate(cases):
+        case = _object(raw_case, where=f"cases[{index}]")
+        scene_id = _safe_path_id(
+            case.get("scene"), where=f"cases[{index}].scene"
+        )
+        if scene_id not in resolved_paths:
+            raise SceneCaseError(
+                f"cases[{index}].scene references unknown scene {scene_id!r}"
+            )
+        capability_id = _nonempty_text(
+            case.get("capability_id"),
+            where=f"cases[{index}].capability_id",
+        )
+        initial_state = _probe_initial_state(
+            case.get("initial_state"),
+            where=f"cases[{index}].initial_state",
+        )
+        environment = {
+            "scene_id": scene_id,
+            "capability_id": capability_id,
+            "scene_path": str(resolved_paths[scene_id]),
+            "initial_state": initial_state,
+        }
+        fingerprint = json.dumps(
+            environment,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
+        environments.append(environment)
+
+    target = Path(output_path).expanduser().resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(
+            {"environments": environments},
+            indent=2,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return target
+
+
+def _load_staged_driver(path: Path, module_name: str) -> Any:
+    spec = importlib.util.spec_from_file_location(module_name, str(path))
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot import driver from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def build_scene_driver(
+    driver_path: str | Path,
+    scene_path: str | Path,
+    *,
+    work_dir: str | Path,
+    from_scratch: bool = False,
+) -> Any:
+    """Build a candidate against one prepared scene in a disposable process.
+
+    The caller must provide an isolated ``work_dir`` (the validator and the
+    local-exec probes already use fresh temporary directories).  The original
+    candidate and workspace ``mjcf.xml`` are never modified.
+    """
+
+    candidate = Path(driver_path).expanduser().resolve()
+    scene_source = Path(scene_path).expanduser().resolve()
+    work = Path(work_dir).expanduser().resolve()
+    if not candidate.is_file():
+        raise FileNotFoundError(f"driver does not exist: {candidate}")
+    if not scene_source.is_file():
+        raise FileNotFoundError(f"prepared scene does not exist: {scene_source}")
+    if work == candidate.parent or work == scene_source.parent:
+        raise SceneCaseError(
+            "work_dir must be an independent disposable directory, separate "
+            "from the candidate and prepared-scene directories"
+        )
+    work.mkdir(parents=True, exist_ok=True)
+
+    driver_name = "driver_from_scratch.py" if from_scratch else "driver.py"
+    target_driver = work / driver_name
+    if candidate != target_driver:
+        shutil.copy2(candidate, target_driver)
+    mjcf_link = work / "mjcf.xml"
+    if mjcf_link.exists() or mjcf_link.is_symlink():
+        mjcf_link.unlink()
+    mjcf_link.symlink_to(scene_source)
+    os.chdir(work)
+
+    module = _load_staged_driver(
+        target_driver,
+        f"aa1_scene_driver_{uuid.uuid4().hex}",
+    )
+    if from_scratch:
+        robot_cls = getattr(module, "Robot", None)
+        build_from_mjcf = getattr(robot_cls, "build_from_mjcf", None)
+        if robot_cls is None or not callable(build_from_mjcf):
+            raise AttributeError("scratch driver must expose Robot.build_from_mjcf")
+        return build_from_mjcf(str(scene_source))
+    build = getattr(module, "build", None)
+    if not callable(build):
+        raise AttributeError("standard driver must expose build()")
+    return build()
+
+
+def reset_scene_driver(robot: Any, initial_state: Mapping[str, Any]) -> None:
+    """Reset a built candidate, then apply its public scene initial state."""
+
+    model = getattr(robot, "model", getattr(robot, "_model", None))
+    data = getattr(robot, "data", getattr(robot, "_data", None))
+    if model is None or data is None:
+        raise SceneCaseError("constructed driver must expose model and data")
+    reset = getattr(robot, "reset", None)
+    if callable(reset):
+        reset()
+    apply_initial_state(
+        model,
+        data,
+        {"initial_state": copy.deepcopy(dict(initial_state))},
+    )
+
+
 def _model_named_id(model: Any, kind: str, name: str, *, where: str) -> int:
     try:
         return int(getattr(model, kind)(name).id)
@@ -894,7 +1109,10 @@ def probe_case(
 __all__ = [
     "SceneCaseError",
     "apply_initial_state",
+    "build_scene_driver",
+    "export_probe_scenes",
     "load_scene_cases",
     "prepare_scenes",
     "probe_case",
+    "reset_scene_driver",
 ]

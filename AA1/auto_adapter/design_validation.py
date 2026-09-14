@@ -10,12 +10,10 @@ physics samples, and evaluates those samples with the shared DESIGN runtime.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import inspect
 import json
 import math
 import os
-import shutil
 import subprocess
 import sys
 import time
@@ -29,7 +27,11 @@ from .design_measurements import (
     evaluate_measurements,
     validate_measurement,
 )
-from .scene_runtime import apply_initial_state, load_scene_cases
+from .scene_runtime import (
+    build_scene_driver,
+    load_scene_cases,
+    reset_scene_driver,
+)
 
 
 def _json(value: Any) -> Any:
@@ -358,15 +360,6 @@ class _Recorder:
         )
 
 
-def _load_driver(path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, str(path))
-    if spec is None or spec.loader is None:
-        raise ImportError(f"cannot import driver from {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 def _worker_result(payload: Mapping[str, Any]) -> dict[str, Any]:
     case = _mapping(payload.get("case"), "worker.case")
     design = _mapping(payload.get("design"), "worker.design")
@@ -407,37 +400,13 @@ def _worker_result(payload: Mapping[str, Any]) -> dict[str, Any]:
                 f"prepared scene does not exist: {scene_source}"
             )
 
-        target_name = (
-            "driver_from_scratch.py"
-            if bool(payload.get("from_scratch"))
-            else "driver.py"
-        )
-        target_driver = output / target_name
-        shutil.copy2(driver_source, target_driver)
-        mjcf_link = output / "mjcf.xml"
-        if mjcf_link.exists() or mjcf_link.is_symlink():
-            mjcf_link.unlink()
-        mjcf_link.symlink_to(scene_source)
-        os.chdir(output)
-
         stage = "build"
-        if bool(payload.get("from_scratch")):
-            module = _load_driver(
-                target_driver, "design_validation_driver_from_scratch"
-            )
-            robot_cls = getattr(module, "Robot", None)
-            build_from_mjcf = getattr(robot_cls, "build_from_mjcf", None)
-            if robot_cls is None or not callable(build_from_mjcf):
-                raise AttributeError(
-                    "scratch driver must expose Robot.build_from_mjcf"
-                )
-            robot = build_from_mjcf(str(scene_source))
-        else:
-            module = _load_driver(target_driver, "design_validation_driver")
-            build = getattr(module, "build", None)
-            if not callable(build):
-                raise AttributeError("standard driver must expose build()")
-            robot = build()
+        robot = build_scene_driver(
+            driver_source,
+            scene_source,
+            work_dir=output,
+            from_scratch=bool(payload.get("from_scratch")),
+        )
 
         model = getattr(robot, "model", getattr(robot, "_model", None))
         data = getattr(robot, "data", getattr(robot, "_data", None))
@@ -462,10 +431,7 @@ def _worker_result(payload: Mapping[str, Any]) -> dict[str, Any]:
             validate_measurement(model, measurement, criterion, request)
 
         stage = "initial_state"
-        reset = getattr(robot, "reset", None)
-        if callable(reset):
-            reset()
-        apply_initial_state(model, data, dict(case))
+        reset_scene_driver(robot, _mapping(case.get("initial_state"), "case.initial_state"))
         if not _finite_state(model, data):
             raise ValueError("initial state is not finite")
 
