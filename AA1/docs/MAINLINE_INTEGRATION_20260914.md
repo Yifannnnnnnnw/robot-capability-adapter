@@ -55,6 +55,32 @@ tracking and 3 cm for contact-push end-effector positioning; this run does not
 establish uniformly tightened 2 cm capability criteria. The push measurements
 also do not constitute an object-at-goal predicate.
 
+## Prepared scenes supplied to generation and repair
+
+Implemented in `4e4e98b9`. Both generation routes now export
+`design/probe_scenes.json` from the current DESIGN inputs. It contains scene
+paths, capability associations and initial states; case requests, measurement
+bindings and execution limits are excluded. All four generation/repair prompts
+provide this file and a `local_exec` example. Probes and validation share
+`build_scene_driver()` and `reset_scene_driver()`, staging the candidate with
+the selected prepared MJCF in a separate directory.
+
+Local output: `AA1/artifacts/scene_handoff_piper_xdpqsctk/`. This check reused
+the fresh run's unchanged candidate and DESIGN; it made no model calls.
+Two actual `local_exec` probes loaded the prepared `push_block` scene with
+identical initial states. The source candidate and workspace MJCF were
+unchanged. The five validation cases were rerun with real MuJoCo videos:
+all seven measurement results exactly matched the original report, retaining
+the 3/5 verdict. All five videos decoded successfully. The focused root checks
+passed 33 tests; a separate scratch runtime check confirmed that the scene
+helpers remain importable without an inherited `PYTHONPATH`.
+
+The handoff defect is fixed and locally checked. A new model-driven repair
+has not yet been run, so this does not establish that the two failed
+capabilities now pass. Readable details are in `HANDOFF_REVIEW.md`; tool
+outputs, the public scene file and the validation comparison are preserved
+alongside it. These local diagnostic outputs are not committed to Git.
+
 ## MCP DEMO diagnostic on main
 
 Local output: `AA1/artifacts/mcp_demo_main_20260914_z01n9n1w/`.
