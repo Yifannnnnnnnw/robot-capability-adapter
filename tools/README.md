@@ -19,6 +19,12 @@ AA1/.venv/bin/python tools/generate_robot_scene_graphs.py --robot so101 --robot 
 | `render_robot_transparent_svgs.py` | `outputs/aa1-renders/robot_svgs/` | `<robot-id>.svg`, embedding a transparent PNG |
 | `generate_robot_scene_graphs.py` | `outputs/aa1-renders/scene_graphs/` | `<robot-id>.png`, showing the MJCF body hierarchy |
 
+The default `outputs/aa1-renders/` directory holds local previews and is ignored
+by Git. The scripts remain tracked, and the commands above regenerate the
+previews. Ignoring this directory does not delete existing images. Images
+selected for a maintained document should be saved with that document's assets
+and committed explicitly.
+
 Use AA1 catalogue IDs, such as `so101`, `franka`, `go2`, `aloha_2` and
 `skydio_x2`. Omit `--robot` to render every catalogue entry, including scene
 variants. Repeat `--robot` to select several entries. `--aa1-root` selects an

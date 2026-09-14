@@ -27,6 +27,15 @@ artifacts/*/recordings/
 artifacts/*/_raw_state/
 artifacts/*/__pycache__/
 
+# Local integration diagnostics. Conclusions are kept in
+# docs/MAINLINE_INTEGRATION_20260914.md; original runs remain on disk.
+# Keep the separately curated artifact directories visible to Git.
+/artifacts/mainline_piper_*/
+/artifacts/mcp_demo_main_*/
+/artifacts/recap_migration_*/
+/artifacts/recap_official_*/
+/artifacts/scene_handoff_*/
+
 # Tests scratch
 test_run.py
 test_hardware.py

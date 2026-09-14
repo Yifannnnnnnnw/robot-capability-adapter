@@ -39,6 +39,10 @@ dist/
 .DS_Store
 **/.DS_Store
 
+# Local MuJoCo runtime log and regenerable illustration previews.
+/MUJOCO_LOG.TXT
+/outputs/aa1-renders/
+
 # AA1 is tracked as a normal directory in this repository.
 
 # Raw experiment evidence stays local. Results documents retain run ids and
