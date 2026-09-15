@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1648f5">
+  <meta name="description" content="AutoAdapter 2.0 generates robot-specific drivers and validates their behaviour in MuJoCo. Explore a real ReCAP execution, one capability call at a time.">
+  <title>AutoAdapter 2.0 — From plans to robot motion</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231648f5'/%3E%3Cpath d='M7 24 16 7l9 17M11 18h10' fill='none' stroke='white' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="header wrap">
+    <a class="brand" href="#" aria-label="AutoAdapter 2.0 home"><span class="brand-mark" aria-hidden="true">A</span> AutoAdapter <span class="version">2.0</span></a>
+    <nav aria-label="Main navigation"><a href="#demo">Demo</a><a href="#method">Method</a><a href="#research">Research</a><a class="nav-source" href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">GitHub ↗</a></nav>
+  </header>
+  <main id="main">
+    <section class="intro wrap" aria-labelledby="hero-title">
+      <div><p class="eyebrow">ROBOT-SPECIFIC DRIVER SYNTHESIS</p><h1 id="hero-title">Watch a plan<br>become <span>motion.</span></h1></div>
+      <div class="intro-description"><p>AutoAdapter generates reusable robot drivers and checks their behaviour in MuJoCo. Follow a real ReCAP planner as it calls those capabilities to complete a task.</p><a class="text-link" href="#method">How AutoAdapter works ↓</a></div>
+    </section>
+
+    <section class="demo wrap" id="demo" aria-labelledby="demo-title">
+      <div class="demo-toolbar"><div><p class="eyebrow">EXECUTION EXPLORER</p><h2 id="demo-title">Franka Panda <span>/ Pick &amp; place</span></h2></div><span class="mode-badge" id="mode-label">Recorded execution</span></div>
+      <div class="control-chain" aria-label="Actual execution chain"><span>ReCAP planner</span><b aria-hidden="true">→</b><span>MCP tool call</span><b aria-hidden="true">→</b><span>Generated driver</span><b aria-hidden="true">→</b><span>MuJoCo</span></div>
+      <div class="demo-grid">
+        <div class="robot-column">
+          <div class="video-stage">
+            <video id="robot-video" controls playsinline preload="metadata" aria-label="Original MuJoCo recording of the Panda pick-and-place task"><source src="assets/panda-pick-place.mp4" type="video/mp4">Your browser cannot play this recording. <a href="assets/panda-pick-place.mp4">Download the video</a>.</video>
+            <img id="live-frame" alt="Current frame from the local MuJoCo simulation" hidden>
+          </div>
+          <div class="playback-controls"><button class="button primary" type="button" id="play-run" disabled>Play recorded run</button><div class="step-controls"><button type="button" id="previous-call" aria-label="Previous driver call" disabled>←</button><button type="button" id="next-call" aria-label="Next driver call" disabled>→</button></div><label class="speed-label">Speed <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label></div>
+          <p class="playback-note" id="playback-note">Original simulation video, aligned to recorded driver calls. Model waiting time is omitted from the recording.</p>
+          <div class="task-brief"><span class="note-label">THE TASK</span><p>Grasp the block, lift it from the source table, carry it to the raised destination, then release and withdraw.</p></div>
+        </div>
+        <div class="inspector">
+          <div class="inspector-heading"><h3>Inside the execution</h3><span class="mono" id="call-counter">Loading…</span></div>
+          <label class="call-picker-label" for="call-picker">Jump to a driver call</label><select id="call-picker" disabled><option>Loading recorded calls…</option></select>
+          <div class="plan-summary"><p class="inspector-label">RECAP · PUBLIC PLAN SUMMARY</p><p id="plan-summary">Loading the recorded plan…</p></div>
+          <div class="tool-detail"><p class="inspector-label">GENERATED DRIVER · REQUEST</p><code id="tool-name">—</code><pre id="tool-request">Loading…</pre></div>
+          <div class="feedback"><p class="inspector-label">DRIVER FEEDBACK <span id="feedback-label"></span></p><p id="driver-feedback">Select a call to inspect its recorded response.</p></div>
+          <p class="inspector-footnote">A normal tool return is separate from the final physical task verdict.</p>
+        </div>
+      </div>
+      <div class="run-result"><div><span class="result-label">INDEPENDENT TASK CHECK</span><strong id="task-verdict">Loading result…</strong></div><p id="task-result-description">The final verdict comes from recorded physical state.</p></div>
+      <p class="source-driver-note">Source driver: 4 of 5 capability checks passed; contact pressing did not pass. This task uses the existing, separately exported driver. Task success does not change that validation result.</p>
+      <p class="demo-status" id="demo-status" role="status" aria-live="polite"></p>
+      <details class="live-connection" id="live-connection"><summary>Connect a local MuJoCo simulation <span>Run ReCAP with the existing driver</span></summary><div class="connection-body"><p>The hosted page includes the recorded run above. A live run uses the project's local demo bridge, real model access and MuJoCo on your computer.</p><div class="connection-controls"><label for="bridge-url">Local bridge</label><input id="bridge-url" type="url" value="http://127.0.0.1:8766" spellcheck="false"><button id="connect-bridge" class="button secondary" type="button">Connect</button><button id="run-live" class="button primary" type="button" disabled>Run live task</button><button id="stop-live" class="button secondary" type="button" disabled>Stop</button></div><p id="connection-status" role="status">Not connected. Model credentials stay on the local server.</p><a class="text-link" href="https://github.com/Yifannnnnnnnw/robot-capability-adapter/blob/gh-pages/README.md">Local demo setup ↗</a></div></details>
+    </section>
+
+    <section class="section wrap" id="method" aria-labelledby="method-title">
+      <div class="section-heading"><div><p class="eyebrow">THE METHOD</p><h2 id="method-title">Build the interface.<br>Verify the behaviour.</h2></div><p>A planner can compose tools, but a new robot still needs its own implementation. AutoAdapter brings that robot-specific software into the generation loop.</p></div>
+      <ol class="pipeline"><li><span class="step-number">01 / DESIGN</span><h3>Define capabilities</h3><p>Turn robot descriptions and target tasks into reusable operations and measurable behavioural requirements.</p><span class="step-output">Robot information → interface &amp; tests</span></li><li><span class="step-number">02 / GENERATE</span><h3>Synthesise a driver</h3><p>Implement those operations in Python, using the robot's actual joints, actuators and observations.</p><span class="step-output">Capability interface → driver</span></li><li><span class="step-number">03 / VALIDATE</span><h3>Observe and repair</h3><p>An independent Harness reads MuJoCo state, applies fixed criteria and provides feedback for driver repair.</p><span class="step-output">Physical state → verdict &amp; feedback</span></li><li><span class="step-number">04 / USE</span><h3>Compose operations</h3><p>ReCAP calls the generated capabilities to perform downstream tasks, whose outcomes are evaluated separately.</p><span class="step-output">Reusable operations → tasks</span></li></ol>
+      <aside class="method-note"><span class="note-label">Why independent checks?</span><p>Executable code can still produce the wrong movement. The Harness judges simulator observations outside the candidate driver's control. Capability specifications and tests are still authored during Design.</p></aside>
+    </section>
+
+    <section class="cases-section" id="cases" aria-labelledby="cases-title"><div class="wrap"><div class="section-heading"><div><p class="eyebrow">ACROSS ROBOTS</p><h2 id="cases-title">Different bodies.<br>Different failure modes.</h2></div><p>The thesis studies a fixed-base arm, a dexterous hand and an aerial robot. Accurate local movement does not automatically establish reliable contact or task completion.</p></div>
+      <div class="case-tabs" role="tablist" aria-label="Robot case studies" hidden><button type="button" id="tab-panda" role="tab" aria-controls="case-panda" aria-selected="true" tabindex="0">Franka Panda <span>Arm</span></button><button type="button" id="tab-leap" role="tab" aria-controls="case-leap" aria-selected="false" tabindex="-1">LEAP Hand <span>Hand</span></button><button type="button" id="tab-skydio" role="tab" aria-controls="case-skydio" aria-selected="false" tabindex="-1">Skydio X2 <span>Aerial robot</span></button></div>
+      <article class="case-panel" id="case-panda" aria-labelledby="panda-title"><div class="case-description"><span class="case-index">CASE / 01</span><h3 id="panda-title">Franka Panda</h3><p class="case-lead">From end-effector motion to tabletop manipulation.</p><p>ReCAP combines positioning, waypoints, gripper aperture and wrist rotation for drawer opening, dial turning and pick-and-place.</p><p class="case-observation"><strong>What this examines</strong>Reusing one driver across tasks with different motion and contact requirements.</p></div><figure><a href="assets/panda-tasks.png"><img src="assets/panda-tasks.png" width="1668" height="1336" alt="Panda simulation sequences showing drawer opening, dial turning and pick-and-place." loading="lazy"></a><figcaption>Chapter 5 task sequences. Select the image for full size.</figcaption></figure></article>
+      <article class="case-panel" id="case-leap" aria-labelledby="leap-title"><div class="case-description"><span class="case-index">CASE / 02</span><h3 id="leap-title">LEAP Hand</h3><p class="case-lead">Positioning a fingertip is only the beginning.</p><p>Cases cover fingertip reach, joint pose, object holding, block manipulation and valve turning. Accurate local positioning did not translate into reliable object manipulation.</p><p class="case-observation"><strong>Observed limitation</strong>Whole-hand coordination, sustained contact and stability remain demanding.</p></div><figure><a href="assets/leap-tasks.png"><img src="assets/leap-tasks.png" width="3200" height="528" alt="Five LEAP Hand evaluation scenes, including unsuccessful object manipulation tasks." loading="lazy"></a><figcaption>First task evaluation scenes; an image does not imply task success.</figcaption></figure></article>
+      <article class="case-panel" id="case-skydio" aria-labelledby="skydio-title"><div class="case-description"><span class="case-index">CASE / 03</span><h3 id="skydio-title">Skydio X2</h3><p class="case-lead">Connecting generated operations to flight tasks.</p><p>The aerial robot case examines flight control, task interpretation and execution conditions, including failures and subsequent retries.</p><p class="case-observation"><strong>What this examines</strong>How task definitions and robot-specific preparation affect downstream outcomes.</p></div><figure><a href="assets/skydio-tasks.png"><img src="assets/skydio-tasks.png" width="1660" height="320" alt="Skydio X2 simulation task scenes from Chapter 5." loading="lazy"></a><figcaption>Selected flight task scenes from the thesis.</figcaption></figure></article>
+      <p class="evidence-note">These are selected simulation case studies, with robot-specific preparation and retries where documented. They are not a controlled morphology comparison or evidence of physical-hardware performance.</p>
+    </div></section>
+
+    <section class="section wrap" id="research" aria-labelledby="research-title"><div class="section-heading"><div><p class="eyebrow">THE RESEARCH</p><h2 id="research-title">Three questions.<br>Distinct kinds of evidence.</h2></div><p>The MSc thesis separates framework operation, model comparison and cross-robot analysis. Driver validation and downstream task completion are reported separately.</p></div><div class="research-rows"><article><span class="mono">CHAPTER 03</span><h3>Auto-Adapter Framework</h3><p>Can the system produce independently validated drivers that support downstream tasks?</p></article><article><span class="mono">CHAPTER 04</span><h3>AutoAdapter-Bench</h3><p>How do language models perform as driver generators and as high-level decision-makers?</p></article><article><span class="mono">CHAPTER 05</span><h3>Cross-Robot Evaluation</h3><p>Where does the generation process work across robot configurations, and where does it fail?</p></article></div><div class="paper-link"><div><p class="eyebrow">MSc RESEARCH · UCL COMPUTER SCIENCE</p><h3>Auto-Adapter: Robot-Specific Driver Synthesis<br class="desktop-break"> with Independent Closed-Loop Validation</h3><p>Yifan Wang</p></div><a class="button secondary" href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">Project repository ↗</a></div></section>
+  </main>
+  <footer class="footer wrap"><a class="brand" href="#">AutoAdapter <span class="version">2.0</span></a><p>Generated capabilities. Independently observed behaviour.</p><a href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">GitHub ↗</a></footer>
+</body>
+</html>

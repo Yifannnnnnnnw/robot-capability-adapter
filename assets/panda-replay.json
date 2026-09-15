@@ -1,0 +1,782 @@
+{
+  "title": "Watch ReCAP move a Franka Panda",
+  "subtitle": "A recorded MuJoCo task, using one existing generated driver.",
+  "task": "Grasp target_object with both fingers, lift it clear of source_table, carry it onto the raised destination, then open the fingers and withdraw. Leave the object supported at the goal without tool contact for at least 0.2 seconds.",
+  "robot": "Franka Panda",
+  "planner": "ReCAP",
+  "model": "GPT-6 Astra",
+  "mode": "recorded-replay",
+  "source": {
+    "run": "expriment/chapter5_cross_robot/data/runs/franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central",
+    "video": "expriment/chapter5_cross_robot/data/runs/franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/video.mp4",
+    "calls": "expriment/chapter5_cross_robot/data/runs/franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/task_report.json",
+    "controllerTrace": "expriment/chapter5_cross_robot/data/runs/franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/trace.jsonl",
+    "evaluation": "expriment/chapter5_cross_robot/data/runs/franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/task_evaluation.json",
+    "runtime": "expriment/chapter5_cross_robot/data/runs/franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/runtime_report.json"
+  },
+  "simulation": {
+    "start": 0.3000000000000002,
+    "end": 19.97399999999981,
+    "duration": 19.673999999999808,
+    "timestep": 0.002
+  },
+  "media": {
+    "fps": 30,
+    "frameCount": 628,
+    "duration": 20.933333333333334,
+    "width": 480,
+    "height": 368,
+    "videoBytes": 161983
+  },
+  "synchronization": {
+    "kind": "reconstructed-recording-frame-boundaries",
+    "initializationFrames": [
+      0,
+      1
+    ],
+    "captureEveryPhysicsSteps": 16,
+    "description": "The recorder captures every 16 physics steps, plus two initial frames and one observation frame after each capability call. Frames use 30 fps playback. Simulation time is not playback time, and model waiting time is not represented.",
+    "endpointFormula": "endFrame = 1 + floor(round((simEnd - simStartOfRun) / timestep) / 16) + callIndex; videoEnd = endFrame / 30; callIndex is one-based.",
+    "startConvention": "Each call starts at the previous observed boundary frame; adjacent calls share that boundary. Frame 0 is the initial setup image, and frame 1 is the initial public observation.",
+    "verification": {
+      "physicsSteps": 9837,
+      "periodicFrames": 614,
+      "initialFrames": 2,
+      "callEndpointFrames": 12,
+      "reconstructedFrameCount": 628,
+      "decodedVideoFrameCount": 628,
+      "lastFrameIndex": 627
+    },
+    "limitation": "Frame timings are reconstructed from the actual recorder rule and recorded simulator times; the source video has no per-frame simulator timestamp track."
+  },
+  "planSummaryNote": "Each planSummary is the latest recorded model-authored brief ReCAP plan before the call. The controller then emits a deterministic direct-execution plan. These are public action summaries, not private reasoning.",
+  "observationNote": "publicObservation contains only the public post-call robot state: end-effector pose and finger positions. No separate named object observation is added or inferred.",
+  "calls": [
+    {
+      "index": 1,
+      "name": "follow_end_effector_waypoints",
+      "request": {
+        "first_position": [
+          0.4514,
+          -0.09,
+          0.54
+        ],
+        "second_position": [
+          0.4514,
+          -0.09,
+          0.4284
+        ],
+        "segment_duration_s": 1.5
+      },
+      "simStart": 0.3,
+      "simEnd": 4.608,
+      "startFrame": 1,
+      "endFrame": 136,
+      "videoStart": 0.03333333333333333,
+      "videoEnd": 4.533333333333333,
+      "planSummary": "The fingers are already open. Move above the object and descend with the hand about 0.1034 m above its center, then check alignment before closing.",
+      "subtasks": [
+        "{\"capability_name\":\"follow_end_effector_waypoints\",\"request\":{\"first_position\":[0.4514,-0.09,0.54],\"second_position\":[0.4514,-0.09,0.4284],\"segment_duration_s\":1.5}}",
+        "Check the observed finger-pad alignment with target_object and close both fingers to establish a grasp."
+      ],
+      "sourcePlanLine": 6,
+      "sourceCallLine": 11,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 4.6079999999997145,
+        "endEffectorPosition": [
+          0.4510783066693833,
+          -0.08995081457227184,
+          0.4268548322749341
+        ],
+        "endEffectorRotation": [
+          [
+            0.1809558932831076,
+            0.7667615826560901,
+            -0.615899050209398
+          ],
+          [
+            0.9833510749126233,
+            -0.1516303168963735,
+            0.10014444800432787
+          ],
+          [
+            -0.016602052713407478,
+            -0.6237667211070427,
+            -0.7814342259493553
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": -0.0002187041649114882,
+          "finger_joint2": 4.462015508116653e-05
+        }
+      }
+    },
+    {
+      "index": 2,
+      "name": "set_gripper_aperture",
+      "request": {
+        "aperture_per_finger_m": 0.04,
+        "settle_s": 0.3
+      },
+      "simStart": 4.608,
+      "simEnd": 5.41,
+      "startFrame": 136,
+      "endFrame": 162,
+      "videoStart": 4.533333333333333,
+      "videoEnd": 5.4,
+      "planSummary": "The motion changed hand orientation and the fingers closed; the object shifted. Reopen explicitly, then correct the approach using the observed pad offset rather than the home orientation.",
+      "subtasks": [
+        "{\"capability_name\":\"set_gripper_aperture\",\"request\":{\"aperture_per_finger_m\":0.04,\"settle_s\":0.3}}",
+        "Align the finger-pad midpoint with the observed object center using the current hand orientation, then close both fingers."
+      ],
+      "sourcePlanLine": 14,
+      "sourceCallLine": 19,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": false,
+        "reason": "aperture not reached (blocked or stalled)"
+      },
+      "publicObservation": {
+        "simTime": 5.409999999999626,
+        "endEffectorPosition": [
+          0.4510865085889875,
+          -0.08994918337077581,
+          0.4268612501246819
+        ],
+        "endEffectorRotation": [
+          [
+            0.18095157342078802,
+            0.7667889686521089,
+            -0.615866223809988
+          ],
+          [
+            0.9833518896836703,
+            -0.15163054752704339,
+            0.10013609794775213
+          ],
+          [
+            -0.01660087744951777,
+            -0.6237329994557624,
+            -0.7814611674663188
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": -0.0002176551470795599,
+          "finger_joint2": 4.41491230758714e-05
+        }
+      }
+    },
+    {
+      "index": 3,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.49,
+          -0.098,
+          0.5
+        ],
+        "motion_duration_s": 1.0,
+        "settle_s": 0.2
+      },
+      "simStart": 5.41,
+      "simEnd": 7.014,
+      "startFrame": 162,
+      "endFrame": 213,
+      "videoStart": 5.4,
+      "videoEnd": 7.1,
+      "planSummary": "Opening was blocked at the low, tilted pose. Raise the hand away from the table before retrying and realigning the grasp.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.49,-0.098,0.5],\"motion_duration_s\":1.0,\"settle_s\":0.2}}",
+        "Verify finger opening in clearance, then approach the shifted object with orientation-corrected finger-pad alignment and grasp it."
+      ],
+      "sourcePlanLine": 22,
+      "sourceCallLine": 27,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 7.01399999999945,
+        "endEffectorPosition": [
+          0.48987749285767557,
+          -0.09791182316708363,
+          0.49416331502748706
+        ],
+        "endEffectorRotation": [
+          [
+            0.18396450311107498,
+            0.8874617082186059,
+            -0.42257399120249606
+          ],
+          [
+            0.9827506644601026,
+            -0.17434321856133356,
+            0.061689331694384425
+          ],
+          [
+            -0.018925990022189282,
+            -0.42663351789022275,
+            -0.9042265470081549
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.03999448434167918,
+          "finger_joint2": 0.03999300794203024
+        }
+      }
+    },
+    {
+      "index": 4,
+      "name": "set_wrist_roll_angle",
+      "request": {
+        "wrist_roll_rad": 0.7854,
+        "motion_duration_s": 0.7
+      },
+      "simStart": 7.014,
+      "simEnd": 8.212,
+      "startFrame": 213,
+      "endFrame": 252,
+      "videoStart": 7.1,
+      "videoEnd": 8.4,
+      "planSummary": "The fingers reopened and the object settled at [0.4757, -0.0954, 0.3249]. Rotate the wrist so finger separation is nearly horizontal, reducing table interference during the tilted approach.",
+      "subtasks": [
+        "{\"capability_name\":\"set_wrist_roll_angle\",\"request\":{\"wrist_roll_rad\":0.7854,\"motion_duration_s\":0.7}}",
+        "Approach the object's updated position with the current orientation offset, verify pad alignment, and close both fingers."
+      ],
+      "sourcePlanLine": 30,
+      "sourceCallLine": 35,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 8.211999999999412,
+        "endEffectorPosition": [
+          0.4897998870814155,
+          -0.097834798854082,
+          0.488366210105868
+        ],
+        "endEffectorRotation": [
+          [
+            0.8820929570041931,
+            -0.1823135349777887,
+            -0.4343659634081607
+          ],
+          [
+            -0.1720985277227605,
+            -0.9830553886769045,
+            0.0631205160701076
+          ],
+          [
+            -0.4385135254005915,
+            0.019075580127511038,
+            -0.8985221256505271
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.03999994464723949,
+          "finger_joint2": 0.03999999927709692
+        }
+      }
+    },
+    {
+      "index": 5,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.531,
+          -0.103,
+          0.419
+        ],
+        "motion_duration_s": 1.0,
+        "settle_s": 0.2
+      },
+      "simStart": 8.212,
+      "simEnd": 9.812,
+      "startFrame": 252,
+      "endFrame": 303,
+      "videoStart": 8.4,
+      "videoEnd": 10.1,
+      "planSummary": "Finger separation is now nearly horizontal. Approach with a lateral offset for the tilted hand, then inspect the actual pad position before closing.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.531,-0.103,0.419],\"motion_duration_s\":1.0,\"settle_s\":0.2}}",
+        "Check finger-pad alignment and close the gripper around target_object, correcting position first if needed."
+      ],
+      "sourcePlanLine": 38,
+      "sourceCallLine": 43,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 9.811999999999946,
+        "endEffectorPosition": [
+          0.530131800671133,
+          -0.10279358072486218,
+          0.4124575034812997
+        ],
+        "endEffectorRotation": [
+          [
+            0.8546403800710007,
+            -0.17684814822840728,
+            -0.48817471587565525
+          ],
+          [
+            -0.17174518939811562,
+            -0.9835689083253805,
+            0.05563984628144203
+          ],
+          [
+            -0.48999327614845783,
+            0.03628959966437206,
+            -0.8709705243494172
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.03999987925221839,
+          "finger_joint2": 0.04000000559922553
+        }
+      }
+    },
+    {
+      "index": 6,
+      "name": "set_gripper_aperture",
+      "request": {
+        "aperture_per_finger_m": 0.0,
+        "settle_s": 0.4
+      },
+      "simStart": 9.812,
+      "simEnd": 10.612,
+      "startFrame": 303,
+      "endFrame": 329,
+      "videoStart": 10.1,
+      "videoEnd": 10.966666666666667,
+      "planSummary": "The computed pad midpoint is approximately [0.4797, -0.0970, 0.3224], within 5 mm of the object center. Close both fingers at this aligned pose.",
+      "subtasks": [
+        "{\"capability_name\":\"set_gripper_aperture\",\"request\":{\"aperture_per_finger_m\":0.0,\"settle_s\":0.4}}"
+      ],
+      "sourcePlanLine": 46,
+      "sourceCallLine": 51,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": false,
+        "reason": "aperture not reached (blocked or stalled)"
+      },
+      "publicObservation": {
+        "simTime": 10.612000000000213,
+        "endEffectorPosition": [
+          0.5301427481308556,
+          -0.10279058673917027,
+          0.412458493911527
+        ],
+        "endEffectorRotation": [
+          [
+            0.8546552721811245,
+            -0.17684273118350094,
+            -0.48815060602294325
+          ],
+          [
+            -0.17173740658523942,
+            -0.9835702277966696,
+            0.05564054431241747
+          ],
+          [
+            -0.4899700285858135,
+            0.036280234557758195,
+            -0.8709839927737191
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.02201630588760342,
+          "finger_joint2": 0.02201665560885579
+        }
+      }
+    },
+    {
+      "index": 7,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.53,
+          -0.103,
+          0.59
+        ],
+        "motion_duration_s": 1.3,
+        "settle_s": 0.2
+      },
+      "simStart": 10.612,
+      "simEnd": 12.512,
+      "startFrame": 329,
+      "endFrame": 389,
+      "videoStart": 10.966666666666667,
+      "videoEnd": 12.966666666666667,
+      "planSummary": "Raise the hand enough to clear the source and destination while keeping the grip closed, then inspect the object's measured motion before transfer.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.53,-0.103,0.59],\"motion_duration_s\":1.3,\"settle_s\":0.2}}",
+        "Verify the object was lifted and remains between both fingers, then carry it above the destination with adequate clearance."
+      ],
+      "sourcePlanLine": 60,
+      "sourceCallLine": 65,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 12.512000000000848,
+        "endEffectorPosition": [
+          0.5310311802308032,
+          -0.10306405290329441,
+          0.5834191266468195
+        ],
+        "endEffectorRotation": [
+          [
+            0.9736047078375478,
+            -0.1815607462843581,
+            -0.13830968254330162
+          ],
+          [
+            -0.18307335407617398,
+            -0.9830975829194228,
+            0.0018136938239818965
+          ],
+          [
+            -0.13630121020688607,
+            0.02355499663880843,
+            -0.9903873697849153
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.02195981933627781,
+          "finger_joint2": 0.021960065304379252
+        }
+      }
+    },
+    {
+      "index": 8,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.61,
+          0.09,
+          0.59
+        ],
+        "motion_duration_s": 1.5,
+        "settle_s": 0.2
+      },
+      "simStart": 12.512,
+      "simEnd": 14.612,
+      "startFrame": 389,
+      "endFrame": 456,
+      "videoStart": 12.966666666666667,
+      "videoEnd": 15.2,
+      "planSummary": "The object rose to z=0.4808 m while both fingers maintained their grasp, giving more than 0.09 m source clearance. Transfer above the destination while preserving this height.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.61,0.09,0.59],\"motion_duration_s\":1.5,\"settle_s\":0.2}}"
+      ],
+      "sourcePlanLine": 68,
+      "sourceCallLine": 73,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 14.612000000001549,
+        "endEffectorPosition": [
+          0.6114995468367168,
+          0.08999037556348766,
+          0.5818582994922497
+        ],
+        "endEffectorRotation": [
+          [
+            0.9879208294209267,
+            0.15005655541382587,
+            0.03867124220402508
+          ],
+          [
+            0.1490811470986991,
+            -0.9884563727647748,
+            0.02699649459535808
+          ],
+          [
+            0.042275836786526175,
+            -0.020905246184596073,
+            -0.9988872430389515
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.02196005350118319,
+          "finger_joint2": 0.021959833312840175
+        }
+      }
+    },
+    {
+      "index": 9,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.613,
+          0.088,
+          0.528
+        ],
+        "motion_duration_s": 1.0,
+        "settle_s": 0.3
+      },
+      "simStart": 14.612,
+      "simEnd": 16.314,
+      "startFrame": 456,
+      "endFrame": 510,
+      "videoStart": 15.2,
+      "videoEnd": 17.0,
+      "planSummary": "The tilted object extends roughly 0.033 m below its center. Lower the hand toward z=0.528 m, accounting for tracking error and the approximately 0.106 m object offset, then inspect surface support.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.613,0.088,0.528],\"motion_duration_s\":1.0,\"settle_s\":0.3}}",
+        "Check the object's bottom relative to the 0.38 m destination surface and finish gentle lowering if needed."
+      ],
+      "sourcePlanLine": 82,
+      "sourceCallLine": 87,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 16.314000000001837,
+        "endEffectorPosition": [
+          0.6137205066154334,
+          0.08790783903841189,
+          0.5197381324509636
+        ],
+        "endEffectorRotation": [
+          [
+            0.984584987397717,
+            0.14507907083556076,
+            -0.09769578187683588
+          ],
+          [
+            0.14661677957840463,
+            -0.9891550158030524,
+            0.008710606047750521
+          ],
+          [
+            -0.09537254603445096,
+            -0.022900172862926886,
+            -0.9951782049189748
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.021960061696889584,
+          "finger_joint2": 0.021959822938249374
+        }
+      }
+    },
+    {
+      "index": 10,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.613,
+          0.088,
+          0.526
+        ],
+        "motion_duration_s": 0.5,
+        "settle_s": 0.3
+      },
+      "simStart": 16.314,
+      "simEnd": 17.368,
+      "startFrame": 510,
+      "endFrame": 544,
+      "videoStart": 17.0,
+      "videoEnd": 18.133333333333333,
+      "planSummary": "The object is centered at [0.5995, 0.0883, 0.4133], with its lowest corner approximately 1 mm above the destination. Lower another 2 mm gently to establish support.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.613,0.088,0.526],\"motion_duration_s\":0.5,\"settle_s\":0.3}}"
+      ],
+      "sourcePlanLine": 90,
+      "sourceCallLine": 95,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 17.368000000001253,
+        "endEffectorPosition": [
+          0.6137633021675213,
+          0.0879164842130521,
+          0.5177261348545459
+        ],
+        "endEffectorRotation": [
+          [
+            0.984162187973335,
+            0.14513879637647092,
+            -0.10178171520428168
+          ],
+          [
+            0.14669309404961361,
+            -0.989150379669104,
+            0.007915968583608997
+          ],
+          [
+            -0.09952850808530898,
+            -0.022721271682165516,
+            -0.9947752609969028
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.021960061325186016,
+          "finger_joint2": 0.021959824501025228
+        }
+      }
+    },
+    {
+      "index": 11,
+      "name": "set_gripper_aperture",
+      "request": {
+        "aperture_per_finger_m": 0.04,
+        "settle_s": 0.4
+      },
+      "simStart": 17.368,
+      "simEnd": 18.17,
+      "startFrame": 544,
+      "endFrame": 570,
+      "videoStart": 18.133333333333333,
+      "videoEnd": 19.0,
+      "planSummary": "The object is at the destination. Open the fingers first, then withdraw and check that the object remains supported independently.",
+      "subtasks": [
+        "{\"capability_name\":\"set_gripper_aperture\",\"request\":{\"aperture_per_finger_m\":0.04,\"settle_s\":0.4}}",
+        "Withdraw the open gripper upward and hold clear for at least 0.2 seconds; verify the object's final position and stable support."
+      ],
+      "sourcePlanLine": 101,
+      "sourceCallLine": 106,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 18.170000000000808,
+        "endEffectorPosition": [
+          0.6137583220592316,
+          0.08791722745906816,
+          0.5178154671897081
+        ],
+        "endEffectorRotation": [
+          [
+            0.984179943609578,
+            0.14514252906873548,
+            -0.10160455133593341
+          ],
+          [
+            0.1466949856481648,
+            -0.989149922230641,
+            0.007938043637964114
+          ],
+          [
+            -0.09934998632274578,
+            -0.0227173415399949,
+            -0.9947931959010488
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.03999453499274172,
+          "finger_joint2": 0.039994456048459956
+        }
+      }
+    },
+    {
+      "index": 12,
+      "name": "move_end_effector_to_position",
+      "request": {
+        "target_position": [
+          0.613,
+          0.088,
+          0.65
+        ],
+        "motion_duration_s": 1.0,
+        "settle_s": 0.4
+      },
+      "simStart": 18.17,
+      "simEnd": 19.974,
+      "startFrame": 570,
+      "endFrame": 627,
+      "videoStart": 19.0,
+      "videoEnd": 20.9,
+      "planSummary": "The fingers are open and the object is stationary on the destination at [0.6118, 0.0907, 0.4049]. Withdraw upward and hold clear to finish the no-contact requirement.",
+      "subtasks": [
+        "{\"capability_name\":\"move_end_effector_to_position\",\"request\":{\"target_position\":[0.613,0.088,0.65],\"motion_duration_s\":1.0,\"settle_s\":0.4}}"
+      ],
+      "sourcePlanLine": 109,
+      "sourceCallLine": 114,
+      "operationStatus": "EXECUTED",
+      "driverResult": {
+        "success": true,
+        "reason": null
+      },
+      "publicObservation": {
+        "simTime": 19.97399999999981,
+        "endEffectorPosition": [
+          0.6152928363895589,
+          0.08810260448186936,
+          0.6419906567457645
+        ],
+        "endEffectorRotation": [
+          [
+            0.9689883748639407,
+            0.14793437558808914,
+            0.19793167987439486
+          ],
+          [
+            0.14112679875869438,
+            -0.988819948160931,
+            0.048149109972411175
+          ],
+          [
+            0.20284170195169615,
+            -0.018722463469707837,
+            -0.9790325394546209
+          ]
+        ],
+        "gripperJointPositions": {
+          "finger_joint1": 0.04000000122571273,
+          "finger_joint2": 0.03999993619971144
+        }
+      }
+    }
+  ],
+  "independentEvaluation": {
+    "physicalTaskSuccess": true,
+    "evaluationError": null,
+    "metrics": [
+      {
+        "check": "terminal_target_distance_m",
+        "value": 0.011841431091462813,
+        "threshold": 0.07,
+        "ok": true
+      },
+      {
+        "check": "bilateral_finger_contact",
+        "value": true,
+        "threshold": true,
+        "ok": true
+      },
+      {
+        "check": "released_supported_goal_hold_s",
+        "value": 2.5019999999986133,
+        "threshold": 0.2,
+        "ok": true
+      }
+    ],
+    "note": "The final physical verdict is assessed independently from MuJoCo state. A normal MCP return and the driver's own success flag are separate from this verdict."
+  },
+  "scopeNote": "This is one recorded simulated task. The Panda case used a separately exported, partially validated driver; downstream task success does not change the original generation or validation result."
+}
