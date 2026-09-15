@@ -1096,6 +1096,7 @@ def probe_case(
         for _ in range(steps):
             mujoco.mj_step(model, data)
         report["steps"] = steps
+        mujoco.mj_forward(model, data)
         report["post_step_sample"] = capture_sample(model, data)
         report["sim_time_s"] = float(data.time)
         report["ok"] = True

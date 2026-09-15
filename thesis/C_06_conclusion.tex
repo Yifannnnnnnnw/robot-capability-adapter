@@ -12,33 +12,58 @@ stages of validation, cross-robot comparison, and real-world extension.
 
 \section[Summary]{Summary}
 
-This thesis investigated how language models can construct reusable,
-executable, and independently validated software interfaces for different
-robots. Auto-Adapter frames this problem as the synthesis and validation of a
-robot-specific driver. By separating capability definition, driver
-implementation, and trusted Harness judgement, the framework allows interface
-correctness, behavioural correctness, and downstream task success to be
-evaluated independently.
+This thesis investigated whether large language models can generate reusable
+robot-specific software for high-level embodied agents. Auto-Adapter derives
+capability interfaces from robot descriptions and documented task requirements,
+then implements them as Python drivers. An independent Harness assesses driver
+behaviour using MuJoCo state, while \mbox{ReCAP} uses these interfaces to execute
+downstream tasks whose completion is judged separately. Through this framework,
+the software connecting a high-level planner to a robot becomes an explicit
+object of generation and behavioural evaluation.
 
-The experiments showed that a structurally correct or executable driver does
-not necessarily satisfy its complete behavioural requirements. No evaluated
-fixed-suite cell passed every behavioural test. In the fixed-driver study, 61
-of 123 evaluable task episodes succeeded, while every normally terminated
-episode that failed the Harness had nevertheless been declared complete by its
-controller. These findings show that tool synthesis, tool use, and task
-completion are related but non-substitutable abilities. A model's completion
-statement cannot replace independent judgement of the observed robot state.
+For RQ1, the PiPER experiment showed that Auto-Adapter can generate robot
+drivers for reuse across tasks. Using a supplied controller skeleton, two of
+five independent runs produced drivers that passed their complete capability
+test suites. The exported drivers were reused unchanged across reaching,
+pushing and pick-and-place tasks, with reaching and pushing succeeding in all
+evaluated layouts. With the driver unchanged, pick-and-place tasks passed
+after the high-level controller model was replaced with the more capable
+\mbox{GPT-6 Astra}. This shows that the driver provided the control capabilities needed
+for the evaluated tasks, supporting its functional effectiveness and value for
+cross-task reuse.
 
-The cross-robot experiments further indicated that the capability-interface
-approach can be applied across different robot configurations, although the
-outcomes remain dependent on the task, control structure, and validation
-conditions. The principal contribution of this thesis is therefore not a claim
-that one model can control robots universally, but an auditable method that
-turns language-model-generated robot software into an experimental object that
-can be independently tested, compared, and reused. The conclusions remain
-bounded to the evaluated models, robot configurations, tasks, and MuJoCo
-environments, and do not directly establish visual-perception performance,
-hardware validity, or sim-to-real transfer.
+For RQ2, AutoAdapter-Bench compared driver synthesis with each robot's
+capability interface and behavioural tests fixed across models and independent
+runs. Models generated and revised only the driver implementation.
+Downstream model performance was evaluated separately using a fixed validated
+driver, with task conditions and the ReCAP planning procedure held constant.
+The results showed a distinction between driver synthesis
+and driver use. Haiku produced no driver that passed its complete test suite,
+yet completed some tasks through supplied drivers. Validation feedback helped
+correct implementation errors, but successive repairs did not consistently
+improve behavioural performance. By combining validation outcomes, task-success
+rates and resource use, the benchmark informed model selection for driver
+synthesis and high-level control.
+
+For RQ3, the Franka Panda, LEAP Hand and Skydio X2 cases showed uneven task
+support across robot configurations. The Panda driver supported multiple
+manipulation tasks, and the Skydio driver supported several flight tasks.
+LEAP's accurate local motion did not translate into reliable object
+manipulation. These cases exposed limitations in sustained contact,
+coordinated motion and orientation control that individual capability tests
+did not fully assess. Each case evaluated one driver, and some results were
+reassessed under revised criteria, limiting conclusions about consistency
+across robots.
+
+Together, these studies contribute a framework for generating robot drivers
+from task requirements and a benchmark that separates implementation quality
+from downstream use. The experiments show that independent measurement must be
+paired with tests that accurately express the intended behaviour. Generated
+criteria therefore require human review, and downstream task success must be
+assessed separately from capability conformance. This separation of
+responsibilities provides a practical basis for generating, inspecting and
+reusing robot software through Auto-Adapter. Performance on real hardware and
+sim-to-real transfer still require independent validation.
 
 \section[Future Work]{Future Work}
 

@@ -1,0 +1,84 @@
+{
+  "experiment": "Experiment 3: Cross-Robot Evaluation (Chapter 5)",
+  "model": {
+    "name": "Claude Opus 5",
+    "id": "eu.anthropic.claude-opus-5",
+    "provider": "holistic",
+    "region": "eu-west-2"
+  },
+  "replicates": 1,
+  "stop_after": "export",
+  "generation": {
+    "max_tokens_per_turn": 8000,
+    "max_iters_study": 16,
+    "max_iters_capability_design": 30,
+    "max_iters_generate": 22,
+    "max_outer_gen_val_iters": 4
+  },
+  "trial_timeout_seconds": 7200,
+  "request_settings": "The maintained Holistic ReAct client sends temperature=0 and does not set reasoning effort. Gateway support must be checked before the batch.",
+  "robots": [
+    {
+      "id": "skydio_x2",
+      "name": "Skydio X2",
+      "morphology": "aerial robot"
+    }
+  ],
+  "task_input": "Skydio X2's complete maintained public task library (20 entries). The downstream shortlist does not replace this generation input.",
+  "scope": "One initial Skydio X2 generation through the existing Study, Design, Generate, Validate and Export pipeline. The wider six-robot thesis generation count is unchanged. Downstream execution uses run_tasks.py with this configuration.",
+  "budget_note": "The user authorised one initial Skydio X2 case on 2026-09-15. Generation uses the prepared Opus 5 model and LEAP/Panda iteration limits. Downstream ReCAP uses Astra with the prepared increased budgets.",
+  "downstream_plan": {
+    "model": "global.openai.gpt-6-astra",
+    "max_tokens": 12000,
+    "recap_budgets": {
+      "max_planning_turns": 48,
+      "max_capability_calls": 24,
+      "context_window_messages": 96
+    },
+    "task_timeout_seconds": 1800,
+    "task_library": "AA1/auto_adapter/task_libraries/skydio_x2/1.0.0/catalog.json",
+    "tasks": [
+      {
+        "id": "X2-T01",
+        "name": "Ground takeoff to hover",
+        "metric": "terminal_position_error, terminal_translation_speed, completed_operation, terminal_body_tilt",
+        "criteria": "Maintained local catalog criteria (proposed, uncalibrated): position <= 0.15 m, translation speed <= 0.1 m/s, completed_operation == 1, body tilt <= 20 deg.",
+        "observation": "Native MuJoCo x2 body position, world linear velocity, upright rotation and solver contacts.",
+        "scene_preparation": "Canonical X2 scene with the existing collision geometry resting on the plane at body origin [0, 0, 0] m; the holding point is 1 m above that initial x2 origin at [0, 0, 1.0] m."
+      },
+      {
+        "id": "X2-T03",
+        "name": "Stationary airborne hold",
+        "metric": "maximum_hold_position_error, maximum_hold_heading_error, terminal_body_tilt, forbidden_contact_samples",
+        "criteria": "Maintained local catalog criteria (proposed, uncalibrated): position <= 0.15 m, heading <= 10 deg, body tilt <= 20 deg, forbidden contacts == 0 over 60 s.",
+        "observation": "Native MuJoCo x2 body position, rotation, velocity and solver contacts over the declared 60 s hold.",
+        "scene_preparation": "Canonical X2 scene reset airborne at [0, 0, 1.0] m with zero initial thrust so the hold requires a controller."
+      },
+      {
+        "id": "X2-T04",
+        "name": "Climb-transit-descend return",
+        "metric": "completed_operation, terminal_position_error, terminal_translation_speed, terminal_body_tilt, forbidden_contact_samples",
+        "criteria": "Maintained local catalog criteria (proposed, uncalibrated): climb to 1.9 m before horizontal transit, remain >= 1.8 m until within 0.2 m home, terminal position <= 0.15 m, speed <= 0.1 m/s, tilt <= 20 deg, contacts == 0.",
+        "observation": "Native MuJoCo x2 body position, world linear velocity, upright rotation and solver contacts.",
+        "scene_preparation": "Canonical X2 scene reset airborne at [0, 0, 1.0] m, 3 m horizontally from home_xy_m [3.0, 0.0]; transit altitude is 2.0 m and final holding altitude is 1.0 m."
+      },
+      {
+        "id": "X2-T05",
+        "name": "Ordered waypoint mission",
+        "metric": "ordered_waypoint_visits, terminal_position_error, terminal_translation_speed, terminal_body_tilt, forbidden_contact_samples",
+        "criteria": "Maintained local catalog criteria (proposed, uncalibrated): four ordered visits (position <= 0.20 m and yaw <= 10 deg for 0.5 s each), terminal position <= 0.15 m, speed <= 0.1 m/s, tilt <= 20 deg, contacts == 0.",
+        "observation": "Native MuJoCo x2 body position, yaw, world linear velocity, upright rotation and solver contacts.",
+        "scene_preparation": "Canonical X2 scene reset airborne at [0, 0, 1.0] m with four pairwise-separated waypoints at 1.5 m altitude (within the catalog 1–2 m band) and zero yaw targets."
+      },
+      {
+        "id": "X2-T07",
+        "name": "Point-of-interest orbit",
+        "metric": "signed_orbit_progress, maximum_orbit_radius_error, maximum_orbit_height_error, orbit_bearing_rmse, terminal_body_tilt, forbidden_contact_samples",
+        "criteria": "Maintained local catalog criteria (proposed, uncalibrated): signed progress >= 2pi, radius error <= 0.2 m, height error <= 0.15 m, bearing RMSE <= 12 deg, tilt <= 20 deg, contacts == 0.",
+        "observation": "Native MuJoCo x2 body position, yaw, upright rotation and solver contacts; body +x is the framing surrogate.",
+        "scene_preparation": "Canonical X2 scene reset at [1.5, 0, 1.5] m for one positive-direction orbit around center_xy_m [0, 0]."
+      }
+    ],
+    "preparation_scope": "Five central task families, each attempted once with the unchanged generated driver. Scenes and scoring retain the catalog numerical criteria and use only native MuJoCo body state, velocities, rotations and solver contacts. X2-T02 is excluded because its terminal total-thrust command criterion is not observable in the maintained DemoTrace; it remains documented as an unsupported source requirement rather than receiving a proxy score."
+  }
+}

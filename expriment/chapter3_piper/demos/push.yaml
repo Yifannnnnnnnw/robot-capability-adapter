@@ -1,0 +1,34 @@
+# Chapter 3 source DEMO at L2. prepare expands the lateral coordinate to L1/L2/L3.
+# success expresses the experiment contract; scorer compatibility is checked separately.
+robots:
+  piper:
+    task: >-
+      Push task_cube along the tabletop through physical contact to target_position.
+      Positions are in world coordinates, measured in metres. Do not grasp or lift the cube.
+    scene: ../expriment/chapter3_piper/prepared/push/L2/scene.xml
+    initial_state:
+      robot: {keyframe: home}
+      free_bodies:
+        task_cube:
+          position_m: [0.40, 0.0, 0.205]
+          quaternion_wxyz: [1, 0, 0, 0]
+          linear_velocity_m_s: [0, 0, 0]
+          angular_velocity_rad_s: [0, 0, 0]
+      settle_s: 0.5
+    parameters:
+      task_id: mw_push_to_goal
+      object_body: task_cube
+      start_position: [0.40, 0.0, 0.205]
+      target_position: [0.50, 0.0, 0.205]
+    success:
+      type: object_pushed_to_target
+      bindings:
+        object: {kind: body, name: task_cube}
+        ee: {kind: site, name: ee_site}
+      target_parameter: target_position
+      metric: euclidean_distance_3d
+      comparator: '<='
+      tolerance_m: 0.02
+      contact_bodies: [link7, link8]
+      require_contact_driven_motion: true
+      temporal: terminal_state_after_push

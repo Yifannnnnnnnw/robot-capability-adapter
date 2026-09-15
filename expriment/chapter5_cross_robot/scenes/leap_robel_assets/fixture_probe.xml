@@ -1,0 +1,68 @@
+<mujoco model="robel_valve3_fixture_probe">
+  <!--Copyright 2019 The ROBEL Authors. Apache-2.0. Extraction for a fixture-only load check; see LICENSE_ROBEL_SCENES and README.md.-->
+  <compiler angle="radian" inertiafromgeom="auto" inertiagrouprange="3 5" meshdir="meshes" />
+  <option timestep="0.0025" iterations="50" tolerance="1e-10" solver="Newton" jacobian="dense" cone="elliptic" />
+  <asset>
+    <mesh name="motor" file="xh_base_high_poly.stl" scale=".001 .001 .001" />
+    <mesh name="motor_hull" file="xh_base_hull.stl" scale=".001 .001 .001" />
+    <mesh name="valve_3" file="valve_3_high_poly.stl" scale=".001 .001 .001" />
+    <material name="station_metal_grey" specular="1" shininess="1" rgba="0.5 0.5 0.5 1.0" />
+    <material name="plastic_white" specular="0.3" shininess="0" rgba="1 1 1 1" />
+    <material name="plastic_grey" specular="0.3" shininess="0" rgba="0.5 0.5 0.5 1.0" />
+    <material name="plastic_black" specular="0.3" shininess="0" rgba="0.02 0.02 0.02 1.0" />
+    <material name="plastic_transparent" specular="0.3" shininess="0" rgba="1 1 1 0.4" />
+  </asset>
+  <default>
+    <default class="station">
+      <joint limited="true" damping=".1" armature="0.001" />
+      <geom contype="1" conaffinity="1" condim="4" group="2" margin="0.0005" />
+      <site group="2" />
+      <default class="station_viz">
+        <geom contype="0" conaffinity="0" type="mesh" />
+        <default class="station_viz_metal_grey">
+          <geom material="station_metal_grey" />
+        </default>
+        <default class="station_viz_plastic_black">
+          <geom material="plastic_black" />
+        </default>
+        <default class="station_viz_plastic_grey">
+          <geom material="plastic_grey" />
+        </default>
+        <default class="station_viz_plastic_white">
+          <geom material="plastic_white" />
+        </default>
+        <default class="station_viz_plastic_transparent">
+          <geom material="plastic_transparent" />
+        </default>
+      </default>
+      <default class="station_phy">
+        <geom contype="1" conaffinity="1" group="4" type="mesh" rgba="0.0 0.0 1.0 .3" />
+        <site group="4" />
+        <default class="station_phy_metal">
+          <geom material="station_metal_grey" />
+        </default>
+        <default class="station_phy_plastic">
+          <geom material="station_metal_grey" friction=".2 0.005 0.0001" />
+        </default>
+      </default>
+    </default>
+  </default>
+  <worldbody>
+    <body name="object" pos="0 0 0.0001">
+      <body name="valve_base" pos=".0 0.00 0.01" euler="0 0 0" childclass="station">
+        <geom class="station_viz_plastic_transparent" type="box" size=".031 .031 .005" pos=".0125 0 -.005" />
+        <geom class="station_viz_metal_grey" mesh="motor" pos="0 0 0.018" euler="0 0 1.57" />
+        <geom class="station_phy_metal" mesh="motor_hull" pos="0 0 0.018" euler="0 0 1.57" />
+        <body name="valve" pos="0 0 0.038" euler="0 0 -1.57">
+          <geom class="station_viz_plastic_white" mesh="valve_3" pos="0 0 0" />
+          <geom class="station_phy_plastic" type="capsule" pos="0.0 0.038 0.054" size="0.021 0.035" euler="1.57 0 0" />
+          <geom class="station_phy_plastic" type="capsule" pos="-0.034 -0.019 0.054" size="0.021 0.035" euler="1.57 2.0944 0" />
+          <geom class="station_phy_plastic" type="capsule" pos="0.034 -0.019 0.054" size="0.021 0.035" euler="1.57 4.1887 0" />
+          <geom class="station_phy_plastic" type="cylinder" pos="0.0 0.0 0.027" size="0.02 0.0275" />
+          <site name="valve_mark" type="capsule" size=".003 0.0375" pos="0 .0375 .073" rgba="0 0 1 1" euler="1.57 0 0" />
+          <joint name="valve_OBJRx" pos="0 0 0" type="hinge" axis="0 0 1" range="-6.28 6.28" damping=".1" limited="true" />
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

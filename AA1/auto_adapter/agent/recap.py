@@ -647,6 +647,8 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
     config = yaml.safe_load(config_path.read_text())["robots"].get(robot_id)
     if not config:
         raise ValueError(f"no fixed demo configured for {robot_id}")
+    if not config.get("success"):
+        raise ValueError(f"fixed demo for {robot_id} has no success specification")
     design = capability_design
     if design is None:
         saved = workspace / "design/capability_design.json"
@@ -671,6 +673,7 @@ def _task_inputs(*, workspace, robot_id, capability_design=None,
         validation_report=json.loads((workspace / "validate_report.json").read_text()),
         task_description=config["task"], scene_path=str(scene.resolve()),
         initial_state=config.get("initial_state", {}), parameters=config.get("parameters", {}),
+        success_spec=config["success"],
     )
 
 
@@ -733,6 +736,10 @@ def run_demo(*, workspace, robot_id, task_description=None, model, provider="hol
     inputs = _task_inputs(workspace=workspace, robot_id=robot_id,
                           from_scratch=from_scratch, demo_config_path=demo_config_path)
     if task_description:
+        if task_description != inputs["task_description"]:
+            # A different explicit task must not inherit the fixed demo's verdict.
+            # Use run_task/--input-json to supply its own success specification.
+            inputs["success_spec"] = None
         inputs["task_description"] = task_description
     if output_dir is None:
         root = Path(workspace).resolve() / "demos"

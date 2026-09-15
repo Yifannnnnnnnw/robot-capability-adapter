@@ -1,0 +1,39 @@
+# Chapter 3 source DEMO at L2. prepare expands the lateral coordinate to L1/L2/L3.
+# success expresses the experiment contract; scorer compatibility is checked separately.
+robots:
+  piper:
+    task: >-
+      Grasp task_cube through gripper contact, lift it from the table, transport it to
+      target_position and release it onto the receiving platform. Positions are in
+      world coordinates, measured in metres.
+    scene: ../expriment/chapter3_piper/prepared/pick_place/L2/scene.xml
+    initial_state:
+      robot: {keyframe: home}
+      free_bodies:
+        task_cube:
+          position_m: [0.40, 0.0, 0.205]
+          quaternion_wxyz: [1, 0, 0, 0]
+          linear_velocity_m_s: [0, 0, 0]
+          angular_velocity_rad_s: [0, 0, 0]
+      settle_s: 0.5
+    parameters:
+      task_id: mw_pick_place
+      object_body: task_cube
+      start_position: [0.40, 0.0, 0.205]
+      target_position: [0.50, 0.0, 0.285]
+    success:
+      type: object_picked_and_placed
+      bindings:
+        object: {kind: body, name: task_cube}
+        left_finger: {kind: body, name: link7}
+        right_finger: {kind: body, name: link8}
+        gripper: {kind: joint, name: joint7}
+        initial_support: {kind: body, name: chapter3_table_support}
+        receiving_support: {kind: body, name: receiving_platform_support}
+      target_parameter: target_position
+      metric: euclidean_distance_3d
+      comparator: '<='
+      tolerance_m: 0.07
+      gripper_bodies: [link7, link8]
+      required_phases: [grasp, lift, release]
+      temporal: terminal_state_after_release

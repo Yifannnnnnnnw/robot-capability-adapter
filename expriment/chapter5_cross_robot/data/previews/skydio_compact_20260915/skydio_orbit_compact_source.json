@@ -1,0 +1,37 @@
+{
+  "figure": "skydio_orbit_compact.png",
+  "generated_by": "expriment/chapter5_cross_robot/scripts/plot_skydio_orbit_results.py",
+  "target_center_xy_m": [
+    0.0,
+    0.0
+  ],
+  "target_radius_m": 1.5,
+  "inward_bearing_rmse_threshold_deg": 12.0,
+  "attempts": [
+    {
+      "label": "First attempt",
+      "trace": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/physics_samples.jsonl",
+      "report": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/task_report.json",
+      "sample_count": 6894,
+      "simulation_time_range_s": [
+        0.0,
+        68.92999999999836
+      ],
+      "report_bearing_rmse_deg": 10.542374737684462,
+      "original_report_success": false
+    },
+    {
+      "label": "Clarified retry",
+      "trace": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/physics_samples.jsonl",
+      "report": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/task_report.json",
+      "sample_count": 3082,
+      "simulation_time_range_s": [
+        0.0,
+        30.810000000002017
+      ],
+      "report_bearing_rmse_deg": 13.745809542908995,
+      "original_report_success": false
+    }
+  ],
+  "caption": "Complete recorded XY trajectories of the first orbit attempt and its clarified retry; the dotted circle has radius 1.5 m. Circles mark starts and crosses mark ends. Bars show circuit-level inward-bearing RMSE from the original reports; 12 degrees is an aggregate threshold, not an instantaneous limit. No new simulation or task re-evaluation was performed."
+}

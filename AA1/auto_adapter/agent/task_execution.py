@@ -14,7 +14,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from .recap import UPSTREAM_CONTROLLER, UPSTREAM_REVISION, run_recap
-from .recap import AA1CapabilityAdapter, AA1RecapModel, passed_design
+from .recap import AA1CapabilityAdapter, AA1RecapModel, RecapBudgets, passed_design
 import mujoco
 import numpy as np
 
@@ -121,12 +121,14 @@ def _copy_export_inputs(*, source: Path, server: Path, destination: Path,
     return destination / "mcp_server.py", destination / driver_name
 
 
-def _runtime_config(*, scene: Path, initial_state: Any, output_dir: Path) -> dict[str, Any]:
+def _runtime_config(*, scene: Path, initial_state: Any, output_dir: Path,
+                    success_spec: Mapping[str, Any] | None = None) -> dict[str, Any]:
     return {
         "scene_path": str(scene),
         "initial_state": initial_state or {},
         "output_dir": str(output_dir),
         "record_video": True,
+        "success": success_spec,
     }
 
 
@@ -135,8 +137,10 @@ async def _run_exported_task(*, server_path: Path, destination: Path, robot_id: 
                              required_capabilities: tuple[str, ...], model: Any,
                              model_client: Any,
                              provider: str, region: str, max_tokens: int,
+                             recap_budgets: RecapBudgets,
                              model_trace_path: Path,
                              scene_path: Path, initial_state: Any,
+                             success_spec: Mapping[str, Any] | None,
                              tool_call_log: list[dict[str, Any]]) -> dict[str, Any]:
     """Run the real SDK client and synchronous ReCAP controller in one event loop."""
 
@@ -149,6 +153,7 @@ async def _run_exported_task(*, server_path: Path, destination: Path, robot_id: 
         scene=scene_path,
         initial_state=initial_state,
         output_dir=destination,
+        success_spec=success_spec,
     )
     config_path.write_text(json.dumps(runtime_config, indent=2) + "\n")
     environment = {
@@ -237,6 +242,7 @@ async def _run_exported_task(*, server_path: Path, destination: Path, robot_id: 
                             public_task={"description": task_description, "parameters": parameters or {}},
                             adapter=adapter,
                             model=client,
+                            budgets=recap_budgets,
                             initial_public_state=initial_observation,
                             log_dir=destination / "recap",
                         )
@@ -268,15 +274,21 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
              validation_report, task_description, scene_path, initial_state, parameters,
              output_dir, model, provider="holistic", region="us-east-1", max_tokens=6000,
              from_scratch=False, required_capabilities=(), model_client=None,
-             export_server_path=None):
+             export_server_path=None, success_spec=None, task_evaluator=None,
+             recap_budgets=None):
     """Run one task through a copied, exported MCP server.
 
     ``model_client`` remains an explicitly named fixture injection point. It is
     used only as the synchronous ReCAP model; robot control always goes through
     the official MCP ClientSession protocol.
+
+    ``task_evaluator`` is an optional caller-owned metric function, applied
+    after the complete physical trace has been checked. It stays in the caller
+    process and is never sent to the model or exported server.
     """
 
     started = time.monotonic()
+    budgets = RecapBudgets(**(recap_budgets or {}))
     source = Path(driver_path).resolve()
     scene = Path(scene_path).resolve()
     server = Path(export_server_path).resolve() if export_server_path else source.parent / "mcp_server.py"
@@ -288,9 +300,12 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
     report: dict[str, Any] = {
         "ok": False, "status": "UNAVAILABLE", "robot_id": robot_id,
         "task_description": task_description,
+        "parameters": parameters or {}, "success": success_spec,
+        "execution_ok": False, "task_metrics": [], "evaluation_error": None,
         "controller": UPSTREAM_CONTROLLER,
         "controller_source_commit": UPSTREAM_REVISION,
         "controller_result": None, "physical_task_success": None,
+        "model": model, "recap_budgets": asdict(budgets), "max_tokens": max_tokens,
         "scope": "diagnostic task execution; no independent task predicate evaluated",
         "driver_path": str(source), "export_server_path": str(server),
         "scene_path": str(scene), "from_scratch": from_scratch,
@@ -349,8 +364,10 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
             parameters=parameters or {},
             required_capabilities=required, model=model, model_client=model_client,
             provider=provider, region=region, max_tokens=max_tokens,
+            recap_budgets=budgets,
             model_trace_path=model_trace_path,
             scene_path=scene, initial_state=initial_state,
+            success_spec=success_spec,
             tool_call_log=report["tool_call_log"],
         ))
         recap_result = outcome["result"]
@@ -399,13 +416,41 @@ def run_task(*, driver_path, robot_id, capability_design, validation_suite,
     )
     report["successful_mcp_calls"] = successful_calls
     runtime_error = (report["runtime_report"] or {}).get("error")
-    report["ok"] = bool(
+    report["execution_ok"] = bool(
         report["status"] == "CONTROLLER_FINISHED"
         and successful_calls > 0
         and report["sim_advanced"]
         and report["video_path"]
         and not runtime_error
     )
+    if success_spec is not None and destination_created:
+        report["scope"] = "diagnostic task execution with independent physical task evaluation"
+        evaluation_path = destination / "task_evaluation.json"
+        physics_path = destination / "physics_samples.jsonl"
+        report["evaluation_path"] = str(evaluation_path)
+        report["physics_samples_path"] = str(physics_path)
+        try:
+            from auto_adapter.demo_evaluation import evaluate_demo_task
+
+            trace = (report["runtime_report"] or {}).get("physics_trace")
+            if not trace or trace.get("error"):
+                raise ValueError((trace or {}).get("error") or "physical trace is unavailable")
+            samples = [json.loads(line) for line in physics_path.read_text().splitlines()]
+            if len(samples) < 2 or len(samples) != trace.get("sample_count"):
+                raise ValueError("physical trace is incomplete or simulation did not advance")
+            if (abs(samples[0]["time"] - report["sim_time_start"]) > 1e-8
+                    or abs(samples[-1]["time"] - report["sim_time_end"]) > 1e-8):
+                raise ValueError("physical trace does not cover the complete task")
+            evaluation = evaluate_demo_task(success_spec, parameters or {}, samples,
+                                            evaluator=task_evaluator)
+        except Exception as exc:
+            evaluation = {"physical_task_success": None, "task_metrics": [],
+                          "evaluation_error": f"{type(exc).__name__}: {exc}"}
+        report.update(evaluation)
+        _write_json(evaluation_path, evaluation)
+    report["ok"] = bool(report["execution_ok"] and (
+        success_spec is None or report["physical_task_success"] is True
+    ))
     report["duration_sec"] = time.monotonic() - started
     if destination_created:
         _write_json(report_path, report)

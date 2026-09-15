@@ -1,0 +1,1959 @@
+{
+  "batch": "exp2a_8000_01",
+  "pricing": {
+    "accessed": "2026-09-15",
+    "unit": "USD per million tokens",
+    "sources": [
+      "https://platform.claude.com/docs/en/about-claude/pricing",
+      "https://api-docs.deepseek.com/quick_start/pricing/"
+    ],
+    "rates": {
+      "sonnet46": {
+        "in": 3.3,
+        "cache_read": 0.33,
+        "out": 16.5
+      },
+      "opus5": {
+        "in": 5.5,
+        "cache_read": 0.55,
+        "out": 27.5
+      },
+      "deepseek_v4_pro": {
+        "in": 0.66,
+        "cache_read": 0.022,
+        "out": 1.98
+      }
+    },
+    "basis": "Claude EU regional rates include the 10% premium; DeepSeek uses off-peak V4 Pro rates.",
+    "cache_accounting": "Claude gateway cache breakdown is unavailable: all reported prompt tokens use the input rate. DeepSeek input excludes separately recorded cache reads; its selected responses report zero cache creation tokens.",
+    "scope": "Public-rate token-cost estimates, not provider invoices; no taxes, gateway adjustments or local compute costs."
+  },
+  "time_basis": "Elapsed UTC time from process.json started_at to finished_at, covering the complete generation and validation process. The separate recorded_process_seconds field retains the original monotonic timer.",
+  "selection": "Earliest automatically passing final driver per model and robot; no reviewed-only successes.",
+  "unit": "One compact-trace model response; validation and messages traces excluded.",
+  "classification": "Error if any observation is_error or decoded command exit_code is nonzero; otherwise write/exec/probe are tool actions, with read/inspect/list/no-tool responses read/plan.",
+  "output_limit": "stop_reason=max_tokens, marked separately and not automatically an error.",
+  "runs": [
+    {
+      "trial_id": "r03_sonnet46_so101",
+      "robot": "so101",
+      "model": "sonnet46",
+      "generation_seconds": 334.016431,
+      "recorded_process_seconds": 334.0177186669971,
+      "estimated_cost_usd": 4.8235572,
+      "token_usage": {
+        "in": 1293469,
+        "cache_read": 0,
+        "out": 33643
+      },
+      "replicate": 3,
+      "stages": [
+        {
+          "name": "Study",
+          "trace": "r03_sonnet46_so101/generation/menagerie_so101/traces/01_study.jsonl",
+          "turns": [
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 147
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 91
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 165
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 595
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 796
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 124
+            }
+          ]
+        },
+        {
+          "name": "Design",
+          "trace": "r03_sonnet46_so101/generation/menagerie_so101/design/trace.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 308
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 411
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 464
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 531
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6942
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2313
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 102
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2151
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 84
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 180
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 156
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 183
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6841
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2140
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 87
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 643
+            }
+          ]
+        },
+        {
+          "name": "Generate",
+          "trace": "r03_sonnet46_so101/generation/menagerie_so101/traces/02_generate.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 146
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 135
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 90
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1483
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1305
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1395
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 156
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 517
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 634
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 659
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 524
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 161
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 273
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 711
+            }
+          ]
+        }
+      ],
+      "turn_count": 36,
+      "counts": {
+        "read_plan": 8,
+        "tool_action": 28,
+        "tool_error": 0
+      },
+      "output_tokens": 33643,
+      "output_limit_turns": 0,
+      "cases_passed": 5,
+      "cases_total": 5
+    },
+    {
+      "trial_id": "r02_opus5_so101",
+      "robot": "so101",
+      "model": "opus5",
+      "generation_seconds": 1401.243948,
+      "recorded_process_seconds": 1401.26738725,
+      "estimated_cost_usd": 18.9665795,
+      "token_usage": {
+        "in": 2930994,
+        "cache_read": 0,
+        "out": 103495
+      },
+      "replicate": 2,
+      "stages": [
+        {
+          "name": "Study",
+          "trace": "r02_opus5_so101/generation/menagerie_so101/traces/01_study.jsonl",
+          "turns": [
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 161
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 191
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 835
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 698
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1260
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 118
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 102
+            }
+          ]
+        },
+        {
+          "name": "Design",
+          "trace": "r02_opus5_so101/generation/menagerie_so101/design/trace.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 370
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 607
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2773
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2273
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5182
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4585
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4547
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 6658
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2600
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1317
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 6471
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 6171
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6945
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2277
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 3560
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 3421
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5126
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1842
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 3222
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 114
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 232
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 388
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 98
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 235
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 1147
+            }
+          ]
+        },
+        {
+          "name": "Generate",
+          "trace": "r02_opus5_so101/generation/menagerie_so101/traces/02_generate.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 97
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 123
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 269
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 205
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 219
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 106
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 193
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5640
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1602
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1625
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2806
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2792
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 823
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 90
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 303
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1223
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 90
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2181
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 3701
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 752
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 90
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 3039
+            }
+          ]
+        }
+      ],
+      "turn_count": 54,
+      "counts": {
+        "read_plan": 6,
+        "tool_action": 42,
+        "tool_error": 6
+      },
+      "output_tokens": 103495,
+      "output_limit_turns": 0,
+      "cases_passed": 5,
+      "cases_total": 5
+    },
+    {
+      "trial_id": "r03_deepseek_v4_pro_so101",
+      "robot": "so101",
+      "model": "deepseek_v4_pro",
+      "generation_seconds": 856.236031,
+      "recorded_process_seconds": 856.2553837090018,
+      "estimated_cost_usd": 0.396618684,
+      "token_usage": {
+        "in": 185023,
+        "cache_read": 3505152,
+        "out": 99692
+      },
+      "replicate": 3,
+      "stages": [
+        {
+          "name": "Study",
+          "trace": "r03_deepseek_v4_pro_so101/generation/menagerie_so101/traces/01_study.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 159
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 133
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1275
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 814
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 29
+            }
+          ]
+        },
+        {
+          "name": "Design",
+          "trace": "r03_deepseek_v4_pro_so101/generation/menagerie_so101/design/trace.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 284
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 754
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1266
+            },
+            {
+              "category": "read_plan",
+              "output_limit": true,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1422
+            },
+            {
+              "category": "read_plan",
+              "output_limit": true,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5415
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2629
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 110
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1199
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 80
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1282
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6870
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 7578
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 2464
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1404
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4001
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1835
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1755
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2829
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 101
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6196
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1291
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 703
+            }
+          ]
+        },
+        {
+          "name": "Generate",
+          "trace": "r03_deepseek_v4_pro_so101/generation/menagerie_so101/traces/02_generate.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 139
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 149
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 155
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 301
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 275
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 132
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 164
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 134
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 244
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 405
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 224
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1835
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 269
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 501
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5498
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 358
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 761
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 646
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 567
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 401
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4042
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 452
+            }
+          ]
+        },
+        {
+          "name": "Repair 1",
+          "trace": "r03_deepseek_v4_pro_so101/generation/menagerie_so101/traces/03_repair_1.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 106
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 66
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 96
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 402
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 162
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 224
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 927
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1809
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1267
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 151
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 400
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 374
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 113
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 211
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1074
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 897
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 319
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 394
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2151
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 290
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 504
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 225
+            }
+          ]
+        }
+      ],
+      "turn_count": 73,
+      "counts": {
+        "read_plan": 16,
+        "tool_action": 54,
+        "tool_error": 3
+      },
+      "output_tokens": 99692,
+      "output_limit_turns": 2,
+      "cases_passed": 4,
+      "cases_total": 4
+    },
+    {
+      "trial_id": "r02_sonnet46_go2",
+      "robot": "go2",
+      "model": "sonnet46",
+      "generation_seconds": 506.292544,
+      "recorded_process_seconds": 506.28775595799925,
+      "estimated_cost_usd": 6.197182199999999,
+      "token_usage": {
+        "in": 1639979,
+        "cache_read": 0,
+        "out": 47591
+      },
+      "replicate": 2,
+      "stages": [
+        {
+          "name": "Study",
+          "trace": "r02_sonnet46_go2/generation/go2/traces/01_study.jsonl",
+          "turns": [
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 146
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 108
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 393
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 829
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1396
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 173
+            }
+          ]
+        },
+        {
+          "name": "Design",
+          "trace": "r02_sonnet46_go2/generation/go2/design/trace.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 305
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 369
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 450
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 360
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5357
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1395
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 114
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 348
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1466
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 90
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 181
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 716
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6137
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1501
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 158
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 132
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 135
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 716
+            }
+          ]
+        },
+        {
+          "name": "Generate",
+          "trace": "r02_sonnet46_go2/generation/go2/traces/02_generate.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 146
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 136
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 86
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1442
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 981
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 248
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2528
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2367
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 325
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 193
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 193
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 420
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2270
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2370
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 231
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 192
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 186
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 588
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 709
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 585
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 159
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 261
+            }
+          ]
+        }
+      ],
+      "turn_count": 47,
+      "counts": {
+        "read_plan": 9,
+        "tool_action": 36,
+        "tool_error": 2
+      },
+      "output_tokens": 47591,
+      "output_limit_turns": 0,
+      "cases_passed": 5,
+      "cases_total": 5
+    },
+    {
+      "trial_id": "r01_opus5_go2",
+      "robot": "go2",
+      "model": "opus5",
+      "generation_seconds": 3110.40088,
+      "recorded_process_seconds": 1663.8350104580004,
+      "estimated_cost_usd": 15.973375,
+      "token_usage": {
+        "in": 2275465,
+        "cache_read": 0,
+        "out": 125757
+      },
+      "replicate": 1,
+      "stages": [
+        {
+          "name": "Study",
+          "trace": "r01_opus5_go2/generation/go2/traces/01_study.jsonl",
+          "turns": [
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 155
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 90
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 876
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1280
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 123
+            }
+          ]
+        },
+        {
+          "name": "Design",
+          "trace": "r01_opus5_go2/generation/go2/design/trace.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 365
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 3908
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6828
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 7134
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 7810
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2067
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 3138
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1630
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 204
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 1812
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1728
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 95
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 561
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 173
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 256
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 1023
+            }
+          ]
+        },
+        {
+          "name": "Generate",
+          "trace": "r01_opus5_go2/generation/go2/traces/02_generate.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 102
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 124
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 308
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 97
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 265
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 5123
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4804
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 7590
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6465
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6664
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1722
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4721
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2562
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2525
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2832
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 799
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1915
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 91
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 610
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 141
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 3041
+            }
+          ]
+        }
+      ],
+      "turn_count": 46,
+      "counts": {
+        "read_plan": 7,
+        "tool_action": 31,
+        "tool_error": 8
+      },
+      "output_tokens": 125757,
+      "output_limit_turns": 0,
+      "cases_passed": 5,
+      "cases_total": 5
+    },
+    {
+      "trial_id": "r03_deepseek_v4_pro_go2",
+      "robot": "go2",
+      "model": "deepseek_v4_pro",
+      "generation_seconds": 786.799171,
+      "recorded_process_seconds": 786.7859255830008,
+      "estimated_cost_usd": 0.353248104,
+      "token_usage": {
+        "in": 154771,
+        "cache_read": 2932992,
+        "out": 94229
+      },
+      "replicate": 3,
+      "stages": [
+        {
+          "name": "Study",
+          "trace": "r03_deepseek_v4_pro_go2/generation/go2/traces/01_study.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 200
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 89
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 772
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1663
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 32
+            }
+          ]
+        },
+        {
+          "name": "Design",
+          "trace": "r03_deepseek_v4_pro_go2/generation/go2/design/trace.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 268
+            },
+            {
+              "category": "read_plan",
+              "output_limit": true,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 730
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 582
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 625
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 938
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 385
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 338
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 266
+            },
+            {
+              "category": "read_plan",
+              "output_limit": true,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 1141
+            },
+            {
+              "category": "tool_error",
+              "output_limit": true,
+              "output_tokens": 8000
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 1785
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1778
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 858
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 2501
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1694
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 628
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 94
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1504
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 75
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 3515
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 199
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 2847
+            }
+          ]
+        },
+        {
+          "name": "Generate",
+          "trace": "r03_deepseek_v4_pro_go2/generation/go2/traces/02_generate.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 129
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 63
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 174
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 102
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 130
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 2984
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 4128
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2651
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 255
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 683
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 713
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1041
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1427
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 756
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2679
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2505
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1519
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 764
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 398
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 681
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1979
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 345
+            }
+          ]
+        },
+        {
+          "name": "Repair 1",
+          "trace": "r03_deepseek_v4_pro_go2/generation/go2/traces/03_repair_1.jsonl",
+          "turns": [
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 77
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 131
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 184
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 654
+            },
+            {
+              "category": "tool_error",
+              "output_limit": false,
+              "output_tokens": 169
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 185
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 577
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1067
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 870
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 1704
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 6225
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 1134
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 292
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 899
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 594
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 661
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 105
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 268
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 144
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 468
+            },
+            {
+              "category": "read_plan",
+              "output_limit": false,
+              "output_tokens": 81
+            },
+            {
+              "category": "tool_action",
+              "output_limit": false,
+              "output_tokens": 2127
+            }
+          ]
+        }
+      ],
+      "turn_count": 73,
+      "counts": {
+        "read_plan": 21,
+        "tool_action": 40,
+        "tool_error": 12
+      },
+      "output_tokens": 94229,
+      "output_limit_turns": 3,
+      "cases_passed": 3,
+      "cases_total": 3
+    }
+  ]
+}

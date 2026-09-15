@@ -201,6 +201,92 @@ def test_scene_mismatch_is_rejected_once(tiny_scene: Path, tmp_path: Path,
     runtime.close()
 
 
+def test_physical_trace_samples_every_native_step_without_rendering(
+    keyed_scene, tmp_path, monkeypatch,
+):
+    config = {
+        "scene_path": str(keyed_scene), "initial_state": {},
+        "output_dir": str(tmp_path / "physics"), "record_video": False,
+        "success": {"bindings": {
+            "arm": {"kind": "body", "name": "arm"},
+            "hinge": {"kind": "joint", "name": "hinge"},
+        }},
+    }
+    path = tmp_path / "physics_config.json"
+    path.write_text(json.dumps(config))
+    monkeypatch.setenv("AA1_TASK_RUNTIME_CONFIG", str(path))
+    original = mujoco.mj_step
+    runtime = ExportRuntime(lambda: TinyRobot(keyed_scene))
+    try:
+        robot = runtime.robot
+        mujoco.mj_step(robot.model, robot.data, nstep=3)
+        mujoco.mj_step1(robot.model, robot.data)
+        mujoco.mj_step2(robot.model, robot.data)
+        # Other-world advances never contaminate this task's samples.
+        other = TinyRobot(keyed_scene)
+        mujoco.mj_step(other.model, other.data, nstep=2)
+        runtime.observe()
+    finally:
+        report = runtime.close()
+    rows = [json.loads(line) for line in Path(report["physics_trace"]["path"]).read_text().splitlines()]
+    assert report["physics_trace"]["error"] is None
+    assert report["physics_trace"]["sample_count"] == len(rows) == 5
+    assert [row["time"] for row in rows] == pytest.approx([0, .01, .02, .03, .04])
+    assert rows[-1]["state"]["hinge"]["value"] == pytest.approx(robot.data.qpos[0])
+    assert rows[-1]["state"]["arm"]["position"] == pytest.approx(robot.data.xpos[1])
+    assert report["video_path"] is None
+    assert mujoco.mj_step is original
+
+
+def test_missing_native_steps_are_not_accepted_as_complete_trace(
+    tiny_scene, tmp_path, monkeypatch,
+):
+    config = {"scene_path": str(tiny_scene), "initial_state": {},
+              "output_dir": str(tmp_path / "gap"), "record_video": False,
+              "success": {"bindings": {"q": {"kind": "joint", "name": "hinge"}}}}
+    path = tmp_path / "gap_config.json"
+    path.write_text(json.dumps(config))
+    monkeypatch.setenv("AA1_TASK_RUNTIME_CONFIG", str(path))
+    original_step = mujoco.mj_step
+    runtime = ExportRuntime(lambda: TinyRobot(tiny_scene))
+    try:
+        robot = runtime.robot
+        original_step(robot.model, robot.data, 3)
+    finally:
+        report = runtime.close()
+    assert "unobserved native" in report["physics_trace"]["error"]
+
+
+def test_contacts_keep_native_solver_interval_without_recomputing_collisions(tmp_path):
+    from auto_adapter.demo_trace import DemoTrace
+
+    model = mujoco.MjModel.from_xml_string('''<mujoco><option timestep="0.01"/>
+      <worldbody><geom type="plane" size="1 1 .1"/>
+      <body name="ball" pos="0 0 .06"><freejoint/>
+      <geom type="sphere" size=".05" mass="1"/></body></worldbody></mujoco>''')
+    data = mujoco.MjData(model)
+    trace = DemoTrace(model, data, {"ball": {"kind": "body", "name": "ball"}},
+                      tmp_path / "contact.jsonl")
+    try:
+        mujoco.mj_step(model, data, 5)
+        assert data.xpos[1, 2] < .05  # endpoint has just crossed the floor
+        assert data.ncon == 0  # no new collision query was inserted into the solve
+        mujoco.mj_step(model, data)
+        assert data.ncon > 0
+        force_before = np.zeros(6)
+        mujoco.mj_contactForce(model, data, 0, force_before)
+    finally:
+        report = trace.close()
+    force_after = np.zeros(6)
+    mujoco.mj_contactForce(model, data, 0, force_after)
+    np.testing.assert_array_equal(force_before, force_after)
+    rows = [json.loads(line) for line in Path(report["path"]).read_text().splitlines()]
+    assert rows[5]["contacts"] == []
+    assert rows[5]["contact_interval_s"] == pytest.approx([.04, .05])
+    assert rows[6]["contact_interval_s"] == pytest.approx([.05, .06])
+    assert rows[6]["contacts"]  # contact first solved during this interval
+
+
 def test_recording_writes_report_and_video_when_offscreen_rendering_is_available(
     tiny_scene: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

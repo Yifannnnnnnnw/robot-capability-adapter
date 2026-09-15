@@ -1,0 +1,49 @@
+{
+  "experiment": "Experiment 3: Cross-Robot Evaluation (Chapter 5)",
+  "model": {
+    "name": "Claude Opus 5",
+    "id": "eu.anthropic.claude-opus-5",
+    "provider": "holistic",
+    "region": "eu-west-2"
+  },
+  "replicates": 1,
+  "stop_after": "export",
+  "generation": {
+    "max_tokens_per_turn": 8000,
+    "max_iters_study": 16,
+    "max_iters_capability_design": 30,
+    "max_iters_generate": 22,
+    "max_outer_gen_val_iters": 4
+  },
+  "trial_timeout_seconds": 7200,
+  "request_settings": "The maintained Holistic ReAct client sends temperature=0 and does not set reasoning effort. Gateway support must be checked before the batch.",
+  "robots": [
+    {
+      "id": "leap_hand",
+      "name": "LEAP Hand (right)",
+      "morphology": "dexterous hand"
+    }
+  ],
+  "task_input": "LEAP Hand's complete maintained public task library (20 entries). The downstream shortlist does not replace this generation input.",
+  "scope": "One initial LEAP Hand generation through the existing Study, Design, Generate, Validate and Export pipeline. The wider six-robot thesis generation count is unchanged. Downstream execution uses run_tasks.py with this configuration.",
+  "budget_note": "The user authorised one LEAP Hand experiment and the resulting thesis write-up on 2026-09-15. Generation uses the prepared Opus 5 model and Panda iteration limits. Downstream ReCAP uses Astra with the prepared increased budgets.",
+  "downstream_plan": {
+    "model": "global.openai.gpt-6-astra",
+    "max_tokens": 12000,
+    "recap_budgets": {
+      "max_planning_turns": 48,
+      "max_capability_calls": 24,
+      "context_window_messages": 96
+    },
+    "task_timeout_seconds": 1800,
+    "task_library": "AA1/auto_adapter/task_libraries/leap_hand/1.0.0/catalog.json",
+    "candidate_task_ids": [
+      "gym_hand_reach_all_fingertips",
+      "robel_dclaw_pose_fixed",
+      "myosuite_object_hold_fixed",
+      "gym_hand_manipulate_block_full_pose",
+      "robel_dclaw_turn_fixed"
+    ],
+    "preparation_scope": "Five task families, each attempted once in the central condition prepared by robots/leap_hand/scenes.py and scored by robots/leap_hand/task_evaluation.py at the source control horizon. Source criteria are retained; the existing fingertip-roundtrip demo is a separate diagnostic."
+  }
+}

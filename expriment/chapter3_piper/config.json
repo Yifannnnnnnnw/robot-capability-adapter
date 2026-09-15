@@ -1,0 +1,45 @@
+{
+  "robot_id": "piper",
+  "generation_mode": "skeleton-assisted",
+  "base_scene": "AA1/assets/mjcf/piper/scene.xml",
+  "robot_model": "AA1/assets/mjcf/piper/piper.xml",
+  "task_library": "AA1/auto_adapter/task_libraries/piper/1.0.0/catalog.json",
+  "design_task_scope": "complete PiPER 1.0.0 catalogue; three tasks selected downstream",
+  "run_ids": ["run_01", "run_02", "run_03", "run_04", "run_05"],
+  "versions": {"python": "3.13.13", "mujoco": "3.13.0", "numpy": "2.5.3"},
+  "model": {
+    "id": "eu.anthropic.claude-opus-4-8",
+    "provider": "holistic",
+    "region": "eu-west-2",
+    "max_tokens": 8000,
+    "temperature": null,
+    "reasoning_effort": null
+  },
+  "budgets": {
+    "study": 16, "design": 30, "generate": 22, "repair": 22, "export": 8,
+    "max_repairs": 3, "recap_planning_calls": 16, "recap_capability_calls": 12
+  },
+  "layouts": {"L1": -0.08, "L2": 0.0, "L3": 0.08},
+  "scene": {
+    "table_top_z_m": 0.19,
+    "table_centre_xy_m": [0.45, 0.0],
+    "table_half_size_m": [0.20, 0.20, 0.01],
+    "cube_side_m": 0.03,
+    "cube_mass_kg": 0.02,
+    "cube_friction": [2.0, 0.05, 0.001],
+    "cube_condim": 4,
+    "platform_top_z_m": 0.27,
+    "platform_half_size_m": [0.04, 0.04, 0.04]
+  },
+  "tasks": [
+    {
+      "id": "mw_reach_target", "name": "reach", "config": "demos/reach.yaml"
+    },
+    {
+      "id": "mw_push_to_goal", "name": "push", "config": "demos/push.yaml"
+    },
+    {
+      "id": "mw_pick_place", "name": "pick_place", "config": "demos/pick_place.yaml"
+    }
+  ]
+}

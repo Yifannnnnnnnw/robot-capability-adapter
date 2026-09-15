@@ -1,0 +1,126 @@
+{
+  "figure": "skydio_tasks_compact.png",
+  "generated_by": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/scripts/prepare_skydio_writing_media.py",
+  "source_run": "skydio_single_20260915_01",
+  "crop_ltrb_pixels": [
+    35,
+    40,
+    445,
+    305
+  ],
+  "panel_size_pixels": [
+    410,
+    265
+  ],
+  "frames": [
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central/video.mp4",
+      "frame_count": 59,
+      "fps": 30.0,
+      "video_duration_s": 1.9666666666666666,
+      "video_last_frame_time_s": 1.9333333333333333,
+      "simulation_duration_s": 8.899999999999855,
+      "trace_sample_count": 891,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T01",
+      "title": "Takeoff and hover",
+      "frames": [
+        {
+          "panel_label": "(a)",
+          "selection_fraction": 0.3,
+          "video_frame_index_zero_based": 17,
+          "video_time_s": 0.5666666666666667
+        }
+      ],
+      "original_report_success": true
+    },
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/video.mp4",
+      "frame_count": 312,
+      "fps": 30.0,
+      "video_duration_s": 10.4,
+      "video_last_frame_time_s": 10.366666666666667,
+      "simulation_duration_s": 49.05999999999881,
+      "trace_sample_count": 4907,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T04",
+      "title": "Climb, transit and return",
+      "frames": [
+        {
+          "panel_label": "(b)",
+          "selection_fraction": 0.25,
+          "video_frame_index_zero_based": 78,
+          "video_time_s": 2.6
+        }
+      ],
+      "original_report_success": true
+    },
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/video.mp4",
+      "frame_count": 177,
+      "fps": 30.0,
+      "video_duration_s": 5.9,
+      "video_last_frame_time_s": 5.866666666666666,
+      "simulation_duration_s": 26.830000000001395,
+      "trace_sample_count": 2684,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T05",
+      "title": "Ordered waypoints",
+      "frames": [
+        {
+          "panel_label": "(c)",
+          "selection_fraction": 0.55,
+          "video_frame_index_zero_based": 97,
+          "video_time_s": 3.2333333333333334
+        }
+      ],
+      "original_report_success": true
+    },
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/video.mp4",
+      "frame_count": 449,
+      "fps": 30.0,
+      "video_duration_s": 14.966666666666667,
+      "video_last_frame_time_s": 14.933333333333334,
+      "simulation_duration_s": 68.92999999999836,
+      "trace_sample_count": 6894,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T07",
+      "title": "Orbit (first attempt)",
+      "frames": [
+        {
+          "panel_label": "(d)",
+          "selection_fraction": 0.55,
+          "video_frame_index_zero_based": 246,
+          "video_time_s": 8.2
+        }
+      ],
+      "original_report_success": false
+    }
+  ],
+  "caption": "One frame from each original task video: takeoff and hover; climb, transit and return; ordered waypoints; and orbit. Labels are video playback times (frame index / fps), not simulation times. The camera tracks the aircraft; individual frames do not show the full trajectory or establish task completion. Original reports and recordings are unchanged."
+}

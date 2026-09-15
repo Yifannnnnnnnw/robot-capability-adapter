@@ -3,9 +3,15 @@
 
 from __future__ import annotations
 
+import copy
+from pathlib import Path
+
 import mujoco
+import numpy as np
+import pytest
 
 from auto_adapter.design_measurements import (
+    MeasurementError,
     capture_sample,
     evaluate_measurements,
     measurement_catalog,
@@ -104,10 +110,12 @@ def test_catalog_states_only_explicit_supported_semantics() -> None:
     text = measurement_catalog()
     for operator in (
         "site_position_error",
+        "body_position_error",
         "joint_position_error",
         "joint_drift",
         "joint_relation_error",
         "ordered_site_targets_error",
+        "ordered_body_targets_error",
         "contact_normal_force",
     ):
         assert operator in text
@@ -233,3 +241,96 @@ def test_contact_capture_uses_mujoco_normal_force() -> None:
     sample = capture_sample(model, data)
     assert sample["contacts"]
     assert any(item["normal_force_N"] > 0 for item in sample["contacts"])
+
+
+def test_body_origin_measurements_follow_real_motion_and_reject_wrong_order() -> None:
+    """A named native slider fixture has a body origin distinct from its COM."""
+    model = mujoco.MjModel.from_xml_string("""<mujoco>
+      <option timestep="0.01" gravity="0 0 0" integrator="Euler"/>
+      <worldbody><body name="tool" pos="0.2 0 0">
+        <joint name="slide" type="slide" axis="1 0 0"/>
+        <geom type="sphere" pos="0.1 0 0" size="0.02" mass="1"/>
+      </body></worldbody></mujoco>""")
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    assert model.nsite == 0
+    criterion = _criterion("endpoint_error", "m", 1e-6)
+    ordered_criterion = _criterion("ordered_error", "m", 1e-6)
+    request = {"target_position_m": [0.22, 0, 0], "waypoint_a": [0.21, 0, 0],
+               "waypoint_b": [0.22, 0, 0]}
+    measurements = [
+        {"criterion_index": 0, "operator": "body_position_error",
+         "bindings": {"body": "tool", "target_request_field": "target_position_m"}},
+        {"criterion_index": 1, "operator": "ordered_body_targets_error",
+         "bindings": {"body": "tool", "target_request_fields": ["waypoint_a", "waypoint_b"]}},
+    ]
+    design = _design([criterion, ordered_criterion])
+    case = {"capability_id": "free_named_cap", "request": request, "measurements": measurements}
+    for measurement, rule in zip(measurements, (criterion, ordered_criterion)):
+        validate_measurement(model, measurement, rule, request)
+    samples = [capture_sample(model, data)]
+    assert samples[0]["body_positions"]["tool"] == pytest.approx([0.2, 0, 0])
+    assert data.xipos[model.body("tool").id, 0] == pytest.approx(0.3)
+    data.qvel[0] = 1.0
+    for _ in range(2):
+        mujoco.mj_step(model, data)
+        mujoco.mj_forward(model, data)
+        samples.append(capture_sample(model, data))
+    assert samples[-1]["body_positions"]["tool"] == pytest.approx([0.22, 0, 0])
+    assert all(result["ok"] for result in evaluate_measurements(design, case, samples))
+
+    # Reversing the requested order keeps the same endpoint but must fail the path.
+    reversed_case = copy.deepcopy(case)
+    reversed_case["measurements"][1]["bindings"]["target_request_fields"].reverse()
+    results = evaluate_measurements(design, reversed_case, samples)
+    assert results[0]["ok"] is True and results[1]["ok"] is False
+    assert evaluate_measurements(design, case, [samples[0], samples[-1]])[1]["ok"] is False
+    assert not evaluate_measurements(design, case, samples[:2])[0]["ok"]
+    missing = copy.deepcopy(samples)
+    del missing[-1]["body_positions"]["tool"]
+    assert not evaluate_measurements(design, case, missing)[0]["ok"]
+    bad = copy.deepcopy(measurements[0])
+    bad["bindings"]["body"] = "missing_body"
+    with pytest.raises(MeasurementError, match="not present"):
+        validate_measurement(model, bad, criterion, request)
+
+
+def test_canonical_panda_without_sites_supports_body_scene_probe(tmp_path: Path) -> None:
+    from auto_adapter.scene_runtime import probe_case
+
+    mjcf = Path(__file__).resolve().parents[2] / "assets/mjcf/franka_panda/scene.xml"
+    source = mjcf.read_bytes()
+    model = mujoco.MjModel.from_xml_path(str(mjcf))
+    assert model.nsite == 0
+    model.body("hand")
+    criteria = [_criterion("hand_error", "m", 0.05), _criterion("hand_path_error", "m", 0.05)]
+    design = _design(criteria)
+    case = {
+        "case_id": "panda_hand", "scene": "empty", "capability_id": "free_named_cap",
+        "initial_state": {"robot": {"keyframe": "home"}},
+        "request": {"target_position_m": [0.46, 0.10, 0.47], "target_wrist_rad": 0.0,
+                    "waypoint_a": [0.5, 0.0, 0.5], "waypoint_b": [0.46, 0.10, 0.47]},
+        "execution": {"max_sim_time_s": 0.1, "wall_timeout_s": 2},
+        "measurements": [
+            {"criterion_index": 0, "operator": "body_position_error",
+             "bindings": {"body": "hand", "target_request_field": "target_position_m"}},
+            {"criterion_index": 1, "operator": "ordered_body_targets_error",
+             "bindings": {"body": "hand", "target_request_fields": ["waypoint_a", "waypoint_b"]}},
+        ],
+    }
+    report = probe_case(mjcf_path=mjcf, suite={"scenes": {"empty": {"objects": []}}, "cases": [case]},
+                        design=design, output_dir=tmp_path, case_id=case["case_id"])
+    assert report["ok"] is True, report
+    assert report["bindings_resolved"] is True and report["steps"] > 0
+    samples = [report["initial_sample"], report["post_step_sample"]]
+    assert all(np.isfinite(sample["body_positions"]["hand"]).all() for sample in samples)
+    # Body coordinates must describe the recorded joint state at the same instant.
+    snapshot = mujoco.MjData(model)
+    for name, position in samples[-1]["joint_positions"].items():
+        snapshot.qpos[model.joint(name).qposadr[0]] = position
+    mujoco.mj_forward(model, snapshot)
+    np.testing.assert_allclose(samples[-1]["body_positions"]["hand"],
+                               snapshot.xpos[model.body("hand").id], rtol=0, atol=1e-12)
+    # Successful scene preparation must not imply the unexecuted target was reached.
+    assert not any(result["ok"] for result in evaluate_measurements(design, case, samples))
+    assert mjcf.read_bytes() == source

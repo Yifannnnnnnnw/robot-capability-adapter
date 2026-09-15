@@ -122,6 +122,10 @@ class ReactLoop:
             self.client = HolisticClient()
             model = model.replace("us.anthropic.", "eu.anthropic.", 1)
             self._is_anthropic = False
+        elif provider == "deepseek":
+            from auto_adapter.agent.deepseek_client import create_deepseek_client
+            self.client = create_deepseek_client()
+            self._is_anthropic = True
         elif provider != "bedrock":
             raise ValueError(f"unsupported model provider {provider!r}")
         elif is_anthropic_model(model):
@@ -391,9 +395,18 @@ class ReactLoop:
             trace.append(step)
             self._dump_step(step)
 
-            # Append full assistant turn + full tool_results back into the conversation
+            if not tool_results and not (resp.stop_reason == "max_tokens" and resp.content):
+                return ReactResult(
+                    final_text=thought_text, trace=trace, ok=False,
+                    error=f"non-terminal response has no tool calls (stop_reason={resp.stop_reason})",
+                    total_tokens={"in": tok_in, "out": tok_out, "cache_read": tok_cache_r},
+                )
+
+            # A thinking-only truncation has no tool results. Keep its original
+            # blocks and request continuation within the remaining turn budget;
+            # native Anthropic-compatible APIs reject an empty user message.
             msgs.append({"role": "assistant", "content": resp.content})
-            msgs.append({"role": "user", "content": tool_results})
+            msgs.append({"role": "user", "content": tool_results or "Continue."})
 
         # Max iterations exhausted without end_turn
         return ReactResult(

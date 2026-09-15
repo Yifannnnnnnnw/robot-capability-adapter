@@ -112,6 +112,40 @@ composed. These distinctions motivate separating capability design, driver
 implementation and behavioural assessment in the framework that follows. The
 resulting simulation evidence does not establish hardware performance.
 
+\subsection[Closed-Loop Planning with ReCAP]{Closed-Loop Planning with ReCAP}
+\label{sec:recap}
+
+Closed-loop task execution requires the LLM to interpret observations in
+relation to goals that remain unresolved. A failed grasp, for example, may
+require revising the next action while preserving the overall placement goal.
+AutoAdapter-Bench uses Recursive Context-Aware Reasoning and Planning (ReCAP)
+to organise this process. ReCAP generates an ordered subtask list and
+recursively decomposes the first unresolved item until an executable action is
+reached \citep{zhang2025recap}. In this chapter, these actions are capability
+calls executed through each robot's fixed, validated driver.
+Figure~\ref{fig:chapter3-recap-backtracking} shows how the parent plan is
+revisited after subtask execution, with the updated context guiding further
+refinement.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]
+    {assets/recap_backtracking_refinement_zhang2025.png}
+  \caption[ReCAP backtracking and plan refinement]
+  {ReCAP backtracking and plan refinement.
+  The latest observation is appended to the shared context (1), and the parent
+  task's prior reasoning and remaining subtasks are restored (2). The LLM then
+  generates revised reasoning and subtasks from the updated context (3).
+  Cropped reproduction of Figure~2 from \citet{zhang2025recap}, under
+  \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0}.}
+  \label{fig:chapter3-recap-backtracking}
+\end{figure}
+
+ReCAP fixes the planning procedure and context updates, while the LLM
+determines the subgoals and how the remaining plan is revised. The Harness
+determines task success from independently recorded simulation state; the
+controller's declaration of completion is not sufficient.
+
 \section{Auto-Adapter Framework}
 
 \subsection{Framework overview}
@@ -203,222 +237,351 @@ repair and the use of validated capabilities for downstream task execution.
   \label{fig:autoadapter-framework-workflow}
 \end{figure}
 
-\subsection{Task-Grounded Capability and Validation Design}
+\subsection{Designing Robot Capabilities from Tasks}
 \label{sec:task-grounded-capability-design}
 
-During Design, the agent uses the robot study and documented task requirements
-to define between three and ten reusable capabilities. Each
-capability represents one composable physical effect and accepts a bounded,
-task-neutral request. The design also records which tasks motivate each
-capability and why. This relationship supplies coverage rationale rather than
-a call sequence, waypoint plan, or complete task policy. The resulting
-contracts are retained in \texttt{capability\_design.json}.
+Auto-Adapter derives the driver interface from the tasks the robot is expected
+to perform. During \textbf{Design}, the agent combines task requirements with
+the information collected during \textbf{Study} to identify reusable operations.
+Reaching, pushing and placing share end-effector positioning, while grasping
+additionally requires gripper control. The agent defines these operations as
+parameterised methods and records which tasks they support. The high-level
+controller selects and combines these methods into task-specific action
+sequences.
 
-For example, reaching above an object, positioning a gripper for grasping, and
-moving an object towards a destination all depend on controlled Cartesian
-positioning. These requirements may motivate an end-effector capability that
-accepts a target position. Its criterion can require the simulated end
-effector to enter and remain within a stated tolerance of that target. The
-capability therefore captures a reusable physical effect without embedding the
-identity or action sequence of a particular task.
+For each capability, the agent \textbf{designs simulation tests and builds the
+corresponding test environments in MuJoCo}. For example, a positioning test
+sets the robot's initial joint configuration and calls the positioning method
+with a target position. After execution, it measures the distance between the
+end effector and the target and checks whether this distance is within the
+specified tolerance. The agent \textbf{uses the thresholds specified in the
+task libraries} where available and explicitly labels any newly proposed
+values.
 
-To make a behavioural requirement executable, each simulation case links a
-capability request and initial state to explicitly defined measurements. Each
-measurement refers to a capability criterion by index and selects a supported
-operator with the required MuJoCo bindings. For Cartesian positioning, these
-bindings identify the end-effector site and the request field containing its
-target position. The evaluator reads the evaluation interval, aggregation
-rule, comparator and threshold from the capability contract and applies them
-to the recorded trajectory. A holding requirement can therefore be assessed
-through the maximum sampled position error over a specified interval.
+As shown in Figure~\ref{fig:autoadapter-framework-workflow}, \textbf{Generate}
+implements the designed capabilities, while \textbf{Validation} evaluates the
+driver using the prepared test scenes and criteria. The scene checks establish
+whether the tests can run and provide the required measurements. Whether the
+driver actually reaches the target within the specified tolerance is assessed
+during Validation.
 
-Before driver synthesis, the framework checks the final capability and case
-specifications for consistency and requires measurement coverage for every
-criterion. It constructs the scenes from the supplied MJCF, applies the
-prescribed initial conditions and resolves the measurement bindings. Each
-prepared case is then briefly stepped in MuJoCo without executing a driver.
-These probes check whether the scenes and measurements are ready for
-evaluation; they do not establish whether a controller can satisfy the
-behavioural criteria.
+The principal output fields for \textbf{Study} and \textbf{Design} are
+summarised in Appendix~\ref{sec:appendix-stage-outputs}
+(Table~\ref{tab:appendix-stage-outputs}).
 
-\subsection{Driver Synthesis and Physics-Grounded Feedback}
+\subsection{Revising Drivers through Physics-Grounded Feedback}
 
-Driver synthesis begins from an interface-only \texttt{driver.py} that defines
-the required construction function and capability signatures. It contains no
-robot-specific actuator mapping, controller implementation, task dispatch, or
-validation logic. Using the same ReAct tools, the agent develops the
-robot-specific implementation and runs bounded Python and simulation checks.
-The generated driver remains responsible for translating capability requests
-into actuator commands for the selected robot.
+Auto-Adapter uses simulation validation to produce feedback for driver
+refinement. After \textbf{Generate} submits a candidate, \textbf{Validation}
+executes its capability methods and compares independently recorded MuJoCo
+measurements with the criteria established during \textbf{Design}.
+For a repairable failure, the framework converts the
+case diagnostics and measurement results into a message for the generation
+agent. The message identifies the failed capability and reports the observed
+values, comparison rules and thresholds, together with any execution errors.
+For a positioning failure, this exposes the measured target error and required
+tolerance, giving the agent a concrete discrepancy to investigate.
 
-The framework supports two driver-generation modes. In the
-\textbf{from-scratch mode}, the ReAct agent constructs the controller and
-capability implementation, including the robot-specific actuator mapping and
-required state handling, from the permitted robot artefacts and development
-simulations. In the \textbf{skeleton-assisted mode}, the agent may additionally
-inspect task-neutral controller structures suited to the robot family, such as
-a generic Cartesian controller for a serial arm. These skeletons provide
-reusable control structure but contain no robot-specific joint or actuator
-mapping, task identity, private validation criteria, reset state, or verdict
-logic. Both modes implement the same capability contract and are assessed
-through the same independently compiled validation process. The experimental
-design specifies which mode is used in each study.
-
-Generation follows a write--run--observe--revise loop. The agent may execute
-its draft in bounded development simulations and inspect the resulting robot
-state. Import errors, unexpected actuator responses, contacts, and measured
-tracking errors can therefore inform the next revision. These observations
-support implementation development, but they cannot determine acceptance
-because the development environment does not contain the withheld validation
-cases.
-
-During execution, a motion-producing capability reads the current
-\texttt{mujoco.MjData}, computes an actuator command from the observed state
-and public request, and writes the command through \texttt{data.ctrl}.
-Subsequent MuJoCo steps produce the evaluated trajectory
-\citep{todorov2012mujoco}. This state-dependent interaction allows the
-controller to respond to tracking error as the simulation evolves rather than
-relying solely on a fixed command sequence.
-
-\subsection{Independent Assessment, Repair, and Task Demonstration}
-
-Each capability case executes the generated driver in an isolated process. The
-evaluation creates a fresh \texttt{mujoco.MjModel} and
-\texttt{mujoco.MjData} from the fixed model and applies the prescribed initial
-state. An evaluator outside the generated code records the actuator controls
-and resulting joint trajectory directly from MuJoCo, including
-\texttt{qpos}, \texttt{qvel}, and \texttt{ctrl}. Where required by a
-criterion, it also records relevant body or site poses and contacts.
-
-The evaluator applies the criteria compiled before driver synthesis. Driver
-return values, printed messages, and self-reported success do not constitute
-behavioural evidence. The evaluator also checks that observed motion results
-from actuator commands and subsequent MuJoCo simulation steps. A case is
-rejected if the candidate directly overwrites evaluated state variables instead
-of producing motion through the actuator interface and simulated physics.
-
-When a case fails, the generation agent receives the previous driver and a
-report summarising the request, observed outcome and relevant diagnostics.
-It does not receive the executable checker or other withheld case
-information. The agent may revise only the driver through the same public
-development interface, after which the revised implementation is assessed
-against the same fixed cases. The experimental design specifies the number of
-permitted revisions.
-
-Capability assessment and downstream task completion remain separate. A
-capability becomes available for task demonstration only when both its nominal
-and calibrated-boundary cases pass. Capabilities that fail either case remain
-unavailable, and passing a subset is not reported as validation of the complete
-driver. A separate task-level controller may then compose only the available
-capabilities when attempting the documented tasks.
-
-Task completion is judged independently from the recorded MuJoCo trajectory
-and continuous execution video rather than from the controller's declaration
-that it has finished. This task-level verdict does not alter the preceding
-capability results and cannot trigger Repair within the same run.
-
-The resulting evidence supports claims about capability execution and task
-completion only under the specified MuJoCo model, requests, initial conditions,
-and measurement criteria. It does not establish hardware performance,
-deployment safety, or sim-to-real transfer.
+The \textbf{Repair} prompt includes this feedback alongside the public
+capability contract and directs the agent to revise the existing driver. The
+revised implementation is then evaluated against the same cases and criteria.
+Simulation thus supplies a repeated message-feedback loop: execute the
+candidate, measure its behaviour, report the discrepancy and revise the
+implementation. The behavioural target remains fixed throughout the run, and
+the loop ends when validation succeeds or the repair budget is exhausted.
+Figure~\ref{fig:piper-stage-traces}A shows these validation--repair cycles
+alongside the recorded model turns and tool interactions.
 
 
-\section{Experiments and Results}
+\enlargethispage{\baselineskip}
+\section{Experimental Configuration}
 
-\subsection{Experimental Configuration}
 
+Five independent runs will evaluate skeleton-assisted driver generation and
+cross-task reuse for AgileX PiPER in MuJoCo. Each run will use a fresh agent
+session and workspace, with identical robot documentation, MJCF models,
+skeleton code and task requirements. The skeleton supplies generic motion and
+grasp control; generated code implements robot-specific bindings and the
+capability interface produced during Design.
 
-The experiment evaluated 15 robot configurations in MuJoCo using Claude Opus 4.8 for driver generation.
-13 configurations used skeleton-assisted generation; Unitree H1 and Skydio X2 used from-scratch generation.
-Figure~\ref{fig:robot-platform-taxonomy} shows the 15 robot platforms,
-and Table~\ref{tab:robot-platform-embodiment-types} summarises their controller skeletons. Each arm and quadruped capability was tested under one nominal and one boundary condition.
-Following initial generation, up to three repair attempts were allowed, with the complete assigned validation suite repeated after each repair.
-The Framework assessed behaviour using MuJoCo state and simulation time.
-Robot capabilities and validation criteria are detailed in the appendix.
-% TODO: Add the robot-model/capability/validation-criteria table
-% to the appendix and replace the generic reference with its numbered reference.
+Auto-Adapter and ReCAP will call Claude Opus 4.8, using model identifier
+\texttt{eu.anthropic.claude-opus-4-8} and \mbox{\texttt{max\_tokens = 8000}}.
+Neither temperature nor reasoning effort will be explicitly set. ReAct limits
+will be 16 iterations for Study, 30 for Design, 22 for Generate and each
+Repair, and eight for Export. Each run will permit one initial submission and
+up to three repairs. ReCAP will allow at most 16 planning calls and 12
+capability calls per task episode.
 
-\begin{table}[!htbp]
+Each run will produce its own capability design and validation cases, checked
+for coverage of the fixed task requirements. The cases and their criteria will
+remain unchanged during generation and repair, with the full suite repeated
+after each revision. Only drivers passing every required case will proceed to
+Export and ReCAP.
+
+Each exported driver will be evaluated unchanged on reaching, pushing and
+pick-and-place at three lateral positions, \(y\in\{-0.08,0,0.08\}\)~m.
+World coordinates \((x,y,z)\), measured in metres from the robot base, will
+specify end-effector targets or cube centres. The reaching target will be
+\((0.40,y,0.30)\). For pushing and pick-and-place, a cube with 0.03~m sides
+will start at \((0.40,y,0.205)\) on a tabletop at \(z=0.19\)~m. The
+respective goals will be \((0.50,y,0.205)\) and \((0.50,y,0.285)\). Only
+the pick-and-place scene will include a receiving platform, with its top at
+\(z=0.27\)~m. Layouts will be shared across drivers and withheld from
+generation and repair. Each episode will reset the simulator and controller
+context, restoring the same initial robot pose.
+
+An evaluator separate from ReCAP will judge task success from MuJoCo state.
+Reaching will require final end-effector error of at most 0.02~m. Pushing will
+require contact-driven object motion ending within 0.02~m of the goal.
+Pick-and-place will require grasping, lifting and release, followed by an
+object--goal distance of at most 0.07~m.
+
+\section{Results}
+
+\label{sec:piper-results}
+
+\subsection{Task-Derived Capability Specifications}
+
+\begin{table}[H]
   \centering
-  \caption{Robot platforms and controller skeletons by embodiment type.}
-  \label{tab:robot-platform-embodiment-types}
-  \footnotesize
-  \renewcommand{\arraystretch}{1.05}
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabularx}{\linewidth}{
-    @{}
-    >{\raggedright\arraybackslash}p{0.20\linewidth}
+  \begingroup
+  \small
+  \def\UrlFont{\ttfamily\footnotesize}
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{PiPER capability design and validation results for run~01, with Claude Opus 4.8 as the generation model.}
+  \label{tab:piper-design-run01}
+  \begin{tabularx}{\textwidth}{@{}
+    >{\raggedright\arraybackslash}p{33mm}
     >{\raggedright\arraybackslash}X
-    >{\raggedright\arraybackslash}X
-    @{}
-  }
+    >{\raggedright\arraybackslash}p{36mm}
+    >{\raggedright\arraybackslash}p{20mm}@{}}
     \toprule
-    \textbf{Robot type} & \textbf{Robot platforms} & \textbf{Skeleton} \\
+    \textbf{Capability and generated method} &
+    \textbf{Concrete test request} &
+    \textbf{Generated criterion} &
+    \textbf{Measured value} \\
     \midrule
-    Fixed serial arm &
-    SO-101; AgileX PiPER; Franka Panda; KUKA LBR iiwa 14;
-    UFACTORY xArm7; Kinova Gen3 + Robotiq 2F-85;
-    UR5e + Robotiq 2F-85 &
-    DLS inverse kinematics, joint control and gripper control
-    where applicable \\
-    \addlinespace[2pt]
-    Quadruped & Unitree Go2 &
-    Pretrained locomotion policy with PD torque control \\
-    Quadruped & Unitree A1; ANYmal-C &
-    Periodic trot and posture control through native position actuators \\
-    \addlinespace[2pt]
-    Aerial quadrotor & Skydio X2 & None (from scratch) \\
-    \addlinespace[2pt]
-    Humanoid biped & Unitree H1 & None (from scratch) \\
-    \addlinespace[2pt]
-    Dexterous hand & LEAP Hand &
-    Fingertip DLS and joint-position control \\
-    \addlinespace[2pt]
-    Mobile manipulator & Hello Robot Stretch 2 &
-    Base feedback, lift and telescopic-arm control \\
-    \addlinespace[2pt]
-    Bimanual manipulator & ALOHA 2 &
-    Two DLS arm controllers operating in one MuJoCo world \\
+    End-effector positioning\newline
+      \path{move_end_effector_to_position} &
+      \path{target_position} $=[0.386,\,0.001,\,0.323]$ &
+      Terminal end-effector position error $\leq 20$~mm &
+      $3.32$~mm \\
+    Ordered waypoint motion\newline
+      \path{move_end_effector_through_waypoints} &
+      \path{waypoint_1} $=[0.386,\,0.001,\,0.323]$;
+      \path{waypoint_2} $=[0.419,\,-0.128,\,0.383]$ &
+      Ordered waypoint matching error $\leq 30$~mm &
+      $4.85$~mm \\
+    Wrist rotation\newline
+      \path{set_wrist_roll} &
+      \path{wrist_roll} $=0.8$ &
+      Terminal joint6 angle error $\leq 0.05$~rad &
+      $0.0210$~rad \\
+    Gripper aperture\newline
+      \path{set_gripper_aperture} &
+      \path{aperture} $=0.025$ &
+      Terminal joint7 displacement error $\leq 3$~mm &
+      $0.00311$~mm \\
+    Contact establishment\newline
+      \path{apply_contact_force} &
+      \path{contact_position} $=[0.400,\,0.000,\,0.200]$;
+      \path{hold_s} $=2.0$ &
+      Specified-pair normal-force peak over $1$--$3$~s $\geq 0.5$~N &
+      $4.76$~N \\
     \bottomrule
   \end{tabularx}
+  \par\smallskip
+  \noindent\raggedright\emph{Notes:} Request positions and lengths are in metres, angles
+  in radians, times in seconds and forces in newtons. Positions use the world
+  frame. Differences among the designs are summarised in
+  Appendix~\ref{sec:appendix-piper-designs}. Runs~02--04 retained the same
+  operation types, whereas run~05 replaced waypoint motion with position
+  holding; contact criteria varied in aggregation, thresholds and evaluation
+  windows.\par
+  \endgroup
 \end{table}
 
-\begin{figure}[!htbp]
+All five independent runs mapped the 20 task-library entries
+(Appendix~\ref{sec:appendix-tasks}) to five
+parameterised capabilities. End-effector positioning, wrist rotation, gripper
+aperture and contact operations appeared in every design. The fifth
+capability supported ordered waypoint motion in four runs and position holding
+in one. Each capability was paired with a concrete test request and a
+measurable acceptance criterion. Table~\ref{tab:piper-design-run01} presents
+the complete design from run~01.
+The differences among all five designs are summarised in
+Table~\ref{tab:appendix-piper-comparison}.
+These mappings describe the declared
+coverage of the generated interfaces; task execution results are reported in
+Section~\ref{sec:piper-driver-use}.
+
+\subsection{Driver Generation and Validation}
+
+\begin{table}[H]
   \centering
-  \includegraphics[width=\linewidth]{assets/robot_platform_taxonomy_15_print.pdf}
-  \caption[Fifteen robot platforms grouped into seven embodiment types]
-  {Fifteen robot platforms grouped into seven embodiment types.
-  \textbf{Fixed arms:} SO-101, AgileX PiPER, UR5e, Franka Panda, KUKA LBR iiwa 14,
-  Kinova Gen3 and UFACTORY xArm7.
-  \textbf{Quadrupeds:} Unitree Go2, Unitree A1 and ANYmal-C.
-  \textbf{Aerial quadrotor:} Skydio X2.
-  \textbf{Humanoid biped:} Unitree H1.
-  \textbf{Dexterous hand:} LEAP Hand.
-  \textbf{Mobile manipulator:} Hello Robot Stretch 2.
-  \textbf{Bimanual manipulator:} ALOHA 2.}
-  \label{fig:robot-platform-taxonomy}
+  \begingroup
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{PiPER capability validation results across five independent runs, with Claude Opus 4.8 as the generation model.}
+  \label{tab:piper-validation-summary}
+  % Final validation submission per run; dispersion is the sample SD (n - 1).
+  \begin{tabularx}{\textwidth}{@{}
+    >{\raggedright\arraybackslash}X
+    >{\centering\arraybackslash}p{24mm}
+    >{\raggedleft\arraybackslash}p{49mm}@{}}
+    \toprule
+    \textbf{Capability} &
+    \textbf{Passed / tested} &
+    \textbf{Measured result} \\
+    \midrule
+    End-effector positioning & $5/5$ & $3.06 \pm 1.50$~mm \\
+    Ordered waypoint motion & $4/4$ & $4.68 \pm 0.37$~mm \\
+    Wrist rotation & $5/5$ & $0.0145 \pm 0.0097$~rad \\
+    Gripper aperture (joint7 error) & $5/5$ & $0.00132 \pm 0.00139$~mm \\
+    End-effector position hold & $1/1$ & $9.06$~mm \\
+    Contact establishment & $2/5$ & Not pooled \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \noindent\raggedright\emph{Notes:} Results are taken from each run's final
+  validation submission. Repeated measurements are reported as mean
+  $\pm$ sample standard deviation; position holding has one measurement.
+  Each run used its generated test requests and criteria. Contact-force
+  results were not pooled.\par
+  \endgroup
+\end{table}
+
+All five final candidates passed their four non-contact capability tests.
+Two passed the complete test suite and reached Export: one on its initial
+submission and one after a single repair. The other three exhausted all
+three repairs with their contact tests unresolved
+(Table~\ref{tab:piper-validation-summary};
+Figure~\ref{fig:piper-generation-results}A). Among these failures, one design
+bound contact-force measurement to a visual geometry that could not collide,
+so the specified measurement returned zero force even after physical contact
+was established. Another run established contact through geometries outside
+its specified pair and did not meet the validation requirement for that pair.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{assets/exp1_outcomes_v2.png}
+  \caption[PiPER capability validation and task outcomes]{PiPER capability validation and task outcomes.
+  (A) Capability-test pass/fail counts across driver submissions.
+  (B) Task outcomes for the two exported drivers.
+  (C) A separate pick-and-place diagnostic comparing Claude Opus 4.8 and
+  GPT-6 Astra using the same driver.}
+  \label{fig:piper-generation-results}
 \end{figure}
 
+Figure~\ref{fig:piper-stage-traces} shows the model calls across Study,
+Design, Generate, Validation, Repair and Export for all five runs. It also
+summarises stage durations, model-turn counts and generation output tokens.
+Run~01 reached Export after its first validation, and run~04 after one
+repair. The remaining three runs completed all three repairs and ended with
+4/5 cases passed.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{assets/exp1_stage_traces.pdf}
+  \caption[Model-call traces and resource use across Auto-Adapter stages]{Model-call traces and resource use across Auto-Adapter stages.
+  (A) Each rectangle represents one model turn; vertical lines mark the
+  execution of an independent validation suite. (B) Recorded stage durations,
+  model-turn counts for generation and the displayed ReCAP execution, and
+  generation output tokens. ReCAP traces show only pick-and-place in L1.}
+  \label{fig:piper-stage-traces}
+\end{figure}
 
+\subsection{Reuse Across Manipulation Tasks}
+\label{sec:piper-driver-use}
 
+The two exported drivers were reused across three tasks and three layouts,
+producing 18 executed episodes. Reaching succeeded in 6/6 episodes and pushing
+in 6/6, whereas pick-and-place succeeded in 1/6
+(Figure~\ref{fig:piper-generation-results}B). The other three runs did not
+export a driver, so their 27 planned episodes were not executed and are
+excluded from these task-success denominators.
 
+In a separate diagnostic using the run~04 driver, replacing Claude Opus 4.8
+with GPT-6 Astra as the ReCAP model increased pick-and-place success from 1/3
+to 3/3. The driver, scenes, prompts and budgets were held fixed. Terminal
+object--goal errors decreased from 28.10--104.17~mm to 4.67--5.84~mm
+(Figure~\ref{fig:piper-generation-results}C). The three Astra episodes are
+excluded from the original five-run results.
 
-\subsection{Results}
+Figure~\ref{fig:piper-task-sequences} shows the same run~04 driver completing
+reaching in L2, pushing in L2 and pick-and-place in L1. The corresponding
+terminal errors were 0.29~mm, 5.36~mm and 28.10~mm.
 
-Drivers for 6 of the 15 robot configurations passed all checks in their assigned validation suites: PiPER, xArm7, LEAP Hand, Stretch 2, ALOHA 2 and Skydio X2.
-Of the remaining 9 configurations, 8 failed behavioural validation.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{assets/exp1_three_task_success.png}
+  \caption[Successful PiPER task execution with a shared generated driver]{Successful PiPER task execution with a shared generated driver and
+  Claude Opus 4.8 as the ReCAP model. Rows show (A) reaching, (B) pushing and
+  (C) pick-and-place. Times are video timestamps; terminal errors are measured
+  from independently recorded MuJoCo state.}
+  \label{fig:piper-task-sequences}
+\end{figure}
 
-Controlled contact was the most common failed capability among the serial arms.
-SO-101 failed to establish contact under the permitted approach travel of 4--5~cm and time limits of 4--5~s.
-Franka Panda sustained contact for only 0.008~s and 0.002~s under nominal and boundary conditions, respectively, below the required 0.1~s.
-After initial contact, the generated driver held a fixed joint target but did not adjust it when contact was lost, preventing sustained contact.
-KUKA held the pre-contact position for 0.076~s, also below the required 0.1~s.
-UR5e reached a surface-relative speed of 5.09~cm/s, exceeding the nominal and boundary limits of 3 and 4~cm/s.
-These failures indicate that reaching or touching the target was insufficient without the required timing, speed control and sustained contact.
+The five pick-and-place failures in the original experiment involved object
+transport and release. In the representative failure from run~04/L2, the
+cube's bottom remained at least 8.4~mm below the receiving platform's top
+before striking its edge, after which finger contact was lost.
+Figure~\ref{fig:piper-recap-comparison} compares this failure with the
+successful Astra diagnostic using the same driver and scene. Astra carried
+the object higher and delayed descent until it was above the receiving
+platform.
 
-\section{Interpretation and Limitations}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{assets/exp1_mujoco_frames.png}
+  \caption[PiPER pick-and-place execution under two ReCAP models]{PiPER pick-and-place execution under two ReCAP models. The top row
+  shows Claude Opus 4.8 and the bottom row GPT-6 Astra, using the same generated
+  driver and MuJoCo scene. Columns show grasping, lifting, transfer and the
+  final state; times are video timestamps. The Astra execution is a separate
+  diagnostic.}
+  \label{fig:piper-recap-comparison}
+\end{figure}
 
+\section{Discussion}
+
+The experiment shows that generated drivers can be reused across different
+tasks. The same PiPER driver successfully performed reaching, pushing and
+pick-and-place, showing that its capabilities can be combined in different
+ways to achieve task goals (Figure~\ref{fig:piper-task-sequences}).
+
+Contact validation was the main barrier to obtaining a driver that passed the
+complete test suite in this experiment. All unresolved cases in the final
+submissions were contact tests; the observed visual-geometry binding error
+and contact-pair mismatch show that contact validation requires measurements
+to refer to the actual collision surfaces
+(Table~\ref{tab:piper-validation-summary}).
+
+Passing individual capability tests does not guarantee successful
+pick-and-place, because the high-level planner must also provide sufficient
+clearance for the carried object. The trajectory comparison in
+Figure~\ref{fig:piper-recap-comparison} is consistent with high-level planning
+contributing to the original transport failure. This diagnostic covers one
+driver and three layouts and does not establish a general performance
+difference between the models.
 
 \section{Summary}
 
+This chapter presented Auto-Adapter, a framework that derives reusable robot
+capabilities and behavioural tests from task requirements and independently
+validates driver implementations in MuJoCo. In the PiPER experiment, two of
+five runs produced drivers that passed their complete validation suites; the
+remaining three each passed four of five capability tests, with contact as
+the only unresolved test. Successful execution of reaching, pushing and
+pick-and-place shows that the pipeline can produce robot drivers for reuse
+by a high-level planner under the tested conditions.
+
+Validation in this chapter was limited to PiPER simulation experiments using
+a supplied controller skeleton, so these results do not establish performance
+on other robots or real hardware. Driver generation used only one model,
+while the subsequent ReCAP model replacement covered only pick-and-place;
+model performance in driver generation and use therefore requires systematic
+evaluation. The next chapter compares models separately in these two
+stages under fixed capability interfaces and acceptance criteria to examine
+how model choice affects the results.

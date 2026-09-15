@@ -1,0 +1,23 @@
+# Chapter 3 source DEMO at L2. prepare expands the lateral coordinate to L1/L2/L3.
+# success expresses the experiment contract; scorer compatibility is checked separately.
+robots:
+  piper:
+    task: >-
+      Move the end effector to target_position in world coordinates, measured in metres.
+      Finish at that position without manipulating an object.
+    scene: ../expriment/chapter3_piper/prepared/reach/L2/scene.xml
+    initial_state:
+      robot: {keyframe: home}
+      settle_s: 0.5
+    parameters:
+      task_id: mw_reach_target
+      target_position: [0.40, 0.0, 0.30]
+    success:
+      type: ee_at_target
+      bindings:
+        ee: {kind: site, name: ee_site}
+      target_parameter: target_position
+      metric: euclidean_distance_3d
+      comparator: '<='
+      tolerance_m: 0.02
+      temporal: terminal_state

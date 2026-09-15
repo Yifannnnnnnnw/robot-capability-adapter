@@ -1,0 +1,83 @@
+{
+  "purpose": "Chapter 3 supplementary process cases: stage behaviour under model and robot changes; one run per condition, reported separately from the original five PiPER runs.",
+  "conditions": [
+    {
+      "id": "piper_opus48",
+      "robot_id": "piper",
+      "bedrock_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "id": "piper_sonnet46",
+      "robot_id": "piper",
+      "bedrock_model": "eu.anthropic.claude-sonnet-4-6"
+    },
+    {
+      "id": "piper_astra",
+      "robot_id": "piper",
+      "bedrock_model": "global.openai.gpt-6-astra"
+    },
+    {
+      "id": "go2_opus48",
+      "robot_id": "go2",
+      "bedrock_model": "eu.anthropic.claude-opus-4-8"
+    },
+    {
+      "id": "leap_hand_opus48",
+      "robot_id": "leap_hand",
+      "bedrock_model": "eu.anthropic.claude-opus-4-8"
+    }
+  ],
+  "runs_per_condition": 1,
+  "generation": {
+    "runner": "auto_adapter.orchestrator.SelfAssemble",
+    "stop_after": "export",
+    "enable_demo": false,
+    "fresh_study_and_design": true,
+    "reuse_previous_driver_or_design": false,
+    "max_tokens_per_turn": 8000,
+    "max_iters_study": 16,
+    "max_iters_capability_design": 30,
+    "max_iters_generate": 22,
+    "max_iters_export": 8,
+    "max_outer_gen_val_iters": 4,
+    "repair_budget": 3,
+    "sampling": "Preserve and record current request behaviour: Opus omits temperature; Sonnet and Astra use temperature=0.0; no explicit reasoning effort.",
+    "generation_route": "skeleton-assisted",
+    "mode": "local",
+    "model_provider": "holistic",
+    "aws_region": "eu-west-2"
+  },
+  "recap": {
+    "runner": "auto_adapter.agent.recap.run_demo",
+    "model": "global.openai.gpt-6-astra",
+    "provider": "holistic",
+    "region": "eu-west-2",
+    "max_tokens": 8000,
+    "planning_calls_limit": 16,
+    "capability_calls_limit": 12,
+    "episodes_per_exported_driver": 1,
+    "demo_config_path": "AA1/auto_adapter/demo_tasks.yaml",
+    "tasks": {
+      "piper": "Two Cartesian checkpoints, then gripper close/open",
+      "go2": "Stable stance, forward motion, crouch and rise",
+      "leap_hand": "Four-fingertip target motion and return"
+    },
+    "start_condition": "All generated validation cases passed and Export succeeded",
+    "capability_design": "Load the generated workspace/design/capability_design.json for each exported driver."
+  },
+  "records": [
+    "actual model/provider requests",
+    "stage model turns and tool results",
+    "stage durations and token usage",
+    "all validation cases and repair submissions",
+    "per-case validation videos",
+    "selected DEMO physical trajectory, video, scorer metrics and verdict"
+  ],
+  "execution_notes": [
+    "Load MJCF, skeleton assets and fixed DEMO/scorer bindings before model calls.",
+    "Each condition uses a new workspace; generated cases remain fixed through repair.",
+    "Retain each unsuccessful or incomplete run; do not replace it with another draw.",
+    "No mainline edits are required to select a fixed ReCAP model.",
+    "A single run per condition describes observed process differences; it does not estimate repeatability or a general model ranking."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "mujoco_version": "3.13.0",
+  "model": "fixture_probe.xml",
+  "nq": 1,
+  "nv": 1,
+  "nu": 0,
+  "nmesh": 3,
+  "ngeom": 8,
+  "time_s": 0.005,
+  "finite": true,
+  "valve_mass_kg": 0.4764350922875066,
+  "valve_inertia_kg_m2": [
+    0.0009999380117320824,
+    0.0006127118395286085,
+    0.0005929049835245614
+  ],
+  "hinge_name": "valve_OBJRx",
+  "hinge_range_rad": [
+    -6.28,
+    6.28
+  ],
+  "hinge_damping": 0.1,
+  "hinge_armature": 0.001
+}

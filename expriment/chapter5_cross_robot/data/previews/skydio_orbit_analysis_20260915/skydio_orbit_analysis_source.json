@@ -1,0 +1,48 @@
+{
+  "figure": "skydio_orbit_analysis.png",
+  "analysis": "read-only plot of saved X2-T07 physics traces and task reports",
+  "source_run_root": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01",
+  "center_xy_m": [
+    0.0,
+    0.0
+  ],
+  "target_radius_m": 1.5,
+  "criterion": {
+    "cumulative_positive_angle_deg": 360.0,
+    "deadline_s": 60.0,
+    "inward_bearing_rmse_threshold_deg": 12.0,
+    "rmse_is_circuit_level": true
+  },
+  "angle_algorithm": "For each saved sample, atan2(y-center_y, x-center_x); cumulative signed positive progress is the sum of wrap((angle[i]-angle[i-1])) in [-pi, pi), matching robots/skydio_x2/task_evaluation.py::_t07.",
+  "attempts": [
+    {
+      "label": "First attempt",
+      "trace": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/physics_samples.jsonl",
+      "report": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/task_report.json",
+      "sample_count": 6894,
+      "start_time_s": 0.0,
+      "end_time_s": 68.92999999999836,
+      "terminal_progress_deg": 359.95258566462996,
+      "terminal_progress_rad": 6.282357770914734,
+      "first_at_least_360_time_s": 65.01999999999636,
+      "maximum_progress_deg": 366.29825973327456,
+      "report_bearing_rmse_deg": 10.542374737684462,
+      "physical_task_success": false
+    },
+    {
+      "label": "Clarified retry",
+      "trace": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/physics_samples.jsonl",
+      "report": "expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/task_report.json",
+      "sample_count": 3082,
+      "start_time_s": 0.0,
+      "end_time_s": 30.810000000002017,
+      "terminal_progress_deg": 361.19115216201334,
+      "terminal_progress_rad": 6.303974834298968,
+      "first_at_least_360_time_s": 29.900000000001874,
+      "maximum_progress_deg": 366.30833090729215,
+      "report_bearing_rmse_deg": 13.745809542908995,
+      "physical_task_success": false
+    }
+  ],
+  "caption": "Units: x/y and target radius in m; time in s; angles and bearing RMSE in degrees. Each colour is one complete saved X2-T07 trace: first attempt/original diagnostic (68.93 s) or clarified retry (30.81 s). Panel (c) reports circuit-level inward-bearing RMSE; 12\u00b0 is its aggregate threshold, not an instantaneous error limit. The first attempt briefly exceeds 360\u00b0 before ending below it."
+}

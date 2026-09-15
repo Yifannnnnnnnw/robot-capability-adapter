@@ -10,63 +10,60 @@
 \makedeclaration
 
 \begin{abstract}
-This thesis investigates how task-level decisions in embodied-AI systems can
-be translated into executable commands across different robots. It develops
-and evaluates Auto-Adapter, which generates the required robot-specific drivers
-and independently validates their behaviour before they are used for task
-execution.
-Auto-Adapter reads a robot description and a collection of target tasks,
-proposes a small set of reusable robot operations, and generates the code that
-exposes them to an agent. The proposed operations are evaluated against
-measurable criteria in simulation, using observations and verdicts that remain
-separate from the generated code. When a driver fails, Auto-Adapter permits a
-fixed number of revision attempts. The study therefore distinguishes between
-designing robot tools, implementing them, validating their behaviour, and
-using them to complete tasks. The study evaluates seven LLMs across eleven
-robot configurations. In the SO-101 diagnostic, the strongest generated driver
-passed 14 of 18 independently evaluated cases (77.8\%). The project repository
+This thesis investigates how action and observation requests from LLM-based embodied agents can be translated into executable robot operations. Deploying such an agent on a new robot requires a Python driver that provides access to robots. This driver typically requires manual implementation, adding development effort for each robot platform. Existing approaches, including ReAct, Code as Policies, and CodeAct, rely on available tools and APIs, leaving the implementation of the robot-specific interface outside their scope. This motivates the question of whether an LLM can also generate the driver that connects an embodied agent to a new robot.
+To investigate this question, this thesis presents Auto-Adapter, an LLM-agent pipeline for robot driver generation. Given a robot description and target tasks, it proposes reusable robot operations, implements them in a self-contained Python driver, and iteratively refines the implementation using simulation feedback from an independent test harness. Auto-Adapter generated executable drivers in 72.7\% of synthesis runs.
+Synthesis averaged 17.3 min and an estimated US\$8.48 per attempt.
+The project repository
 is available at \url{https://github.com/Yifannnnnnnnw/robot-capability-adapter}.
 
-The evaluation comprises three experiments.
-\textbf{Experiment 1---Auto-Adapter Framework.}\\
-The first experiment evaluates
-the complete framework, from designing reusable robot operations to generating
-and independently validating a robot-specific driver. Its purpose is to
-determine whether Auto-Adapter can construct the robot-facing software required
-by a tool-using agent.
+The evaluation comprises three experiments.\\
+\textbf{Experiment 1---Auto-Adapter Framework.}
+The first experiment evaluates the Auto-Adapter framework, from designing
+reusable robot capabilities to generating drivers that implement these
+capabilities. Independent validation assesses the behaviour produced by each
+driver using observations recorded by the MuJoCo simulator. The experiment
+also assesses whether the generated drivers can be used by high-level
+planners to complete embodied tasks.
 
-\textbf{Experiment 2---AutoAdapter-Bench.} The benchmark evaluates LLMs
-separately as creators and users of robot tools. Its purpose is to compare these
-abilities and establish whether successful tool use also indicates successful
-tool synthesis.
+\textbf{Experiment 2---AutoAdapter-Bench.} AutoAdapter-Bench compares LLM
+performance in two roles: generating robot-specific drivers and making
+high-level task decisions through existing drivers. The evaluation
+distinguishes the behavioural conformance of generated drivers from success
+in completing embodied tasks. The benchmark also reports estimated model
+usage costs and elapsed time, allowing model performance and resource
+requirements to be compared separately within each role.
 
 \textbf{Experiment 3---Cross-Robot Evaluation.} The final experiment applies
-Auto-Adapter across different robot configurations. Its purpose is to analyse
-how observed performance differs between robots and identify where the
-framework succeeds or fails.
+Auto-Adapter across different robot configurations. Its purpose is to assess
+whether the framework performs consistently well across robots with different
+structures and control requirements. The evaluation compares driver
+validation outcomes and embodied task completion across the selected robots.
+It also examines difficulties encountered during driver generation and task
+execution to identify limitations associated with each robot configuration.
 
 
 Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-\parskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item \textbf{Deriving Reusable Robot Operations from Tasks.}
-  Auto-Adapter contributes a task-grounded design method that
-  derives a task-neutral capability interface and measurable pass criteria from
-  source-backed target tasks, without requiring a pre-authored capability
-  catalogue or task-to-capability mapping.
+  \item \textbf{A framework for robot-specific driver generation.}
+  Auto-Adapter introduces a method for large language models (LLMs) to derive
+  reusable capabilities from robot descriptions and task requirements and
+  implement them as robot-specific drivers. The resulting interfaces separate
+  robot-specific implementation from task-level planning, allowing the
+  generated software to be reused across embodied tasks.
 
-  \item \textbf{Evaluating LLM-Generated Robot Drivers.}
-  The framework makes robot-specific driver synthesis the
-  evaluated research object. An LLM must implement the fixed capability contract
-  through actuator-mediated Direct-MuJoCo control, with bounded Repair and at
-  most three submitted drivers.
+  \item \textbf{Independent capability validation through physics simulation.}
+  The framework executes generated drivers in MuJoCo and assesses their
+  capabilities against predefined behavioural requirements using independently
+  recorded robot state. Validation relies on observed motion and interaction
+  outcomes rather than model self-reports.
 
-  \item \textbf{Validating Robot Behaviour Independently of Generated Code.}
-  Implementation-blind validation prevents candidate code from
-  choosing its private cases, measurements, physical-integrity checks, or final
-  verdict, distinguishing interface conformance and model self-report from
-  observed robot behaviour.
+  \item \textbf{Separating driver generation from high-level decision-making.}
+  AutoAdapter-Bench evaluates LLMs as driver generators and high-level
+  decision-makers. It separately assesses the behavioural conformance of
+  generated drivers and task completion through existing drivers, enabling
+  comparison of model performance across these roles.
 
 \end{enumerate}
 
@@ -75,25 +72,24 @@ industry-relevant contributions:
 \vspace{-\parskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item \textbf{Creating Versioned Robot Integration Packages.}
-  A versioned robot integration package combines each robot's
-  MuJoCo model, source-backed tasks, capability design, private validation
-  bindings, and execution policy, supporting configuration-specific evaluation
-  through a common experimental route.
+  \item \textbf{Reusable software interfaces for robot integration.}
+  Generated drivers expose robot-specific operations through callable
+  interfaces that high-level agents can reuse across tasks. These interfaces
+  provide software components for integrating simulated robots into
+  agent-based systems.
 
-  \item \textbf{Comparing LLMs under Fixed Conditions.}
-  Fixed-input benchmarking holds each robot's capability
-  interface, private validation suite, Harness, and resource budget constant
-  while LLM backbones and generation conditions vary, with validation, Repair,
-  failure, token, cost, and time outcomes reported separately.
+  \item \textbf{Behavioural evidence for driver inspection and repair.}
+  Independent validation provides measurements and failure diagnostics that
+  help developers identify unmet requirements and guide driver repair before
+  downstream task execution.
 
-  \item \textbf{Resource-Accounted Evaluation.}
-  The evaluation reports behavioural outcomes alongside model calls, token use,
-  cost, wall-clock time, revision history, and failure class. This supports
-  practical trade-off analysis within the evaluated conditions without implying
-  a universal model ranking.
+  \item \textbf{Evidence for model selection.}
+  The benchmark reports behavioural performance alongside estimated model
+  usage costs and elapsed time for each role. These measurements inform model
+  selection and resource allocation within the evaluated conditions.
 
 \end{enumerate}
+
 
 \end{abstract}
 

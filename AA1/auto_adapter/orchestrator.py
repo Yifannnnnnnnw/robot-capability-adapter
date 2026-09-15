@@ -1112,7 +1112,7 @@ class SelfAssemble:
         )
 
 
-    def _phase_export(self) -> PhaseResult:
+    def _phase_export(self, *, allow_failed_validation: bool = False) -> PhaseResult:
         # EXPORT also needs local_exec so the agent can syntax-check the
         # generated mcp_server.py via a one-shot `python -c "import ..."`.
         (self.workspace / "mcp_server.py").unlink(missing_ok=True)
@@ -1131,7 +1131,7 @@ class SelfAssemble:
                 name="04_export", ok=False, duration_sec=0.0,
                 error=f"dynamic export cannot read validation report: {exc}",
             )
-        if report.get("all_ok") is not True:
+        if report.get("all_ok") is not True and not allow_failed_validation:
             return PhaseResult(
                 name="04_export", ok=False, duration_sec=0.0,
                 error="dynamic export requires successful design validation",
@@ -1155,6 +1155,8 @@ class SelfAssemble:
             max_iters=self.cfg.max_iters_export,
             expected_artifacts=["mcp_server.py"],
         )
+        phase.metadata["allow_failed_validation"] = allow_failed_validation
+        phase.metadata["source_validation_all_ok"] = report.get("all_ok") is True
         if phase.ok:
             try:
                 phase.metadata["dynamic_export_surface"] = validate_dynamic_export_source(
@@ -1189,10 +1191,14 @@ class SelfAssemble:
             name="05_demo", ok=report.get("ok") is True,
             duration_sec=report.get("duration_sec", 0.0),
             trace_path=Path(report["trace_path"]) if report.get("trace_path") else None,
-            artifact_paths=[Path(report[key]) for key in ("report_path", "video_path")
+            artifact_paths=[Path(report[key]) for key in (
+                "report_path", "video_path", "evaluation_path", "physics_samples_path")
                             if report.get(key) and Path(report[key]).is_file()],
-            final_text="ReCAP diagnostic demo; physical task success has not been evaluated.",
-            error=report.get("error"), metadata=report,
+            final_text=(f"ReCAP diagnostic demo: execution_ok={report.get('execution_ok')}; "
+                        f"physical_task_success={report.get('physical_task_success')}."),
+            error=(report.get("error") or report.get("evaluation_error") or
+                   ("fixed DEMO physical task criteria failed"
+                    if report.get("physical_task_success") is False else None)), metadata=report,
         )
 
     # ─── Top-level entrypoint ─────────────────────────────────────────────

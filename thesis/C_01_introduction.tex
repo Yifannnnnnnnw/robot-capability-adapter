@@ -1,30 +1,28 @@
 \chapter[Introduction]{Introduction}\label{chapter:introduction}
 
 \begin{quote}\itshape
-The objective of this chapter is to provide an overview of this thesis. The
-chapter begins by presenting the motivation for the research problem and
-defining the research objectives. It then introduces the three experiments
-through which these objectives are examined, before outlining the contributions
-and evidence boundaries of the study. Finally, it presents the structure of the
-remaining chapters.
+This chapter introduces the research problem, objectives and experimental
+programme, then outlines the contributions and organisation of the thesis.
 \end{quote}
 
 \section[Motivation]{Motivation}
 \label{sec:intro-motivation}
 
-Tool-using LLM systems can interpret instructions and compose robot operations
-through an existing interface
+Tool-using large language model (LLM) systems can interpret instructions and
+compose robot operations through an existing interface
 \citep{ahn2022saycan,liang2023codeaspolicies}. However, they generally assume
-that the target robot already exposes the required tool API. This assumption
+that the target robot already exposes the required application programming
+interface (API). This assumption
 leaves an upstream problem unresolved: the robot-specific software behind
 those tools must still be authored.
 
-Consider an SO-ARM101 arm described by an MJCF file containing its joints,
+Consider an SO-101 arm described by a MuJoCo model file containing its joints,
 actuators, and motion limits. The \emph{high-level controller} selects and
-sequences robot operations. It can request a Cartesian move through
-\texttt{get\_ee\_pose()} and \texttt{move\_cartesian(...)}. Yet the second call
-requires software that converts the requested pose into valid joint or actuator
-commands. This thesis calls the reusable caller-facing contract the
+sequences robot operations. Using illustrative API names, it reads the current
+end-effector pose through \texttt{get\_ee\_pose()} and requests a Cartesian move
+through \texttt{move\_cartesian(...)}. The second call requires software that
+converts the requested pose into valid joint or actuator commands. This thesis
+calls the reusable caller-facing contract the
 \emph{robot capability interface}. Each task-neutral operation is a
 \emph{capability}. The executable implementation for one robot configuration
 is the \emph{robot-specific driver}.
@@ -36,39 +34,32 @@ calibration, state reading, and command writing for each new platform
 \citep{lerobot2026hardware,ros2control2026hardware}. Reusing a planner or learned
 policy does not remove this integration requirement.
 
-Auto-Adapter addresses this gap by making software-layer authoring part of the
-LLM workflow. It receives machine-readable robot information and source-backed
-target tasks with reviewed pass standards. From these inputs, it derives
-reusable capabilities and measurable acceptance criteria. It then synthesises
-a robot-specific driver that implements the resulting interface. A separate
-high-level controller can therefore operate through task-neutral tools without
-implementing robot-specific control logic.
-
 Executable code alone cannot establish correct physical behaviour. A driver
 may control the wrong joints, use incorrect units, or produce an unintended
 outcome. This is an instance of the software test-oracle problem
-\citep{barr2015oracle,araujo2023rasreview}. Auto-Adapter therefore separates
-synthesis from behavioural evaluation. An independent \emph{Harness} owns
-private validation cases, observes simulator state, and applies fixed
-requirements. This evidence supports behavioural claims only under evaluated
-Direct-MuJoCo conditions. It does not establish hardware performance or
-sim-to-real transfer.
+\citep{barr2015oracle,araujo2023rasreview}. Behavioural validation therefore
+requires observations of the resulting motion and interaction, assessed
+against the requirements of the requested operation.
 
+Auto-Adapter addresses these problems by making robot-specific driver
+synthesis part of the LLM workflow. It generates reusable software whose
+capabilities can be evaluated independently before downstream task execution.
 
+Here, ``independent'' refers to independence from the candidate driver
+implementation. A test harness records measurements directly from MuJoCo state
+and applies fixed acceptance criteria to determine verdicts outside the
+driver's control. Test cases and acceptance criteria are fixed before driver
+synthesis and remain unchanged during generation and repair within each run.
+The Design agent authors the capability specifications and tests, so this
+independence does not imply independent specification authorship.
 
 \section[Research Objectives]{Research Objectives}
 \label{sec:research-objectives}
 
-The aim of this thesis is to develop and evaluate Auto-Adapter as a framework
-for automating robot-software synthesis. Auto-Adapter starts from a
-machine-readable robot description and a source-backed collection of target
-tasks with reviewed pass standards. It constructs the required software layer
-by designing a reusable robot capability interface and synthesising the
-robot-specific driver that implements it. The interface exposes task-neutral
-robot operations as tools to a separate high-level controller. The driver
-translates each requested operation into commands for the declared robot
-configuration. An independent Harness evaluates the resulting behaviour
-against fixed requirements under controlled Direct-MuJoCo conditions.
+This thesis develops and evaluates Auto-Adapter for generating reusable
+robot-specific drivers and assessing their ability to support downstream
+tasks. Downstream tasks use Recursive Context-Aware Reasoning and Planning
+(ReCAP) as the high-level planning procedure \citep{zhang2025recap}.
 
 This aim is expressed through three research questions:
 
@@ -76,17 +67,18 @@ This aim is expressed through three research questions:
     \item \textbf{RQ1---Auto-Adapter driver production.}
 
     To what extent can Auto-Adapter produce independently validated
-    robot-specific drivers that a high-level planner can use for downstream
+    robot-specific drivers that a high-level controller can use for downstream
     tasks?
 
     \item \textbf{RQ2---AutoAdapter-Bench.}
 
-    \textbf{(a)} How do the selected LLM configurations and generation
-    conditions differ in their ability to produce validated drivers?
+    \textbf{(a)} With each robot's capability interface and behavioural tests
+    held fixed, how do the selected LLM configurations differ in their ability
+    to produce validated drivers?
 
-    \textbf{(b)} How do the selected LLM configurations differ in independently
-    judged task performance when using the same validated driver and high-level
-    planner?
+    \textbf{(b)} With each robot's validated driver, task conditions and ReCAP
+    planning procedure held fixed, how do the selected LLM configurations
+    differ in independently judged task performance?
 
     \item \textbf{RQ3---Cross-robot analysis.}
 
@@ -94,48 +86,28 @@ This aim is expressed through three research questions:
     selected robot configurations, and where does the process succeed or fail?
 \end{enumerate}
 
-Figure~\ref{fig:introduction-auto-adapter-role} summarises the software boundary
-examined in this thesis. A robot configuration supplies the platform-specific
-structure from which Auto-Adapter designs a capability interface and synthesises
-its driver. A separate high-level controller then invokes the driver, while the
-Harness judges the resulting simulator behaviour independently. The figure
-therefore separates creation of the robot-facing tool from its downstream use
-and bounds the illustrated verdict to Direct-MuJoCo.
+Figure~\ref{fig:introduction-auto-adapter-role} summarises the relationship
+between robot-facing software generation and downstream use by a high-level
+controller.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\linewidth]{assets/abstract.drawio.png}
-  \caption[Auto-Adapter software boundary]
-  {Auto-Adapter software boundary: \textbf{A,} construction-time capability
-  design and robot-specific driver synthesis; \textbf{B,} independent
-  Direct-MuJoCo capability assessment; and \textbf{C,} downstream use by a
-  separate high-level controller.}
+  \includegraphics[width=\linewidth]{assets/auto_adapter_control_chain.pdf}
+  \caption[Auto-Adapter's position in the robot control chain]
+  {Auto-Adapter's position in the robot control chain. Robot models,
+  documentation and target tasks guide capability design and driver
+  generation. During task execution, ReCAP calls the generated driver's
+  capabilities to control the robot in MuJoCo and receives observations
+  through the driver.}
   \label{fig:introduction-auto-adapter-role}
 \end{figure}
-
-These questions concern the declared LLM endpoints, robot configurations,
-tasks, generation conditions, and Direct-MuJoCo evaluation protocols. The
-selected robot configurations are experimental cases rather than a
-representative sample from which morphology effects can be estimated. The
-resulting evidence does not establish real-SDK fidelity, hardware performance
-or safety, sim-to-real transfer, physical validation of unselected tasks,
-downstream high-level-controller performance, universal model or robot
-superiority, autonomous self-improvement, or generalisation beyond the
-evaluated conditions. The following section translates the questions into
-three controlled experiments.
-
 
 \section[Research Experiments]{Research Experiments}
 \label{sec:research-experiments}
 \label{sec:research-programme}
 
-The empirical programme separates three questions that require different forms
-of evidence. Chapter~3 examines whether Auto-Adapter can construct and evaluate
-a complete robot-facing software layer. Chapter~4 distinguishes creation of
-that software from its use by a high-level controller. Chapter~5 examines how
-the same process behaves across robot configurations. The corresponding
-verdicts remain separate because success at one layer does not establish
-success at another.
+The empirical programme comprises three experiments on framework operation,
+model comparison and cross-robot application.
 
 \begin{enumerate}[leftmargin=*,itemsep=1em]
 
@@ -143,37 +115,34 @@ success at another.
 
   This experiment studies Auto-Adapter as an end-to-end method for constructing
   robot-facing software. The framework derives a task-neutral capability
-  interface and measurable acceptance criteria from public robot information
-  and source-backed task requirements. A separate validation process converts
-  the accepted criteria into private executable cases before driver generation,
-  without access to the candidate implementation. The generated driver is then
-  executed by a trusted evaluator, which judges the resulting actuator-mediated
-  behaviour from independently observed simulator state.
+  interface and measurable acceptance criteria from machine-readable robot
+  descriptions and source-backed target tasks with reviewed pass standards.
+  During Design, the agent constructs the
+  corresponding simulation cases before driver generation. The cases and
+  criteria remain fixed during generation and repair within each run.
+  An independent test harness, termed the \emph{Harness}, executes the
+  generated driver and assesses actuator-mediated behaviour from independently
+  recorded simulator state. Validation diagnostics can guide bounded driver
+  repair.
 
   Capabilities that meet the behavioural requirements become available to a
   separate high-level controller for downstream task execution. The task
-  outcome is judged independently from the preceding driver validation. This
-  design evaluates the complete workflow while preserving the distinctions
-  between interface design, implementation, behavioural validation, and
-  downstream use. Neither successful compilation nor task completion can
-  substitute for the driver-validation verdict.
+  outcome is judged independently from the preceding driver validation.
 
   \item \textbf{Experiment 2---AutoAdapter-Bench (Chapter~4).}
 
   AutoAdapter-Bench compares two distinct LLM roles at the robot-software
-  boundary. \textbf{(a)} In the synthesis track, the required capability
-  interface and private behavioural tests remain fixed while the model
-  generates the robot-specific driver. \textbf{(b)} In the tool-use track, the
+  boundary. \textbf{(a)} In the synthesis track, each robot's capability
+  interface and behavioural tests remain fixed across models and independent
+  runs. The models generate and revise only the robot-specific driver
+  implementation. \textbf{(b)} In the tool-use track, the
   driver and interface are already fixed and independently validated. The
   model instead operates as a high-level controller that must complete tasks
   through the supplied software boundary.
 
   Each track retains its own experimental unit, resource accounting, and
-  trusted verdict. The results are compared without being combined into a
-  single model score. This separation tests whether successful use of supplied
-  robot tools is informative about the ability to create the software behind
-  those tools. A tool-use result does not establish driver synthesis, and a
-  driver-validation result does not establish downstream task completion.
+  trusted verdict. Their results are reported separately and are not combined
+  into a single model score.
 
   \item \textbf{Experiment 3---Cross-Robot Evaluation (Chapter~5).}
 
@@ -186,28 +155,15 @@ success at another.
   Revision behaviour and resource use provide additional evidence about where
   the integration process encounters difficulty.
 
-  The resulting comparison is descriptive of the evaluated configurations.
-  Robot morphology is not manipulated independently from the remaining
-  configuration-specific inputs. The experiment therefore supports neither a
-  causal morphology claim nor generalisation beyond the declared robot
-  configurations and Direct-MuJoCo conditions.
-
 \end{enumerate}
-
-Together, the experiments examine the complete Auto-Adapter process, the
-distinction between tool creation and tool use, and the distribution of
-stage-specific outcomes across robot configurations.
-
 
 \section[Scientific and Industry-Relevant Contributions]
 {Scientific and Industry-Relevant Contributions}
 \label{sec:intro-contributions}
 
-This thesis makes three scientific contributions and three bounded,
-industry-relevant contributions. The scientific contributions concern the
-measurement and validation of LLM-generated robot software. The
-industry-relevant contributions concern controlled robot integration,
-reproducible model comparison, and resource-accounted engineering decisions.
+This thesis makes three scientific contributions to the evaluation of
+LLM-generated robot software and three industry-relevant contributions to
+robot integration and model selection.
 
 The scientific contributions are as follows:
 
@@ -217,75 +173,61 @@ The scientific contributions are as follows:
 
   Prior work commonly evaluates task completion through supplied tools or
   assesses generated robot programmes against executable tests
-  \citep{liang2023codeaspolicies,hu2024codebotler,fu2026capx}. These settings do
-  not directly compare a model's ability to create robot-facing software with
-  its ability to use an unchanged implementation. AutoAdapter-Bench addresses
-  this gap through separate synthesis and tool-use tracks. Fixing the relevant
-  software boundary in each track prevents task success through a supplied
-  interface from being counted as evidence that the model can implement it.
+  \citep{liang2023codeaspolicies,hu2024codebotler,fu2026capx}. AutoAdapter-Bench
+  assesses driver synthesis and driver use as separate roles, giving each a
+  defined evaluation target and an independent behavioural verdict.
 
   \item \textbf{A source-grounded pipeline for synthesising robot-facing
   interfaces.}
 
-  Auto-Adapter begins from documented task requirements rather than a
-  pre-authored capability catalogue. It derives a reusable, task-neutral API
-  and measurable acceptance criteria before generating the robot-specific
-  driver that implements them. Driver revision is bounded within each run, and
-  reviewed evidence can influence only a later run. The originating inputs,
-  implementation, and verdict therefore remain unchanged after completion.
+  Auto-Adapter derives reusable capabilities from documented task requirements
+  rather than a pre-authored capability catalogue. The resulting task-neutral
+  API and measurable acceptance criteria specify the behaviour that the
+  robot-specific driver must implement.
 
   \item \textbf{An implementation-blind validation architecture for generated
   robot software.}
 
-  Generated software does not control the evidence used to accept it.
-  Validation cases are constructed before driver generation and without access
-  to the candidate implementation. During evaluation, a trusted process owns
-  the simulator measurements, physical-integrity checks, and final verdict.
-  This architecture distinguishes source and interface conformance from
-  observed actuator-mediated behaviour under the declared simulation
-  conditions.
+  Behavioural acceptance rests on measurements and verdicts outside the
+  generated driver's control. Constructing validation cases before driver
+  generation separates their definition from the candidate implementation.
+  During evaluation, a trusted process owns the simulator measurements,
+  physical-integrity checks, and final verdict.
 
 \end{enumerate}
 
-The bounded industry-relevant contributions are as follows:
+The industry-relevant contributions are as follows:
 
 \begin{enumerate}[leftmargin=*,itemsep=0.8em]
 
   \item \textbf{An auditable workflow for LLM-assisted robot integration.}
 
-  The workflow fixes the permitted robot inputs and callable interface before
-  generation begins. Predeclared limits bound driver revision, while retained
-  run records connect each candidate implementation to its resource use,
-  observed behaviour, and independent verdict. This converts open-ended code
-  generation into an inspectable experimental procedure.
+  The permitted robot inputs and callable interface are fixed before driver
+  generation begins, and predeclared limits bound revisions within each run.
+  The original implementation, measurement records and automatic verdict are
+  retained. Results from subsequent measurement corrections or revisions to
+  the criteria are reported as separately labelled reanalyses and distinguished
+  from the original results.
 
-  \item \textbf{A reusable experimental substrate for embodied-AI model
-  comparison.}
+  \item \textbf{Reusable robot software for downstream task execution.}
 
-  Once a driver has passed independent capability tests, its interface and
-  implementation can remain fixed while high-level-controller models vary.
-  Controller behaviour can therefore be compared without changing the
-  underlying robot integration. This provides a repeatable experimental
-  boundary for the declared simulator configurations, rather than evidence of
-  universal interoperability or hardware readiness.
+  Generated drivers expose reusable capabilities through callable interfaces,
+  providing software components that high-level controllers can combine
+  across tasks. The driver implementation can remain unchanged while
+  task-level decisions vary.
 
   \item \textbf{A resource-accounted basis for role-specific LLM selection.}
 
-  Each study relates its behavioural outcome to the resources required to
-  obtain it. Model calls, token use, cost, and wall-clock time measure resource
-  demand, while revision histories and failure classes explain how unsuccessful
-  attempts terminate. Because synthesis and tool use remain separate, these
-  records support role-specific trade-off analysis rather than a universal
-  model ranking.
+  Behavioural outcomes are considered alongside resource use to inform model
+  selection for driver synthesis and high-level control. Model calls, token
+  use, estimated cost and wall-clock time describe resource demand, while
+  revision histories and failure classes help explain unsuccessful attempts.
 
 \end{enumerate}
 
-These contributions apply only to the declared tasks, robot configurations,
-model endpoints, generation conditions, and Direct-MuJoCo protocols. They do
-not establish real-SDK fidelity, hardware safety, sim-to-real transfer,
-production reliability, a causal morphology effect, or generalisation beyond
-the evaluated conditions.
-
+The evidence is limited to the evaluated Direct-MuJoCo configurations; model
+and robot comparisons are descriptive and do not establish hardware
+performance, sim-to-real transfer or causal morphology effects.
 
 \section[Thesis Structure]{Thesis Structure}
 \label{sec:intro-structure}
@@ -294,41 +236,39 @@ The remainder of the thesis is organised as follows:
 
 \begin{itemize}[leftmargin=*,itemsep=0.7em]
 
-  \item \textbf{Chapter~2---Background and Literature Review.} This chapter
-  defines the relationship between high-level controllers, robot capability
-  interfaces, and robot-specific drivers. It reviews how LLM-based systems use
-  supplied robot tools, generate executable programmes, and learn from execution
-  feedback. The chapter then identifies the unresolved connection between
-  reusable robot-interface synthesis and independent behavioural validation.
+  \item \textbf{Chapter~2---Background and Literature Review.}
+  This chapter reviews embodied AI, control hierarchies and robot interfaces
+  to explain how high-level decisions connect to robot-specific execution.
+  It then examines LLM-based programming, tool synthesis and behavioural
+  validation, identifying the research gap addressed by Auto-Adapter.
 
-  \item \textbf{Chapter~3---Auto-Adapter Framework.} This chapter presents
-  Experiment~1 and defines the complete Auto-Adapter workflow. It explains how
-  documented task requirements are converted into a task-neutral capability
-  interface, measurable acceptance criteria, and a robot-specific driver. It
-  also defines the information boundaries that separate driver generation,
-  implementation-blind validation, trusted behavioural verdicts, and downstream
-  task execution.
+  \item \textbf{Chapter~3---Auto-Adapter Framework.}
+  This chapter presents Experiment~1 and explains how Auto-Adapter derives
+  reusable capabilities and behavioural tests from robot information and
+  task requirements.
+  It describes driver synthesis and repair using independent MuJoCo
+  validation, then examines how ReCAP reuses generated PiPER drivers
+  across manipulation tasks.
 
-  \item \textbf{Chapter~4---AutoAdapter-Bench: LLMs for Robot Drivers.} This
-  chapter presents Experiment~2 and compares LLMs in two distinct roles. The
-  driver-synthesis track evaluates whether a model can implement a fixed
-  robot-facing interface, whereas the tool-use track evaluates task completion
-  through an already fixed and independently validated interface. The chapter
-  reports their experimental units, behavioural outcomes, and resource measures
-  separately.
+  \item \textbf{Chapter~4---AutoAdapter-Bench: LLMs for Robot Drivers.}
+  This chapter presents Experiment~2, comparing LLMs in driver synthesis
+  with each robot's capability interface and behavioural tests held fixed.
+  It separately evaluates task execution through fixed, capability-validated
+  drivers, examining behavioural outcomes and resource use to inform
+  model selection for each role.
 
-  \item \textbf{Chapter~5---Cross-Robot Evaluation.} This chapter presents
-  Experiment~3 and applies the complete Auto-Adapter process across the declared
-  robot configurations under a common model and evidence protocol. It traces
-  each run through interface design, driver generation, behavioural validation,
-  and downstream task execution to identify where the process succeeds or
-  fails. The comparison remains descriptive and does not treat morphology as a
-  causal effect factor.
+  \item \textbf{Chapter~5---Cross-Robot Evaluation.}
+  This chapter presents Experiment~3 through MuJoCo case studies of
+  Franka Panda, LEAP Hand and Skydio X2.
+  It examines capability validation and downstream task outcomes to
+  identify difficulties in contact, coordinated control and validation
+  coverage, while discussing the limits of cross-robot comparison.
 
-  \item \textbf{Chapter~6---Conclusion and Future Work.} This chapter
-  synthesises the evidence from the three experiments and answers the research
-  questions in their stated order. It relates the findings to the scientific and
-  industry-relevant contributions, defines the limits of the Direct-MuJoCo
-  evidence, and derives future work from those limitations.
+  \item \textbf{Chapter~6---Conclusion and Future Work.}
+  This chapter brings together the findings from the three experiments
+  to answer the research questions and summarise the thesis contributions.
+  It discusses the limits of the simulation evidence and outlines
+  future work on broader behavioural validation, cross-robot evaluation
+  and extension to real hardware.
 
 \end{itemize}

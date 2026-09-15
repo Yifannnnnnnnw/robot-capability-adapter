@@ -185,6 +185,24 @@ def test_mcp_error_is_recorded_and_replanning_can_recover(exported_mcp_fixture):
     assert report["tool_call_log"][1]["status"] == "EXECUTED"
 
 
+@pytest.mark.parametrize("turn_budget,expected_status", [
+    (1, "PLANNING_TURN_BUDGET_EXHAUSTED"), (4, "CONTROLLER_FINISHED"),
+])
+def test_explicit_planning_budget_reaches_controller(exported_mcp_fixture, turn_budget, expected_status):
+    from auto_adapter.agent.task_execution import run_task
+
+    model = AdvertisedNamesModel([
+        ["First action", "Second action"],
+        [_call("advance", 2)], [_call("advance", 3)], [],
+    ])
+    report = run_task(**exported_mcp_fixture, model_client=model,
+                      recap_budgets={"max_planning_turns": turn_budget})
+    assert report["status"] == expected_status
+    assert report["recap_budgets"]["max_planning_turns"] == turn_budget
+    assert report["controller_result"]["planning_turns"] == turn_budget
+    assert len(report["tool_call_log"]) == (0 if turn_budget == 1 else 2)
+
+
 def test_missing_export_is_explicit_unavailable(tmp_path, exported_mcp_fixture):
     from auto_adapter.agent.task_execution import run_task
 
@@ -243,3 +261,18 @@ def test_runtime_close_error_rejects_report_even_with_video(monkeypatch, exporte
     assert report["sim_advanced"]
     assert report["runtime_report"]["error"] == "fixture close failure"
     assert report["ok"] is False
+
+
+def test_finished_controller_without_physical_samples_cannot_pass_scored_task(exported_mcp_fixture):
+    from auto_adapter.agent.task_execution import run_task
+
+    inputs = dict(exported_mcp_fixture, success_spec={
+        "type": "PRIVATE_SENTINEL_DO_NOT_PLAN_WITH", "bindings": {},
+    })
+    report = run_task(**inputs, model_client=AdvertisedNamesModel([[_call("advance", 2)], []]))
+    assert report["execution_ok"] is True
+    assert report["ok"] is False
+    assert report["physical_task_success"] is None
+    assert "physical trace is unavailable" in report["evaluation_error"]
+    assert Path(report["evaluation_path"]).is_file()
+    assert json.loads(Path(report["evaluation_path"]).read_text())["physical_task_success"] is None

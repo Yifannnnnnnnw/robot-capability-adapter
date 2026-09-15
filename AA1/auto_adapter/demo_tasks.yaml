@@ -1,5 +1,7 @@
 # Fixed diagnostic demo goals and public parameters; these are not solver actions.
 # Scene paths are relative to the AA1 root. Use the matching generated driver/model.
+# Success tolerances are manually authored diagnostic requirements, not calibrated
+# performance claims. Gap endpoints define measured geometry; see DEMO_CONFIGURATION.md.
 robots:
   so101:
     task: >-
@@ -30,6 +32,22 @@ robots:
       closed_opening_fraction: 0.2
       open_opening_fraction: 0.8
       max_gripper_duration_s: 2.0
+      end_effector_reference: {kind: site, name: ee_site}
+    success:
+      type: arm_waypoints_gripper
+      bindings:
+        ee: {kind: site, name: ee_site}
+        gripper_left:
+          {kind: body, name: gripper_link, local_position_m: [-0.0079000005, 0.0009005476, -0.1030747650]}
+        gripper_right:
+          {kind: body, name: jaw_visual, local_position_m: [-0.0120270400, -0.0816157070, 0.0183613345]}
+      waypoint_tolerance_m: 0.003
+      waypoint_motion_m: 0.003
+      opening_gap_closed_m: 0.0025220440
+      opening_gap_open_m: 0.1378761582
+      opening_gap_tolerance_m: 0.003
+      opening_gap_motion_m: 0.003
+      opening_gap_labels: [gripper_left, gripper_right]
   piper:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
@@ -47,6 +65,19 @@ robots:
       closed_opening_fraction: 0.2
       open_opening_fraction: 0.8
       max_gripper_duration_s: 2.0
+      end_effector_reference: {kind: site, name: ee_site}
+    success:
+      type: arm_waypoints_gripper
+      bindings:
+        ee: {kind: site, name: ee_site}
+        gripper_left: {kind: body, name: link7, local_position_m: [0.0, -0.045, 0.0]}
+        gripper_right: {kind: body, name: link8, local_position_m: [0.0, 0.045, 0.0]}
+      waypoint_tolerance_m: 0.02
+      waypoint_motion_m: 0.003
+      opening_gap_closed_m: 0.0
+      opening_gap_open_m: 0.070000381837
+      opening_gap_tolerance_m: 0.003
+      opening_gap_labels: [gripper_left, gripper_right]
   franka:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
@@ -64,6 +95,20 @@ robots:
       closed_opening_fraction: 0.2
       open_opening_fraction: 0.8
       max_gripper_duration_s: 2.0
+      end_effector_reference: {kind: site, name: fixed_tcp}
+    success:
+      type: arm_waypoints_gripper
+      bindings:
+        ee: {kind: site, name: fixed_tcp}
+        gripper_left: {kind: body, name: left_finger, local_position_m: [0.0055, 0.0, 0.05]}
+        gripper_right: {kind: body, name: right_finger, local_position_m: [-0.0055, 0.0, 0.05]}
+      waypoint_tolerance_m: 0.02
+      waypoint_motion_m: 0.003
+      opening_gap_closed_m: 0.0
+      opening_gap_open_m: 0.08
+      opening_gap_tolerance_m: 0.003
+      opening_gap_motion_m: 0.003
+      opening_gap_labels: [gripper_left, gripper_right]
   kuka_iiwa14:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
@@ -81,6 +126,15 @@ robots:
       max_duration_per_segment_s: 3.0
       offset_robot_base_m: [0.02, 0.0, 0.0]
       max_duration_per_leg_s: 3.0
+      end_effector_reference: {kind: site, name: attachment_site}
+    success:
+      type: arm_waypoints_offset_return
+      bindings:
+        ee: {kind: site, name: attachment_site}
+        base: {kind: body, name: base}
+      waypoint_tolerance_m: 0.02
+      waypoint_motion_m: 0.003
+      offset_tolerance_m: 0.005
   kinova_gen3_robotiq_2f85:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
@@ -98,6 +152,20 @@ robots:
       closed_opening_fraction: 0.2
       open_opening_fraction: 0.8
       max_gripper_duration_s: 2.0
+      end_effector_reference: {kind: site, name: pinch_site}
+    success:
+      type: arm_waypoints_gripper
+      bindings:
+        ee: {kind: site, name: pinch_site}
+        gripper_left: {kind: body, name: left_pad, local_position_m: [0.0, -0.0066, 0.028125]}
+        gripper_right: {kind: body, name: right_pad, local_position_m: [0.0, -0.0066, 0.028125]}
+      waypoint_tolerance_m: 0.02
+      waypoint_motion_m: 0.003
+      opening_gap_closed_m: 0.0
+      opening_gap_open_m: 0.0854
+      opening_gap_tolerance_m: 0.003
+      opening_gap_motion_m: 0.003
+      opening_gap_labels: [gripper_left, gripper_right]
   ufactory_xarm7:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
@@ -115,6 +183,20 @@ robots:
       closed_opening_fraction: 0.2
       open_opening_fraction: 0.8
       max_gripper_duration_s: 2.0
+      end_effector_reference: {kind: site, name: link_tcp}
+    success:
+      type: arm_waypoints_gripper
+      bindings:
+        ee: {kind: site, name: link_tcp}
+        gripper_left: {kind: body, name: left_finger, local_position_m: [0.0, -0.026003, 0.032]}
+        gripper_right: {kind: body, name: right_finger, local_position_m: [0.0, 0.026003, 0.032]}
+      waypoint_tolerance_m: 0.02
+      waypoint_motion_m: 0.003
+      opening_gap_closed_m: 0.0016404506
+      opening_gap_open_m: 0.088924
+      opening_gap_tolerance_m: 0.003
+      opening_gap_motion_m: 0.003
+      opening_gap_labels: [gripper_left, gripper_right]
   universal_robots_ur5e_robotiq_2f85:
     task: >-
       Move the end effector through the two world-frame checkpoints in the listed order, using at
@@ -132,6 +214,20 @@ robots:
       closed_opening_fraction: 0.2
       open_opening_fraction: 0.8
       max_gripper_duration_s: 2.0
+      end_effector_reference: {kind: site, name: pinch_site}
+    success:
+      type: arm_waypoints_gripper
+      bindings:
+        ee: {kind: site, name: pinch_site}
+        gripper_left: {kind: body, name: left_pad, local_position_m: [0.0, -0.0066, 0.028125]}
+        gripper_right: {kind: body, name: right_pad, local_position_m: [0.0, -0.0066, 0.028125]}
+      waypoint_tolerance_m: 0.02
+      waypoint_motion_m: 0.003
+      opening_gap_closed_m: 0.0
+      opening_gap_open_m: 0.0854
+      opening_gap_tolerance_m: 0.003
+      opening_gap_motion_m: 0.003
+      opening_gap_labels: [gripper_left, gripper_right]
   go2:
     task: >-
       Hold a stable stance for 1.2 seconds. Move forward 10 centimetres along the initial heading
@@ -156,6 +252,17 @@ robots:
       standing_height_m: 0.32
       max_height_change_duration_s: 3.0
       final_stand_s: 1.2
+    success:
+      type: quadruped_stance_walk_height
+      bindings:
+        base: {kind: body, name: base_link}
+      walk_position_tolerance_m: 0.02
+      walk_lateral_tolerance_m: 0.02
+      yaw_tolerance_rad: 0.0872665
+      height_tolerance_m: 0.015
+      upright_tolerance_rad: 0.15
+      stable_linear_speed_m_s: 0.2
+      stable_angular_speed_rad_s: 0.4
   unitree_a1:
     task: >-
       Hold a stable stance for 1.2 seconds. Move forward 10 centimetres along the initial heading
@@ -180,6 +287,17 @@ robots:
       standing_height_m: 0.26
       max_height_change_duration_s: 3.0
       final_stand_s: 1.2
+    success:
+      type: quadruped_stance_walk_height
+      bindings:
+        base: {kind: body, name: trunk}
+      walk_position_tolerance_m: 0.02
+      walk_lateral_tolerance_m: 0.02
+      yaw_tolerance_rad: 0.0872665
+      height_tolerance_m: 0.015
+      upright_tolerance_rad: 0.15
+      stable_linear_speed_m_s: 0.2
+      stable_angular_speed_rad_s: 0.4
   anymal_c:
     task: >-
       Hold a stable stance for 1.2 seconds. Move forward 10 centimetres along the initial heading
@@ -204,6 +322,17 @@ robots:
       standing_height_m: 0.374
       max_height_change_duration_s: 3.0
       final_stand_s: 1.2
+    success:
+      type: quadruped_stance_walk_height
+      bindings:
+        base: {kind: body, name: base}
+      walk_position_tolerance_m: 0.02
+      walk_lateral_tolerance_m: 0.02
+      yaw_tolerance_rad: 0.0872665
+      height_tolerance_m: 0.015
+      upright_tolerance_rad: 0.15
+      stable_linear_speed_m_s: 0.2
+      stable_angular_speed_rad_s: 0.4
   leap_hand:
     task: >-
       Observe and remember the initial world-frame positions of all four fingertips. Move them to
@@ -218,6 +347,17 @@ robots:
         ring: [0.08921244503978432, 0.0755951492628891, 0.18266184109195774]
         thumb: [-0.04099581270947017, -0.09376306126879147, 0.17724107124754265]
       max_duration_per_motion_s: 2.0
+    success:
+      type: hand_fingertips_roundtrip
+      bindings:
+        index: {kind: geom, name: if_tip}
+        middle: {kind: geom, name: mf_tip}
+        ring: {kind: geom, name: rf_tip}
+        thumb: {kind: geom, name: th_tip}
+        palm: {kind: body, name: palm}
+      target_tolerance_m: 0.02
+      fingertip_motion_m: 0.003
+      palm_position_tolerance_m: 0.01
   hello_robot_stretch_2:
     task: >-
       Drive the base forward 10 centimetres at 0.1 metres per second, completing the move within 5
@@ -231,6 +371,17 @@ robots:
       max_drive_duration_s: 5.0
       end_effector_target_world_m: [-0.02, -0.24, 0.67]
       max_reach_duration_s: 2.0
+      end_effector_reference: {kind: body, name: link_gripper_slider}
+    success:
+      type: stretch_drive_reach
+      bindings:
+        base: {kind: body, name: base_link}
+        ee: {kind: body, name: link_gripper_slider}
+      base_target_tolerance_m: 0.02
+      base_fixed_tolerance_m: 0.015
+      ee_target_tolerance_m: 0.02
+      drive_speed_tolerance_m_s: 0.05
+      yaw_tolerance_rad: 0.0872665
   aloha_2:
     task: >-
       Move the left end effector to its specified world-frame target, then move the right end effector
@@ -245,6 +396,16 @@ robots:
       right_target_world_m: [0.178291, -0.042306, 0.326503]
       max_duration_per_arm_s: 2.0
       hold_duration_s: 0.5
+      end_effector_references:
+        left: {kind: site, name: left/gripper}
+        right: {kind: site, name: right/gripper}
+    success:
+      type: bimanual_ordered_reach
+      bindings:
+        left_ee: {kind: site, name: left/gripper}
+        right_ee: {kind: site, name: right/gripper}
+      target_tolerance_m: 0.02
+      other_arm_tolerance_m: 0.015
   skydio_x2:
     task: >-
       Take off to a world-frame altitude of 0.5 metres within 8 seconds, then hover in place for 2
@@ -255,6 +416,15 @@ robots:
       target_altitude_world_m: 0.5
       max_takeoff_duration_s: 8.0
       hover_duration_s: 2.0
+    success:
+      type: aerial_takeoff_hover
+      bindings:
+        base: {kind: body, name: x2}
+      altitude_tolerance_m: 0.02
+      hover_position_tolerance_m: 0.02
+      hover_linear_speed_m_s: 0.1
+      hover_angular_speed_rad_s: 0.2
+      upright_tolerance_rad: 0.15
   h1:
     task: >-
       Stand upright and balanced for 2 seconds. Lower the torso by 0.15 metres and recover the standing
@@ -272,6 +442,13 @@ robots:
       squat_depth_m: 0.15
       squat_and_recovery_duration_s: 3.0
       final_stand_s: 2.0
+    success:
+      type: humanoid_squat_recover
+      bindings:
+        base: {kind: body, name: pelvis}
+        torso: {kind: body, name: torso_link}
+      height_tolerance_m: 0.02
+      upright_tolerance_rad: 0.15
   menagerie_so101:
     task: >-
       Move the `gripperframe` site through the two nearby world-frame waypoints in order. Then set
@@ -292,6 +469,15 @@ robots:
       gripper_joint_targets_rad: [-0.08, 0.16]
       max_duration_per_segment_s: 2.0
       max_gripper_duration_s: 2.0
+    success:
+      type: arm_waypoints_joint_gripper
+      bindings:
+        ee: {kind: site, name: gripperframe}
+        gripper: {kind: joint, name: gripper}
+      waypoint_tolerance_m: 0.003
+      waypoint_motion_m: 0.003
+      gripper_tolerance_rad: 0.02
+      gripper_motion_rad: 0.01
   so101_push:
     task: >-
       In the push scene, place the `ee_site` fingertip at the `tee` body and make a short positive-X
@@ -326,6 +512,22 @@ robots:
       push_delta_world_m: [0.04, 0.0, 0.0]
       clearance_waypoint_world_m: [0.30, -0.05, 0.08]
       max_duration_s: 3.0
+    success:
+      type: push_contact_displacement
+      bindings:
+        ee: {kind: site, name: ee_site}
+        tee: {kind: body, name: tee}
+        obstacle: {kind: body, name: obs}
+        cube_red: {kind: body, name: cube_red}
+        cube_green: {kind: body, name: cube_green}
+        cube_blue: {kind: body, name: cube_blue}
+      contact_tool_body_names: [gripper_link]
+      obstacle_label: obstacle
+      safety_body_labels: [cube_red, cube_green, cube_blue]
+      contact_position_tolerance_m: 0.05
+      object_position_tolerance_m: 0.01
+      minimum_push_motion_m: 0.01
+      clearance_tolerance_m: 0.02
   piper_push:
     task: >-
       In the Piper push scene, move the `ee_site` to the `tee` body and make a short positive-X
@@ -353,6 +555,28 @@ robots:
       object_initial_position_world_m: [0.35, -0.05, 0.205]
       push_delta_world_m: [0.04, 0.0, 0.0]
       max_duration_s: 3.0
+    success:
+      type: push_contact_displacement
+      bindings:
+        ee: {kind: site, name: ee_site}
+        tee: {kind: body, name: tee}
+        obstacle: {kind: body, name: obs}
+        cube_red: {kind: body, name: cube_red}
+        cube_green: {kind: body, name: cube_green}
+        cube_blue: {kind: body, name: cube_blue}
+        joint1: {kind: joint, name: joint1}
+        joint2: {kind: joint, name: joint2}
+        joint3: {kind: joint, name: joint3}
+        joint4: {kind: joint, name: joint4}
+        joint5: {kind: joint, name: joint5}
+        joint6: {kind: joint, name: joint6}
+      contact_tool_body_names: [link7, link8]
+      obstacle_label: obstacle
+      safety_body_labels: [cube_red, cube_green, cube_blue]
+      return_joint_labels: [joint1, joint2, joint3, joint4, joint5, joint6]
+      contact_position_tolerance_m: 0.05
+      object_position_tolerance_m: 0.01
+      minimum_push_motion_m: 0.01
   franka_push:
     task: >-
       In the Franka push scene, move the `hand` body into a short positive-X contact motion with
@@ -380,6 +604,29 @@ robots:
       object_initial_position_world_m: [0.45, -0.05, 0.425]
       push_delta_world_m: [0.04, 0.0, 0.0]
       max_duration_s: 3.0
+    success:
+      type: push_contact_displacement
+      bindings:
+        ee: {kind: body, name: hand}
+        tee: {kind: body, name: tee}
+        obstacle: {kind: body, name: obs}
+        cube_red: {kind: body, name: cube_red}
+        cube_green: {kind: body, name: cube_green}
+        cube_blue: {kind: body, name: cube_blue}
+        joint1: {kind: joint, name: joint1}
+        joint2: {kind: joint, name: joint2}
+        joint3: {kind: joint, name: joint3}
+        joint4: {kind: joint, name: joint4}
+        joint5: {kind: joint, name: joint5}
+        joint6: {kind: joint, name: joint6}
+        joint7: {kind: joint, name: joint7}
+      contact_tool_body_names: [hand, left_finger, right_finger]
+      obstacle_label: obstacle
+      safety_body_labels: [cube_red, cube_green, cube_blue]
+      return_joint_labels: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+      contact_position_tolerance_m: 0.05
+      object_position_tolerance_m: 0.01
+      minimum_push_motion_m: 0.01
   ur5e:
     task: >-
       Use the bare UR5e arm's `attachment_site` as the end-effector reference. Starting from the
@@ -398,6 +645,22 @@ robots:
         wrist_2_joint: -1.55
         wrist_3_joint: 0.1
       max_duration_per_leg_s: 2.0
+    success:
+      type: joint_ordered_roundtrip
+      bindings:
+        shoulder_pan_joint: {kind: joint, name: shoulder_pan_joint}
+        shoulder_lift_joint: {kind: joint, name: shoulder_lift_joint}
+        elbow_joint: {kind: joint, name: elbow_joint}
+        wrist_1_joint: {kind: joint, name: wrist_1_joint}
+        wrist_2_joint: {kind: joint, name: wrist_2_joint}
+        wrist_3_joint: {kind: joint, name: wrist_3_joint}
+        ee: {kind: site, name: attachment_site}
+      joint_order: [shoulder_pan_joint, shoulder_lift_joint, elbow_joint, wrist_1_joint, wrist_2_joint, wrist_3_joint]
+      target_joint_vector: true
+      return_joint_vector: true
+      deadline_parameter: max_duration_per_leg_s
+      joint_tolerance_rad: 0.03
+      joint_motion_rad: 0.01
   unitree_g1:
     task: >-
       From the `stand` keyframe, move the left and right elbow joints to the listed nearby targets
@@ -416,6 +679,19 @@ robots:
         left_elbow_joint: 1.18
         right_elbow_joint: 1.38
       max_duration_per_joint_s: 2.0
+    success:
+      type: joint_ordered_roundtrip
+      bindings:
+        left_elbow_joint: {kind: joint, name: left_elbow_joint}
+        right_elbow_joint: {kind: joint, name: right_elbow_joint}
+        base: {kind: body, name: pelvis}
+      joint_order: [left_elbow_joint, right_elbow_joint]
+      return_joint_vector: true
+      deadline_parameter: max_duration_per_joint_s
+      joint_tolerance_rad: 0.03
+      joint_motion_rad: 0.01
+      base_position_tolerance_m: 0.01
+      base_rotation_tolerance_rad: 0.05
   google_barkour_vb:
     task: >-
       From the `home` keyframe, move the four knee joints to the listed nearby targets in
@@ -441,3 +717,18 @@ robots:
         knee_front_right: 0.9
         knee_hind_right: 1.1
       max_duration_per_joint_s: 1.0
+    success:
+      type: joint_ordered_roundtrip
+      bindings:
+        knee_front_left: {kind: joint, name: knee_front_left}
+        knee_hind_left: {kind: joint, name: knee_hind_left}
+        knee_front_right: {kind: joint, name: knee_front_right}
+        knee_hind_right: {kind: joint, name: knee_hind_right}
+        base: {kind: body, name: torso}
+      joint_order: [knee_front_left, knee_hind_left, knee_front_right, knee_hind_right]
+      return_joint_vector: true
+      deadline_parameter: max_duration_per_joint_s
+      joint_tolerance_rad: 0.03
+      joint_motion_rad: 0.01
+      base_position_tolerance_m: 0.01
+      base_rotation_tolerance_rad: 0.05

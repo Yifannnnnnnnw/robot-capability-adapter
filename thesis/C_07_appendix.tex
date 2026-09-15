@@ -1,525 +1,567 @@
-\chapter{Appendix}
+\chapter{Supplementary Experimental Details}
 \label{chap:appendix}
 
-\begin{quote}\itshape
-The objective of this appendix is to provide the detailed reference material
-that supports the benchmark and experimental chapters. It begins by listing
-the declared LLM, robot, and control-architecture scope. It then records the
-generated-driver capabilities and validation criteria, followed by the
-canonical task libraries and their passing standards. Finally, it identifies
-the external sources from which these standards were defined or adapted and
-states the associated scope, acceptance, decision, and provenance boundaries.
-\end{quote}
+This appendix provides the methodological detail needed to interpret the
+experiments in Chapters 3--5. It describes the outputs passed between
+generation stages and compares the PiPER capability designs. It then
+identifies the task libraries and evaluated tasks, explains the treatment of
+reviewed results, and records the model identities and cost assumptions.
+
+\section{Study and Design Outputs}
+\label{sec:appendix-stage-outputs}
+
+Study converts robot information into a structured description that Design
+can use to specify capabilities. Design then connects those capabilities to
+task requirements and executable tests.
+Table~\ref{tab:appendix-stage-outputs} summarises the output fields used by
+the skeleton-assisted pipeline in Chapter 3. The field names identify the
+saved records; their interpretation is given alongside them.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Principal fields in the Study and Design outputs.}
+  \label{tab:appendix-stage-outputs}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{29mm}
+    >{\raggedright\arraybackslash}p{46mm}
+    >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Record} & \textbf{Fields} & \textbf{Interpretation} \\
+    \midrule
+    Study: robot identity &
+    \path{robot_id}, \path{estimated_class}, \path{dof} &
+    Identifies the robot, its estimated embodiment class and degrees of freedom. \\
+    Study: control structure &
+    \path{joints}, \path{actuators} &
+    Joint names, types, axes and recorded control ranges; actuator names,
+    joint associations and control ranges. \\
+    Study: interaction points &
+    \path{ee_site}, \path{ee_body}, \path{graspable_bodies}, \path{notes} &
+    Identifies the end-effector reference, graspable bodies and relevant
+    observations about the model. \\
+    Design: capability interface &
+    \path{capabilities} &
+    Each entry gives an identifier and method name, describes its effect,
+    and specifies request fields, preconditions, timing, invariants and failure behaviour. \\
+    Design: behavioural requirements &
+    \path{criteria} within each capability &
+    Defines each metric, unit, comparator and threshold, together with its
+    temporal rule, aggregation and source references. \\
+    Design: task coverage &
+    \path{task_support} &
+    Maps task identifiers to capability identifiers and records the
+    rationale for each proposed association. \\
+    Design: executable tests &
+    \path{scenes}, \path{cases} in \path{scene_cases.yaml} &
+    Defines test scenes and concrete requests. Each case binds its
+    measurements to simulator objects and the corresponding criteria. \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+The primary records are \path{study.json} and
+\path{design/capability_design.json}. The accompanying
+\path{design/scene_cases.yaml} specifies initial conditions, execution limits
+and measurement bindings. The framework also records the robot configuration
+and task-library snapshot associated with the design.
+These records preserve the distinction between a capability's intended
+effect and the concrete test used to assess it.
+
+Task coverage in \path{task_support} is a design claim. Behavioural validation
+assesses the generated implementation against the specified cases, while
+downstream evaluation assesses complete tasks.
+Scene preparation establishes that a test can execute and obtain its
+measurements; it does not establish that the driver will pass.
+
+\section{Variation among PiPER Capability Designs}
+\label{sec:appendix-piper-designs}
+
+Table~\ref{tab:piper-design-run01} in Chapter 3 gives a complete worked
+example, including test requests and measured results.
+Table~\ref{tab:appendix-piper-comparison} retains the differences needed to
+interpret all five runs. Every design included end-effector positioning,
+wrist rotation, gripper aperture and contact establishment.
+The remaining capability provided ordered waypoint motion in runs 01--04
+and position holding in run 05.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{1.2}
+  \caption{Differences among the five generated PiPER capability designs.}
+  \label{tab:appendix-piper-comparison}
+  \begin{tabularx}{\textwidth}{@{}>{\centering\arraybackslash}p{8mm}
+    >{\raggedright\arraybackslash}p{36mm}
+    >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Run} & \textbf{Fifth capability} &
+    \textbf{Contact criterion} \\
+    \midrule
+    01 & Two ordered waypoints &
+    Peak normal force over 1--3~s $\geq 0.5$~N. \\
+    02 & Three ordered waypoints &
+    Minimum normal force over 1--2~s $\geq 1$~N. \\
+    03 & Two ordered waypoints &
+    Mean normal force over 1--2~s $\geq 0.5$~N, and terminal
+    end-effector error $\leq 30$~mm. \\
+    04 & Two ordered waypoints &
+    Peak normal force over 1--3~s within $[0.5,60]$~N. \\
+    05 & Position hold; peak error over 0.2--1~s $\leq 20$~mm &
+    Peak normal force over 0.5--1.5~s $\geq 1$~N. \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \noindent\raggedright\emph{Notes:} Ordered waypoint error is bounded by
+  30~mm in runs 01--04. Terminal joint7 error is bounded by 3~mm in
+  runs 01, 02 and 05, and by 5~mm in runs 03 and 04.
+  Run 05 additionally requires
+  $|\mathrm{joint8}+\mathrm{joint7}|\leq 3$~mm.
+  Contact forces refer to each case's specified geometry pair.
+  These are generated test definitions, not measured outcomes.\par
+  \endgroup
+\end{table}
+
+The contact criteria assess different properties of a trajectory.
+A peak criterion can be satisfied by a brief force excursion, whereas
+the minimum criterion requires the threshold throughout the recorded window.
+A mean criterion can tolerate intervals below its threshold.
+The contact results are therefore reported separately in Chapter 3.
+
+Measurement bindings also affected interpretation. Run 02 assigned force
+measurement to a visual geometry without collision enabled.
+Contact through other gripper geometries could not satisfy that specified
+pair's criterion. Complete per-run requests and bindings are retained under
+\path{expriment/chapter3_piper/data/runs/}.
+
+\section{Task Libraries and Evaluation Scope}
+\label{sec:appendix-tasks}
+
+The task libraries supplied the task requirements considered during Design.
+Each relevant robot package contained 20 entries, but downstream experiments
+executed selected subsets. An entry's inclusion in a library therefore
+does not imply that it was executed or successfully completed.
+Table~\ref{tab:appendix-task-libraries} identifies the libraries used for the
+robots studied in this thesis and the corresponding evaluation subsets.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Task-library inputs and downstream evaluation subsets.}
+  \label{tab:appendix-task-libraries}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{28mm}
+    >{\raggedright\arraybackslash}p{40mm}
+    >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Robot / chapter} & \textbf{Package and version} &
+    \textbf{Tasks evaluated downstream} \\
+    \midrule
+    PiPER / 3 & \path{piper/1.0.0} &
+    Reaching, pushing and pick-and-place; three spatial layouts. \\
+    SO-101 / 4 & \path{robotstudio_so101/1.0.4} &
+    Push to Goal, Sweep into Goal, Pick and Place, Pick and Place with Wall,
+    and Dial Turn. \\
+    Unitree Go2 / 4 & \path{unitree-go2-stock-}\newline
+    \path{12dof/1.0.2} &
+    Single-step Ascent, Single-step Descent, Mixed-obstacle Path,
+    Pause-table Transition and Weave Poles. \\
+    Franka Panda / 5 & \path{franka_panda/1.0.0} &
+    Reaching, pushing, pick-and-place, drawer opening and dial turning;
+    three spatial layouts. \\
+    LEAP Hand / 5 & \path{leap_hand/1.0.0} &
+    All-fingertip reaching, joint pose matching, object holding,
+    block manipulation and valve turning. \\
+    Skydio X2 / 5 & \path{skydio_x2/1.0.0} &
+    Takeoff and hover, stationary holding, climb--transit--descend return,
+    ordered waypoints and point-of-interest orbiting. \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\subsection{Catalogue Contents}
+
+The following inventory preserves the scope of the Design inputs without
+repeating every task's numerical clauses. The complete definitions are
+stored in \path{catalog.json} within the packages listed in
+Table~\ref{tab:appendix-task-libraries}, under
+\path{AA1/auto_adapter/task_libraries/}. Each package's
+\path{sources.json} records the source material and adaptations.
 
 \begingroup
 \small
-\setstretch{1.0}
-\renewcommand{\arraystretch}{1.15}
-\begin{longtable}{@{}>{\raggedright\arraybackslash}p{20mm}>{\raggedright\arraybackslash}p{32mm}>{\raggedright\arraybackslash}p{74mm}@{}}
-\caption{AutoAdapter-Bench scope: LLM backbones, robot cohort, and high-level control structures.}
-\label{tab:appendix-benchmark-scope}\\
-\toprule
-\textbf{Scope} & \textbf{Category or status} & \textbf{Included items} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Scope} & \textbf{Category or status} & \textbf{Included items} \\
-\midrule
-\endhead
-\endfoot
-\bottomrule
-\endlastfoot
-LLM configurations & Experiment 2 comparison cohort & M1: Claude Sonnet 4.6; M2: Claude Opus 5; M3: Claude Haiku 4.5; M4: Amazon Nova Pro; M5: DeepSeek V4 Pro; M6: Ministral 3 8B; M8: GPT-5.6 Sol \\
-Robot cohort & Fixed serial manipulators (7) & SO-101; Franka Panda; Kinova Gen3 with Robotiq 2F-85; UFactory xArm7; UR5e with Robotiq 2F-85; Piper; KUKA iiwa 14 \\
-Robot cohort & Dexterous hand (1) & LEAP Hand \\
-Robot cohort & Quadrupeds (2) & Unitree Go2, stock 12-DoF configuration; Google Barkour vB \\
-Robot cohort & Humanoid (1) & Unitree G1 \\
-Robot cohort & Mobile manipulator (1) & Hello Robot Stretch 2 \\
-Robot cohort & Bimanual manipulator (1) & ALOHA 2 \\
-Robot cohort & Legged mobile manipulator (1) & Boston Dynamics Spot with Arm \\
-High-level control & Experiment 2b architecture & ReCAP \citep{zhang2025recap} \\
-\end{longtable}
+\setstretch{1.12}
+\paragraph{Serial-arm manipulation: PiPER, SO-101 and Panda.}
+The three packages share the same catalogue: target reaching; pushing;
+pick-and-place; pick-and-place with a wall; pushing around a wall;
+sweeping; drawer opening and closing; frontal and top-down button pressing;
+handle pressing and pulling; door opening and closing; faucet opening;
+dial turning; lever pulling; side peg insertion; bin picking; and extraction
+from a hole. Sharing task names does not make their robot-specific scenes
+or generated capability tests identical.
 
-\noindent\emph{Scope note:} The table records the configurations reported in
-this thesis. It does not define a new experiment, and cohort membership does
-not imply current runnable admission.
+\paragraph{Unitree Go2.}
+Entries T01--T20 comprise eight-direction velocity tracking; step ascent;
+step descent; payload step ascent; high-rate turning; a mixed-obstacle path;
+crossing-ramp, compliant-floor, pallet-and-pipe, diagonal-rail and
+negative-obstacle lanes; block, stair, stepping-stone and pole terrain;
+a pause-table transition; weave poles; an A-frame; a broad jump; and the
+complete Barkour course.
+
+\paragraph{LEAP Hand.}
+The first thirteen entries cover pinch translation, dynamic tripod motion,
+squeeze, twiddle, rock, opposed-grasp pivot, radial roll, index roll,
+full roll, rotary step, interdigital step, linear step and palmar slide.
+The remaining seven cover all-fingertip reaching, block-pose matching,
+joint-pose matching, fixed-axis turning, continuous rotation tracking,
+object holding and two-ball Baoding circulation.
+
+\paragraph{Skydio X2.}
+Entries T01--T20 cover takeoff, landing, stationary holding,
+climb--transit--descend return, ordered waypoints, a continuous flight path,
+point-of-interest orbiting, moving-bearing tracking, subject-relative escort,
+panorama motion, structure approach, obstacle transit, flight beneath a height
+bound, survey lanes, tower inspection, concave-structure observation,
+under-bridge traversal, lateral baseline acquisition, scan-route resumption
+and geofenced entry and exit.
+These entries describe aircraft motion and geometric conditions in MuJoCo.
+They do not assess onboard perception, image quality or a physical flight SDK.
 \endgroup
 
-\clearpage
-\begin{landscape}
-\begingroup
-\scriptsize
-\setstretch{1.0}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.14}
-\begin{longtable}{@{}
-  >{\raggedright\arraybackslash}p{7mm}
-  >{\raggedright\arraybackslash}p{27mm}
-  >{\raggedright\arraybackslash}p{50mm}
-  >{\raggedright\arraybackslash}p{44mm}
-  >{\raggedright\arraybackslash}p{31mm}
-  >{\raggedleft\arraybackslash}p{18mm}
-  >{\raggedleft\arraybackslash}p{18mm}
-  >{\raggedleft\arraybackslash}p{18mm}@{}}
-\caption{Public pricing reference for the seven Experiment 2 model configurations.}
-\label{tab:appendix-model-pricing}\\
-\toprule
-\textbf{ID} &
-\textbf{Model} &
-\textbf{Runtime identity} &
-\textbf{Public pricing basis} &
-\textbf{Configured context / output cap} &
-\textbf{Uncached input} &
-\textbf{Cached input} &
-\textbf{Output} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{ID} &
-\textbf{Model} &
-\textbf{Runtime identity} &
-\textbf{Public pricing basis} &
-\textbf{Configured context / output cap} &
-\textbf{Uncached input} &
-\textbf{Cached input} &
-\textbf{Output} \\
-\midrule
-\endhead
-\bottomrule
-\endlastfoot
-M1 &
-Claude Sonnet 4.6 &
-\path{eu.anthropic.claude-sonnet-4-6} &
-Anthropic EU Geo public pricing \citep{anthropic2026pricing} &
-1,000,000 / 8,192 &
-3.30 & 0.33 & 16.50 \\
-M2 &
-Claude Opus 5 &
-\path{eu.anthropic.claude-opus-5} &
-Anthropic EU Geo public pricing \citep{anthropic2026pricing} &
-1,000,000 / 32,768 &
-5.50 & 0.55 & 27.50 \\
-M3 &
-Claude Haiku 4.5 &
-\path{eu.anthropic.claude-haiku-4-5-20251001-v1:0} &
-Anthropic EU Geo public pricing \citep{anthropic2026pricing} &
-200,000 / 8,192 &
-1.10 & 0.11 & 5.50 \\
-M4 &
-Amazon Nova Pro &
-\path{amazon.nova-pro-v1:0} &
-Amazon Bedrock public pricing \citep{aws2026bedrockpricing} &
-300,000 / 5,000 &
-1.13 & -- & 4.52 \\
-M5 &
-DeepSeek V4 Pro &
-\path{deepseek-v4-pro} &
-DeepSeek public off-peak / peak pricing
-\citep{deepseek2026pricing,deepseek2026v4pro} &
-1,000,000 / 16,384 &
-0.66 / 1.32 & 0.022 / 0.044 & 1.98 / 3.96 \\
-M6 &
-Ministral 3 8B &
-\path{mistral.ministral-3-8b-instruct} &
-Amazon Bedrock public pricing \citep{aws2026bedrockpricing} &
-128,000 / 8,000 &
-0.23 & -- & 0.23 \\
-M8 &
-GPT-5.6 Sol &
-\path{openai.gpt-5.6-sol} &
-OpenAI Standard public pricing \citep{openai2026gpt56sol} &
-1,050,000 / 32,768 &
-4.00 / 8.00 & 0.40 / 0.80 & 20.00 / 30.00 \\
-\end{longtable}
 
-\noindent\emph{Notes:} Prices are US dollars per million tokens. A dash means
-that no separate cache-input price is published, not that cached input is
-free. The M1--M3 values include the published 10\% regional premium for EU Geo
-inference. DeepSeek values are off-peak / peak; peak periods are
-01:00--04:00 and 06:00--10:00 UTC from Monday to Friday. The listed DeepSeek
-rates became effective on 16 August 2026. GPT-5.6 Sol values are
-standard / long-context; the latter applies to the entire request when input
-exceeds 272,000 tokens. OpenAI states that the current promotional pricing
-lasts at least through 21 November 2026. Configured limits reproduce the
-archived run configuration and do not define a future protocol. The table
-records public rates accessed on 1 September 2026 and does not represent
-provider invoices.
-\endgroup
-\end{landscape}
+\subsection{Sources and Adaptations}
 
-\clearpage
-\begingroup
-\small
-\renewcommand{\arraystretch}{1.18}
-\setlength{\tabcolsep}{4pt}
+Table~\ref{tab:appendix-standard-sources} distinguishes task-source material
+from the local implementation of an evaluation.
+A source may supply an operation, a metric or a numerical threshold;
+these forms of support are not interchangeable.
+In particular, a reported policy performance value used to construct a local
+threshold is not an independently established acceptance standard.
 
-\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}
-                        >{\raggedright\arraybackslash}p{0.32\textwidth}
-                        >{\raggedright\arraybackslash}p{0.42\textwidth}@{}}
-\caption{B1 generated-driver capabilities and validation criteria}
-\label{tab:appendix-b1-driver-validation}\\
-\hline
-\textbf{Robot configuration(s)} &
-\textbf{Generated-driver methods} &
-\textbf{Validation criteria} \\
-\hline
-\endfirsthead
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Source material for the retained task libraries.}
+  \label{tab:appendix-standard-sources}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{36mm}
+    >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Task family} & \textbf{Source and use} \\
+    \midrule
+    Serial-arm manipulation &
+    Meta-World supplies task definitions and metric thresholds
+    \citep{yu2020metaworld,farama2026metaworld}. The local packages adapt
+    robot models, scenes and requests. \\
+    LEAP dexterity tasks &
+    The Elliott and Connolly benchmark motivates the first thirteen
+    operations, adapted into fixed three-trial protocols
+    \citep{coulson2021elliott}. \\
+    LEAP reaching and object tasks &
+    Gymnasium-Robotics, ROBEL and MyoSuite supply the remaining task families
+    \citep{delazcano2026gymnasiumrobotics,ahn2020robel,robel2020software,
+    caggiano2022myosuite,myohub2026myosuite}.
+    Adaptations include morphology-scaled fingertip tolerance and
+    robot-specific joint and object bindings. \\
+    Go2 motion and terrain &
+    Locomotion studies inform the motion, terrain and morphology-scaled
+    requirements \citep{lee2020quadrupedal,miki2022perceptive,
+    shi2023terrain,hutter2016anymal}. Their reported commands or performance
+    values serve as inputs to local task definitions. \\
+    Go2 obstacle courses &
+    The ICRA Quadruped Robot Challenge and Barkour provide obstacle-course
+    requirements \citep{jacoff2023quadruped,caluwaerts2023barkour,
+    yu2024barkourdesign}. The catalogue records the adapted geometry,
+    completion conditions and timing. \\
+    Skydio flight tasks &
+    The local catalogue proposes numerical tolerances and scene arrangements.
+    These values are uncalibrated local requirements; they are not
+    manufacturer accuracy specifications or demonstrated hardware performance. \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
 
-\multicolumn{3}{l}{\tablename\ \thetable{} -- continued from the previous page}\\
-\hline
-\textbf{Robot configuration(s)} &
-\textbf{Generated-driver methods} &
-\textbf{Validation criteria} \\
-\hline
-\endhead
+Robot-description files provide morphology and actuator information.
+Task thresholds require a separate justification, and capability validation
+remains distinct from downstream task evaluation.
 
-\hline
-\multicolumn{3}{r}{Continued on the next page}\\
-\endfoot
+\subsection{Reading the Evaluation Criteria}
+\label{sec:appendix-evaluation-criteria}
 
-\hline
-\endlastfoot
+A task passes only when all of its required clauses are satisfied.
+The measurement object and time rule are part of each clause:
+an end-effector error differs from an object error, and an early target hit
+differs from success at a prescribed endpoint.
+Chapter 3 specifies its PiPER task geometry and criteria directly.
+For the Chapter 5 cases,
+Table~\ref{tab:appendix-task-criteria} records the distinctions needed to
+interpret the reported outcomes.
 
-SO-101; Franka Panda; Kinova Gen3 with Robotiq 2F-85; UFACTORY xArm7;
-Universal Robots UR5e with Robotiq 2F-85; Piper
-&
-\textbf{A1.} \path{move_end_effector_to_position}\newline
-\textbf{A2.} \path{trace_cartesian_path}\newline
-\textbf{A3.} \path{set_gripper_opening}\newline
-\textbf{A4.} \path{approach_until_contact}\newline
-\textbf{A5.} \path{move_cartesian_offset_and_return}
-&
-\textbf{A1.} End-effector position error $\leq 15$ mm for $0.5$ s.\newline
-\textbf{A2.} Waypoint and cross-track errors $\leq 20$ mm; final error
-$\leq 15$ mm for $0.5$ s.\newline
-\textbf{A3.} Normalised physical-aperture error $\leq 0.10$ for $0.25$ s;
-motion in each direction $\geq 50\%$ of full travel.\newline
-\textbf{A4.} Pre-contact error $\leq 15$ mm; lateral approach error
-$\leq 10$ mm; no excess travel; target contact for $0.1$ s; penetration
-$\leq 5$ mm; no unrelated contact.\newline
-\textbf{A5.} Outbound and return errors $\leq 15$ mm; respective dwell
-times of $0.25$ s and $0.5$ s. Robot-specific end-effector and gripper
-measurement bindings differ, but the thresholds are shared.
-\\[3pt]
+\begin{table}[H]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Selected measurement and timing requirements in Chapter 5.}
+  \label{tab:appendix-task-criteria}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{35mm}
+    >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Task or test} & \textbf{Criterion and interpretation} \\
+    \midrule
+    Panda capability positioning and waypoints &
+    The chapter applies a common 20~mm distance bound in its revised
+    assessment. The original generated limits were 50 and 60~mm,
+    respectively. \\
+    Panda downstream manipulation &
+    Terminal error limits are 50~mm for reaching and pushing, 70~mm for
+    pick-and-place and dial turning, and 30~mm for drawer opening.
+    Object and fixture tasks also require the specified contact and motion
+    sequence; pick-and-place requires release and support for at least 0.2~s. \\
+    LEAP all-fingertip reach &
+    Concatenated Cartesian error across all four fingertips below
+    8.94~mm at 2~s. A shorter record cannot establish this endpoint. \\
+    LEAP joint-pose matching &
+    Maximum joint error below $10^\circ$ at 4~s.
+    This whole-hand task differs from the two-joint capability tests. \\
+    LEAP object holding &
+    More than five control samples within 10~mm of the target and no
+    drop samples beyond 300~mm, over the complete 1.5~s interval. \\
+    LEAP block manipulation and valve turning &
+    At 4~s, block-position error must be below 10~mm and orientation
+    error below 0.10~rad; the valve task requires wrapped angle error
+    below 0.10~rad. \\
+    Skydio capability positioning and waypoints &
+    The chapter uses a revised common distance bound of 25~mm.
+    These capability tests are separate from full flight tasks. \\
+    Skydio point-of-interest orbit &
+    The reported retrospective assessment requires a complete circuit.
+    Radius and height errors are bounded by 100 and 50~mm, respectively;
+    heading towards the centre has a root-mean-square error limit of
+    $12^\circ$. \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \noindent\raggedright\emph{Notes:} The table summarises the requirements
+  relevant to the chapter's interpretation; it is not a replacement for the
+  complete executable task definitions. The stored fingertip tolerance is
+  0.00894427191~m. Revised criteria and separate retries are distinguished
+  in Section~\ref{sec:appendix-reviewed-results}.\par
+  \endgroup
+\end{table}
 
-KUKA iiwa 14
-&
-\textbf{K1.} \path{move_end_effector_to_position}\newline
-\textbf{K2.} \path{trace_cartesian_path}\newline
-\textbf{K3.} \path{approach_until_contact}\newline
-\textbf{K4.} \path{move_cartesian_offset_and_return}\newline
-\textbf{K5.} \path{rotate_end_effector_and_return}
-&
-K1--K4 use the corresponding fixed-arm criteria above.\newline
-\textbf{K5.} Rotation must follow the requested local axis; orientation
-error $\leq 5^{\circ}$; position drift $\leq 15$ mm throughout; no
-additional full rotation; outbound and return dwell times of $0.25$ s.
-\\[3pt]
+\section{Reviewed Results and Separate Executions}
+\label{sec:appendix-reviewed-results}
 
-Unitree Go2
-&
-\textbf{G1.} \path{track_planar_twist}\newline
-\textbf{G2.} \path{move_body_relative_pose}\newline
-\textbf{G3.} \path{trace_planar_path}\newline
-\textbf{G4.} \path{set_body_height}\newline
-\textbf{G5.} \path{hold_stable_stance}
-&
-\textbf{G1.} Mean planar-velocity error $\leq 0.10$ m/s, mean yaw-rate
-error $\leq 0.30$ rad/s, and mean direction error $\leq 10^{\circ}$.\newline
-\textbf{G2.} Position error $\leq 0.10$ m and yaw error $\leq 5^{\circ}$
-for $0.5$ s.\newline
-\textbf{G3.} Waypoint error $\leq 0.10$ m, cross-track error
-$\leq 0.15$ m, and final error $\leq 0.10$ m.\newline
-\textbf{G4.} Height error $\leq 0.03$ m and absolute roll and pitch
-$\leq 10^{\circ}$ for $0.5$ s.\newline
-\textbf{G5.} Recovery to absolute roll and pitch $\leq 3^{\circ}$ within
-$0.5$ s after the registered disturbance; thereafter $\leq 5^{\circ}$,
-with height drift $\leq 0.03$ m, planar drift $\leq 0.05$ m, and valid
-four-foot support.
-\\[3pt]
+\subsection{Measurement Review in Experiment 2a}
 
-LEAP Hand
-&
-\textbf{L1.} \path{move_hand_to_joint_pose}\newline
-\textbf{L2.} \path{trace_hand_joint_path}\newline
-\textbf{L3.} \path{reach_fingertips_to_targets}\newline
-\textbf{L4.} \path{establish_fingertip_contact_pattern}\newline
-\textbf{L5.} \path{hold_fingertip_contacts}\newline
-\textbf{L6.} \path{move_fingertip_offset_and_return}
-&
-\textbf{L1.} Maximum joint error $<10^{\circ}$ for $0.5$ s.\newline
-\textbf{L2.} Maximum joint error $\leq 0.05$ rad at every waypoint;
-final dwell of $0.5$ s.\newline
-\textbf{L3.} Concatenated four-fingertip position error $<8.944$ mm at
-terminal control step 50.\newline
-\textbf{L4.} Fingertip target error $\leq 10$ mm; specified approach
-direction and travel respected; contact for $0.1$ s; penetration
-$\leq 5$ mm.\newline
-\textbf{L5.} Following motion $\geq 80\%$ after a $6$--$8$ mm target
-separation; contact recovered within $0.2$ s; contact occupancy
-$\geq 90\%$.\newline
-\textbf{L6.} Outbound and return errors $\leq 10$ mm; each phase held
-for $0.25$ s.
-\\[3pt]
+The \emph{Automatic} and \emph{Incl.\ review} columns in
+Table~\ref{tab:chapter4-exp2a-generation-results} describe different
+assessments of the recorded synthesis attempts.
+The automatic column uses the original fixed behavioural test suite for each robot.
+Measurement review re-examined selected trajectories where the observation
+binding or reference state did not express the intended requirement.
+It did not constitute a new driver generation or task execution.
 
-Hello Robot Stretch 2
-&
-\textbf{ST1.} \path{move_base_relative}\newline
-\textbf{ST2.} \path{turn_base_to_heading}\newline
-\textbf{ST3.} \path{move_tool_to_position}\newline
-\textbf{ST4.} \path{trace_tool_cartesian_path}\newline
-\textbf{ST5.} \path{set_gripper_opening}\newline
-\textbf{ST6.} \path{set_wrist_yaw}\newline
-\textbf{ST7.} \path{approach_until_contact}\newline
-\textbf{ST8.} \path{move_tool_offset_and_return}
-&
-\textbf{ST1.} Position error $\leq 20$ mm and yaw drift
-$\leq 0.02$ rad.\newline
-\textbf{ST2.} Yaw error $\leq 0.02$ rad and planar drift
-$\leq 20$ mm.\newline
-\textbf{ST3.} Tool-position error $\leq 25$ mm for $0.5$ s.\newline
-\textbf{ST4.} Waypoint and cross-track errors $\leq 30$ mm; final error
-$\leq 25$ mm.\newline
-\textbf{ST5.} Physical gripper-slide error $\leq 3$ mm; bidirectional
-travel $\geq 15$ mm.\newline
-\textbf{ST6.} Absolute wrist-yaw error $\leq 0.03$ rad for $0.5$ s.\newline
-\textbf{ST7.} The fixed-arm contact criteria apply.\newline
-\textbf{ST8.} Outbound and return errors $\leq 25$ mm; base drift
-$\leq 20$ mm and yaw drift $\leq 0.03$ rad throughout.
-\\[3pt]
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Measurement reviews underlying the Experiment 2a results.}
+  \label{tab:appendix-exp2a-review}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{34mm}
+    >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{SO-101 runs} & \textbf{Review and treatment} \\
+    \midrule
+    Sonnet 4.6, runs 01 and 02 &
+    The original contact binding named a jaw geometry that did not carry
+    the observed contact. Review used the contacting gripper geometry,
+    preserving the trajectory, threshold, window and aggregation.
+    Both runs contributed additional reviewed passes. \\
+    DeepSeek V4 Pro, run 02 &
+    The original hold check measured displacement from the action's initial
+    pose. Review assessed the post-convergence hold over the original
+    1.5--3~s window, retaining the 0.05~rad tolerance.
+    The run contributed one additional reviewed pass. \\
+    Opus 5, run 03 &
+    Correcting the hold reference satisfied that test, but the measured
+    contact force was 33.43~N against a requested upper bound of 30~N.
+    The original automatic criterion allowed 40~N.
+    The run contributed no additional reviewed pass. \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
 
-ALOHA 2
-&
-\textbf{AL1.} \path{move_arm_to_position}\newline
-\textbf{AL2.} \path{trace_arm_cartesian_path}\newline
-\textbf{AL3.} \path{set_gripper_opening}\newline
-\textbf{AL4.} \path{move_bimanual_to_positions}\newline
-\textbf{AL5.} \path{approach_until_contact}\newline
-\textbf{AL6.} \path{move_bimanual_offsets_and_return}
-&
-\textbf{AL1.} Selected end-effector error $\leq 15$ mm for $0.5$ s;
-the unselected side remains within its call-time guard.\newline
-\textbf{AL2.} Waypoint and cross-track errors $\leq 20$ mm; final error
-$\leq 15$ mm for $0.5$ s.\newline
-\textbf{AL3.} Normalised aperture error $\leq 0.10$ and mirrored-finger
-disagreement $\leq 0.05$.\newline
-\textbf{AL4.} Both end-effector errors simultaneously $\leq 15$ mm for
-$0.5$ s; final-entry skew $\leq 0.10$ s.\newline
-\textbf{AL5.} The fixed-arm contact criteria apply to the selected arm;
-the unselected side remains within its call-time guard.\newline
-\textbf{AL6.} Both outbound and return errors $\leq 15$ mm; entry skew
-$\leq 0.10$ s; each phase held for $0.25$ s.
-\\
+The review decisions and links to their underlying measurements are retained
+in \path{outcome_review.json} under
+\path{expriment/chapter4_synthesis/data/runs/exp2a_8000_01/}.
+The original reports remain unchanged.
+These measurement reviews are reported separately from the original
+automatic assessments.
 
-\end{longtable}
+\subsection{Cross-Robot Reassessment and Retries}
+\label{sec:appendix-cross-robot-review}
 
-\noindent\footnotesize\textit{Acceptance rule.} Each capability is evaluated
-on three hidden combinations of target, initial state, and parameters. A
-capability passes only if all three cases pass, and a generated driver passes
-B1 only if every capability assigned to its robot passes. Each trial must also
-satisfy the common closed-loop, canonical-physics, control-range, unintended-
-motion, contact-integrity, maximum-penetration, and complete-video checks.
+Chapter 5 uses revised distance tolerances for Panda and Skydio.
+For Panda, the positioning and waypoint observations satisfy both their
+original limits and the revised 20~mm bound.
+For Skydio, the recorded positioning, waypoint and terminal-position errors
+also satisfy the revised 25~mm bound. These retrospective comparisons use
+existing measurements.
 
-\endgroup
+The Skydio task result reported in Chapter 5 is a retrospective 5/5
+assessment. The original task reports recorded 3/5 under their timing
+and completion checks. Stationary holding exceeded the 60~s limit by
+0.01~s. The first orbit continued beyond 60~s, and its terminal net
+angular progress fell just short of a full circle despite an earlier
+complete circuit. The chapter's retrospective result is therefore distinct
+from the original deadline-constrained score; tightening geometric tolerances
+alone does not account for the difference.
 
-\clearpage
-\begin{landscape}
-\begingroup
-\scriptsize
-\setstretch{1.0}
-\renewcommand{\arraystretch}{1.12}
-\begin{longtable}{@{}>{\raggedright\arraybackslash}p{47mm}>{\raggedright\arraybackslash}p{85mm}>{\raggedright\arraybackslash}p{84mm}@{}}
-\caption{Canonical 20-task libraries and passing standards, grouped by robot type and unique task catalogue.}
-\label{tab:appendix-task-libraries}\\
-\toprule
-\textbf{Library and covered robots} & \textbf{Twenty-task catalogue} & \textbf{Trusted Harness passing standard} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Library and covered robots} & \textbf{Twenty-task catalogue} & \textbf{Trusted Harness passing standard} \\
-\midrule
-\endhead
-\endfoot
-\bottomrule
-\endlastfoot
-\textbf{MW-S20: parallel-gripper manipulation platforms}. Fixed serial manipulators: SO-101, Franka Panda, Kinova Gen3, xArm7, UR5e and Piper. Mobile manipulator: Stretch 2. Each robot uses the same 20-task catalogue. &
-1. \path{mw_reach_target}; 2. \path{mw_push_to_goal}; 3. \path{mw_pick_place}; 4. \path{mw_pick_place_wall}; 5. \path{mw_push_wall}; 6. \path{mw_sweep_into_goal}; 7. \path{mw_drawer_open}; 8. \path{mw_drawer_close}; 9. \path{mw_button_press}; 10. \path{mw_button_press_topdown}; 11. \path{mw_handle_press}; 12. \path{mw_handle_pull}; 13. \path{mw_door_open}; 14. \path{mw_door_close}; 15. \path{mw_faucet_open}; 16. \path{mw_dial_turn}; 17. \path{mw_lever_pull}; 18. \path{mw_peg_insertion_side}; 19. \path{mw_bin_picking}; 20. \path{mw_pick_out_of_hole}. &
-Terminal single-trial thresholds: 1. end-effector--target distance $\leq 0.05$ m; 2. object--goal distance $\leq 0.05$ m; 3--5. object--goal distance $\leq 0.07$ m; 6. object--goal distance $\leq 0.05$ m; 7. drawer-handle error $\leq 0.03$ m; 8. drawer error $\leq 0.065$ m; 9. button error $\leq 0.02$ m; 10. button error $\leq 0.024$ m; 11. handle error $\leq 0.02$ m; 12. handle error $\leq 0.05$ m; 13. door x-axis error $\leq 0.08$ m; 14. door error $\leq 0.08$ m; 15--16. fixture error $\leq 0.07$ m; 17. lever-angle error $\leq 0.1308996939$ rad; 18. peg--target distance $\leq 0.07$ m; 19. object--goal distance $\leq 0.05$ m; 20. object--goal distance $\leq 0.07$ m. \\
-\midrule
-\textbf{KUKA-S20: fixed serial manipulator variant}. KUKA iiwa 14. &
-1. \path{mw_reach_target}; 2. \path{mw_push_to_goal}; 3. \path{mw_push_wall}; 4. \path{mw_sweep_into_goal}; 5. \path{mw_drawer_open}; 6. \path{mw_drawer_close}; 7. \path{mw_button_press}; 8. \path{mw_button_press_topdown}; 9. \path{mw_handle_press}; 10. \path{mw_door_open}; 11. \path{mw_door_close}; 12. \path{mw_faucet_open}; 13. \path{mw_dial_turn}; 14. \path{mw_lever_pull}; 15. \path{mw_door_lock}; 16. \path{mw_door_unlock}; 17. \path{mw_faucet_close}; 18. \path{mw_soccer}; 19. \path{mw_window_open}; 20. \path{mw_window_close}. &
-Same-name Meta-World tasks use the MW-S20 thresholds. Additional thresholds: 15. door-lock z-axis error $\leq 0.02$ m; 16. door-unlock x-axis error $\leq 0.02$ m; 17. faucet error $\leq 0.07$ m; 18. ball--goal distance $\leq 0.07$ m; 19--20. window-handle x-axis error $\leq 0.05$ m. \\
-\midrule
-\textbf{ALOHA-S20: bimanual manipulation}. ALOHA 2. &
-Tasks 1--17 are MW-S20 tasks 1--17. Tasks 18--20 are \path{mw_soccer}, \path{mw_window_open}, and \path{mw_window_close}. &
-Tasks 1--17 use the corresponding MW-S20 thresholds. Task 18 passes when ball--goal distance $\leq 0.07$ m. Tasks 19--20 pass when window-handle x-axis error $\leq 0.05$ m. \\
-\midrule
-\textbf{LEAP-H20: dexterous-hand manipulation}. LEAP Hand. &
-1. \path{ec_pinch}; 2. \path{ec_dynamic_tripod}; 3. \path{ec_squeeze}; 4. \path{ec_twiddle}; 5. \path{ec_rock}; 6. \path{ec_rock_ii}; 7. \path{ec_radial_roll}; 8. \path{ec_index_roll}; 9. \path{ec_full_roll}; 10. \path{ec_rotary_step}; 11. \path{ec_interdigital_step}; 12. \path{ec_linear_step}; 13. \path{ec_palmar_slide}; 14. \path{gym_hand_reach_all_fingertips}; 15. \path{gym_hand_manipulate_block_full_pose}; 16. \path{robel_dclaw_pose_fixed}; 17. \path{robel_dclaw_turn_fixed}; 18. \path{robel_dclaw_screw_fixed}; 19. \path{myosuite_object_hold_fixed}; 20. \path{myosuite_baoding_p1}. &
-1--13. all three fixed trials succeed; 14. concatenated fingertip Cartesian error $< 0.00894427191$ m; 15. block-position error $< 0.01$ m and quaternion-angle error $< 0.1$ rad; 16. maximum joint-position error $< 0.1745329252$ rad; 17. wrapped target-angle error $< 0.1$ rad; 18. maximum continuous unbounded angle error $< 0.2$ rad; 19. solved control-step count $> 5$ and drop count $= 0$; 20. mean two-ball solved fraction $= 1$. \\
-\midrule
-\textbf{GO2-L20: quadruped locomotion}. Unitree Go2. &
-T01 eight-direction velocity tracking; T02 step ascent; T03 step descent; T04 payload step ascent; T05 high-rate turn; T06 mixed-obstacle path; T07 crossing-ramp lane; T08 compliant-floor lane; T09 pallet-and-pipe lane; T10 diagonal K-rail lane; T11 negative-obstacle lane; T12 block-terrain travel; T13 stair-terrain travel; T14 stepping-stone travel; T15 pole-terrain travel; T16 pause-table transition; T17 weave poles; T18 A-frame; T19 broad jump; T20 complete Barkour course. &
-T01 speed $\geq 0.4$ m/s and heading error $\leq 10^\circ$; T02--T04 all-feet completion $= 1$; T05 yaw rate $\geq 3$ rad/s; T06--T11 ordered completion $= 1$; T12--T15 travel distance $\geq 4.983$, $4.951$, $4.954$ and $4.93$ m, respectively; T16 start distance $\geq 0.7$ m and final table error $\leq 0.4$ m; T17 waypoint completion $= 1$ and clearance $\geq 0.1$ m; T18 completion $= 1$; T19 all-feet completion $= 1$ and board-contact steps $= 0$; T20 completion $= 1$, time $\leq 10.64$ s, board-contact steps $= 0$ and final table error $\leq 0.4$ m. \\
-\midrule
-\textbf{BARKOUR-L20: composite quadruped locomotion}. Google Barkour vB. &
-1. eight-direction velocity tracking; 2. step ascent; 3. step descent; 4. D'Kitty stand; 5. high-rate turn; 6. mixed-obstacle path; 7. D'Kitty orientation; 8. D'Kitty walk; 9. Safety Gym Button0; 10. Safety Gym Push0; 11. AntMaze U-Maze; 12--14. Robust Robot Walker bar, pit and pole traps; 15. \path{dm_control} Escape; 16. pause-table transition; 17. weave poles; 18. A-frame; 19. broad jump; 20. complete Barkour course. &
-1. speed $\geq 0.4$ m/s and heading error $\leq 10^\circ$; 2--3. all-feet completion $= 1$; 4. mean joint error $< 0.2617993878$ rad and upright dot $> 0.9$; 5. yaw rate $\geq 3$ rad/s; 6. ordered completion $= 1$; 7. heading error $< 0.087$ rad and upright dot $> 0.96$; 8. target distance $< 0.5$ m and heading cosine $> 0.9$; 9. target-button contact $= 1$; 10. block--goal distance $\leq 0.3$ m; 11. torso--goal distance $\leq 0.45$ m; 12--14. goal distance with survival $< 0.2$ m; 15. workspace radius $\geq 30$ m and upright cosine $\geq 0.9396926208$; 16--20. corresponding Barkour criteria from GO2-L20. \\
-\midrule
-\textbf{G1-H20: humanoid locomotion and manipulation}. Unitree G1. &
-1. walk; 2. stand; 3. run; 4. reach; 5. hurdle; 6. crawl; 7. maze; 8. sit; 9. balance; 10. stair; 11. slide; 12. pole; 13. push; 14. RoboCup parkour; 15. dynamic kick; 16. high kick; 17. obstacle navigation; 18. long stride; 19. Safety Gym Goal0; 20. Safety Gym Button0. &
-Fixed-horizon HumanoidBench return: 1 $\geq 700$; 2 $\geq 800$; 3 $\geq 700$; 5--6 $\geq 700$; 7 $\geq 1{,}200$; 8 $\geq 750$; 9 $\geq 800$; 10--12 $\geq 700$. Task 4: wrist--target error $< 0.05$ m. Task 13: box--goal error $< 0.05$ m. Task 14: consecutive full-success count $\geq 2$; 15: successful-run count $\geq 2$; 16--18: valid or fully successful run count $\geq 1$; 19: goal distance $\leq 0.3$ m; 20: selected-button contact $= 1$. \\
-\midrule
-\textbf{Legged mobile manipulator}. Boston Dynamics Spot with Arm. &
-No canonical 20-task catalogue is currently present in the AutoAdapter robot library. &
-No passing standard is claimed until the package, tasks and trusted Harness bindings are admitted. \\
-\end{longtable}
+Retries involved new executions and are reported separately.
+The LEAP retry reused the same driver and passed fingertip reaching once
+the record covered the required 2~s endpoint. The Skydio orbit retry
+completed a circuit but exceeded the heading-error limit.
+Neither retry replaces the first attempt or adds an independent driver
+generation.
 
-\noindent\emph{Decision rule:} where a task has multiple clauses joined by ``and'', every clause must pass. The canonical catalogue retains the complete temporal and aggregation definitions; this table reports the principal decision thresholds.
-\endgroup
-\end{landscape}
+Panda used a separate export of its partially validated driver.
+LEAP required missing forwarding wrappers to be completed after automatic
+export failed. Skydio underwent separate validation and wrapper preparation
+after generation reached its turn limit.
+These interventions enabled downstream assessment without changing the
+original pipeline outcomes. The records are retained under
+\path{expriment/chapter5_cross_robot/data/runs/}.
 
-\clearpage
-\begin{landscape}
-\begingroup
-\scriptsize
-\setstretch{1.0}
-\renewcommand{\arraystretch}{1.12}
-\begin{longtable}{@{}>{\raggedright\arraybackslash}p{50mm}>{\raggedright\arraybackslash}p{34mm}>{\raggedright\arraybackslash}p{39mm}>{\raggedright\arraybackslash}p{85mm}@{}}
-\caption{External sources used to define or adapt task passing standards.}
-\label{tab:appendix-standard-sources}\\
-\toprule
-\textbf{External source} & \textbf{Source class} & \textbf{Applied task families} & \textbf{Use in AutoAdapter-Bench} \\
-\midrule
-\endfirsthead
-\toprule
-\textbf{External source} & \textbf{Source class} & \textbf{Applied task families} & \textbf{Use in AutoAdapter-Bench} \\
-\midrule
-\endhead
-\midrule
-\endfoot
-\bottomrule
-\endlastfoot
-Meta-World, Farama Foundation, pinned repository
-\citep{yu2020metaworld,farama2026metaworld} &
-Open academic benchmark implementation &
-MW-S20, KUKA-S20 and ALOHA-S20 &
-Adapted: robot and scene identities change, while the source metric, unit,
-comparator and threshold are retained. \\
+\section{Model Identities and Cost Assumptions}
+\label{sec:appendix-models}
 
-Coulson et al., \emph{The Elliott and Connolly Benchmark: A Test for Evaluating
-the In-Hand Dexterity of Robot Hands} (2021)
-\citep{coulson2021elliott} &
-Peer-reviewed dexterous-hand benchmark &
-LEAP tasks 1--13 &
-Adapted into fixed three-trial protocols requiring success in all trials. \\
+Model names in Chapter 4 denote the endpoint configurations in
+Table~\ref{tab:appendix-model-identities}.
+The seven-model list describes the benchmark configurations; it does not
+imply that all seven yielded comparable synthesis results.
+The response limit for the synthesis batch reported in Experiment 2a was
+8,000 tokens per model turn. This differs from the model-specific limits
+recorded for the earlier seven-model configuration.
 
-Gymnasium-Robotics Shadow Dexterous Hand
-\citep{delazcano2026gymnasiumrobotics} &
-Open benchmark implementation &
-LEAP tasks 14--15 &
-The fingertip tolerance is morphology-scaled; the block-pose tolerances are
-retained, with the wrist and terminal protocol adapted. \\
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Endpoint identities and recorded seven-model output limits.}
+  \label{tab:appendix-model-identities}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{31mm}
+    >{\raggedright\arraybackslash}X
+    >{\raggedleft\arraybackslash}p{18mm}@{}}
+    \toprule
+    \textbf{Model} & \textbf{Runtime identity} & \textbf{Output cap} \\
+    \midrule
+    Claude Sonnet 4.6 & \path{eu.anthropic.claude-sonnet-4-6} & 8,192 \\
+    Claude Opus 5 & \path{eu.anthropic.claude-opus-5} & 32,768 \\
+    Claude Haiku 4.5 & \path{eu.anthropic.claude-haiku-4-5-20251001-v1:0} & 8,192 \\
+    Amazon Nova Pro & \path{amazon.nova-pro-v1:0} & 5,000 \\
+    DeepSeek V4 Pro & \path{deepseek-v4-pro} & 16,384 \\
+    Ministral 3 8B & \path{mistral.ministral-3-8b-instruct} & 8,000 \\
+    GPT-5.6 Sol & \path{openai.gpt-5.6-sol} & 32,768 \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \noindent\raggedright\emph{Notes:} Output caps are configured tokens per
+  response, not total episode budgets or model maximum capacities.
+  They reproduce the earlier recorded configuration and do not apply
+  uniformly to the later synthesis runs.\par
+  \endgroup
+\end{table}
 
-ROBEL D'Claw, Google Research
-\citep{ahn2020robel,robel2020software} &
-Open research benchmark implementation &
-LEAP tasks 16--18 &
-Direct or adapted joint-pose and fixture-angle criteria. \\
+Table~\ref{tab:appendix-model-pricing} retains the dated rate assumptions
+associated with the benchmark's cost reporting.
+For separately recorded uncached input, cached input and output counts,
+the token-cost calculation is
+\begin{equation}
+  C = \frac{N_{\mathrm{in}}p_{\mathrm{in}}
+        +N_{\mathrm{cache}}p_{\mathrm{cache}}
+        +N_{\mathrm{out}}p_{\mathrm{out}}}{10^6},
+\end{equation}
+where each $p$ is a dollar rate per million tokens and $C$ is in US dollars.
+The input categories must be disjoint to avoid counting cached tokens twice.
+Estimates exclude local computation and do not represent provider invoices.
 
-MyoSuite, MyoHub
-\citep{caggiano2022myosuite,myohub2026myosuite} &
-Open research benchmark implementation &
-LEAP tasks 19--20 &
-Direct or adapted solved-step, drop-event and two-ball criteria. \\
+\begin{table}[H]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Recorded token-price assumptions, in US dollars per million tokens.}
+  \label{tab:appendix-model-pricing}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X
+    >{\raggedleft\arraybackslash}p{26mm}
+    >{\raggedleft\arraybackslash}p{26mm}
+    >{\raggedleft\arraybackslash}p{26mm}@{}}
+    \toprule
+    \textbf{Model} & \textbf{Uncached input} &
+    \textbf{Cached input} & \textbf{Output} \\
+    \midrule
+    Claude Sonnet 4.6 & 3.30 & 0.33 & 16.50 \\
+    Claude Opus 5 & 5.50 & 0.55 & 27.50 \\
+    Claude Haiku 4.5 & 1.10 & 0.11 & 5.50 \\
+    Amazon Nova Pro & 1.13 & -- & 4.52 \\
+    DeepSeek V4 Pro & 0.66 / 1.32 & 0.022 / 0.044 & 1.98 / 3.96 \\
+    Ministral 3 8B & 0.23 & -- & 0.23 \\
+    GPT-5.6 Sol & 4.00 / 8.00 & 0.40 / 0.80 & 20.00 / 30.00 \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \noindent\raggedright\emph{Notes:} A dash denotes an unavailable separate
+  cache rate. DeepSeek values are off-peak / peak; GPT-5.6 Sol values are
+  standard / long-context. The historical reference date is
+  1 September 2026. Rates are retained as recorded assumptions rather
+  than updated to current prices.\par
+  \endgroup
+\end{table}
 
-Lee et al., \emph{Learning Quadrupedal Locomotion over Challenging Terrain}
-(2020) \citep{lee2020quadrupedal} &
-Peer-reviewed locomotion study &
-Go2 T01--T04; Barkour tasks 1--3 &
-Velocity-tracking thresholds are taken from the source command and reported
-heading error; step protocols are adapted to the target morphology. \\
+The Claude rates include the recorded 10\% EU regional premium
+\citep{anthropic2026pricing}. The Nova Pro and Ministral assumptions refer
+to Amazon Bedrock \citep{aws2026bedrockpricing}.
+The exact historical Nova Pro rates could not be independently reconstructed
+from the later public pricing page and remain a cost-estimation assumption.
+The DeepSeek schedule distinguishes off-peak and peak rates
+\citep{deepseek2026pricing,deepseek2026v4pro}.
+For GPT-5.6 Sol, the recorded long-context rates apply to the entire request
+when input exceeds 272,000 tokens \citep{openai2026gpt56sol}.
 
-Miki et al., \emph{Learning Robust Perceptive Locomotion for Quadrupedal
-Robots in the Wild} (2022) \citep{miki2022perceptive} &
-Peer-reviewed locomotion study &
-Go2 T05--T06; Barkour tasks 5--6 &
-The turn-rate threshold is taken from the reported 3 rad/s manoeuvre; the
-mixed-obstacle protocol is adapted. \\
-
-Shi et al., \emph{Terrain-Aware Quadrupedal Locomotion via Reinforcement
-Learning} (2023) \citep{shi2023terrain} &
-Academic preprint/study &
-Go2 T12--T15 &
-Passing thresholds are taken from the reported six-direction policy means. \\
-
-ICRA 2023 Quadruped Robot Challenge, IEEE and NIST
-\citep{jacoff2023quadruped} &
-Competition benchmark &
-Go2 T07--T11 &
-Direct ordered-completion criteria for the five challenge lanes. \\
-
-Barkour, Google DeepMind (2023)
-\citep{caluwaerts2023barkour,yu2024barkourdesign} &
-Industry research benchmark &
-Go2 T16--T20; Barkour tasks 16--20 &
-The obstacle geometry, completion rules and clearance constraints are
-retained; the source 10.64 s allotted score time is used as the local
-full-score passing threshold. \\
-
-ANYmal platform dimensions \citep{hutter2016anymal} &
-Peer-reviewed robot-platform description &
-Go2 and Barkour morphology scaling &
-The reported 0.50 m ANYmal height is used only to derive the recorded
-morphology-scale conversions; it does not supply a task passing threshold. \\
-
-ROBEL D'Kitty, Google Research
-\citep{ahn2020robel,robel2020software} &
-Open research benchmark implementation &
-Barkour tasks 4, 7 and 8 &
-Direct stand, orientation and goal-walk criteria. \\
-
-Safety Gym, OpenAI
-\citep{ray2019safetygym,openai2019safetygym} &
-Industry research benchmark &
-Barkour tasks 9--10; G1 tasks 19--20 &
-Direct criteria for Barkour vB; adapted goal and contact criteria for G1. \\
-
-Gymnasium-Robotics AntMaze, Farama Foundation
-\citep{delazcano2026gymnasiumrobotics} &
-Open benchmark implementation &
-Barkour task 11 &
-Direct U-Maze goal-distance criterion. \\
-
-Robust Robot Walker paper and reference implementation
-\citep{zhu2025robustwalker,zhu2025robustwalkercode} &
-Academic benchmark and open implementation &
-Barkour tasks 12--14 &
-Direct survival-conditioned goal-distance criterion. \\
-
-\path{dm_control} Quadruped Escape, Google DeepMind
-\citep{tunyasuvunakool2020dmcontrol,googledeepmind2025dmcontrol} &
-Industry research benchmark implementation &
-Barkour task 15 &
-Formula-derived workspace and orientation thresholds combined as a stricter
-terminal conjunction. \\
-
-HumanoidBench, UC Berkeley
-\citep{sferrazza2024humanoidbench,sferrazza2025humanoidbenchcode} &
-Academic humanoid benchmark &
-G1 tasks 1--13 &
-Adapted episode-return and terminal geometric criteria. \\
-
-RoboCup Soccer Humanoid League Laws of the Game (2025)
-\citep{robocup2025laws} &
-International competition standard &
-G1 tasks 14--18 &
-Adapted parkour, kicking, obstacle-navigation and long-stride protocols. \\
-\end{longtable}
-
-\noindent\emph{Provenance boundary:} MuJoCo Menagerie, including the pinned
-Barkour vB model \citep{googledeepmind2026barkourvb}, and manufacturer
-documentation provide robot models or morphology information. They are not
-presented as independent sources of task passing thresholds.
-\endgroup
-\end{landscape}
+The selected synthesis-run costs in
+Figure~\ref{fig:chapter4-exp2a-synthesis-traces} use the pricing and token
+accounting recorded with that figure.
+All reported Claude prompt tokens were charged at the uncached input rate
+because the gateway did not provide a cache breakdown.
+DeepSeek estimates used off-peak rates and separately recorded cache reads.
+These assumptions and the selected run identities are retained in
+\path{exp2a_successful_run_turns.json}, under
+\path{expriment/chapter4_synthesis/figures/}.

@@ -1,0 +1,119 @@
+{
+  "kind": "selected_recorded_state_panels",
+  "source_manifest": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/media_thesis/render_manifest.json",
+  "selection": "Required evaluation endpoint or earlier trace termination; first attempts only.",
+  "compact_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/previews/leap_keyframes_20260915/leap_keyframes.png",
+  "cases": [
+    {
+      "case_id": "gym_hand_reach_all_fingertips_central",
+      "task_id": "gym_hand_reach_all_fingertips",
+      "row_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/media_thesis/rows/gym_hand_reach_all_fingertips_central.png",
+      "crop_xyxy": [
+        1920,
+        48,
+        2560,
+        528
+      ],
+      "frame": {
+        "index": 924,
+        "requested_fraction": 1.0,
+        "recorded_time_s": 1.8480000000000014
+      },
+      "source": {
+        "scene_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/scenes/leap_gym_hand_reach_all_fingertips_central.xml",
+        "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/gym_hand_reach_all_fingertips_central/physics_samples.jsonl",
+        "task_report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/gym_hand_reach_all_fingertips_central/task_report.json"
+      },
+      "render_ok": true
+    },
+    {
+      "case_id": "robel_dclaw_pose_fixed_central",
+      "task_id": "robel_dclaw_pose_fixed",
+      "row_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/media_thesis/rows/robel_dclaw_pose_fixed_central.png",
+      "crop_xyxy": [
+        1920,
+        48,
+        2560,
+        528
+      ],
+      "frame": {
+        "index": 1962,
+        "requested_fraction": 1.0,
+        "recorded_time_s": 3.9239999999997894
+      },
+      "source": {
+        "scene_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/scenes/leap_robel_dclaw_pose_fixed_central.xml",
+        "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/robel_dclaw_pose_fixed_central/physics_samples.jsonl",
+        "task_report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/robel_dclaw_pose_fixed_central/task_report.json"
+      },
+      "render_ok": true
+    },
+    {
+      "case_id": "myosuite_object_hold_fixed_central",
+      "task_id": "myosuite_object_hold_fixed",
+      "row_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/media_thesis/rows/myosuite_object_hold_fixed_central.png",
+      "crop_xyxy": [
+        1920,
+        48,
+        2560,
+        528
+      ],
+      "frame": {
+        "index": 396,
+        "requested_fraction": 1.0,
+        "recorded_time_s": 0.7920000000000006
+      },
+      "source": {
+        "scene_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/scenes/leap_myosuite_object_hold_fixed_central.xml",
+        "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/myosuite_object_hold_fixed_central/physics_samples.jsonl",
+        "task_report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/myosuite_object_hold_fixed_central/task_report.json"
+      },
+      "render_ok": true
+    },
+    {
+      "case_id": "gym_hand_manipulate_block_full_pose_central",
+      "task_id": "gym_hand_manipulate_block_full_pose",
+      "row_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/media_thesis/rows/gym_hand_manipulate_block_full_pose_central.png",
+      "crop_xyxy": [
+        1920,
+        48,
+        2560,
+        528
+      ],
+      "frame": {
+        "index": 2000,
+        "requested_fraction": 1.0,
+        "recorded_time_s": 3.999999999999781
+      },
+      "source": {
+        "scene_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/scenes/leap_gym_hand_manipulate_block_full_pose_central.xml",
+        "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/gym_hand_manipulate_block_full_pose_central/physics_samples.jsonl",
+        "task_report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/gym_hand_manipulate_block_full_pose_central/task_report.json"
+      },
+      "render_ok": true
+    },
+    {
+      "case_id": "robel_dclaw_turn_fixed_central",
+      "task_id": "robel_dclaw_turn_fixed",
+      "row_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/media_thesis/rows/robel_dclaw_turn_fixed_central.png",
+      "crop_xyxy": [
+        1920,
+        48,
+        2560,
+        528
+      ],
+      "frame": {
+        "index": 2000,
+        "requested_fraction": 1.0,
+        "recorded_time_s": 3.999999999999781
+      },
+      "source": {
+        "scene_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/scenes/leap_robel_dclaw_turn_fixed_central.xml",
+        "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/robel_dclaw_turn_fixed_central/physics_samples.jsonl",
+        "task_report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/leap_single_20260915_01/tasks_astra/robel_dclaw_turn_fixed_central/task_report.json"
+      },
+      "render_ok": true
+    }
+  ],
+  "errors": []
+}

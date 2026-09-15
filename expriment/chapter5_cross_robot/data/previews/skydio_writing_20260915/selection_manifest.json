@@ -1,0 +1,569 @@
+{
+  "kind": "skydio_writing_media_from_retained_recordings",
+  "source_run": "skydio_single_20260915_01",
+  "source_original_root": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic",
+  "source_retry_root": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915",
+  "generated_by": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/scripts/prepare_skydio_writing_media.py",
+  "model_calls": 0,
+  "new_physics_runs": 0,
+  "source_recordings_modified": false,
+  "overview_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/previews/skydio_writing_20260915/skydio_x2_original_tasks_overview.png",
+  "crop_ltrb_pixels": [
+    35,
+    40,
+    445,
+    305
+  ],
+  "panel_size_pixels": [
+    410,
+    265
+  ],
+  "selection_method": "Read original MP4 frames with imageio/FFmpeg, crop unused margins, resize with Lanczos, and compose with PIL. Each selection stores exact frame index and frame_index/fps video time; panel letters are identifiers only and do not assert task phases.",
+  "original_rows": [
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T01_central/video.mp4",
+      "frame_count": 59,
+      "fps": 30.0,
+      "video_duration_s": 1.9666666666666666,
+      "video_last_frame_time_s": 1.9333333333333333,
+      "simulation_duration_s": 8.899999999999855,
+      "trace_sample_count": 891,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T01",
+      "title": "Ground takeoff → hover",
+      "physical_task_success": true,
+      "execution_ok": true,
+      "task_metrics": [
+        {
+          "check": "task_duration_s",
+          "value": 8.899999999999855,
+          "threshold": [
+            0.0,
+            60.0
+          ],
+          "ok": true
+        },
+        {
+          "check": "ground_contact_samples_before_deadline",
+          "value": 2,
+          "threshold": 1,
+          "ok": true
+        },
+        {
+          "check": "ground_contact_samples_after_deadline",
+          "value": 0,
+          "threshold": 0,
+          "ok": true
+        },
+        {
+          "check": "completed_operation",
+          "value": 1,
+          "threshold": 1,
+          "ok": true
+        },
+        {
+          "check": "terminal_window_covered_s",
+          "value": 1.9999999999999574,
+          "threshold": 2.0,
+          "ok": true
+        },
+        {
+          "check": "terminal_position_error_m",
+          "value": 0.05373844205180655,
+          "threshold": 0.15,
+          "ok": true
+        },
+        {
+          "check": "terminal_translation_speed_m_s",
+          "value": 0.004309001744064834,
+          "threshold": 0.1,
+          "ok": true
+        },
+        {
+          "check": "terminal_body_tilt_deg",
+          "value": 0.00015102143297538912,
+          "threshold": 20.0,
+          "ok": true
+        }
+      ],
+      "frames": [
+        {
+          "panel_label": "(a)",
+          "selection_fraction": 0.0,
+          "video_frame_index_zero_based": 0,
+          "video_time_s": 0.0
+        },
+        {
+          "panel_label": "(b)",
+          "selection_fraction": 0.12,
+          "video_frame_index_zero_based": 7,
+          "video_time_s": 0.23333333333333334
+        },
+        {
+          "panel_label": "(c)",
+          "selection_fraction": 0.3,
+          "video_frame_index_zero_based": 17,
+          "video_time_s": 0.5666666666666667
+        },
+        {
+          "panel_label": "(d)",
+          "selection_fraction": 1.0,
+          "video_frame_index_zero_based": 58,
+          "video_time_s": 1.9333333333333333
+        }
+      ],
+      "selection_note": "Representative normalized positions choose four frames from the original MP4. The image labels show source-video playback time only; no simulation timestamp is inferred from the sparse renderer capture."
+    },
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/video.mp4",
+      "frame_count": 312,
+      "fps": 30.0,
+      "video_duration_s": 10.4,
+      "video_last_frame_time_s": 10.366666666666667,
+      "simulation_duration_s": 49.05999999999881,
+      "trace_sample_count": 4907,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T04",
+      "title": "Climb → transit → return",
+      "physical_task_success": true,
+      "execution_ok": true,
+      "task_metrics": [
+        {
+          "check": "task_duration_s",
+          "value": 49.05999999999881,
+          "threshold": [
+            0.0,
+            60.0
+          ],
+          "ok": true
+        },
+        {
+          "check": "initial_home_separation_m",
+          "value": 3.0,
+          "threshold": 0.2,
+          "ok": true
+        },
+        {
+          "check": "first_transit_altitude_m",
+          "value": 1.904583517645269,
+          "threshold": 1.9,
+          "ok": true
+        },
+        {
+          "check": "horizontal_progress_before_transit_m",
+          "value": 0.0009004722472382476,
+          "threshold": 0.3,
+          "ok": true
+        },
+        {
+          "check": "high_altitude_corridor_to_home",
+          "value": true,
+          "threshold": true,
+          "ok": true
+        },
+        {
+          "check": "descent_after_home_entry",
+          "value": true,
+          "threshold": true,
+          "ok": true
+        },
+        {
+          "check": "completed_operation",
+          "value": 1,
+          "threshold": 1,
+          "ok": true
+        },
+        {
+          "check": "terminal_window_covered_s",
+          "value": 1.999999999999602,
+          "threshold": 2.0,
+          "ok": true
+        },
+        {
+          "check": "terminal_position_error_m",
+          "value": 0.007966306937612277,
+          "threshold": 0.15,
+          "ok": true
+        },
+        {
+          "check": "terminal_translation_speed_m_s",
+          "value": 0.0006387784274628142,
+          "threshold": 0.1,
+          "ok": true
+        },
+        {
+          "check": "terminal_body_tilt_deg",
+          "value": 1.7075472925031877e-06,
+          "threshold": 20.0,
+          "ok": true
+        },
+        {
+          "check": "forbidden_contact_samples",
+          "value": 0,
+          "threshold": 0,
+          "ok": true
+        }
+      ],
+      "frames": [
+        {
+          "panel_label": "(a)",
+          "selection_fraction": 0.0,
+          "video_frame_index_zero_based": 0,
+          "video_time_s": 0.0
+        },
+        {
+          "panel_label": "(b)",
+          "selection_fraction": 0.12,
+          "video_frame_index_zero_based": 37,
+          "video_time_s": 1.2333333333333334
+        },
+        {
+          "panel_label": "(c)",
+          "selection_fraction": 0.25,
+          "video_frame_index_zero_based": 78,
+          "video_time_s": 2.6
+        },
+        {
+          "panel_label": "(d)",
+          "selection_fraction": 1.0,
+          "video_frame_index_zero_based": 311,
+          "video_time_s": 10.366666666666667
+        }
+      ],
+      "selection_note": "Representative normalized positions choose four frames from the original MP4. The image labels show source-video playback time only; no simulation timestamp is inferred from the sparse renderer capture."
+    },
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/video.mp4",
+      "frame_count": 177,
+      "fps": 30.0,
+      "video_duration_s": 5.9,
+      "video_last_frame_time_s": 5.866666666666666,
+      "simulation_duration_s": 26.830000000001395,
+      "trace_sample_count": 2684,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T05",
+      "title": "Ordered waypoints",
+      "physical_task_success": true,
+      "execution_ok": true,
+      "task_metrics": [
+        {
+          "check": "task_duration_s",
+          "value": 26.830000000001395,
+          "threshold": [
+            0.0,
+            60.0
+          ],
+          "ok": true
+        },
+        {
+          "check": "ordered_waypoint_visits",
+          "value": 4,
+          "threshold": 4,
+          "ok": true,
+          "waypoint_hold_s": 0.5
+        },
+        {
+          "check": "waypoint_1_dwell_s",
+          "value": 0.5000000000000004,
+          "threshold": 0.5,
+          "ok": true
+        },
+        {
+          "check": "waypoint_2_dwell_s",
+          "value": 0.49999999999998934,
+          "threshold": 0.5,
+          "ok": true
+        },
+        {
+          "check": "waypoint_3_dwell_s",
+          "value": 0.49999999999998934,
+          "threshold": 0.5,
+          "ok": true
+        },
+        {
+          "check": "waypoint_4_dwell_s",
+          "value": 0.5000000000000782,
+          "threshold": 0.5,
+          "ok": true
+        },
+        {
+          "check": "terminal_window_covered_s",
+          "value": 2.0000000000003126,
+          "threshold": 2.0,
+          "ok": true
+        },
+        {
+          "check": "terminal_position_error_m",
+          "value": 0.005683977960362911,
+          "threshold": 0.15,
+          "ok": true
+        },
+        {
+          "check": "terminal_translation_speed_m_s",
+          "value": 0.002748683463756947,
+          "threshold": 0.1,
+          "ok": true
+        },
+        {
+          "check": "terminal_body_tilt_deg",
+          "value": 0.03344290452199035,
+          "threshold": 20.0,
+          "ok": true
+        },
+        {
+          "check": "forbidden_contact_samples",
+          "value": 0,
+          "threshold": 0,
+          "ok": true
+        }
+      ],
+      "frames": [
+        {
+          "panel_label": "(a)",
+          "selection_fraction": 0.0,
+          "video_frame_index_zero_based": 0,
+          "video_time_s": 0.0
+        },
+        {
+          "panel_label": "(b)",
+          "selection_fraction": 0.3,
+          "video_frame_index_zero_based": 53,
+          "video_time_s": 1.7666666666666666
+        },
+        {
+          "panel_label": "(c)",
+          "selection_fraction": 0.55,
+          "video_frame_index_zero_based": 97,
+          "video_time_s": 3.2333333333333334
+        },
+        {
+          "panel_label": "(d)",
+          "selection_fraction": 1.0,
+          "video_frame_index_zero_based": 176,
+          "video_time_s": 5.866666666666666
+        }
+      ],
+      "selection_note": "Representative normalized positions choose four frames from the original MP4. The image labels show source-video playback time only; no simulation timestamp is inferred from the sparse renderer capture."
+    },
+    {
+      "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central",
+      "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/task_report.json",
+      "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/physics_samples.jsonl",
+      "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/video.mp4",
+      "frame_count": 449,
+      "fps": 30.0,
+      "video_duration_s": 14.966666666666667,
+      "video_last_frame_time_s": 14.933333333333334,
+      "simulation_duration_s": 68.92999999999836,
+      "trace_sample_count": 6894,
+      "video_size": [
+        480,
+        368
+      ],
+      "task_id": "X2-T07",
+      "title": "Original orbit (first attempt)",
+      "physical_task_success": false,
+      "execution_ok": true,
+      "task_metrics": [
+        {
+          "check": "task_duration_s",
+          "value": 68.92999999999836,
+          "threshold": [
+            0.0,
+            60.0
+          ],
+          "ok": false
+        },
+        {
+          "check": "signed_orbit_progress_rad",
+          "value": 6.282357770914734,
+          "threshold": 6.283185307179586,
+          "ok": false
+        },
+        {
+          "check": "maximum_orbit_radius_error_m",
+          "value": 0.06021099395053997,
+          "threshold": 0.2,
+          "ok": true
+        },
+        {
+          "check": "maximum_orbit_height_error_m",
+          "value": 0.012037799212312406,
+          "threshold": 0.15,
+          "ok": true
+        },
+        {
+          "check": "orbit_bearing_rmse_deg",
+          "value": 10.542374737684462,
+          "threshold": 12.0,
+          "ok": true
+        },
+        {
+          "check": "terminal_window_covered_s",
+          "value": 2.000000000001023,
+          "threshold": 2.0,
+          "ok": true
+        },
+        {
+          "check": "terminal_body_tilt_deg",
+          "value": 1.3652044812039852,
+          "threshold": 20.0,
+          "ok": true
+        },
+        {
+          "check": "forbidden_contact_samples",
+          "value": 0,
+          "threshold": 0,
+          "ok": true
+        }
+      ],
+      "frames": [
+        {
+          "panel_label": "(a)",
+          "selection_fraction": 0.0,
+          "video_frame_index_zero_based": 0,
+          "video_time_s": 0.0
+        },
+        {
+          "panel_label": "(b)",
+          "selection_fraction": 0.22,
+          "video_frame_index_zero_based": 99,
+          "video_time_s": 3.3
+        },
+        {
+          "panel_label": "(c)",
+          "selection_fraction": 0.55,
+          "video_frame_index_zero_based": 246,
+          "video_time_s": 8.2
+        },
+        {
+          "panel_label": "(d)",
+          "selection_fraction": 1.0,
+          "video_frame_index_zero_based": 448,
+          "video_time_s": 14.933333333333334
+        }
+      ],
+      "selection_note": "Representative normalized positions choose four frames from the original MP4. The image labels show source-video playback time only; no simulation timestamp is inferred from the sparse renderer capture."
+    }
+  ],
+  "clarified_retry": {
+    "task_dir": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central",
+    "report_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/task_report.json",
+    "trace_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/physics_samples.jsonl",
+    "video_path": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/runs/skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/video.mp4",
+    "frame_count": 211,
+    "fps": 30.0,
+    "video_duration_s": 7.033333333333333,
+    "video_last_frame_time_s": 7.0,
+    "simulation_duration_s": 30.810000000002017,
+    "trace_sample_count": 3082,
+    "video_size": [
+      480,
+      368
+    ],
+    "task_id": "X2-T07 retry",
+    "title": "Clarified orbit retry",
+    "physical_task_success": false,
+    "execution_ok": true,
+    "task_metrics": [
+      {
+        "check": "task_duration_s",
+        "value": 30.810000000002017,
+        "threshold": [
+          0.0,
+          60.0
+        ],
+        "ok": true
+      },
+      {
+        "check": "signed_orbit_progress_rad",
+        "value": 6.303974834298968,
+        "threshold": 6.283185307179586,
+        "ok": true
+      },
+      {
+        "check": "maximum_orbit_radius_error_m",
+        "value": 0.057943085101934244,
+        "threshold": 0.2,
+        "ok": true
+      },
+      {
+        "check": "maximum_orbit_height_error_m",
+        "value": 0.0120377992660472,
+        "threshold": 0.15,
+        "ok": true
+      },
+      {
+        "check": "orbit_bearing_rmse_deg",
+        "value": 13.745809542908995,
+        "threshold": 12.0,
+        "ok": false
+      },
+      {
+        "check": "terminal_window_covered_s",
+        "value": 2.0000000000003126,
+        "threshold": 2.0,
+        "ok": true
+      },
+      {
+        "check": "terminal_body_tilt_deg",
+        "value": 18.831649087521075,
+        "threshold": 20.0,
+        "ok": true
+      },
+      {
+        "check": "forbidden_contact_samples",
+        "value": 0,
+        "threshold": 0,
+        "ok": true
+      }
+    ],
+    "frames": [
+      {
+        "panel_label": "(a)",
+        "selection_fraction": 0.0,
+        "video_frame_index_zero_based": 0,
+        "video_time_s": 0.0
+      },
+      {
+        "panel_label": "(b)",
+        "selection_fraction": 0.23,
+        "video_frame_index_zero_based": 48,
+        "video_time_s": 1.6
+      },
+      {
+        "panel_label": "(c)",
+        "selection_fraction": 0.68,
+        "video_frame_index_zero_based": 143,
+        "video_time_s": 4.766666666666667
+      },
+      {
+        "panel_label": "(d)",
+        "selection_fraction": 1.0,
+        "video_frame_index_zero_based": 210,
+        "video_time_s": 7.0
+      }
+    ],
+    "selection_note": "Representative normalized positions choose four frames from the original MP4. The image labels show source-video playback time only; no simulation timestamp is inferred from the sparse renderer capture."
+  },
+  "clarified_retry_png": "/Users/wangyifan/Projects/auto_adapter2.0/expriment/chapter5_cross_robot/data/previews/skydio_writing_20260915/skydio_x2_clarified_orbit_retry.png",
+  "audit_note": "The four-row overview uses only the first retained task attempt for T01, T04, T05 and T07. The retry is separate and explicitly labelled; neither frame time is presented as an inferred exact simulation time."
+}

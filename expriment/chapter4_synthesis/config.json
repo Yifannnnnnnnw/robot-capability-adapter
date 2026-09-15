@@ -1,0 +1,29 @@
+{
+  "experiment": "Chapter 4 Experiment 2a: capability design and driver synthesis",
+  "robots": [
+    {"id": "so101", "catalog_id": "menagerie_so101", "label": "SO-101"},
+    {"id": "go2", "catalog_id": "go2", "label": "Unitree Go2"}
+  ],
+  "models": [
+    {"id": "sonnet46", "label": "Claude Sonnet 4.6", "model_id": "eu.anthropic.claude-sonnet-4-6"},
+    {"id": "opus5", "label": "Claude Opus 5", "model_id": "eu.anthropic.claude-opus-5"},
+    {"id": "haiku45", "label": "Claude Haiku 4.5", "model_id": "eu.anthropic.claude-haiku-4-5-20251001-v1:0"},
+    {"id": "nova_pro", "label": "Amazon Nova Pro", "model_id": "amazon.nova-pro-v1:0"},
+    {"id": "deepseek_v4_pro", "label": "DeepSeek V4 Pro", "model_id": "deepseek-v4-pro", "provider": "deepseek"},
+    {"id": "ministral_3_8b", "label": "Ministral 3 8B", "model_id": "mistral.ministral-3-8b-instruct"},
+    {"id": "gpt56_sol", "label": "GPT-5.6 Sol", "model_id": "openai.gpt-5.6-sol"}
+  ],
+  "replicates": 3,
+  "generation": {
+    "model_provider": "holistic",
+    "aws_region": "eu-west-2",
+    "max_tokens_per_turn": 8000,
+    "max_iters_study": 16,
+    "max_iters_capability_design": 30,
+    "max_iters_generate": 22,
+    "max_repairs": 2
+  },
+  "trial_timeout_seconds": 7200,
+  "sampling_note": "Send temperature=0.0 with no explicit reasoning effort. DeepSeek uses its official Anthropic-compatible API with default thinking enabled; temperature is ignored in that mode. Other models use the maintained Holistic client. See README.md for endpoint diagnostics.",
+  "budget_note": "The user approved restarting with AA1's restored 8000-token response cap on 2026-09-14. The earlier 5000-token batch stopped after repeated truncated Design writes and remains separately preserved. This caps one response, not total trial tokens."
+}

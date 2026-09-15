@@ -57,7 +57,9 @@ RETIRED_METHOD_NAMES = {
 def test_demo_inputs_cover_the_twenty_two_robots() -> None:
     assert set(DEMOS) == ROBOT_IDS
     for robot_id, demo in DEMOS.items():
-        assert set(demo) == {"task", "scene", "initial_state", "parameters"}
+        assert set(demo) == {"task", "scene", "initial_state", "parameters", "success"}
+        assert demo["success"]["type"]
+        assert demo["success"]["bindings"]
         assert demo["scene"] == EXPECTED_SCENE_PATHS[robot_id]
         assert demo["task"].strip()
         assert isinstance(demo["parameters"], dict)
@@ -85,7 +87,7 @@ def test_arm_demos_do_not_request_an_extra_hold_but_aloha_keeps_its_hold() -> No
 
 
 @pytest.mark.parametrize("robot_id", sorted(ROBOT_IDS))
-def test_demo_initial_state_loads_in_the_selected_scene(robot_id: str) -> None:
+def test_demo_initial_state_loads_in_the_selected_scene(robot_id: str, tmp_path) -> None:
     demo = DEMOS[robot_id]
     scene = AA1_ROOT / demo["scene"]
     assert scene.is_file()
@@ -105,6 +107,13 @@ def test_demo_initial_state_loads_in_the_selected_scene(robot_id: str) -> None:
         np.testing.assert_allclose(
             data.qpos[address + 3:address + 7], quaternion / np.linalg.norm(quaternion)
         )
+
+    from auto_adapter.demo_trace import DemoTrace
+    trace = DemoTrace(model, data, demo["success"]["bindings"], tmp_path / "physics.jsonl")
+    report = trace.close()
+    assert report["error"] is None, (robot_id, report)
+    sample = json.loads(Path(report["path"]).read_text())
+    assert set(sample["state"]) == set(demo["success"]["bindings"])
 
 
 @pytest.mark.parametrize(

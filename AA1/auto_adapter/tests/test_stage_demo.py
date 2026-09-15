@@ -106,7 +106,10 @@ def test_design_routes_share_export_and_optional_demo(
 
 
 @pytest.mark.parametrize("scratch", [False, True])
-def test_demo_phase_passes_current_design_and_cases_to_bridge(tmp_path, monkeypatch, scratch):
+@pytest.mark.parametrize("physical_success", [False, True])
+def test_demo_phase_passes_current_design_and_cases_to_bridge(
+    tmp_path, monkeypatch, scratch, physical_success,
+):
     from auto_adapter.agent import recap
 
     scene = tmp_path / "scene.xml"
@@ -118,14 +121,25 @@ def test_demo_phase_passes_current_design_and_cases_to_bridge(tmp_path, monkeypa
     runner.scene_cases_path = tmp_path / "current_cases.yaml"
     runner.cfg.demo_config_path = tmp_path / "demo.yaml"
     captured = {}
+    evaluation = tmp_path / "task_evaluation.json"
+    evaluation.write_text("{}")
+    samples = tmp_path / "physics_samples.jsonl"
+    samples.write_text("{}\n")
 
     def demo(**kwargs):
         captured.update(kwargs)
-        return {"ok": True, "duration_sec": 0.1, "controller_result": {"status": "CONTROLLER_FINISHED"}}
+        return {"ok": physical_success, "execution_ok": True,
+                "physical_task_success": physical_success, "duration_sec": 0.1,
+                "evaluation_path": str(evaluation), "physics_samples_path": str(samples),
+                "controller_result": {"status": "CONTROLLER_FINISHED"}}
 
     monkeypatch.setattr(recap, "run_configured_demo", demo, raising=False)
     result = runner.phase_demo() if scratch else runner._phase_demo()
-    assert result.ok
+    assert result.ok is physical_success
+    assert f"physical_task_success={physical_success}" in result.final_text
+    assert evaluation in result.artifact_paths and samples in result.artifact_paths
+    if not physical_success:
+        assert "criteria failed" in result.error
     assert captured["capability_design"] is runner.capability_design
     assert captured["scene_cases_path"] == runner.scene_cases_path
     assert captured["demo_config_path"] == runner.cfg.demo_config_path

@@ -6,8 +6,6 @@ The objective of this chapter is to establish the background and literature
 context for this thesis. The chapter begins by reviewing embodied AI and
 robotics. It then examines LLM agents and robot software and draws together the
 literature relevant to robot-specific software synthesis and validation.
-Finally, it identifies the research gap addressed by the thesis and provides
-the foundation for the Auto-Adapter framework presented in the next chapter.
 \end{quote}
 
 Embodied and generalist robot intelligence seeks not only to interpret a task,
@@ -33,8 +31,8 @@ either a new capability or the robot-specific driver that implements it. A
 capability is treated as a bounded and reusable unit of functionality, rather
 than as a complete task-level skill. Finally, successful execution in
 simulation is interpreted as evidence about the simulated system and not as
-evidence of hardware performance. Section~1 establishes the embodied,
-control, interface, and morphology context, whereas Section~2 examines
+evidence of hardware performance. Section~\ref{sec:embodied-ai-robotics} establishes the embodied,
+control, interface, and morphology context, whereas Section~\ref{sec:llm-agents-robot-software} examines
 LLM-based robot programming, software synthesis, and behavioural validation.
 
 \section{Embodied AI and Robotics}
@@ -127,12 +125,10 @@ explicit semantic subgoal selection above low-level action generation
 \citep{shi2025hirobot,hu2026orchestrating}.
 
 The robot capability interface sits at the delegation boundary between these
-functions. Auto-Adapter
-separately evaluates how high-level controllers use capabilities exposed at
-different granularities, and how different LLMs synthesise the robot-specific
-drivers that realise motion-control capabilities under matched experimental
-conditions. The following two subsections examine these high- and low-level
-problems separately.
+functions. AutoAdapter-Bench examines the production of this software layer
+separately from its use by a high-level controller. The following subsections
+establish the planning and interface concepts needed to distinguish these two
+roles.
 
 \subsection{Generalist Robot Intelligence}
 \label{sec:generalist-robot-intelligence}
@@ -163,18 +159,17 @@ execution diverge
 rana2023sayplan,guo2024doremi}. Their behaviour therefore depends on feedback
 projection, tool contracts, monitoring, and memory---not only on the backbone.
 
-Other methods constrain the output structurally. ProgPrompt produces
-Python-like task programs with allowed actions, assertions, and recovery
-branches. LLM-as-BT-Planner generates behaviour trees directly: its
-prompt-based route can compare backbones under a fixed grammar and parser,
-whereas its fine-tuned route fixes a checkpoint. Code-BT instead generates
-constrained code and converts its abstract syntax tree into a behaviour tree
+Structured programs make control flow explicit. ProgPrompt organises supplied
+action calls into programs with assertions, while LLM-as-BT-Planner generates
+behaviour trees and Code-BT converts constrained code into them
 \citep{singh2023progprompt,ao2025llmbtplanner,zhang2025codebt}.
-In symbolic hybrids, LLM+P and AutoTAMP translate language into formal
-specifications for classical solvers. HBTP uses the LLM as a heuristic for
-fixed behaviour-tree expansion, while UHBTP replaces it with a classical
-domain-independent heuristic
-\citep{liu2023llmplusp,chen2024autotamp,cai2025hbtp,chen2025btpg}.
+These approaches organise an existing action or API vocabulary.
+LLM+P and AutoTAMP instead translate language into formal planning inputs for
+external solvers \citep{liu2023llmplusp,chen2024autotamp}.
+Their results depend on the supplied planning models and the translated task
+specification. HBTP uses LLM reasoning to guide behaviour-tree search, while
+UHBTP replaces its heuristic with a classical, domain-independent alternative
+\citep{cai2025hbtp,chen2025btpg}.
 
 Across these families, the LLM acts as a generator, scorer, feedback
 controller, translator, or heuristic. Yet all begin with executable operations
@@ -205,10 +200,9 @@ operation.
 
 Execution instead depends on software that connects task-level requests to
 the control facilities of one robot, and current systems place this connection
-in different artefact types. \citet{tripathi2026testdriven} generate a
-standalone Python controller for a Webots navigation task. ROS~2 instead separates controllers
-from dynamically loaded hardware components, while SkiROS2 composes executable
-skill implementations above ROS
+in different artefact types. Within ROS~2, \texttt{ros2\_control} separates
+controllers from dynamically loaded hardware components, while SkiROS2 composes
+executable skill implementations above ROS
 \citep{macenski2022ros2,ros2control2026hardware,mayr2023skiros2}.
 LeRobot takes a more compact route by defining a Python \texttt{Robot} class
 that exchanges actions and observations through a motor bus or manufacturer
@@ -216,27 +210,14 @@ interface \citep{lerobot2026hardware}. These systems expose different software
 boundaries, but each connects an operation understood by higher-level software
 to a robot-specific means of execution.
 
-The Model Hardware Standard (MHS), whose development began as a collaboration
-between Anthropic and the HHMI Janelia Research Campus, extends this interface
-problem to AI agents operating physical equipment \citep{anthropic2026mhs}. It
-proposes a model-agnostic device layer whose standardised drivers expose
-discoverable states and procedures through common \texttt{read} and
-\texttt{write} operations. Device descriptions record physical characteristics
-and the safety limits that the interface is intended to enforce. Agents may
-access this surface through the Model Context Protocol, command-line tools, or
-code interfaces.
-
-MHS shares Auto-Adapter's aim of reducing bespoke integrations, but assigns a
-different role to the driver. The term \emph{MHS driver} denotes the
-device-integration component, whereas \emph{robot-specific driver} in this
-thesis denotes the generated, application-level implementation of a robot
-capability interface. The public MHS description emphasises standardised device
-exposure and orchestration, but does not specify a general,
-candidate-independent validation protocol comparable to the trusted Harness
-used in this thesis. The approaches therefore address the same integration
-boundary at different, potentially composable layers. Since MHS remains a
-limited research preview ahead of a planned open-source release, this thesis
-treats it as an emerging interface proposal rather than an evaluated baseline
+The Model Hardware Standard (MHS) proposes a common device interface for AI
+agents, developed initially by Anthropic and the HHMI Janelia Research Campus.
+Its drivers expose device operations and descriptions through standard access
+mechanisms. MHS addresses how equipment is made discoverable and callable;
+Auto-Adapter addresses the generation of robot-specific capability
+implementations. These roles may be complementary. The cited research preview
+motivates standardised integration, but does not provide a directly comparable
+evaluation of driver synthesis
 \citep{anthropic2026mhs}.
 
 Auto-Adapter places this connection in one generated Python robot-specific
@@ -254,16 +235,14 @@ to the high-level controller, but requires the driver to realise more movement
 and recovery behind one call. A fine-grained operation permits more
 recomposition, but asks the high-level controller to coordinate more steps and
 respond to intermediate feedback; neither allocation is uniformly preferable
-\citep{zech2019action,pantano2022capabilitysurvey}. AutoAdapter-Bench therefore
-compares capability-interface use across declared granularities under matched
-task and execution conditions, and separately compares LLM backbones in
-synthesising drivers for low-level motion-control capabilities. The execution
-principle applies in simulation and on physical robots, whether the driver
-reaches the robot through a simulator API, middleware, or a manufacturer
-interface. Under either route, an accepted call shows that the software
-exchange completed; successful behaviour requires an observed change in the
-robot or environment. Auto-Adapter therefore reports capability-interface use
-and driver synthesis as separate outcomes.
+\citep{zech2019action,pantano2022capabilitysurvey}.
+
+AutoAdapter-Bench compares driver synthesis under a fixed
+capability interface and common behavioural tests for each robot. Models
+generate and revise the implementation against these shared requirements. The
+separate driver-use experiment compares task performance through the same
+validated driver, with the ReCAP planning procedure and task conditions held
+constant across models.
 
 \section{LLM Agents and Robot Software}
 \label{sec:llm-agents-robot-software}
@@ -274,12 +253,11 @@ and driver synthesis as separate outcomes.
 LLM robot programming refers here to using an LLM to generate a program that
 organises robot behaviour. A separate system executes the program, which
 distinguishes this approach from policies that predict continuous actions
-directly from observations. Early methods primarily used program structure to
-constrain task planning. SayCan selects among pre-trained skills, whereas
+directly from observations. Related planning methods ground language
+instructions in supplied robot operations. SayCan selects among pre-trained skills, whereas
 ProgPrompt completes Python-like task functions using supplied actions and
-assertions \citep{ahn2022saycan,singh2023progprompt}. These methods move LLM
-output towards executable programs, but the robot operations themselves remain
-pre-implemented.
+assertions \citep{ahn2022saycan,singh2023progprompt}. Both rely on
+pre-implemented robot operations.
 
 Code as Policies extends code generation from task sequencing to policy logic.
 Its generated Python can contain branches, loops, and helper functions. The
@@ -327,23 +305,24 @@ coding method.
 ReAct alternates reasoning and action so observations can revise later steps
 \citep{yao2023react}. CodeAct makes executable code the agent's action
 \citep{wang2024codeact}. Auto-Adapter adopts a bounded version of this process.
-The agent studies public robot material before producing a driver. MuJoCo probes
-expose faults for repair. Public feedback supports development, not behavioural
-correctness.
+The agent studies public robot material before producing a driver.
+Public simulation feedback can reveal behavioural
+faults and guide driver repair. Acceptance requires evaluation against fixed
+criteria using observations outside the candidate's control.
 
-Initial structure also changes synthesis. Program sketching shows how a partial
-program expresses strategy while synthesis fills omissions
-\citep{solarlezama2013sketching}. This principle motivates comparing
-\texttt{skeleton-assisted} with \texttt{from-scratch}; it does not presume a
-benefit. Auto-Adapter fixes the task and interaction budget between conditions.
-Both receive the same public feedback.
+Program sketching uses a partial program to express an implementation strategy
+while synthesis fills the missing parts \citep{solarlezama2013sketching}. A
+controller skeleton similarly supplies structure and control knowledge for
+LLM-based driver synthesis. AutoAdapter-Bench provides a robot-specific skeleton
+across the models evaluated on that robot. This supplied implementation must be
+considered when interpreting model performance.
 
 Feedback has two roles. Reflexion guides later attempts through verbal
 reflection, whereas ExpeL extracts reusable knowledge across tasks
-\citep{shinn2023reflexion,zhao2024expel}. Repair changes only the current driver.
-Evolution can inform only a later matched run. This boundary prevents
-accumulated experience from altering the current verdict. Coding-agent methods
-thus define the generation procedure; the next subsection defines its output.
+\citep{shinn2023reflexion,zhao2024expel}. Within Auto-Adapter, validation
+diagnostics guide revisions to the current driver while its capability
+definitions and acceptance criteria remain unchanged. This use of feedback
+concerns repair within a run.
 
 \subsection{Tool and Driver Synthesis}
 \label{sec:tool-driver-synthesis}
@@ -354,50 +333,73 @@ resulting tool takes the form of a robot driver. Language to Rewards uses an
 LLM to specify reward parameters and optimises actions online with MuJoCo
 model-predictive control \citep{yu2023language2reward}. Eureka instead improves
 reward code through simulation feedback and uses reinforcement learning to
-train control policies \citep{ma2024eureka}. LLMCap2Skill moves
-closer to software implementation. It retrieves relevant ROS~2 interfaces from
-a capability description and generates an executable skill
-\citep{vieira2025cap2skill}. Its more complex cases still require manual
-correction. Code generation therefore does not remove integration risk.
+train control policies \citep{ma2024eureka}.
 
-Research outside robotics places greater emphasis on tool reuse. LATM separates
+LLMCap2Skill generates skills from capability descriptions, user-written
+behavioural specifications and retrieved ROS~2 interfaces. Through pySkillUp,
+it produces skill interfaces and state machines. Its Gazebo evaluation examines
+execution and agreement with the specification, including required manual
+corrections. It therefore combines supplied specifications with generated
+implementations \citep{vieira2025cap2skill}.
+
+Tripathi et al.\ generate navigation controllers from task specifications and
+environment information. Structured tests provide diagnostics for revising
+prompts or controller code. Their Webots evaluation addresses tested navigation
+behaviour \citep{tripathi2026testdriven}.
+
+CaP-X evaluates manipulation programs across primitive abstraction levels and
+feedback conditions, while CaP-Agent0 extracts reusable functions from
+successful executions. These programs compose supplied perception and control
+services \citep{fu2026capx}.
+
+Tool reuse is also studied outside robotics. LATM separates
 tool creation from tool use. It also stores generated Python functions for later
 tasks \citep{cai2023latm}. CREATOR first produces a tool description and
 implementation, then applies the tool to a target problem
 \citep{qian2023creator}. Voyager revises programs after execution failures and
 retains successful code in a reusable skill library \citep{wang2023voyager}.
 
-These studies suggest three principles for Auto-Adapter. Generated drivers
-should be reusable. Synthesis should be separated from later invocation.
-Execution feedback should guide revision. However, these systems produce
-different artefacts and use different evaluation procedures. Their reported
-success rates are therefore not directly comparable.
+These studies support software reuse and revision through execution feedback,
+but differ in the software supplied to the generator and the artefact being
+evaluated. A generated reward, task program, reusable function and robot driver
+impose different implementation requirements. Comparisons must therefore
+account for the supplied control software and behavioural specification, as
+well as the observations and criteria used to judge execution.
 
 \subsection{Oracles and Validation}
 \label{sec:oracles-validation}
 
-Validation requires an observation source and a pass rule. Earlier assurance
-work for hand-written robot software used developer-authored oracles. ROSRV
-monitored live ROS messages and blocked a command unless a declared safety
-property held. In one case, the turret angle had to exceed \(-0.45\) rad before
-firing \citep{huang2014rosrv}. The threshold came from the application
-specification, not from the monitor. HAROS extracts software models for model
-checking \citep{santos2021haros}. SOTER instead switches to a certified
-controller before a declared safety invariant can be violated
-\citep{desai2019soter}.
+A test oracle determines whether observed behaviour satisfies an expected
+outcome. Robot assurance methods differ in how that expectation is specified
+and what evidence is available to check it. ROSRV monitors developer-specified
+properties over ROS messages and can intercept and modify commands to enforce
+them \citep{huang2014rosrv}. HAROS checks user-specified properties against
+models extracted from source code and deployment configurations; its analysis
+depends on the extracted model and assumptions about node behaviour
+\citep{santos2021haros}. SOTER instead monitors system state and switches to a
+certified controller when required by its runtime-assurance logic. Its safety
+guarantee depends on satisfying the framework's stated conditions
+\citep{desai2019soter}. These approaches provide different forms of assurance,
+bounded by the properties, models and observations they use.
 
-Robot benchmarks later made these rules task-specific. RoboEval uses symbolic
-simulation. It checks generated action traces against temporal conditions across
-several initial states \citep{hu2024codebotler}. This tests action order, but not
-physical dynamics. ROBEL instead evaluates simulated or hardware trajectories.
-Its D'Claw pose task requires a mean joint error below \(10^\circ\). A safety
-pass also requires no position, velocity, or current-limit violations
-\citep{ahn2020robel}. LLMCap2Skill executes generated ROS~2 skills in Gazebo,
-then assesses behaviour against a manually written skill specification
-\citep{vieira2025cap2skill}.
+Robot benchmarks make the evaluation target explicit at the task level.
+RoboEval checks generated programs against temporal conditions using traces
+from a symbolic simulator across multiple initial states
+\citep{hu2024codebotler}. This assesses program logic within the symbolic
+model, without establishing physical execution accuracy. ROBEL evaluates
+trajectories in simulation or on hardware. Its D'Claw pose task uses a
+time-averaged absolute joint error below \(10^\circ\), while separate safety
+measures record position, velocity and current violations
+\citep{ahn2020robel}. LLMCap2Skill evaluates generated skills in Gazebo against
+user-written behavioural specifications, including the manual changes required
+to obtain the intended behaviour \citep{vieira2025cap2skill}. These evaluations
+differ in both the behaviour observed and the role of human judgement.
 
-Auto-Adapter combines source-grounded rules with physics-grounded observations.
-The IVC audits task-derived metrics and thresholds before synthesis. A trusted
-Harness then evaluates private MuJoCo states and trajectories. Candidate reports
-cannot determine the verdict. This establishes simulated capability behaviour,
-not hardware safety.
+For generated robot software, the evaluator's independence is a further
+consideration. The candidate implementation should not determine the
+measurements or acceptance criteria used to judge it. Diagnostic results can
+still guide repair while those criteria remain unchanged. Independence alone
+cannot establish that a specification is appropriate or that its tests cover
+the intended capability. A passing result therefore supports only the behaviour
+examined under the stated conditions; simulation results do not establish
+hardware performance or safety.

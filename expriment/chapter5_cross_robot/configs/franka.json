@@ -1,0 +1,67 @@
+{
+  "experiment": "Experiment 3: Cross-Robot Evaluation (Chapter 5)",
+  "model": {"name": "Claude Opus 5", "id": "eu.anthropic.claude-opus-5", "provider": "holistic", "region": "eu-west-2"},
+  "robots": [
+    {"id": "franka", "name": "Franka Panda", "morphology": "fixed-base arm"}
+  ],
+  "replicates": 1,
+  "stop_after": "export",
+  "generation": {
+    "max_tokens_per_turn": 8000,
+    "max_iters_study": 16,
+    "max_iters_capability_design": 30,
+    "max_iters_generate": 22,
+    "max_outer_gen_val_iters": 4
+  },
+  "trial_timeout_seconds": 7200,
+  "task_input": "Franka Panda's complete maintained public task library (20 entries).",
+  "request_settings": "The maintained Holistic ReAct client sends temperature=0 and does not set reasoning effort. Gateway support must be checked before the batch.",
+  "scope": "The initial Franka case uses one generation run through validation and export. Downstream task scenes and physical scoring are prepared separately before task execution. The wider six-robot thesis cohort is unchanged.",
+  "budget_note": "The user authorised this single-generation case and its task experiment on 2026-09-14. The response limit is not a total trial token budget.",
+  "downstream_plan": {
+    "model": "eu.anthropic.claude-opus-5",
+    "executions_per_task_condition": 1,
+    "conditions": [
+      {"id": "central", "task_layout_translation_world_m": [0.0, 0.0, 0.0]},
+      {"id": "left", "task_layout_translation_world_m": [0.0, 0.05, 0.0]},
+      {"id": "right", "task_layout_translation_world_m": [0.0, -0.05, 0.0]}
+    ],
+    "condition_rule": "Translate each task's fixtures, object starts and targets together; keep the robot base fixed. These proposed offsets require reachability/contact checks when the scenes are built.",
+    "task_library": "AA1/auto_adapter/task_libraries/franka_panda/1.0.0/catalog.json",
+    "tasks": [
+      {
+        "id": "mw_reach_target", "name": "Reaching",
+        "metric": "end_effector_target_distance", "comparator": "<=", "threshold_m": 0.05,
+        "observation": "Terminal world-frame hand-body position relative to the target.",
+        "scene_preparation": "Add a fixed target to the canonical Panda scene and bind the terminal-distance scorer. Do not substitute the default fixed_tcp demo coordinates."
+      },
+      {
+        "id": "mw_push_to_goal", "name": "Pushing",
+        "metric": "object_goal_distance", "comparator": "<=", "threshold_m": 0.05,
+        "observation": "Terminal object position after physical contact-driven pushing.",
+        "scene_preparation": "Reuse the Panda pushbench table/object geometry, add a goal and align the existing contact observations with the catalog goal-distance criterion."
+      },
+      {
+        "id": "mw_pick_place", "name": "Pick-and-place",
+        "metric": "object_goal_distance", "comparator": "<=", "threshold_m": 0.07,
+        "observation": "Object position after grasping, lifting, transport and release; record object support and gripper contact during the sequence.",
+        "scene_preparation": "Use a graspable free object and a raised destination that requires lifting; add physical grasp/lift/release and terminal-position scoring."
+      },
+      {
+        "id": "mw_drawer_open", "name": "Drawer opening",
+        "metric": "drawer_handle_target_distance", "comparator": "<=", "threshold_m": 0.03,
+        "observation": "Terminal drawer-handle position after a physical pull.",
+        "scene_preparation": "Add a slide-joint drawer with a reachable handle, open-state target and handle-position/contact scoring."
+      },
+      {
+        "id": "mw_dial_turn", "name": "Dial turning",
+        "metric": "dial_target_distance", "comparator": "<=", "threshold_m": 0.07,
+        "observation": "Terminal position of an off-axis point attached to the dial after physical rotation.",
+        "scene_preparation": "Add a hinge-joint dial with a contact feature and an off-axis measurement point; score the dial rather than the robot wrist angle."
+      }
+    ],
+    "initial_state_requirement": "Every case must start outside its success tolerance, remain outside it without robot actions, and have a physically feasible target.",
+    "execution_preparation": "Complete one native AA run through export before ReCAP. Concrete scenes, parameters, physical predicates and ReCAP input JSON must be checked before the 15 task executions.",
+    "interpretation": "The planned 15 task executions assess one generated driver; they are not independent driver-generation replicates."
+  }
+}

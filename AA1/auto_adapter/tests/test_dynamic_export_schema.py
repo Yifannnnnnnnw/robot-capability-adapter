@@ -1,8 +1,42 @@
 """Focused regression for the request-schema drift observed in Piper EXPORT."""
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
 from auto_adapter.export_support import validate_dynamic_export_source
+
+
+@pytest.mark.parametrize("allow", [False, True])
+def test_failed_validation_export_requires_explicit_override(tmp_path, monkeypatch, allow):
+    """Named phase fixture: test the gate without a model or generated robot."""
+    import auto_adapter.orchestrator as module
+
+    report_path = tmp_path / "validate_report.json"
+    report_path.write_text(json.dumps({"all_ok": False, "n_passed": 4, "n_total": 5}))
+    original_report = report_path.read_bytes()
+    pipeline = module.SelfAssemble.__new__(module.SelfAssemble)
+    pipeline.workspace = tmp_path
+    pipeline.cfg = SimpleNamespace(robot_id="fixture", max_iters_export=1)
+    pipeline.capability_design = DESIGN
+    pipeline._local_tools = lambda: []
+    pipeline._runtime_tools = lambda: []
+    calls = []
+
+    def phase_fixture(**kwargs):
+        calls.append(kwargs)
+        return module.PhaseResult("04_export", True, 0.0)
+
+    pipeline._run_phase = phase_fixture
+    monkeypatch.setattr(module, "validate_dynamic_export_source", lambda *args: {"fixture": True})
+    phase = pipeline._phase_export(allow_failed_validation=allow)
+    assert phase.ok is allow
+    assert bool(calls) is allow
+    assert report_path.read_bytes() == original_report
+    if allow:
+        assert phase.metadata["source_validation_all_ok"] is False
+        assert phase.metadata["dynamic_export_surface"] == {"fixture": True}
 
 
 DESIGN = {"capabilities": [{

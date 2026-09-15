@@ -22,13 +22,16 @@ _TEMPORAL_KINDS = {"terminal", "window"}
 _AGGREGATION_KINDS = {"last", "max", "min", "mean", "integral"}
 _OPERATORS = {
     "site_position_error",
+    "body_position_error",
     "joint_position_error",
     "joint_drift",
     "joint_relation_error",
     "ordered_site_targets_error",
+    "ordered_body_targets_error",
     "contact_normal_force",
 }
 _SITE_OPERATORS = {"site_position_error", "ordered_site_targets_error"}
+_BODY_OPERATORS = {"body_position_error", "ordered_body_targets_error"}
 _JOINT_OPERATORS = {
     "joint_position_error",
     "joint_drift",
@@ -177,7 +180,7 @@ def _criterion_parts(criterion: Any, *, where: str) -> tuple[str, str, str, Any,
 
 
 def _expected_unit(operator: str, *, joint_unit: str | None, aggregation: str) -> str:
-    if operator in _SITE_OPERATORS:
+    if operator in _SITE_OPERATORS | _BODY_OPERATORS:
         return "m"
     if operator in _JOINT_OPERATORS:
         if joint_unit is None:
@@ -218,12 +221,13 @@ def validate_measurement(
             "integral aggregation is supported only for contact_normal_force"
         )
 
-    if operator == "site_position_error":
-        if set(bindings) != {"site", "target_request_field"}:
+    if operator in {"site_position_error", "body_position_error"}:
+        kind = "body" if operator in _BODY_OPERATORS else "site"
+        if set(bindings) != {kind, "target_request_field"}:
             raise MeasurementError(
-                "site_position_error bindings require site and target_request_field"
+                f"{operator} bindings require {kind} and target_request_field"
             )
-        _model_name(model, "site", bindings["site"], where="bindings.site")
+        _model_name(model, kind, bindings[kind], where=f"bindings.{kind}")
         target = _request_field(
             request,
             bindings["target_request_field"],
@@ -231,17 +235,18 @@ def validate_measurement(
         )
         _vector(target, length=3, where="request target")
         expected = "m"
-    elif operator == "ordered_site_targets_error":
-        if set(bindings) != {"site", "target_request_fields"}:
+    elif operator in {"ordered_site_targets_error", "ordered_body_targets_error"}:
+        kind = "body" if operator in _BODY_OPERATORS else "site"
+        if set(bindings) != {kind, "target_request_fields"}:
             raise MeasurementError(
-                "ordered_site_targets_error bindings require site and "
+                f"{operator} bindings require {kind} and "
                 "target_request_fields"
             )
-        _model_name(model, "site", bindings["site"], where="bindings.site")
+        _model_name(model, kind, bindings[kind], where=f"bindings.{kind}")
         fields = bindings["target_request_fields"]
         if not isinstance(fields, (list, tuple)) or len(fields) < 2:
             raise MeasurementError(
-                "ordered_site_targets_error requires at least two target request fields"
+                f"{operator} requires at least two target request fields"
             )
         for index, field in enumerate(fields):
             target = _request_field(
@@ -373,7 +378,7 @@ def _ordered_trajectory_error(
 
     if len(points) < len(targets):
         raise MeasurementError(
-            "ordered_site_targets_error has fewer trajectory samples than targets"
+            "ordered target measurement has fewer trajectory samples than targets"
         )
     # Dynamic programming over strictly increasing sample indices.  Keeping
     # only the prefix minimum of the previous target reduces the work to
@@ -418,7 +423,8 @@ def _relative_samples(
         # Ordered trajectories deliberately retain all action samples.  A
         # terminal endpoint operator still receives only the last sample.
         use_action_trace = (
-            operator == "ordered_site_targets_error" or aggregation == "integral"
+            operator in {"ordered_site_targets_error", "ordered_body_targets_error"}
+            or aggregation == "integral"
         )
         eligible = list(samples) if use_action_trace else [samples[-1]]
         eligible_times = list(relative) if use_action_trace else [relative[-1]]
@@ -512,24 +518,26 @@ def _operator_values(
     *,
     where: str,
 ) -> list[float]:
-    if operator == "site_position_error":
+    if operator in {"site_position_error", "body_position_error"}:
+        kind = "body" if operator in _BODY_OPERATORS else "site"
         target = _target_vector(request, bindings["target_request_field"], where=where)
         return [
             float(
                 np.linalg.norm(
-                    _sample_vector(sample, "site_positions", bindings["site"], where=where)
+                    _sample_vector(sample, f"{kind}_positions", bindings[kind], where=where)
                     - target
                 )
             )
             for sample in selected
         ]
-    if operator == "ordered_site_targets_error":
+    if operator in {"ordered_site_targets_error", "ordered_body_targets_error"}:
+        kind = "body" if operator in _BODY_OPERATORS else "site"
         targets = [
             _target_vector(request, field, where=where)
             for field in bindings["target_request_fields"]
         ]
         trajectory = [
-            _sample_vector(sample, "site_positions", bindings["site"], where=where)
+            _sample_vector(sample, f"{kind}_positions", bindings[kind], where=where)
             for sample in selected
         ]
         return [_ordered_trajectory_error(trajectory, targets)]
@@ -672,7 +680,16 @@ def evaluate_measurements(
 
 
 def capture_sample(model: Any, data: Any) -> dict[str, Any]:
-    """Capture named sites, scalar joints, and true normal contact forces."""
+    """Capture world body origins/sites, scalar joints, and normal contact forces.
+
+    The caller must refresh derived quantities after stepping the simulation.
+    """
+
+    body_positions: dict[str, list[float]] = {}
+    for body_id in range(int(model.nbody)):
+        name = str(model.body(body_id).name)
+        if name:
+            body_positions[name] = [float(value) for value in np.asarray(data.xpos[body_id]).reshape(3)]
 
     site_positions: dict[str, list[float]] = {}
     for site_id in range(int(model.nsite)):
@@ -715,6 +732,7 @@ def capture_sample(model: Any, data: Any) -> dict[str, Any]:
 
     return {
         "time": float(data.time),
+        "body_positions": body_positions,
         "site_positions": site_positions,
         "joint_positions": joint_positions,
         "contacts": contacts,
@@ -729,6 +747,10 @@ def measurement_catalog() -> str:
         "never selects an operator):\n"
         "- site_position_error: bindings={site, target_request_field}; value is "
         "Euclidean world site error, unit m.\n"
+        "- body_position_error: bindings={body, target_request_field}; value is "
+        "Euclidean world body-origin error, unit m. Use an existing body name "
+        "when the robot has no suitable site; body origins are not centres of mass "
+        "or fingertip offsets.\n"
         "- joint_position_error: bindings={joint, target_request_field}; scalar "
         "absolute error, unit rad for hinge or m for slide.\n"
         "- joint_drift: bindings={joint}; absolute change from the first sample, "
@@ -738,6 +760,9 @@ def measurement_catalog() -> str:
         "- ordered_site_targets_error: bindings={site, target_request_fields:[field1, "
         "field2, ...]}; ordered trajectory matching all targets, unit m; it uses "
         "the recorded path even for temporal kind terminal.\n"
+        "- ordered_body_targets_error: bindings={body, target_request_fields:[field1, "
+        "field2, ...]}; ordered body-origin trajectory matching all targets, unit m; "
+        "it uses the recorded path even for temporal kind terminal.\n"
         "- contact_normal_force: bindings={geom1, geom2}; sum of true "
         "mj_contactForce normal components per sample, unit N (or N*s with "
         "aggregation integral).\n"

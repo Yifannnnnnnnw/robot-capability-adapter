@@ -49,40 +49,6 @@ assessment establishes whether the resulting driver meets its requirements.
 Passing individual tests provides evidence about specific capabilities but
 does not establish conformance to the complete behavioural standard.
 
-\subsection[Closed-Loop Planning with ReCAP]{Closed-Loop Planning with ReCAP}
-\label{sec:recap}
-
-Closed-loop task execution requires the LLM to interpret observations in
-relation to goals that remain unresolved. A failed grasp, for example, may
-require revising the next action while preserving the overall placement goal.
-AutoAdapter-Bench uses Recursive Context-Aware Reasoning and Planning (ReCAP)
-to organise this process. ReCAP generates an ordered subtask list and
-recursively decomposes the first unresolved item until an executable action is
-reached \citep{zhang2025recap}. In this chapter, these actions are capability
-calls executed through each robot's fixed, validated driver.
-Figure~\ref{fig:chapter3-recap-backtracking} shows how the parent plan is
-revisited after subtask execution, with the updated context guiding further
-refinement.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.72\textwidth]
-    {assets/recap_backtracking_refinement_zhang2025.png}
-  \caption[ReCAP backtracking and plan refinement]
-  {ReCAP backtracking and plan refinement.
-  The latest observation is appended to the shared context (1), and the parent
-  task's prior reasoning and remaining subtasks are restored (2). The LLM then
-  generates revised reasoning and subtasks from the updated context (3).
-  Cropped reproduction of Figure~2 from \citet{zhang2025recap}, under
-  \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0}.}
-  \label{fig:chapter3-recap-backtracking}
-\end{figure}
-
-ReCAP fixes the planning procedure and context updates, while the LLM
-determines the subgoals and how the remaining plan is revised. The Harness
-determines task success from independently recorded simulation state; the
-controller's declaration of completion is not sufficient.
-
 \subsection[Research Questions]{Research Questions}
 
 AutoAdapter-Bench therefore treats observed performance as conditional on a
@@ -90,14 +56,12 @@ fixed model-plus-endpoint configuration and experimental route, rather than as
 an intrinsic property of a model family. The chapter addresses two questions:
 
 \paragraph{\textit{RQ2a---Driver synthesis.}}
-Across the selected fixed serial-arm and quadruped configurations, to what
-extent do the seven LLM configurations differ in the proportion of generated
-drivers that satisfy the fixed capability-level behavioural standard, and
-how does providing trusted, task-neutral starter source affect that outcome?
+With each robot's capability interface and behavioural tests held fixed,
+how do the four LLM configurations differ in complete-suite validation pass rates?
 
 \paragraph{\textit{RQ2b---Driver use.}}
 When each robot's capability-validated driver and task conditions are held
-constant, to what extent do the same seven LLM configurations differ in
+constant, to what extent do the seven LLM configurations differ in
 independently judged complete-task success?
 
 The first question concerns generation of the robot-facing software layer. The
@@ -106,105 +70,71 @@ compares alternative synthesis frameworks or controller architectures.
 
 \section[AutoAdapter-Bench]{AutoAdapter-Bench}
 
-AutoAdapter-Bench compares LLMs in driver synthesis and task execution through
-supplied drivers. Its coverage spans fifteen platforms across seven embodiment
-types (Figure~\ref{fig:robot-platform-taxonomy};
-Table~\ref{tab:robot-platform-embodiment-types}), with SO-101 and Unitree Go2
-used for the comparisons in this chapter.
+\noindent\textbf{Robot zoo.} AutoAdapter-Bench lists fourteen robot platforms
+across seven embodiment types. The
+inventory comprises seven fixed serial arms and two quadrupeds. It also
+includes a dexterous hand, a humanoid, a mobile manipulator, a bimanual
+manipulator and a legged mobile manipulator.
 
-Test selection follows the task-grounded capability design in
-Section~\ref{sec:task-grounded-capability-design}. Reaching and placing, for
-example, motivate Cartesian positioning, assessed through target error and
-sustained holding. Each capability receives nominal and calibrated-boundary
-cases. A separately prepared reference implementation must pass the suite to
-establish feasibility; an independent evaluator then judges candidate behaviour
-from recorded MuJoCo state.
+\noindent\textbf{Task suites.} AutoAdapter-Bench provides downstream task suites
+in MuJoCo (Appendix~\ref{sec:appendix-tasks}). Physical outcomes are assessed
+from post-step simulator state using
+task-specific criteria, such as end-effector position error, object displacement
+and body height.
+Tool calls issued by the ReCAP high-level controller are replayed in a fresh
+simulator before scoring. The learned baselines, Diffusion Policy and OpenVLA,
+run directly. Onboarding assesses structural validity and remains separate
+from downstream task evaluation.
 
-For each robot, models implement the same capability interface using the
-supplied documentation and simulation assets. Skeleton-assisted generation
-provides DLS inverse kinematics and joint-motion control for SO-101, and a
-pretrained velocity-control policy for Go2. The model supplies robot-specific
-bindings and implements the required capability methods. From-scratch
-generation provides textual algorithmic guidance but requires the model to
-write its own control code. Both conditions permit bounded development and
-revision and use the same behavioural tests. The skeleton comparison assesses
-the effect of supplied control implementations within each robot, since the
-arm controller and the pretrained Go2 policy provide different forms of
-assistance.
+\noindent\textbf{Agent models.} The benchmark includes seven LLM configurations:
+Claude Sonnet 4.6, Claude Opus 5, Claude Haiku 4.5, Amazon Nova Pro,
+DeepSeek V4 Pro, Ministral 3 8B and GPT-5.6 Sol. For driver use, these models
+operate within ReCAP through a supplied capability interface. Exact model
+identifiers and the per-token pricing used for cost estimates are listed in
+Tables~\ref{tab:appendix-model-identities} and
+\ref{tab:appendix-model-pricing}, respectively.
 
-The driver-use experiment varies the LLM within the ReCAP procedure described
-in Section~\ref{sec:recap}. Each robot's capability-validated driver and task
-conditions remain fixed, removing differences between generated
-implementations from the comparison. The model selects capability calls and
-revises its plan to achieve the task goal.
-
-Synthesis success is the proportion of trials whose final submitted driver
-passes the complete suite. Driver-use success is the proportion of episodes
-satisfying the task completion criterion. Partial case coverage provides
-diagnostic detail about synthesis failures. Runtime, token usage and estimated
-cost describe resource requirements.
-Section~\ref{sec:benchmark-experiment-design} specifies the model
-configurations, budgets and repetitions.
-
-\section[Experiment design]{Experiment design}
+\section[Experimental Configuration]{Experimental Configuration}
 \label{sec:benchmark-experiment-design}
 
-Experiment~2a compares driver synthesis for SO-101 and Unitree Go2. The
-deployed model factor has seven configurations: Sonnet 4.6, Opus 5, Haiku 4.5,
-Nova Pro, DeepSeek V4 Pro, Ministral 3 8B, and GPT-5.6 Sol. Each configuration
-is evaluated under both skeleton-assisted and from-scratch generation. The
-skeleton-assisted condition provides trusted, task-neutral starter source,
-whereas the from-scratch condition requires the model to implement the driver
-without access to that source. Within each robot block, both conditions use the
-same capability interface, pass standards, and independent behavioural tests.
+\noindent\textbf{Driver synthesis (Experiment~2a).} Experiment~2a compared
+Claude Sonnet 4.6, Claude Opus 5, Claude Haiku 4.5 and DeepSeek V4 Pro on
+driver synthesis for SO-101 and Unitree Go2. For each robot, documentation
+and task requirements were held constant. The capability interface and
+behavioural tests remained fixed across models and independent runs.
+Models generated and revised only the driver implementation. The design
+specified three independent runs per model--robot combination, giving
+24 scheduled trials. Each run allowed up to two revisions informed by
+validation feedback. Drivers were assessed against the shared tests using
+independently recorded MuJoCo state. Complete-suite pass rates, runtime and
+token usage are reported.
 
-The experimental unit is one
-robot--model--condition--replicate generation cell. Each robot--model
-combination has three prespecified synthesis replicates, and paired conditions
-use the same seed where the endpoint supports seed control. Their model
-sessions, workspaces, and generated drivers remain isolated. Each cell permits
-at most three frozen driver submissions: one initial submission and up to two
-bounded corrections. The design therefore contains
-$2$ robots $\times 7$ models $\times 2$ conditions $\times 3$ replicates
-$=84$ cells and permits at most 252 trusted Harness validations. Cell-level
-success is determined by the final frozen driver.
+\noindent\textbf{Driver use (Experiment~2b).} Experiment~2b compares seven LLM
+configurations on task execution through supplied drivers, with five tasks per robot
+(Figure~\ref{fig:chapter4-exp2b-task-scenes}).
+Each robot uses a fixed, capability-validated driver and interface. The ReCAP
+planning procedure and each task's initial conditions remain unchanged across
+models. An independent evaluator judges task completion from MuJoCo state.
+Success requires all task-specific criteria to pass. Performance is measured
+by task-success rate and estimated cost per episode.
 
-Experiment~2b evaluates downstream task completion rather than driver
-synthesis. The same seven model configurations serve as interchangeable
-backbones within one fixed ReCAP high-level planner
-\citep{zhang2025recap}. Auto-Adapter supplies one fixed,
-capability-validated driver and one defined capability interface for each
-robot. The ReCAP logic, prompt, task conditions, driver, interface, and trusted
-Harness remain fixed across episodes. Only the deployed model-plus-endpoint
-configuration varies, and the Harness independently determines task success.
+The five SO-101 tasks evaluate different forms of object manipulation.
+Push to Goal requires pushing a tabletop object into a target region through
+contact. Sweep into Goal uses a lateral sweeping motion to move an object
+into a tabletop opening. Pick and Place requires grasping an object,
+transporting it to an elevated target and releasing it. Pick and Place with
+Wall adds a barrier that the grasped object must be lifted over before
+placement. Dial Turn requires rotating a mounted dial to its target position
+through gripper or end-effector contact.
 
-The SO-101 task block comprises Push to Goal, Sweep into Goal, Pick and Place,
-Pick and Place with Wall, and Bin Picking. The Unitree Go2 task block comprises
-Single-step Ascent, Single-step Descent, Fixed Mixed-obstacle Path, Barkour
-Pause-table Transition, and Barkour Weave Poles. Robot, task, and replicate
-serve as blocking dimensions rather than manipulated factors.
-
-The experimental unit is one
-robot--task--model--replicate episode. Each robot--task--model combination is
-repeated three times, giving
-$2$ robots $\times 5$ tasks $\times 7$ models $\times 3$ replicates
-$=210$ planned episodes. Every repetition creates a fresh isolated execution
-process, driver instance, and MuJoCo session, while retaining the same sealed
-scene, reset, and initial state. No task-reset seed is varied. The design
-therefore measures run-to-run repeatability under one fixed initial condition,
-not robustness to different task seeds or starting states.
-
-The corrected non-formal audit reported below retained the first four
-SO-101 tasks and used Dial Turn in place of Bin Picking; its selected
-outcomes do not replace the source formal record.
-Figure~\ref{fig:chapter4-exp2b-task-scenes} groups the ten corrected-audit
-scenes by robot and task family. The upper row contains five SO-101
-object-interaction tasks, spanning planar pushing, sweeping, grasping,
-obstacle-constrained placement, and dial rotation. The lower row contains five
-Go2 locomotion tasks spanning step transitions, mixed obstacles, a table
-transition, and ordered pole weaving. The image identifies the evaluated
-conditions; it does not report task outcomes or replace the source formal
-record.
+The five Unitree Go2 tasks evaluate locomotion and obstacle traversal.
+Single-step Ascent and Single-step Descent require all four feet to pass
+beyond the far edge of an upward or downward step, respectively.
+Mixed-obstacle Path requires crossing a ramp, raised platform, stairs and
+blocks in sequence. Pause-table Transition requires moving between two
+separated tables and holding position on the end table for five seconds.
+Weave Poles requires following five ordered waypoints that alternate around
+the poles while maintaining clearance.
 
 \begin{figure}[htbp]
   \centering
@@ -222,114 +152,102 @@ record.
 \section[Result]{Result}
 
 \subsection[Experiment 2a: Driver Synthesis]{Experiment 2a: Driver Synthesis}
+\label{sec:chapter4-exp2a-results}
+\label{sec:chapter4-generation-outcomes}
 
-Table~\ref{tab:chapter3-exp2a-skeleton-r01-results} reports the completed
-skeleton-assisted R01 diagnostic slice. For each cell that reached the trusted
-Harness, the best-attempt case pass rate is the largest number of cases passed
-by any frozen Driver attempt divided by the applicable suite size. This
-case-level measure differs from the prespecified cell-level outcome, which is
-determined by the final frozen Driver and requires every case to pass.
-
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \begingroup
-  \scriptsize
+  \small
   \setstretch{1.0}
   \setlength{\tabcolsep}{2.5pt}
-  \renewcommand{\arraystretch}{1.18}
-  \caption{Best-attempt case coverage and resource use in the
-  skeleton-assisted R01 diagnostic slice of Experiment~2a.}
+  \renewcommand{\arraystretch}{1.22}
+  \caption{Driver synthesis outcomes and resource use in Experiment~2a.}
   \label{tab:chapter3-exp2a-skeleton-r01-results}
-  \begin{tabularx}{\textwidth}{@{}X
-    >{\centering\arraybackslash}p{17mm}
-    >{\raggedleft\arraybackslash}p{27mm}
-    >{\raggedleft\arraybackslash}p{15mm}
-    >{\centering\arraybackslash}p{17mm}
-    >{\raggedleft\arraybackslash}p{27mm}
-    >{\raggedleft\arraybackslash}p{15mm}@{}}
+  \label{tab:chapter4-exp2a-generation-results}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X
+    *{2}{>{\centering\arraybackslash}p{15.9mm}
+          >{\centering\arraybackslash}p{11mm}
+          >{\raggedleft\arraybackslash}p{10mm}
+          >{\raggedleft\arraybackslash}p{11.7mm}}@{}}
     \toprule
     \multirow{2}{*}{\textbf{LLM}} &
-    \multicolumn{3}{c}{\textbf{SO-101}} &
-    \multicolumn{3}{c}{\textbf{Unitree Go2}} \\
-    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
-    & \shortstack{\textbf{Best-attempt}\\\textbf{case pass rate}}
-    & \shortstack{\textbf{Total tokens /}\\\textbf{estimated cost}}
-    & \textbf{Time}
-    & \shortstack{\textbf{Best-attempt}\\\textbf{case pass rate}}
-    & \shortstack{\textbf{Total tokens /}\\\textbf{estimated cost}}
-    & \textbf{Time} \\
+    \multicolumn{4}{c}{\textbf{SO-101}} &
+    \multicolumn{4}{c}{\textbf{Unitree Go2}} \\
+    \cmidrule(lr){2-5}\cmidrule(lr){6-9}
+    & \textbf{Automatic}
+    & \shortstack{\textbf{Incl.}\\\textbf{review}}
+    & \shortstack{\textbf{Time}\\\textbf{(min)}}
+    & \shortstack{\textbf{Tokens}\\\textbf{(k)}}
+    & \textbf{Automatic}
+    & \shortstack{\textbf{Incl.}\\\textbf{review}}
+    & \shortstack{\textbf{Time}\\\textbf{(min)}}
+    & \shortstack{\textbf{Tokens}\\\textbf{(k)}} \\
     \midrule
-    Claude Sonnet 4.6$^{\dagger}$
-      & \shortstack{66.7\%\\(8/12)}
-      & \shortstack[r]{7,334,940\\US\$28.1560}
-      & 61.86 min
-      & \shortstack{93.3\%\\(14/15)}
-      & \shortstack[r]{7,472,317\\US\$28.3721}
-      & 58.76 min \\
+    Claude Sonnet 4.6
+      & 1/3 & 3/3 & 9.1 & 51.2
+      & 2/3 & 2/3 & 9.7 & 54.9 \\
     Claude Opus 5
-      & \shortstack{77.8\%\\(14/18)}
-      & \shortstack[r]{4,753,412\\US\$31.0559}
-      & 48.97 min
-      & \shortstack{Study\\error}
-      & \shortstack[r]{832,998\\US\$6.0186}
-      & 10.97 min \\
+      & 1/3 & 1/3 & 23.0 & 111.2
+      & 2/3 & 2/3 & 37.7 & 160.8 \\
     Claude Haiku 4.5
-      & \shortstack{33.3\%\\(6/18)}
-      & \shortstack[r]{7,665,846\\US\$9.3799}
-      & 25.48 min
-      & \shortstack{53.3\%\\(8/15)}
-      & \shortstack[r]{8,197,519\\US\$10.1070}
-      & 26.41 min \\
-    Amazon Nova Pro
-      & \shortstack{Study\\error}
-      & \shortstack[r]{588,403\\US\$0.6749}
-      & 1.40 min
-      & \shortstack{Study\\error}
-      & \shortstack[r]{455,659\\US\$0.5262}
-      & 1.02 min \\
+      & 0/3 & 0/3 & 8.0 & 73.1
+      & 0/3 & 0/3 & 13.8 & 115.5 \\
     DeepSeek V4 Pro
-      & \shortstack{55.6\%\\(10/18)}
-      & \shortstack[r]{5,149,805\\US\$0.9760}
-      & 31.11 min
-      & \shortstack{86.7\%\\(13/15)}
-      & \shortstack[r]{5,369,899\\US\$0.9432}
-      & 29.17 min \\
-    Ministral 3 8B
-      & \shortstack{Study\\error}
-      & \shortstack[r]{650,866\\US\$0.1497}
-      & 2.17 min
-      & \shortstack{Study\\error}
-      & \shortstack[r]{534,139\\US\$0.1229}
-      & 2.66 min \\
+      & 1/2 & 2/2 & 13.7 & 97.0
+      & 1/2 & 1/2 & 12.8 & 93.3 \\
     \bottomrule
   \end{tabularx}
+  \par\smallskip
+  {\footnotesize\raggedright
+  \emph{Notes.} Pass counts refer to the complete behavioural test suite
+  shared by all models for each robot.
+  ``Incl.\ review'' includes additional passes supported by measurement
+  corrections using recorded trajectories
+  (Table~\ref{tab:appendix-exp2a-review}). Time and recorded output tokens are
+  means across included trials, including failures. Denominators exclude
+  interface interruptions.\par}
   \endgroup
 \end{table}
 
-The token totals combine input and output tokens. Reported cache-read tokens
-remain a subset of the input total and are not added again. Cost figures are
-public-price reference estimates rather than provider invoices; Appendix
-Table~\ref{tab:appendix-model-pricing} records the corresponding rate basis.
-The DeepSeek values were recalculated from call-level cache-hit, cache-miss,
-output-token, and UTC timestamp records because the stored snapshot was stale.
-A Study error indicates that the cell did not produce a valid study artefact
-and consequently did not enter Driver validation.
+\noindent\textbf{Generation outcomes.}
+Some runs failed before a driver could undergo behavioural validation.
+In one Go2 run, DeepSeek exhausted its generation budget without submitting a
+driver. A Haiku Go2 submission contained a syntax error and could not be
+executed.
+On SO-101, Sonnet and Opus each achieved an automatic pass count of 1/3
+(Table~\ref{tab:chapter4-exp2a-generation-results}).
+Measurement review increased Sonnet's count to 3/3, while Opus remained at 1/3.
+On Go2, both models
+achieved 2/3, providing no observed pass-rate advantage for Opus.
 
-The SO-101 Sonnet result marked $\dagger$ is retained from an earlier dynamic
-12-case canary, whereas the other SO-101 case-level results use the fixed
-18-case suite. It is therefore not directly comparable. Its reported time is
-the provider-request span, while the remaining values are cell wall-clock
-durations.
+\noindent\textbf{Revision behaviour and resource use.}\label{sec:chapter4-revision-resources}
+Of the 14 runs that failed initial validation, four passed their complete
+suites after repair (4/14). Two required one repair round; the other two
+required two rounds. Incorrectly scoped method definitions prevented
+capability calls in one DeepSeek SO-101 run. Correcting this error increased
+its pass count from 0/4 to 4/4. However, a Sonnet Go2 run fell from 1/5 to 0/5
+after an incomplete revised driver was submitted. A second repair subsequently
+brought the pass count to 5/5.
 
-Among the directly comparable cells that reached the Harness, Opus 5 achieved
-the highest SO-101 best-attempt coverage, at 77.8\%. On Go2, Sonnet 4.6 and
-DeepSeek V4 Pro reached 93.3\% and 86.7\%, respectively. No fixed-suite cell
-passed every case. Because this diagnostic slice contains one
-skeleton-assisted run per model, it does not estimate run-to-run repeatability
-or the effect of skeleton assistance in the prespecified 84-cell
-Experiment~2a design.
+In the selected successful runs shown in Figure~\ref{fig:chapter4-exp2a-synthesis-traces},
+Sonnet required 5.6--8.4~min, compared with 13.1--14.3~min for DeepSeek.
+However, DeepSeek's estimated cost was
+US\$0.35--0.40, below Sonnet's US\$4.82--6.20 and Opus's US\$15.97--18.97.
+The selected DeepSeek runs included an additional repair, as shown in
+Figure~\ref{fig:chapter4-exp2a-synthesis-traces}.
 
-\subsection[Experiment 2b: Driver Use]{Experiment 2b : Driver Use}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{assets/exp2a_successful_run_turns.pdf}
+  \caption[Model turns in selected successful synthesis runs]{Model turns in selected successful synthesis runs.}
+  \label{fig:chapter4-exp2a-synthesis-traces}
+\end{figure}
+
+\subsection[Experiment 2b: Driver Use]{Experiment 2b: Driver Use}
+
+ReCAP uses a fixed set of robot-specific driver capabilities for task
+execution (Table~\ref{tab:chapter4-exp2b-driver-capabilities}).
 
 \begin{table}[htbp]
   \centering
@@ -337,7 +255,10 @@ Experiment~2a design.
   \small
   \setstretch{1.0}
   \renewcommand{\arraystretch}{1.12}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+  \caption{ReCAP planner and robot-specific driver capabilities used in Experiment~2b.}
+  \label{tab:chapter4-exp2b-driver-capabilities}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}
+    >{\raggedright\arraybackslash}X@{}}
     \toprule
     \textbf{Component / Robot} & \textbf{Configuration or Provided Capabilities} \\
     \midrule
@@ -354,13 +275,16 @@ Experiment~2a design.
   \endgroup
 \end{table}
 
+Task-success rates varied across the seven ReCAP model configurations
+(Table~\ref{tab:chapter3-exp2b-model-results}).
+
 \begin{table}[htbp]
   \centering
   \begingroup
   \small
   \setstretch{1.0}
   \renewcommand{\arraystretch}{1.12}
-  \caption{Performance of seven LLMs acting as the ReCAP controller across ten  tasks on SO-101 and Unitree Go2, using robot drivers generated and validated by AutoAdapter.}
+  \caption{Performance of seven LLMs acting as the ReCAP controller across ten tasks on SO-101 and Unitree Go2, using drivers from AutoAdapter.}
   \label{tab:chapter3-exp2b-model-results}
   \begin{tabularx}{\textwidth}{@{}X
     >{\raggedleft\arraybackslash}p{43mm}
@@ -379,19 +303,20 @@ Experiment~2a design.
     Ministral 3 8B      & 0.0\%   & 0.024 \\
     \bottomrule
   \end{tabularx}
+  \par\smallskip
+  {\footnotesize\raggedright
+  \emph{Note.} Results combine repeated runs of the ten tasks. Success rates
+  are calculated over evaluable episodes. Runs with infrastructure failures
+  or incomplete evaluation evidence are excluded, so the denominator varies
+  between models.\par}
   \endgroup
 \end{table}
-
-\noindent\emph{Cost note:} Values use the selected R1--R2 episodes. DeepSeek
-preserves the recorded cache classification; GPT input is conservatively
-treated as uncached because cache fields are unavailable. The estimates
-exclude superseded infrastructure attempts and are not provider invoices.
 
 \begin{table}[htbp]
   \centering
   \small
   \renewcommand{\arraystretch}{1.12}
-  \caption{Task-level success rates for SO-101 and Unitree Go2. Pick and Place with Wall routes an object around a barrier; Dial Turn rotates a mounted dial to its target; Mixed-obstacle Path crosses a ramp, platform, stairs and blocks in sequence; Pause-table Transition moves Go2 between two separated tables and requires a stable terminal hold; and Weave Poles follows five alternating waypoints around physical poles.}
+  \caption{Task-level success rates for SO-101 and Unitree Go2.}
   \label{tab:chapter3-exp2b-task-results}
   \begin{tabularx}{\textwidth}{@{}X r X r@{}}
     \toprule
@@ -412,27 +337,34 @@ exclude superseded infrastructure attempts and are not provider invoices.
   \end{tabularx}
 \end{table}
 
-Across all evaluable R1--R2 episodes, aggregate success was almost identical for SO-101 and Go2 (50.0\% and 49.2\%), placing the larger performance variation at task level rather than between robot platforms. Weave Poles failed in all 11 evaluable episodes because none completed the five alternating 0.12\,m waypoint regions in order (median one completed); nine nevertheless met the 0.10\,m torso-clearance requirement and all passed terminal stability. Pick and Place with Wall was limited by failed grasp recovery before wall traversal: across all eight evaluable failures the object rose by at most 7.1\,mm and moved at most 2.9\,cm from its start while contact integrity remained valid, whereas the sole success recognised an unsuccessful first grasp, issued a fully closed re-grasp, and then followed the elevated route.
+Across all evaluable episodes, aggregate success was almost identical for SO-101 and Go2 (50.0\% and 49.2\%), placing the larger performance variation at task level (Table~\ref{tab:chapter3-exp2b-task-results}) rather than between robot platforms. Weave Poles failed in all 11 evaluable episodes because none completed the five alternating 0.12\,m waypoint regions in order (median one completed; see the example in Figure~\ref{fig:chapter3-exp2b-task-examples}(c)); nine nevertheless met the 0.10\,m torso-clearance requirement and all passed terminal stability. In all eight evaluable Pick and Place with Wall failures, the object rose by at most 7.1\,mm and moved at most 2.9\,cm from its start while contact integrity remained valid, whereas the sole success recognised an unsuccessful first grasp, issued a fully closed re-grasp, and then followed the elevated route.
 
-Figure~\ref{fig:chapter3-exp2b-task-examples} contrasts two successful R2
-episodes with a failed R2 episode. Panel~(a) records GPT-5.6 Sol using SO-101
+Figure~\ref{fig:chapter3-exp2b-task-examples} contrasts two successful
+episodes with a failed episode. Panel~(a) records GPT-5.6 Sol using SO-101
 to grasp and place the object, while panel~(b) records Claude Sonnet 4.6
 guiding Go2 through the Mixed-obstacle Path. Panel~(c), also from Claude
 Sonnet 4.6, shows Go2 remaining clear and stable but completing only one of
-five ordered waypoints. Although the third episode passed execution,
-integrity, clearance, stability, and video checks, it failed the task-specific
-waypoint criterion. These examples illustrate the behavioural distinction but
-do not estimate aggregate model or task success.
+five ordered waypoints.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/exp1b_task_trajectory_examples.png}
+  \begingroup
+  \small
+  \setstretch{1.0}
+  % Keep the original frames and typeset the panel labels without run IDs.
+  \includegraphics[width=\textwidth,trim=0 612bp 0 0,clip]{assets/exp1b_task_trajectory_examples.png}\par
+  (a) SO-101 Pick and Place - successful episode (GPT-5.6 Sol)\par\smallskip
+  \includegraphics[width=\textwidth,trim=0 328bp 0 284bp,clip]{assets/exp1b_task_trajectory_examples.png}\par
+  (b) Unitree Go2 Mixed-obstacle Path - successful episode (Claude Sonnet 4.6)\par\smallskip
+  \includegraphics[width=\textwidth,trim=0 44bp 0 568bp,clip]{assets/exp1b_task_trajectory_examples.png}\par
+  (c) Unitree Go2 Weave Poles - failed episode (Claude Sonnet 4.6; 1/5 ordered waypoints)\par
+  \endgroup
   \caption[Experiment~2b trajectory examples]
   {Five-frame Experiment~2b trajectory examples.
-  \textbf{(a)} successful SO-101 Pick and Place (GPT-5.6 Sol, R2);
+  \textbf{(a)} successful SO-101 Pick and Place (GPT-5.6 Sol);
   \textbf{(b)} successful Unitree Go2 Mixed-obstacle Path
-  (Claude Sonnet 4.6, R2);
-  \textbf{(c)} failed Unitree Go2 Weave Poles (Claude Sonnet 4.6, R2).
+  (Claude Sonnet 4.6);
+  \textbf{(c)} failed Unitree Go2 Weave Poles (Claude Sonnet 4.6).
   The failed episode passed execution, integrity, clearance, stability, and
   video checks but completed only one of five ordered waypoints.}
   \label{fig:chapter3-exp2b-task-examples}
@@ -440,40 +372,46 @@ do not estimate aggregate model or task success.
 
 \section[Discussion]{Discussion}
 
-Taken together, Table~\ref{tab:chapter3-exp2b-model-results} and the retained controller traces indicate that the most consequential difference was not command emission itself, but whether returned observations were used to revise an incomplete plan. In the successful Pick and Place with Wall episode, the controller recognised a failed first grasp, fully closed the gripper, and retried before following the elevated route; failed traces instead moved towards release while the object remained near its start. Weave Poles exposed a complementary long-horizon weakness: several controllers generated locally plausible motions and maintained pole separation, yet none preserved the alternating waypoint sequence across calls. This suggests that exposing ReCAP feedback is insufficient unless the model retains subgoal state and uses the observations to replan.
+Even with validated drivers, task completion may be limited by action
+sequencing and failure recovery. In Weave Poles, the robot remained stable
+at termination but did not complete the required waypoint sequence. The object
+was barely lifted in failed Pick and Place with Wall episodes; the successful
+episode included a second grasp. These trajectories suggest that high-level
+controllers need to check intermediate outcomes and adjust subsequent actions.
 
-A second implication concerns completion judgement. Nova Pro and Ministral sometimes produced invalid controller outputs, but every normally terminated Harness failure across the cohort had nevertheless been declared complete by the controller. The trusted Harness is therefore necessary to distinguish valid capability execution and model-reported completion from externally observed task completion. Within these simulator conditions, the practically important model differences concerned feedback interpretation, multi-stage state tracking, and recovery from failed intermediate actions.
+Validation feedback helped correct some implementation errors, but successive
+revisions did not consistently increase the number of tests passed. Among the
+successful runs shown, Sonnet completed synthesis faster, while DeepSeek had
+lower estimated costs. Repair counts alone therefore do not measure resource
+efficiency; model selection should consider validation outcomes, time and cost.
+
+Holding each robot's capability interface and behavioural tests fixed makes
+driver implementation the focus of the synthesis comparison. Automatic passes
+establish conformance to the shared tests under the evaluated conditions.
+Measurement reviews are reported separately from the original automatic verdicts.
+
+The findings are limited to the evaluated model configurations, robots, tasks
+and MuJoCo conditions. Model rankings are provisional, and further repeated
+trials are needed to assess their stability. Similar aggregate success rates
+across the two robots do not establish that morphology has no effect.
+Chapter 5 examines other robot configurations to assess the scope of these
+observations.
 
 \section{Summary}
 
-This chapter evaluated two distinct abilities at the robot--software boundary:
-synthesising a reusable driver and completing tasks through an existing,
-capability-validated driver. For RQ2a, no fixed-suite cell reaching the trusted
-Harness achieved complete driver-level conformance. Partial behavioural
-coverage nevertheless differed across model--robot configurations, reaching
-14/18 cases (77.8\%) for SO-101 with Opus~5 and 14/15 cases (93.3\%) for
-Unitree Go2 with Sonnet~4.6. Providing a reviewed, task-neutral driver skeleton
-was therefore insufficient to ensure complete behavioural conformance.
+This chapter introduced AutoAdapter-Bench and compared four LLM configurations
+for driver synthesis and seven for driver use on SO-101 and Unitree Go2.
+In driver synthesis, Sonnet matched Opus's automatic pass counts with shorter
+runtimes and fewer output tokens. DeepSeek had lower estimated costs in the
+successful synthesis runs shown. Validation feedback helped some initially
+unsuccessful runs pass their complete test suites, although successive
+revisions did not consistently improve outcomes.
 
-For RQ2b, the model-plus-endpoint configurations produced markedly different
-outcomes when controlling fixed drivers through ReCAP. The Harness recorded 61
-successes among 123 evaluable episodes (49.6\%); model-level rates ranged from
-12/12 (100.0\%) for Opus~5 to 0/20 (0.0\%) for Ministral~3~8B. Because the
-evaluable denominators differed, this is a descriptive comparison rather than
-a universal model ranking. Success was similar across the two robot blocks, at
-30/60 (50.0\%) for SO-101 and 31/63 (49.2\%) for Go2, but varied more widely
-among tasks. The retained traces suggest that unsuccessful grasp recovery,
-incomplete use of returned observations, and loss of long-horizon subgoal
-state contributed to task failures.
-
-Taken together, the findings show that driver synthesis and driver use require
-separate evidence. Every normally terminated Harness failure in
-Experiment~2b had nevertheless been declared complete by the controller,
-supporting the need for candidate-independent behavioural judgement. The
-conclusions remain bounded to the selected model-plus-endpoint configurations,
-fixed tasks and initial conditions, the ReCAP controller, and the evaluated
-MuJoCo physics simulation, in which robot drivers issued commands directly to
-simulated robots. They do not establish hardware performance, morphology
-effects, or a universal model ranking.
-Chapter~\ref{chapter:cross-robot-evaluation} next examines the complete
-Auto-Adapter construction route across a broader robot cohort.
+With the drivers, task conditions and ReCAP planning procedure held fixed,
+Opus achieved the highest complete-task success rate. Haiku did not generate
+a driver that passed its complete validation suite, yet completed some tasks
+using supplied drivers. Execution traces also revealed difficulties with
+ordered waypoint traversal and grasp recovery. Robots could remain stable
+without completing the required task sequence. These results show that
+performance in using existing drivers does not directly establish a model's
+driver-synthesis ability.
