@@ -1,3 +1,9 @@
+# Local-only thesis, rendering helpers and agent instructions.
+/thesis/
+/tools/
+AGENTS.md
+AGENT.md
+
 # Credentials and local overrides
 .env
 .env.*
