@@ -109,6 +109,7 @@ $('connect-bridge').addEventListener('click', async () => {
     const url = new URL($('bridge-url').value);
     if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) || !['http:', 'https:'].includes(url.protocol)) throw new Error('Use the bridge running on localhost.');
     bridge = url.origin;
+    $('open-local-demo').href = `${bridge}/`;
     const status = await bridgeRequest('/api/status');
     if (status.service !== 'autoadapter-local-demo') throw new Error('This is not the AutoAdapter demo bridge.');
     token = status.token;
@@ -116,7 +117,7 @@ $('connect-bridge').addEventListener('click', async () => {
     $('connection-status').textContent = status.ready ? 'Connected to local MuJoCo. A live task uses the configured model and its existing usage budget. Source driver validation: 4/5; contact pressing did not pass.' : `Connected, but missing local input: ${status.missing.join(', ')}.`;
     if (status.has_run) { eventCursor = 0; enterLiveMode(); await pollLive(); }
   } catch (error) {
-    $('connection-status').textContent = `${error.message} Start the local bridge, then open its local page if your browser blocks access from GitHub Pages.`;
+    $('connection-status').textContent = 'The page could not connect to the local bridge. Check that it is running, or use Open local demo below if your browser blocks access from GitHub Pages.';
     $('run-live').disabled = true;
   } finally { $('connect-bridge').disabled = false; }
 });

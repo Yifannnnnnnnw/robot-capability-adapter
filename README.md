@@ -112,3 +112,8 @@ Recorded call seeking, both recorded driver failures, keyboard case switching,
 English copy, local links, syntax and a 390-pixel mobile viewport were checked.
 A video range request returned 206 with exactly the requested 100 bytes after
 fixing local seeking; the previous response was 200 with the whole video.
+
+The published page and recorded-call seeking were also checked on GitHub Pages.
+This browser timed out when connecting from the hosted origin to loopback;
+the page therefore includes a direct **Open local demo** fallback. The local
+page is the verified route for live execution in this browser.
