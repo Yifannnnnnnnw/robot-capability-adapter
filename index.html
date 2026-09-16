@@ -4,22 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f3fa">
-  <meta name="description" content="AutoAdapter 2.0 generates robot-specific drivers and validates their behaviour in MuJoCo. Explore a real ReCAP execution, one capability call at a time.">
-  <title>AutoAdapter 2.0 — From plans to robot motion</title>
+  <meta name="description" content="AA generates robot-specific drivers and validates their behaviour in MuJoCo. Explore a real ReCAP execution, one capability call at a time.">
+  <title>AA — From plans to robot motion</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232b3048'/%3E%3Cpath d='M7 24 16 7l9 17M11 18h10' fill='none' stroke='white' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css?v=unified1">
-  <script src="site.js?v=unified1" defer></script>
+  <script src="site.js?v=aa1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="header wrap">
-    <a class="brand" href="#" aria-label="AutoAdapter 2.0 home"><span class="brand-mark" aria-hidden="true">A</span> AutoAdapter <span class="version">2.0</span></a>
+    <a class="brand" href="#" aria-label="AA home"><span class="brand-mark" aria-hidden="true">A</span> AA</a>
     <nav aria-label="Main navigation"><a href="#cases">Robot demos</a><a href="#method">Method</a><a href="#research">Research</a><a class="nav-source" href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">GitHub ↗</a></nav>
   </header>
   <main id="main">
     <section class="intro wrap" aria-labelledby="hero-title">
       <div><p class="eyebrow">ROBOT-SPECIFIC DRIVER SYNTHESIS</p><h1 id="hero-title">Watch a plan<br>become <span>motion.</span></h1><div class="stage-legend" aria-label="Framework stages"><a href="#method" class="stage-design">Design</a><span aria-hidden="true">→</span><a href="#method" class="stage-generate">Generate</a><span aria-hidden="true">→</span><a href="#method" class="stage-validate">Validate</a><span aria-hidden="true">→</span><a href="#demo" class="stage-use">ReCAP</a></div></div>
-      <div class="intro-description"><p>AutoAdapter generates reusable robot drivers and checks their behaviour in MuJoCo. Follow a real ReCAP planner as it calls those capabilities to complete a task.</p><div class="intro-links"><a class="text-link" href="#cases">Explore 6 robots · 15 videos ↗</a><a class="text-link" href="#method">The method ↓</a><a class="text-link" href="#share">Share by QR ↗</a></div></div>
+      <div class="intro-description"><p>AA generates reusable robot drivers and checks their behaviour in MuJoCo. Follow a real ReCAP planner as it calls those capabilities to complete a task.</p><div class="intro-links"><a class="text-link" href="#cases">Explore 6 robots · 15 videos ↗</a><a class="text-link" href="#method">The method ↓</a><a class="text-link" href="#share">Share by QR ↗</a></div></div>
     </section>
 
     <section class="cases-section" id="cases" aria-labelledby="cases-title"><div class="wrap"><span id="demo" class="section-anchor" aria-hidden="true"></span>
@@ -139,20 +139,20 @@
     </div></section>
 
     <section class="section wrap" id="method" aria-labelledby="method-title">
-      <div class="section-heading"><div><p class="eyebrow">THE METHOD</p><h2 id="method-title">Build the interface.<br>Verify the behaviour.</h2></div><p>A planner can compose tools, but a new robot still needs its own implementation. AutoAdapter brings that robot-specific software into the generation loop.</p></div>
+      <div class="section-heading"><div><p class="eyebrow">THE METHOD</p><h2 id="method-title">Build the interface.<br>Verify the behaviour.</h2></div><p>A planner can compose tools, but a new robot still needs its own implementation. AA brings that robot-specific software into the generation loop.</p></div>
       <ol class="pipeline"><li class="stage-design"><span class="step-number">01 / DESIGN</span><h3>Define capabilities</h3><p>Turn robot descriptions and target tasks into reusable operations and measurable behavioural requirements.</p><span class="step-output">Robot information → interface &amp; tests</span></li><li class="stage-generate"><span class="step-number">02 / GENERATE · ReAct</span><h3>Synthesise a driver</h3><p>Implement those operations in Python, using the robot's actual joints, actuators and observations.</p><span class="step-output">Capability interface → driver</span></li><li class="stage-validate"><span class="step-number">03 / VALIDATE</span><h3>Observe and repair</h3><p>An independent Harness reads MuJoCo state, applies fixed criteria and provides feedback for driver repair.</p><span class="step-output">Physical state → verdict &amp; feedback</span></li><li class="stage-use"><span class="step-number">04 / USE · ReCAP</span><h3>Compose operations</h3><p>ReCAP calls the generated capabilities to perform downstream tasks, whose outcomes are evaluated separately.</p><span class="step-output">Reusable operations → tasks</span></li></ol>
       <aside class="method-note"><span class="note-label">Why independent checks?</span><p>Executable code can still produce the wrong movement. The Harness judges simulator observations outside the candidate driver's control. Capability specifications and tests are still authored during Design.</p></aside>
     </section>
 
     <section class="section wrap" id="research" aria-labelledby="research-title"><div class="section-heading"><div><p class="eyebrow">THE RESEARCH</p><h2 id="research-title">Three questions.<br>Distinct kinds of evidence.</h2></div><p>The MSc thesis separates framework operation, model comparison and cross-robot analysis. Driver validation and downstream task completion are reported separately.</p></div><div class="research-rows"><article><span class="mono">CHAPTER 03</span><h3>Auto-Adapter Framework</h3><p>Can the system produce independently validated drivers that support downstream tasks?</p></article><article><span class="mono">CHAPTER 04</span><h3>AutoAdapter-Bench</h3><p>How do language models perform as driver generators and as high-level decision-makers?</p></article><article><span class="mono">CHAPTER 05</span><h3>Cross-Robot Evaluation</h3><p>Where does the generation process work across robot configurations, and where does it fail?</p></article></div><div class="paper-link"><div><p class="eyebrow">MSc RESEARCH · UCL COMPUTER SCIENCE</p><h3>Auto-Adapter: Robot-Specific Driver Synthesis<br class="desktop-break"> with Independent Closed-Loop Validation</h3><p><a href="https://www.linkedin.com/in/yifan-wang-58203a2a8/" target="_blank" rel="noopener">Yifan Wang · LinkedIn ↗</a></p></div><a class="button secondary" href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">Project repository ↗</a></div></section>
     <section class="share-section wrap" id="share" aria-labelledby="share-title">
-      <div class="share-copy"><p class="eyebrow">WATCH &amp; CONNECT</p><h2 id="share-title">Watch the demos.<br>Stay in touch.</h2><p>Open the robot videos or connect with Yifan Wang on LinkedIn.</p><div class="share-actions"><a class="button secondary" href="assets/share-card.png" download="AutoAdapter-Share.png">Download both QR codes ↓</a><a class="text-link" href="assets/share-card.svg" download="AutoAdapter-Share.svg">Print-ready SVG ↗</a></div></div>
+      <div class="share-copy"><p class="eyebrow">WATCH &amp; CONNECT</p><h2 id="share-title">Watch the demos.<br>Stay in touch.</h2><p>Open the robot videos or connect with Yifan Wang on LinkedIn.</p><div class="share-actions"><a class="button secondary" href="assets/share-card.png?v=aa1" download="AA-Share.png">Download both QR codes ↓</a><a class="text-link" href="assets/share-card.svg?v=aa1" download="AA-Share.svg">Print-ready SVG ↗</a></div></div>
       <div class="share-codes">
-        <figure><a class="share-qr" href="https://yifannnnnnnnw.github.io/robot-capability-adapter/#cases" aria-label="Open the robot video gallery"><img src="assets/project-qr.svg" width="192" height="192" alt="QR code linking to the AutoAdapter robot videos"></a><figcaption><a href="https://yifannnnnnnnw.github.io/robot-capability-adapter/#cases">Project demos ↗</a><a class="qr-download" href="assets/project-qr.png" download="AutoAdapter-QR.png">Download PNG ↓</a></figcaption></figure>
+        <figure><a class="share-qr" href="https://yifannnnnnnnw.github.io/robot-capability-adapter/#cases" aria-label="Open the robot video gallery"><img src="assets/project-qr.svg" width="192" height="192" alt="QR code linking to the AA robot videos"></a><figcaption><a href="https://yifannnnnnnnw.github.io/robot-capability-adapter/#cases">Project demos ↗</a><a class="qr-download" href="assets/project-qr.png" download="AA-QR.png">Download PNG ↓</a></figcaption></figure>
         <figure><a class="share-qr" href="https://www.linkedin.com/in/yifan-wang-58203a2a8/" target="_blank" rel="noopener" aria-label="Open Yifan Wang on LinkedIn"><img src="assets/linkedin-qr.svg" width="192" height="192" alt="QR code linking to Yifan Wang on LinkedIn"></a><figcaption><a href="https://www.linkedin.com/in/yifan-wang-58203a2a8/" target="_blank" rel="noopener">Yifan Wang · LinkedIn ↗</a><a class="qr-download" href="assets/linkedin-qr.png" download="Yifan-Wang-LinkedIn-QR.png">Download PNG ↓</a></figcaption></figure>
       </div>
     </section>
   </main>
-  <footer class="footer wrap"><a class="brand" href="#">AutoAdapter <span class="version">2.0</span></a><p>Generated capabilities. Independently observed behaviour.</p><a href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">GitHub ↗</a></footer>
+  <footer class="footer wrap"><a class="brand" href="#">AA</a><p>Generated capabilities. Independently observed behaviour.</p><a href="https://github.com/Yifannnnnnnnw/robot-capability-adapter">GitHub ↗</a></footer>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# AutoAdapter 2.0 — interactive project page
+# AA — interactive project page
 
 An English, dependency-free GitHub Pages site with one six-robot execution
 explorer:
@@ -19,7 +19,7 @@ explorer:
 
 ## Start a live demo
 
-From the existing AutoAdapter project checkout:
+From the existing AA project checkout:
 
 ```sh
 AA1/.venv/bin/python website/local_demo.py

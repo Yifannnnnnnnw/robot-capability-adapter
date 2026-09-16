@@ -147,7 +147,7 @@ $('connect-bridge').addEventListener('click', async () => {
     bridge = url.origin;
     $('open-local-demo').href = `${bridge}/`;
     const status = await bridgeRequest('/api/status');
-    if (status.service !== 'autoadapter-local-demo') throw new Error('This is not the AutoAdapter demo bridge.');
+    if (status.service !== 'autoadapter-local-demo') throw new Error('This is not the AA demo bridge.');
     token = status.token;
     $('run-live').disabled = !status.ready || status.running;
     $('connection-status').textContent = status.ready ? 'Connected to local MuJoCo. A live task uses the configured model and its existing usage budget. Source driver validation: 4/5; contact pressing did not pass.' : `Connected, but missing local input: ${status.missing.join(', ')}.`;

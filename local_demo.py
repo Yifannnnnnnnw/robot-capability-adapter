@@ -314,7 +314,7 @@ def serve(port):
                 return self.respond({"error": str(error)}, 409)
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"AutoAdapter local demo: http://127.0.0.1:{port}", flush=True)
+    print(f"AA local demo: http://127.0.0.1:{port}", flush=True)
     print("No model calls until Run live task is selected. Ctrl+C stops the bridge and its worker.", flush=True)
     try:
         server.serve_forever()
