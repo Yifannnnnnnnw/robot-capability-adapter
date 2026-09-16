@@ -38,6 +38,15 @@ CLIPS = {
 TOLERANCE = 1e-8
 
 
+def driver_success(result):
+    """Read the explicit driver flag from direct or older MCP-wrapped results."""
+    if isinstance(result, dict) and isinstance(result.get("result"), dict):
+        result = result["result"]
+    if not isinstance(result, dict) or not isinstance(result.get("success"), bool):
+        raise RuntimeError("Driver result has no explicit boolean success flag")
+    return result["success"]
+
+
 def camera_for(model, data):
     import mujoco
     import numpy as np
@@ -165,12 +174,13 @@ def replay(clip, work):
             observed = runtime.observe()
             error = compare_endpoint(observed, call["observation"], f"call {index}")
             expected_result = call["return_value"]
-            if result.get("success") != expected_result.get("success"):
+            success = driver_success(result)
+            if success != driver_success(expected_result):
                 raise RuntimeError(f"Call {index} driver success flag differs")
             endpoint_checks.append({
                 "call": index, "tool": call["tool"], "time": float(data.time),
                 "frame": len(frames) - 1, "max_absolute_error": error,
-                "driver_success": result.get("success"),
+                "driver_success": success,
                 "videoStart": round(call_start - start_time, 9),
                 "videoEnd": round(float(data.time) - start_time, 9),
             })

@@ -202,3 +202,20 @@ nav a:hover, .text-link:hover { color: #242b42; }
   .share-actions { gap: 14px; }
   .share-codes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 402px; }
 }
+
+/* One robot explorer, with the Panda call inspector inside its selected task. */
+.cases-section { padding-block: 0; }
+.section-anchor { display: block; scroll-margin-top: 2rem; }
+.panda-panel { display: block; padding: 0; overflow: hidden; }
+.panda-intro { display: grid; grid-template-columns: .8fr 1.4fr; gap: 32px; padding: 28px 30px 24px; }
+.panda-intro .clip-list { margin-top: 0; }
+.panda-intro .case-lead { margin-bottom: 0; }
+.panda-panel .demo-toolbar { border-top: 1px solid var(--line); }
+.explorer-hint { font-size: .8125rem; color: var(--muted); }
+#panda-other-media { padding: 0 30px 28px; max-width: 920px; margin-inline: auto; }
+@media (max-width: 700px) {
+  .panda-panel { padding: 0; }
+  .panda-intro { grid-template-columns: 1fr; gap: 8px; padding: 20px; }
+  .panda-intro .clip-list { margin-top: 12px; }
+  #panda-other-media { padding: 0 18px 20px; }
+}

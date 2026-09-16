@@ -1,14 +1,17 @@
 # AutoAdapter 2.0 — interactive project page
 
-An English, dependency-free GitHub Pages site with an execution explorer and
-a three-robot film library:
+An English, dependency-free GitHub Pages site with one six-robot execution
+explorer:
 
 - **Recorded execution:** an HD replay of the recorded Panda task, with 12
   synchronised driver calls, their requests, public ReCAP plan summaries and
   driver feedback. This works on GitHub Pages without a backend.
-- **Robot film library:** ten selected recordings across Franka Panda, LEAP
-  Hand and Skydio X2, with task selection, still previews and individual physical
-  outcomes. Switching robots pauses the previous video.
+- **Robot film library:** fifteen selected recordings across Franka Panda, LEAP
+  Hand, Skydio X2, Unitree Go2, PiPER and SO-101. It distinguishes complete
+  ReCAP tasks from Harness capability checks. Switching robots pauses the
+  previous video. The Panda pick-and-place selection includes its synchronised
+  call inspector; drawer and dial selections show their own recordings. Both
+  `#cases` (including the QR destination) and `#demo` land at this same section.
 - **Live local simulation:** connect the page to `local_demo.py`, then run the
   same task with the real model, ReCAP, MCP, generated driver and MuJoCo. This
   requires the existing research checkout and its local generated artifacts.
@@ -123,6 +126,35 @@ limit and ends slightly short of a full revolution. Both retain their original
 failed task verdicts. These selections are not a new experiment or aggregate
 success rate.
 
+### Additional robot recordings
+
+These clips extend the presentation using saved Chapter 3/4 records. They do
+not change the three-robot scope of thesis Chapter 5 or create a pooled result.
+Sources below are relative to the project root:
+
+| Published clip | Source directory | Evidence shown |
+|---|---|---|
+| `assets/robots/piper-recap.mp4` | `expriment/chapter3_process_cases/data/runs/piper_sonnet46/demo` | Passed complete ReCAP task, Astra controller; Sonnet 4.6 driver, validation 5/5 |
+| `assets/robots/so101-waypoints.mp4` | `expriment/chapter4_synthesis/data/runs/exp2a_8000_01/r03_sonnet46_so101/generation/menagerie_so101/validation/attempt-003-152fd27cfa/waypoint_two_point` | Passed Harness capability check; 0.86 mm ordered-waypoint error |
+| `assets/robots/so101-reach.mp4` | `expriment/chapter4_synthesis/data/runs/exp2a_8000_01/r03_sonnet46_so101/generation/menagerie_so101/validation/attempt-001-ce93c3f113/reach_forward` | Passed Harness capability check |
+| `assets/robots/go2-forward.mp4` | `expriment/chapter4_synthesis/data/runs/exp2a_8000_01/r01_opus5_go2/generation/go2/validation/attempt-002-fafd59eb11/goto_forward_pose` | Passed Harness check; 105.93 mm base-position error, 400 mm limit |
+| `assets/robots/go2-waypoints.mp4` | `expriment/chapter4_synthesis/data/runs/exp2a_8000_01/r01_opus5_go2/generation/go2/validation/attempt-003-83e940636e/path_three_waypoints` | Passed Harness check; 151.52 mm ordered-waypoint error, 450 mm limit |
+
+PiPER replays its original exported calls with full physical-trace and endpoint
+comparison. SO-101 restores all six saved joint positions and checks the saved
+site positions without advancing dynamics. Go2 re-executes each check's exact
+saved candidate through the trusted Harness recorder, comparing every saved
+sample, contact, endpoint and measurement before rendering. Its generated
+capabilities use the project's retained locomotion policy. These capability
+checks are not labelled as ReCAP tasks. The added clips use a presentation
+camera fitted to the recorded robot motion, with poses and timing preserved.
+
+Additional-robot verification: PiPER reproduced all 4,151 physical samples
+and four full call endpoints exactly. Go2 reproduced all 7,182 saved samples,
+contacts and measurement values exactly. SO-101 restored and checked all
+1,622 source states with zero site-position error. All five added videos
+decode at 1440 × 1080, 30 fps, with the recorded simulation duration.
+
 ### Regenerate the HD media
 
 From the original research checkout, with its saved scenes, drivers and traces:
@@ -130,11 +162,14 @@ From the original research checkout, with its saved scenes, drivers and traces:
 ```sh
 AA1/.venv/bin/python website/scripts/render_hd_states.py
 AA1/.venv/bin/python website/scripts/render_hd_panda.py
+AA1/.venv/bin/python website/scripts/render_hd_extra_arms.py
+AA1/.venv/bin/python website/scripts/render_hd_go2.py
 ```
 
-Both scripts need the existing MuJoCo environment, an offscreen graphics context,
+The scripts need the existing MuJoCo environment, an offscreen graphics context,
 and FFmpeg. They write website media and temporary presentation outputs only.
-The 4:3 render preserves the original camera and avoids the old encoder's
+The 4:3 render keeps the original scene geometry; selected added clips use
+cameras fitted to their recorded motion. It avoids the old encoder's
 480 × 360 to 480 × 368 height expansion. Videos now follow recorded simulation
 time; the execution explorer’s call boundaries use that same clock. MP4 metadata
 is placed first for browser playback.
@@ -220,3 +255,14 @@ The published page and recorded-call seeking were also checked on GitHub Pages.
 This browser timed out when connecting from the hosted origin to loopback;
 the page therefore includes a direct **Open local demo** fallback. The local
 page is the verified route for live execution in this browser.
+
+### Unified robot explorer checked on 16 September 2026
+
+The single demo section contains six robot tabs and fifteen video choices.
+Both existing anchors land at its top. Panda call 2 still seeks to 4.318 s and
+shows its original failed driver response; drawer/dial selections hide that
+inspector, and returning to pick-and-place restores it. Switching robots pauses
+the previous recording. Go2 playback reports 1440 × 1080, and its capability
+verdict remains distinct from a ReCAP task verdict. A 390-pixel browser frame
+showed all six tabs without horizontal overflow. Local assets, unique IDs and
+JavaScript/Python syntax were checked. This UI change did not start a model run.

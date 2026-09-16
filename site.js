@@ -96,25 +96,32 @@ selectCase(0); tablist.hidden = false;
 
 // Each choice remains a direct video link when JavaScript is unavailable.
 panels.forEach(panel => {
-  const player = panel.querySelector('video');
+  const player = panel.querySelector('.case-media video');
   const choices = [...panel.querySelectorAll('.clip-choice')];
   choices.forEach(choice => choice.addEventListener('click', event => {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     if (choice.getAttribute('aria-current') === 'true') return;
     player.pause();
+    choices.forEach(item => item.setAttribute('aria-current', String(item === choice)));
+    if (panel.id === 'case-panda') {
+      const inspectExecution = choice.dataset.execution === 'true';
+      video.pause();
+      $('panda-execution').hidden = !inspectExecution;
+      $('panda-other-media').hidden = inspectExecution;
+      if (inspectExecution) return;
+    }
     player.src = choice.getAttribute('href');
     player.poster = choice.dataset.poster;
     player.setAttribute('aria-label', `${panel.querySelector('h3').textContent} — ${choice.dataset.title}`);
     player.querySelector('a').href = player.src;
     player.load();
-    choices.forEach(item => item.setAttribute('aria-current', String(item === choice)));
     panel.querySelector('.clip-title').textContent = choice.dataset.title;
     panel.querySelector('.clip-caption').textContent = choice.dataset.caption;
     panel.querySelector('.clip-attempt').textContent = choice.dataset.attempt;
     const outcome = panel.querySelector('.clip-outcome');
     outcome.className = `clip-outcome ${choice.dataset.outcome}`;
-    outcome.textContent = choice.dataset.outcome === 'passed' ? 'Physical task: passed' : 'Physical task: not passed';
+    outcome.textContent = choice.dataset.resultLabel || (choice.dataset.outcome === 'passed' ? 'Physical task: passed' : 'Physical task: not passed');
     panel.querySelector('.clip-download').href = choice.getAttribute('href');
   }));
 });
