@@ -1,4 +1,4 @@
-# AA — interactive project page
+# Auto Adapter — interactive project page
 
 An English, dependency-free GitHub Pages site with one six-robot execution
 explorer:
@@ -10,7 +10,8 @@ explorer:
   Hand, Skydio X2, Unitree Go2, PiPER and SO-101. It distinguishes complete
   ReCAP tasks from Harness capability checks. Switching robots pauses the
   previous video. The Panda pick-and-place selection includes its synchronised
-  call inspector; drawer and dial selections show their own recordings. Both
+  call inspector in an expandable panel below the shared video layout; drawer
+  and dial selections show their own recordings. Both
   `#cases` (including the QR destination) and `#demo` land at this same section.
 - **Live local simulation:** connect the page to `local_demo.py`, then run the
   same task with the real model, ReCAP, MCP, generated driver and MuJoCo. This
@@ -19,7 +20,7 @@ explorer:
 
 ## Start a live demo
 
-From the existing AA project checkout:
+From the existing Auto Adapter project checkout:
 
 ```sh
 AA1/.venv/bin/python website/local_demo.py
@@ -259,10 +260,16 @@ page is the verified route for live execution in this browser.
 ### Unified robot explorer checked on 16 September 2026
 
 The single demo section contains six robot tabs and fifteen video choices.
-Both existing anchors land at its top. Panda call 2 still seeks to 4.318 s and
+Both existing anchors land at its top. Opening Panda’s driver-call details and selecting call 2 seeks to 4.318 s and
 shows its original failed driver response; drawer/dial selections hide that
 inspector, and returning to pick-and-place restores it. Switching robots pauses
 the previous recording. Go2 playback reports 1440 × 1080, and its capability
 verdict remains distinct from a ReCAP task verdict. A 390-pixel browser frame
 showed all six tabs without horizontal overflow. Local assets, unique IDs and
 JavaScript/Python syntax were checked. This UI change did not start a model run.
+
+Panda now uses the same description, task-list, video and caption columns as
+the other robots. Its call inspector and local connection sit in an optional
+expandable panel below. Checked all three task selections and return to the
+recorded inspector, exact Panda/LEAP desktop media dimensions, and 390-pixel
+layout with details both closed and open. Public branding is **Auto Adapter**.

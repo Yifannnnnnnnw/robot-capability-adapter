@@ -35,6 +35,7 @@ function recordedMode() {
     $('task-result-description').textContent = 'Block released and supported for 2.502 s (required: 0.2 s). Final goal distance: 11.84 mm (limit: 70 mm). This is one recorded task, not a success rate.';
     showRecordedCall(selectedCall);
   }
+  syncPandaView();
 }
 async function loadReplay() {
   try {
@@ -95,8 +96,33 @@ tabs.forEach((tab, index) => {
 selectCase(0); tablist.hidden = false;
 
 // Each choice remains a direct video link when JavaScript is unavailable.
+function updateClipCaption(panel, choice) {
+  const livePick = panel.id === 'case-panda' && choice.dataset.execution === 'true' && live;
+  panel.querySelector('.clip-title').textContent = livePick ? 'Pick & place · live' : choice.dataset.title;
+  panel.querySelector('.clip-caption').textContent = livePick ? $('task-result-description').textContent : choice.dataset.caption;
+  panel.querySelector('.clip-attempt').textContent = livePick ? 'Live local simulation' : choice.dataset.attempt;
+  const outcome = panel.querySelector('.clip-outcome');
+  const liveVerdict = $('task-verdict').textContent;
+  outcome.className = `clip-outcome ${livePick ? (liveVerdict === 'Live task: passed' ? 'passed' : liveVerdict === 'Live task: not passed' ? 'not-passed' : 'pending') : choice.dataset.outcome}`;
+  outcome.textContent = livePick ? liveVerdict : choice.dataset.resultLabel || (choice.dataset.outcome === 'passed' ? 'Physical task: passed' : 'Physical task: not passed');
+  const download = panel.querySelector('.clip-download');
+  download.href = choice.getAttribute('href');
+  download.hidden = livePick;
+}
+function syncPandaView() {
+  const panel = $('case-panda');
+  const choice = panel.querySelector('.clip-choice[aria-current="true"]');
+  const inspectExecution = choice.dataset.execution === 'true';
+  $('panda-recording').hidden = !inspectExecution;
+  $('panda-other-video').hidden = inspectExecution;
+  $('panda-execution').hidden = !inspectExecution;
+  $('panda-execution').querySelector('summary > span:last-child').textContent = live ? 'Pick & place · Live local simulation' : 'Pick & place · 12 recorded calls';
+  video.hidden = live;
+  $('live-frame').hidden = !live;
+  updateClipCaption(panel, choice);
+}
 panels.forEach(panel => {
-  const player = panel.querySelector('.case-media video');
+  const player = panel.id === 'case-panda' ? $('panda-other-video') : panel.querySelector('.case-media video');
   const choices = [...panel.querySelectorAll('.clip-choice')];
   choices.forEach(choice => choice.addEventListener('click', event => {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
@@ -105,24 +131,16 @@ panels.forEach(panel => {
     player.pause();
     choices.forEach(item => item.setAttribute('aria-current', String(item === choice)));
     if (panel.id === 'case-panda') {
-      const inspectExecution = choice.dataset.execution === 'true';
       video.pause();
-      $('panda-execution').hidden = !inspectExecution;
-      $('panda-other-media').hidden = inspectExecution;
-      if (inspectExecution) return;
+      syncPandaView();
+      if (choice.dataset.execution === 'true') return;
     }
     player.src = choice.getAttribute('href');
     player.poster = choice.dataset.poster;
     player.setAttribute('aria-label', `${panel.querySelector('h3').textContent} — ${choice.dataset.title}`);
     player.querySelector('a').href = player.src;
     player.load();
-    panel.querySelector('.clip-title').textContent = choice.dataset.title;
-    panel.querySelector('.clip-caption').textContent = choice.dataset.caption;
-    panel.querySelector('.clip-attempt').textContent = choice.dataset.attempt;
-    const outcome = panel.querySelector('.clip-outcome');
-    outcome.className = `clip-outcome ${choice.dataset.outcome}`;
-    outcome.textContent = choice.dataset.resultLabel || (choice.dataset.outcome === 'passed' ? 'Physical task: passed' : 'Physical task: not passed');
-    panel.querySelector('.clip-download').href = choice.getAttribute('href');
+    updateClipCaption(panel, choice);
   }));
 });
 document.querySelectorAll('video').forEach(player => {
@@ -147,7 +165,7 @@ $('connect-bridge').addEventListener('click', async () => {
     bridge = url.origin;
     $('open-local-demo').href = `${bridge}/`;
     const status = await bridgeRequest('/api/status');
-    if (status.service !== 'autoadapter-local-demo') throw new Error('This is not the AA demo bridge.');
+    if (status.service !== 'autoadapter-local-demo') throw new Error('This is not the Auto Adapter demo bridge.');
     token = status.token;
     $('run-live').disabled = !status.ready || status.running;
     $('connection-status').textContent = status.ready ? 'Connected to local MuJoCo. A live task uses the configured model and its existing usage budget. Source driver validation: 4/5; contact pressing did not pass.' : `Connected, but missing local input: ${status.missing.join(', ')}.`;
@@ -172,6 +190,7 @@ function enterLiveMode() {
   ['play-run', 'call-picker', 'previous-call', 'next-call', 'playback-speed', 'run-live', 'connect-bridge'].forEach(id => $(id).disabled = true);
   $('stop-live').disabled = false; $('call-counter').textContent = 'Waiting for model';
   showCall({}, false);
+  syncPandaView();
 }
 $('run-live').addEventListener('click', async () => {
   $('run-live').disabled = true;
@@ -208,6 +227,7 @@ async function pollLive() {
       const back = document.createElement('button'); back.type = 'button'; back.className = 'button secondary'; back.textContent = 'Return to recorded demo';
       back.addEventListener('click', () => { recordedMode(); back.remove(); });
       $('demo-status').replaceChildren(back);
+      syncPandaView();
     }
   } catch (error) { $('connection-status').textContent = `Connection lost: ${error.message} The local worker may still be running; reconnect to check or stop it.`; $('connect-bridge').disabled = false; }
   finally { polling = false; }
