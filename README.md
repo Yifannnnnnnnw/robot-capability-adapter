@@ -6,7 +6,7 @@ a three-robot film library:
 - **Recorded execution:** an HD replay of the recorded Panda task, with 12
   synchronised driver calls, their requests, public ReCAP plan summaries and
   driver feedback. This works on GitHub Pages without a backend.
-- **Robot film library:** nine selected recordings across Franka Panda, LEAP
+- **Robot film library:** ten selected recordings across Franka Panda, LEAP
   Hand and Skydio X2, with task selection, still previews and individual physical
   outcomes. Switching robots pauses the previous video.
 - **Live local simulation:** connect the page to `local_demo.py`, then run the
@@ -67,15 +67,15 @@ separate downstream task success does not overwrite that result.
 | `assets/leap-tasks.png` | `thesis/assets/chapter5_leap_tasks.png` |
 | `assets/skydio-tasks.png` | `thesis/assets/chapter5_skydio_tasks.png` |
 
-The displayed video is a native 1440 × 1080 replay: 628 frames, 30 fps. It
-re-executes the original recorded requests through the saved exported driver
-and MuJoCo, with the resulting trajectory checked against the original state
-trace. It makes no new model calls. Call boundaries
-are reconstructed from the actual recording rule: one frame every 16 physics
-steps, two initial frames and one post-call observation frame. That yields 628
-frames, matching the video exactly. Model waiting time is omitted. The source
-video has no embedded per-frame simulation timestamps; the complete alignment
-method and limitations are recorded in `panda-replay.json`.
+The displayed video is a native 1440 × 1080 replay at actual simulation speed:
+592 frames at 30 fps, showing 19.674 seconds of recorded motion. It re-executes
+the original requests through the saved exported driver and MuJoCo, checking
+the resulting trajectory against the original state trace. It makes no new
+model calls. Each call's video boundary is its recorded simulator time minus
+the initial simulator time (0.3 seconds). The complete alignment method is
+recorded in `panda-replay.json`. Initial and terminal poses are included; the
+terminal frame adds less than two frames to the encoded duration. Model
+waiting time is omitted.
 
 Only public action summaries, requests and selected observations are published.
 No raw model-message history, system prompts, absolute local paths, endpoints
@@ -93,7 +93,11 @@ replays, not new planner runs or experiment results. The original research
 recordings and verdicts are unchanged. All sources below are relative to
 `expriment/chapter5_cross_robot/data/runs/`; each source directory also contains
 the `task_report.json` used for the physical verdict. Durations are encoded
-playback time, not wall-clock or simulation time.
+playback time at 1× simulation speed. Each video covers its complete recorded
+task; model waiting time is omitted. Uniform 30 fps output uses the nearest
+recorded physics-step pose, with a brief terminal frame hold of less than two
+video frames. This replaces the old every-16-steps cadence, which accelerated
+Skydio motion by about 4.8×.
 
 | Published clip | Original recording / trace directory | Physical outcome |
 |---|---|---|
@@ -106,14 +110,18 @@ playback time, not wall-clock or simulation time.
 | `assets/robots/skydio-transit.mp4` | `skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/video.mp4` | Passed; First diagnostic attempt |
 | `assets/robots/skydio-waypoints.mp4` | `skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/video.mp4` | Passed; First diagnostic attempt |
 | `assets/robots/skydio-orbit.mp4` | `skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/video.mp4` | Not passed; Clarified-task retry |
+| `assets/robots/skydio-orbit-full.mp4` | `skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central/video.mp4` | Not passed; First diagnostic attempt |
 
 LEAP uses the unchanged generated driver after three missing MCP forwarding
 wrappers were completed manually; capability validation remains 4/6. Its reach
 clip is a direct retry, while cube manipulation and joint-pose matching are
 first attempts. Skydio uses an assisted export after automatic generation
 reached its turn limit; separate native capability validation remains 4/5.
-The orbit is a clarified-task retry and still fails the inward-facing bearing
-criterion. These selections are not a new experiment or aggregate success rate.
+The clarified orbit retry fails the inward-facing bearing criterion. The
+extended first orbit attempt lasts 68.93 simulation seconds, exceeds the 60 s
+limit and ends slightly short of a full revolution. Both retain their original
+failed task verdicts. These selections are not a new experiment or aggregate
+success rate.
 
 ### Regenerate the HD media
 
@@ -127,23 +135,25 @@ AA1/.venv/bin/python website/scripts/render_hd_panda.py
 Both scripts need the existing MuJoCo environment, an offscreen graphics context,
 and FFmpeg. They write website media and temporary presentation outputs only.
 The 4:3 render preserves the original camera and avoids the old encoder's
-480 × 360 to 480 × 368 height expansion. Frame counts and all recorded-call
-boundaries stay unchanged. MP4 metadata is placed first for browser playback.
+480 × 360 to 480 × 368 height expansion. Videos now follow recorded simulation
+time; the execution explorer’s call boundaries use that same clock. MP4 metadata
+is placed first for browser playback.
 
 The website uses one continuous, soft gradient backdrop with neutral translucent
 surfaces. Stage-colored strips, borders and separate color blocks have been removed.
 
-HD verification on 16 September 2026: all nine videos decode at 1440 × 1080
-and 30 fps with their original frame counts (2,970 frames total). The three Panda
-replays reproduced all 27,614 physical samples, contacts and full call-endpoint
-states exactly. The six state-restored clips checked every rendered pose, with
-maximum bound-pose error 2.34 × 10⁻¹⁵.
+### Real-time playback verification
 
-Local media links
-resolve, LEAP and Skydio play in the browser, task changes update the result
-caption, and keyboard robot switching works. Desktop and 390 px layouts have
-no horizontal overflow. The original Panda call replay still exposes its
-recorded failed request. No live model run was needed for this presentation update.
+The original full Panda traces, contacts and call-endpoint states are checked
+before rendering. Every LEAP/Skydio rendered pose is checked against the saved
+bindings. Output checks cover 1440 × 1080 dimensions, 30 fps, complete decoding,
+and real-time duration including the short terminal frame. No live model run
+is needed for this presentation update.
+
+Checked on 16 September 2026: all 10 videos decode correctly (7,410 frames).
+Browser playback of the 69 s orbit, Panda call seeking, and the 390 px layout
+passed. Both standalone QR images and the combined share card decoded to
+the exact project and LinkedIn URLs using native barcode detection.
 
 ## Publishing
 
@@ -159,6 +169,19 @@ just to deploy the page. Never push to AA1's original/upstream repository.
 
 GitHub's [publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 explains branch-based hosting.
+
+### Shareable QR code
+
+`assets/project-qr.png` and `assets/project-qr.svg` encode the public gallery:
+`https://yifannnnnnnnw.github.io/robot-capability-adapter/#cases`.
+`assets/linkedin-qr.png` and `assets/linkedin-qr.svg` encode the user-provided
+profile: `https://www.linkedin.com/in/yifan-wang-58203a2a8/`.
+The **Share by QR** link opens both codes, clearly labelled **Project demos**
+and **LinkedIn**, plus individual downloads. `assets/share-card.png` and
+`assets/share-card.svg` combine both codes in one shareable card. The PNG is
+suitable for sharing; the SVG stays sharp at print sizes. Public recorded
+videos work on a phone without a login or local simulator. The author name
+also links to LinkedIn.
 
 ### Printed QR code redirect
 

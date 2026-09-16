@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce the three recorded Panda clips for native-resolution presentation.
+"""Replay three recorded Panda tasks at simulation speed in native resolution.
 
 Run from the repository root with the existing AA1 environment:
     AA1/.venv/bin/python website/scripts/render_hd_panda.py --work-dir /tmp/panda-hd
@@ -11,6 +11,8 @@ Recorded requests call the original exported server functions and real driver;
 there are no model calls. Outputs are presentation replays, not new experiment
 evidence. Rendering starts only after every bound physics sample and complete
 call-endpoint qpos/qvel reproduce the recording within 1e-8 absolute error.
+Frames sample the nearest real physics state at 30 fps, with initial and final
+poses retained. Playback excludes planner waiting time.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -110,12 +113,20 @@ def replay(clip, work):
     robot = runtime.robot
     model, data = robot.model, robot.data
     cam = camera_for(model, data)
+    start_time = float(original["sim_time_start"])
+    duration = float(original["sim_time_end"]) - start_time
+    frame_count = math.ceil(duration * 30) + 1
+    video_times = np.minimum(np.arange(frame_count) / 30, duration)
+    target_times = start_time + video_times
     frames = []
-    steps = 0
+    next_frame = 1
     endpoint_checks = []
 
-    def snapshot():
-        frames.append((float(data.time), data.qpos.copy(), data.qvel.copy(), data.ctrl.copy()))
+    def state():
+        return (float(data.time), data.qpos.copy(), data.qvel.copy(), data.ctrl.copy())
+
+    previous_state = state()
+    frames.append(previous_state)
 
     def compare_endpoint(observation, expected, label):
         error = max(abs(observation["sim_time_s"] - expected["sim_time_s"]), *[
@@ -126,29 +137,32 @@ def replay(clip, work):
             raise RuntimeError(f"{label} full state differs: {error}")
         return error
 
-    # The original recorder is installed after the DemoTrace step hook.
+    # Sample the same physical trajectory at actual simulation time, rather than
+    # keeping the original recorder's every-16-steps presentation cadence.
     inner_step = mujoco.mj_step
 
     def capture_step(current_model, current_data, nstep=1):
-        nonlocal steps
+        nonlocal next_frame, previous_state
         if current_model is not model or current_data is not data:
             return inner_step(current_model, current_data, nstep)
         for _ in range(int(nstep)):
             inner_step(model, data, 1)
-            steps += 1
-            if steps % 16 == 0:
-                snapshot()
+            current_state = state()
+            while next_frame < frame_count and target_times[next_frame] <= data.time + TOLERANCE:
+                target = target_times[next_frame]
+                nearest = min((previous_state, current_state), key=lambda item: abs(item[0] - target))
+                frames.append(nearest)
+                next_frame += 1
+            previous_state = current_state
 
     mujoco.mj_step = capture_step
     try:
-        snapshot()
         initial = runtime.observe()
-        snapshot()
         initial_error = compare_endpoint(initial, original["initial_observation"], "initial")
+        call_start = start_time
         for index, call in enumerate(original["tool_call_log"], 1):
             result = getattr(server, call["tool"])(request=call["request"])
             observed = runtime.observe()
-            snapshot()
             error = compare_endpoint(observed, call["observation"], f"call {index}")
             expected_result = call["return_value"]
             if result.get("success") != expected_result.get("success"):
@@ -157,7 +171,10 @@ def replay(clip, work):
                 "call": index, "tool": call["tool"], "time": float(data.time),
                 "frame": len(frames) - 1, "max_absolute_error": error,
                 "driver_success": result.get("success"),
+                "videoStart": round(call_start - start_time, 9),
+                "videoEnd": round(float(data.time) - start_time, 9),
             })
+            call_start = float(data.time)
             print(f"{clip}: reproduced call {index}/{len(original['tool_call_log'])}", flush=True)
     finally:
         mujoco.mj_step = inner_step
@@ -165,11 +182,13 @@ def replay(clip, work):
     if runtime_report["error"] or runtime_report["physics_trace"]["error"]:
         raise RuntimeError(f"Replay runtime error: {runtime_report}")
     physics = compare_trace(task_dir / "physics_samples.jsonl", work / "physics_samples.jsonl")
-    expected_frames = original["n_frames"]
-    if len(frames) != expected_frames:
-        raise RuntimeError(f"Frame count differs: {len(frames)} != {expected_frames}")
+    if len(frames) != frame_count:
+        raise RuntimeError(f"Real-time frame count differs: {len(frames)} != {frame_count}")
+    max_sampling_error = float(np.max(np.abs(np.array([f[0] for f in frames]) - target_times)))
+    if max_sampling_error > float(model.opt.timestep) / 2 + TOLERANCE:
+        raise RuntimeError(f"A video frame is not the nearest physics sample: {max_sampling_error}")
     np.savez_compressed(
-        work / "frame_states.npz", time=np.array([f[0] for f in frames]),
+        work / "frame_states.npz", time=np.array([f[0] for f in frames]), video_time=video_times,
         qpos=np.stack([f[1] for f in frames]), qvel=np.stack([f[2] for f in frames]),
         ctrl=np.stack([f[3] for f in frames]),
     )
@@ -180,6 +199,10 @@ def replay(clip, work):
         "physics_comparison": physics, "initial_state_max_absolute_error": initial_error,
         "call_endpoints": endpoint_checks, "frame_count": len(frames), "fps": 30,
         "camera": cam, "scene_path": config["scene_path"],
+        "source_frame_count": original["n_frames"],
+        "simulation_duration_s": duration,
+        "sampling": "30 fps at actual simulation speed, nearest physics state, initial and terminal poses included",
+        "max_frame_sampling_error_s": max_sampling_error,
     }
     (work / "replay_report.json").write_text(json.dumps(report, indent=2) + "\n")
     print(f"{clip}: all {physics['samples_compared']} physics samples match; {len(frames)} frame states saved", flush=True)

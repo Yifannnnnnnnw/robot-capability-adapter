@@ -1,14 +1,16 @@
-"""Render the six selected LEAP/Skydio clips from their saved physical states.
+"""Render the selected LEAP/Skydio clips at actual simulation speed.
 
 Run with AA1/.venv/bin/python website/scripts/render_hd_states.py.
 Only forward kinematics are evaluated; this never advances a simulation or
-loads a driver. The original capture schedule and camera are retained.
+loads a driver. Uniform 30 fps frames use the nearest saved physical states,
+with the exact initial and terminal poses included. The camera is retained.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import subprocess
 import sys
@@ -32,6 +34,7 @@ SOURCES = {
     "skydio-transit": "skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central",
     "skydio-waypoints": "skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central",
     "skydio-orbit": "skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central",
+    "skydio-orbit-full": "skydio_single_20260915_01/tasks_astra_diagnostic/X2-T07_central",
 }
 
 
@@ -43,8 +46,8 @@ def read_jsonl(path: Path):
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def capture_indices(source: Path, rows: list[dict]) -> list[int]:
-    """Initial capture + initial observe + every 16 steps + call endpoints."""
+def realtime_indices(source: Path, rows: list[dict]) -> tuple[list[int], dict]:
+    """Sample the trace at 30 fps, preserving its actual elapsed time."""
     times = np.asarray([row["time"] for row in rows])
     runtime = read_json(source / "runtime_report.json")
     trace = runtime["physics_trace"]
@@ -52,19 +55,31 @@ def capture_indices(source: Path, rows: list[dict]) -> list[int]:
         raise ValueError(f"incomplete physical trace: {source}")
     if not np.allclose(np.diff(times), trace["timestep_s"], atol=1e-10, rtol=0):
         raise ValueError(f"nonuniform physical trace: {source}")
-    indices = [0, 0, *range(16, len(rows), 16)]
-    for event in read_jsonl(source / "trace.jsonl"):
-        if event["event"] != "capability_result":
-            continue
-        time = event["feedback"]["observations"]["sim_time_s"]
-        index = int(np.argmin(np.abs(times - time)))
-        if abs(times[index] - time) > 1e-9:
-            raise ValueError(f"missing recorded endpoint at {time}: {source}")
-        indices.append(index)
-    indices.sort()
-    if len(indices) != runtime["frame_count"]:
-        raise ValueError(f"capture schedule does not match original: {source}")
-    return indices
+    if not np.allclose([times[0], times[-1]],
+                       [runtime["sim_time_start"], runtime["sim_time_end"]],
+                       atol=1e-9, rtol=0):
+        raise ValueError(f"physical trace does not cover the complete task: {source}")
+    duration = float(times[-1] - times[0])
+    # Remove floating-point drift at an exact frame boundary before rounding up.
+    frame_count = math.ceil(round(duration * FPS, 9)) + 1
+    targets = np.minimum(times[0] + np.arange(frame_count) / FPS, times[-1])
+    indices = np.rint((targets - times[0]) / trace["timestep_s"]).astype(int)
+    indices = np.clip(indices, 0, len(rows) - 1)
+    indices[0], indices[-1] = 0, len(rows) - 1
+    sample_error = float(np.max(np.abs(times[indices] - targets)))
+    if sample_error > trace["timestep_s"] / 2 + 1e-9:
+        raise ValueError(f"real-time sampling exceeds half a physical step: {source}")
+    timing = {
+        "playback": "actual simulation speed",
+        "recorded_duration_s": duration,
+        "encoded_duration_s": frame_count / FPS,
+        "maximum_sample_time_error_s": sample_error,
+        "terminal_presentation_hold_s": frame_count / FPS - duration,
+        "initial_and_terminal_poses_included": True,
+    }
+    if not 0 <= timing["terminal_presentation_hold_s"] <= 2 / FPS + 1e-9:
+        raise ValueError(f"unexpected endpoint presentation hold: {source}")
+    return indices.tolist(), timing
 
 
 def binding_refs(model, bindings):
@@ -159,7 +174,7 @@ def render(name: str) -> dict:
     if config["initial_state"].get("settle_s", 0) != 0:
         raise ValueError("state replay cannot perform initial settling")
     rows = read_jsonl(source / "physics_samples.jsonl")
-    indices = capture_indices(source, rows)
+    indices, timing = realtime_indices(source, rows)
     model = mujoco.MjModel.from_xml_path(config["scene_path"])
     model.vis.global_.offwidth, model.vis.global_.offheight = WIDTH, HEIGHT
     data = mujoco.MjData(model)
@@ -200,6 +215,8 @@ def render(name: str) -> dict:
         ]))["streams"][0]
         if (probe["width"], probe["height"], probe["r_frame_rate"], int(probe["nb_read_frames"])) != (WIDTH, HEIGHT, "30/1", len(indices)):
             raise ValueError(f"encoded video differs from requested dimensions/timing: {probe}")
+        if abs(float(probe["duration"]) - timing["encoded_duration_s"]) > 1e-6:
+            raise ValueError(f"encoded video duration differs from the real-time schedule: {probe}")
         temporary.replace(destination)
     finally:
         temporary.unlink(missing_ok=True)
@@ -211,7 +228,7 @@ def render(name: str) -> dict:
         "clip": name, "source": str(source.relative_to(ROOT)), "video": str(destination.relative_to(ROOT)),
         "video_bytes": destination.stat().st_size, "poster_bytes": poster.stat().st_size,
         "maximum_bound_pose_error": maximum_error, "checked_rendered_frames": len(indices),
-        "recorded_duration_s": rows[-1]["time"] - rows[0]["time"], "ffprobe": probe,
+        **timing, "ffprobe": probe,
     }
     print(json.dumps(result), flush=True)
     return result
@@ -219,7 +236,7 @@ def render(name: str) -> dict:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("clips", nargs="*", metavar="CLIP", help="selected clip names; default: all six")
+    parser.add_argument("clips", nargs="*", metavar="CLIP", help="selected clip names; default: all seven")
     args = parser.parse_args()
     unknown = set(args.clips) - SOURCES.keys()
     if unknown:

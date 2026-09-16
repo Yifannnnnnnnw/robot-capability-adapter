@@ -28,7 +28,7 @@ function recordedMode() {
   $('live-frame').hidden = true;
   video.hidden = false;
   $('mode-label').textContent = 'Recorded execution';
-  $('playback-note').textContent = '1080p simulation replay, aligned to the original driver calls. Model waiting time is omitted.';
+  $('playback-note').textContent = '1080p replay at 1× simulation speed, aligned to the original driver calls. Model waiting time is omitted.';
   ['play-run', 'call-picker', 'previous-call', 'next-call', 'playback-speed'].forEach(id => $(id).disabled = !replay);
   if (replay) {
     $('task-verdict').textContent = replay.independentEvaluation.physicalTaskSuccess ? 'Recorded task: passed' : 'Recorded task: not passed';
@@ -38,7 +38,7 @@ function recordedMode() {
 }
 async function loadReplay() {
   try {
-    const response = await fetch('assets/panda-replay.json');
+    const response = await fetch('assets/panda-replay.json?v=realtime1');
     if (!response.ok) throw new Error('Replay data could not be loaded.');
     replay = await response.json();
     $('call-picker').replaceChildren(...replay.calls.map((call, i) => {

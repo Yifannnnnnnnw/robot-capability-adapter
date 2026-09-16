@@ -184,3 +184,21 @@ nav a:hover, .text-link:hover { color: #242b42; }
   .clip-caption-footer { gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* A scannable, print-ready way to share the public video gallery. */
+.share-section { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 36px; padding-block: 42px 58px; }
+.share-copy .eyebrow { margin-bottom: 13px; }
+.share-copy h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 550; }
+.share-copy > p:not(.eyebrow) { color: var(--muted); margin-top: 15px; font-size: .9375rem; }
+.share-actions { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 23px; }
+.share-actions .text-link { font-size: .8125rem; }
+.share-qr { display: block; width: 100%; max-width: 192px; background: #fff; box-shadow: 0 8px 32px #343b5010; }
+.share-qr img { width: 100%; height: auto; }
+.share-codes { display: grid; grid-template-columns: repeat(2, 192px); gap: 24px; }
+.share-codes figcaption { margin-top: 13px; text-align: center; font-size: .75rem; color: var(--ink); }
+.share-codes .qr-download { display: block; font-size: .6875rem; color: var(--muted); margin-top: 5px; }
+@media (max-width: 900px) {
+  .share-section { grid-template-columns: 1fr; gap: 25px; padding-block: 20px 48px; }
+  .share-actions { gap: 14px; }
+  .share-codes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 402px; }
+}
