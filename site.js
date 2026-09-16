@@ -80,6 +80,7 @@ const tablist = document.querySelector('.case-tabs');
 const tabs = [...tablist.querySelectorAll('[role="tab"]')];
 const panels = tabs.map(tab => document.getElementById(tab.getAttribute('aria-controls')));
 function selectCase(index, focus = false) {
+  panels.forEach((panel, i) => { if (i !== index) panel.querySelectorAll('video').forEach(player => player.pause()); });
   tabs.forEach((tab, i) => { const selected = i === index; tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1; panels[i].hidden = !selected; });
   if (focus) tabs[index].focus();
 }
@@ -92,6 +93,34 @@ tabs.forEach((tab, index) => {
   });
 });
 selectCase(0); tablist.hidden = false;
+
+// Each choice remains a direct video link when JavaScript is unavailable.
+panels.forEach(panel => {
+  const player = panel.querySelector('video');
+  const choices = [...panel.querySelectorAll('.clip-choice')];
+  choices.forEach(choice => choice.addEventListener('click', event => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (choice.getAttribute('aria-current') === 'true') return;
+    player.pause();
+    player.src = choice.getAttribute('href');
+    player.poster = choice.dataset.poster;
+    player.setAttribute('aria-label', `${panel.querySelector('h3').textContent} — ${choice.dataset.title}`);
+    player.querySelector('a').href = player.src;
+    player.load();
+    choices.forEach(item => item.setAttribute('aria-current', String(item === choice)));
+    panel.querySelector('.clip-title').textContent = choice.dataset.title;
+    panel.querySelector('.clip-caption').textContent = choice.dataset.caption;
+    panel.querySelector('.clip-attempt').textContent = choice.dataset.attempt;
+    const outcome = panel.querySelector('.clip-outcome');
+    outcome.className = `clip-outcome ${choice.dataset.outcome}`;
+    outcome.textContent = choice.dataset.outcome === 'passed' ? 'Physical task: passed' : 'Physical task: not passed';
+    panel.querySelector('.clip-download').href = choice.getAttribute('href');
+  }));
+});
+document.querySelectorAll('video').forEach(player => {
+  player.addEventListener('play', () => document.querySelectorAll('video').forEach(other => { if (other !== player) other.pause(); }));
+});
 
 async function bridgeRequest(path, method = 'GET') {
   const response = await fetch(`${bridge}${path}`, {

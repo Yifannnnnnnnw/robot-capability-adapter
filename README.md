@@ -1,10 +1,14 @@
 # AutoAdapter 2.0 — interactive project page
 
-An English, dependency-free GitHub Pages site with two clearly separated modes:
+An English, dependency-free GitHub Pages site with an execution explorer and
+a three-robot film library:
 
 - **Recorded execution:** an authentic Panda pick-and-place video, with 12
   synchronised driver calls, their requests, public ReCAP plan summaries and
   driver feedback. This works on GitHub Pages without a backend.
+- **Robot film library:** nine selected recordings across Franka Panda, LEAP
+  Hand and Skydio X2, with task selection, still previews and individual physical
+  outcomes. Switching robots pauses the previous video.
 - **Live local simulation:** connect the page to `local_demo.py`, then run the
   same task with the real model, ReCAP, MCP, generated driver and MuJoCo. This
   requires the existing research checkout and its local generated artifacts.
@@ -75,6 +79,44 @@ No raw model-message history, system prompts, absolute local paths, endpoints
 or model credentials are included. Driver-reported failures in calls 2 and 6
 remain visible despite the independently successful final task.
 
+## Robot film library
+
+The videos are unchanged copies of existing task recordings; thumbnails are
+single frames extracted at 40% of playback duration. No new robot run was
+performed for this gallery. All sources below are relative to
+`expriment/chapter5_cross_robot/data/runs/`; each source directory also contains
+the `task_report.json` used for the physical verdict. Durations are encoded
+playback time, not wall-clock or simulation time.
+
+| Published clip | Source video | Physical outcome |
+|---|---|---|
+| `assets/panda-pick-place.mp4` | `franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/video.mp4` | Passed; Astra task run |
+| `assets/robots/panda-drawer.mp4` | `franka_single_20260915_01/tasks_astra_budget48/mw_drawer_open_central/video.mp4` | Passed; Astra task run |
+| `assets/robots/panda-dial.mp4` | `franka_single_20260915_01/tasks_astra_budget48/mw_dial_turn_central/video.mp4` | Passed; Astra task run |
+| `assets/robots/leap-reach.mp4` | `leap_single_20260915_01/tasks_astra_direct_retry_20260915/gym_hand_reach_all_fingertips_central/video.mp4` | Passed; Direct retry |
+| `assets/robots/leap-block.mp4` | `leap_single_20260915_01/tasks_astra/gym_hand_manipulate_block_full_pose_central/video.mp4` | Not passed; First attempt |
+| `assets/robots/leap-pose.mp4` | `leap_single_20260915_01/tasks_astra/robel_dclaw_pose_fixed_central/video.mp4` | Not passed; First attempt |
+| `assets/robots/skydio-transit.mp4` | `skydio_single_20260915_01/tasks_astra_diagnostic/X2-T04_central/video.mp4` | Passed; First diagnostic attempt |
+| `assets/robots/skydio-waypoints.mp4` | `skydio_single_20260915_01/tasks_astra_diagnostic/X2-T05_central/video.mp4` | Passed; First diagnostic attempt |
+| `assets/robots/skydio-orbit.mp4` | `skydio_single_20260915_01/tasks_astra_orbit_clarified_20260915/X2-T07_central/video.mp4` | Not passed; Clarified-task retry |
+
+LEAP uses the unchanged generated driver after three missing MCP forwarding
+wrappers were completed manually; capability validation remains 4/6. Its reach
+clip is a direct retry, while cube manipulation and joint-pose matching are
+first attempts. Skydio uses an assisted export after automatic generation
+reached its turn limit; separate native capability validation remains 4/5.
+The orbit is a clarified-task retry and still fails the inward-facing bearing
+criterion. These selections are not a new experiment or aggregate success rate.
+
+The website uses one continuous, soft gradient backdrop with neutral translucent
+surfaces. Stage-colored strips, borders and separate color blocks have been removed.
+
+Verified on 16 September 2026: all nine recordings decode, local media links
+resolve, LEAP and Skydio play in the browser, task changes update the result
+caption, and keyboard robot switching works. Desktop and 390 px layouts have
+no horizontal overflow. The original Panda call replay still exposes its
+recorded failed request. No live model run was needed for this presentation update.
+
 ## Publishing
 
 GitHub Pages serves the root of the `gh-pages` branch in our parent repository,
@@ -89,6 +131,16 @@ just to deploy the page. Never push to AA1's original/upstream repository.
 
 GitHub's [publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 explains branch-based hosting.
+
+### Printed QR code redirect
+
+The printed poster QR code points to
+`https://yifannnnnnnnw.github.io/auto-adapter/`. Keep that address available:
+the separate `Yifannnnnnnnw/auto-adapter` repository publishes only the contents
+of `qr-redirect/` from its `main` branch root. It forwards visitors to
+`https://yifannnnnnnnw.github.io/robot-capability-adapter/`, with an immediate
+browser redirect and a visible link as a fallback. The printed QR code does
+not need replacement. This repository is only a redirect, not an AA1 upstream.
 
 ## Focused verification
 

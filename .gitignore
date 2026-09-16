@@ -1,3 +1,6 @@
 __pycache__/
 # This small, selected presentation clip is intentionally published.
 !assets/panda-pick-place.mp4
+
+# Selected, original multi-robot recordings for the public film library.
+!assets/robots/*.mp4
