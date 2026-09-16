@@ -3,7 +3,7 @@
 An English, dependency-free GitHub Pages site with an execution explorer and
 a three-robot film library:
 
-- **Recorded execution:** an authentic Panda pick-and-place video, with 12
+- **Recorded execution:** an HD replay of the recorded Panda task, with 12
   synchronised driver calls, their requests, public ReCAP plan summaries and
   driver feedback. This works on GitHub Pages without a backend.
 - **Robot film library:** nine selected recordings across Franka Panda, LEAP
@@ -67,7 +67,10 @@ separate downstream task success does not overwrite that result.
 | `assets/leap-tasks.png` | `thesis/assets/chapter5_leap_tasks.png` |
 | `assets/skydio-tasks.png` | `thesis/assets/chapter5_skydio_tasks.png` |
 
-The recorded video is unchanged: 480 × 368, 628 frames, 30 fps. Call boundaries
+The displayed video is a native 1440 × 1080 replay: 628 frames, 30 fps. It
+re-executes the original recorded requests through the saved exported driver
+and MuJoCo, with the resulting trajectory checked against the original state
+trace. It makes no new model calls. Call boundaries
 are reconstructed from the actual recording rule: one frame every 16 physics
 steps, two initial frames and one post-call observation frame. That yields 628
 frames, matching the video exactly. Model waiting time is omitted. The source
@@ -81,14 +84,18 @@ remain visible despite the independently successful final task.
 
 ## Robot film library
 
-The videos are unchanged copies of existing task recordings; thumbnails are
-single frames extracted at 40% of playback duration. No new robot run was
-performed for this gallery. All sources below are relative to
+The videos are native 1440 × 1080 MuJoCo renders, encoded as H.264 at 30 fps;
+thumbnails are single frames extracted at 40% of playback duration. LEAP and
+Skydio restore the saved joint and free-body states without advancing physics.
+Panda replays the recorded requests through the existing driver, checking the
+trajectory against the original trace before rendering. These are presentation
+replays, not new planner runs or experiment results. The original research
+recordings and verdicts are unchanged. All sources below are relative to
 `expriment/chapter5_cross_robot/data/runs/`; each source directory also contains
 the `task_report.json` used for the physical verdict. Durations are encoded
 playback time, not wall-clock or simulation time.
 
-| Published clip | Source video | Physical outcome |
+| Published clip | Original recording / trace directory | Physical outcome |
 |---|---|---|
 | `assets/panda-pick-place.mp4` | `franka_single_20260915_01/tasks_astra_budget48/mw_pick_place_central/video.mp4` | Passed; Astra task run |
 | `assets/robots/panda-drawer.mp4` | `franka_single_20260915_01/tasks_astra_budget48/mw_drawer_open_central/video.mp4` | Passed; Astra task run |
@@ -108,10 +115,31 @@ reached its turn limit; separate native capability validation remains 4/5.
 The orbit is a clarified-task retry and still fails the inward-facing bearing
 criterion. These selections are not a new experiment or aggregate success rate.
 
+### Regenerate the HD media
+
+From the original research checkout, with its saved scenes, drivers and traces:
+
+```sh
+AA1/.venv/bin/python website/scripts/render_hd_states.py
+AA1/.venv/bin/python website/scripts/render_hd_panda.py
+```
+
+Both scripts need the existing MuJoCo environment, an offscreen graphics context,
+and FFmpeg. They write website media and temporary presentation outputs only.
+The 4:3 render preserves the original camera and avoids the old encoder's
+480 × 360 to 480 × 368 height expansion. Frame counts and all recorded-call
+boundaries stay unchanged. MP4 metadata is placed first for browser playback.
+
 The website uses one continuous, soft gradient backdrop with neutral translucent
 surfaces. Stage-colored strips, borders and separate color blocks have been removed.
 
-Verified on 16 September 2026: all nine recordings decode, local media links
+HD verification on 16 September 2026: all nine videos decode at 1440 × 1080
+and 30 fps with their original frame counts (2,970 frames total). The three Panda
+replays reproduced all 27,614 physical samples, contacts and full call-endpoint
+states exactly. The six state-restored clips checked every rendered pose, with
+maximum bound-pose error 2.34 × 10⁻¹⁵.
+
+Local media links
 resolve, LEAP and Skydio play in the browser, task changes update the result
 caption, and keyboard robot switching works. Desktop and 390 px layouts have
 no horizontal overflow. The original Panda call replay still exposes its
@@ -122,7 +150,7 @@ recorded failed request. No live model run was needed for this presentation upda
 GitHub Pages serves the root of the `gh-pages` branch in our parent repository,
 `Yifannnnnnnnw/robot-capability-adapter`. The branch contains this directory's
 contents; no framework, package installation, Actions workflow or build is
-needed. Keep `.nojekyll` and the small, explicitly selected demo MP4.
+needed. Keep `.nojekyll` and the explicitly selected demo media.
 
 To update, copy this directory's files into a checkout of that repository's
 `gh-pages` branch, inspect the diff, commit and push that branch. Exclude

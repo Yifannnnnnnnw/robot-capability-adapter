@@ -24,9 +24,17 @@
     "fps": 30,
     "frameCount": 628,
     "duration": 20.933333333333334,
-    "width": 480,
-    "height": 368,
-    "videoBytes": 161983
+    "width": 1440,
+    "height": 1080,
+    "videoBytes": 1213141,
+    "rendering": "Native HD presentation replay of recorded requests through the original exported server functions, generated driver and MuJoCo. No new model calls.",
+    "trajectoryVerification": {
+      "physicsSamplesCompared": 9838,
+      "maximumAbsoluteError": 0.0,
+      "contactsIdentical": true,
+      "all12CallEndpointsIdentical": true,
+      "originalFrameSchedulePreserved": true
+    }
   },
   "synchronization": {
     "kind": "reconstructed-recording-frame-boundaries",

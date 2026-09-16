@@ -28,7 +28,7 @@ function recordedMode() {
   $('live-frame').hidden = true;
   video.hidden = false;
   $('mode-label').textContent = 'Recorded execution';
-  $('playback-note').textContent = 'Original simulation video, aligned to recorded driver calls. Model waiting time is omitted. Timings are reconstructed from the recorder’s frame rule.';
+  $('playback-note').textContent = '1080p simulation replay, aligned to the original driver calls. Model waiting time is omitted.';
   ['play-run', 'call-picker', 'previous-call', 'next-call', 'playback-speed'].forEach(id => $(id).disabled = !replay);
   if (replay) {
     $('task-verdict').textContent = replay.independentEvaluation.physicalTaskSuccess ? 'Recorded task: passed' : 'Recorded task: not passed';
@@ -47,7 +47,7 @@ async function loadReplay() {
     }));
     recordedMode();
   } catch (error) {
-    $('demo-status').textContent = `${error.message} The original video is still available above.`;
+    $('demo-status').textContent = `${error.message} The video is still available above.`;
     $('call-counter').textContent = 'Data unavailable';
     $('plan-summary').textContent = 'Recorded plan data is unavailable.';
     $('tool-request').textContent = '—';
