@@ -116,7 +116,9 @@ function syncPandaView() {
   $('panda-recording').hidden = !inspectExecution;
   $('panda-other-video').hidden = inspectExecution;
   $('panda-execution').hidden = !inspectExecution;
-  $('panda-execution').querySelector('summary > span:last-child').textContent = live ? 'Pick & place · Live local simulation' : 'Pick & place · 12 recorded calls';
+  $('panda-playback').hidden = !inspectExecution;
+  $('panda-execution-footer').hidden = !inspectExecution;
+  panel.classList.toggle('has-call-trace', inspectExecution);
   video.hidden = live;
   $('live-frame').hidden = !live;
   updateClipCaption(panel, choice);

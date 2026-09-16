@@ -203,26 +203,46 @@ nav a:hover, .text-link:hover { color: #242b42; }
   .share-codes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 402px; }
 }
 
-/* Every robot uses the same media layout; Panda offers optional call details. */
+/* Keep the robot and its synchronized calls together in one card. */
 .cases-section { padding-block: 0; }
 .section-anchor { display: block; scroll-margin-top: 2rem; }
 .case-media .video-stage { border-radius: 15px; overflow: hidden; }
 .case-media .video-stage video, .case-media .video-stage img { max-height: none; }
-.execution-details { grid-column: 1 / -1; min-width: 0; border-top: 1px solid var(--line); }
-.execution-details > summary { cursor: pointer; padding: 19px 2px 0; font-size: .875rem; color: #545c70; }
-.execution-details > summary > span:first-child { font-weight: 600; }
-.execution-details > summary > span:last-child { margin-left: 14px; font-size: .75rem; color: var(--muted); }
-.execution-details > summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 5px; border-radius: 5px; }
-.execution-layout { display: grid; grid-template-columns: 1fr 1fr; margin-top: 20px; border-top: 1px solid var(--line); }
-.execution-context { min-width: 0; }
-.execution-context .demo-toolbar { padding: 20px; flex-wrap: wrap; }
-.execution-context .control-chain { flex-wrap: wrap; gap: 9px; }
-.explorer-hint { font-size: .8125rem; color: var(--muted); }
+.case-panel.has-call-trace { grid-template-columns: minmax(180px,.7fr) minmax(0,1.5fr) minmax(290px,1.05fr); gap: 24px; }
+.inline-execution { min-width: 0; padding-left: 22px; border-left: 1px solid var(--line); }
+.inline-execution-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 13px; }
+.inline-execution-heading .eyebrow { margin: 0; font-size: .625rem; }
+.inline-execution-heading .mode-badge { font-size: .625rem; padding: 3px 7px; }
+.inline-execution .control-chain { font-size: .6875rem; gap: 8px; padding: 9px 0; justify-content: space-between; }
+.inline-execution .inspector { padding: 18px 0 0; background: transparent; }
+.inline-execution .inspector-heading { margin-bottom: 12px; }
+.inline-execution .inspector-heading h3 { font-size: .875rem; }
+.inline-execution .plan-summary { padding-block: 13px; }
+.inline-execution #plan-summary { max-height: 100px; }
+.inline-execution .tool-detail { padding-block: 13px 10px; }
+.inline-execution .tool-detail pre { max-height: 140px; margin-bottom: 0; }
+.request-arguments summary { cursor: pointer; font-size: .75rem; color: var(--muted); margin-top: 8px; }
+.request-arguments summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.inline-execution .inspector-label { font-size: .625rem; }
+.inline-execution .inspector-footnote { font-size: .6875rem; }
+#panda-playback .playback-controls { padding: 14px 0 10px; gap: 8px; }
+#panda-playback .playback-note { padding: 0; }
+#panda-playback .button { font-size: .75rem; }
+#panda-playback .step-controls button { width: 34px; }
+.execution-footer { grid-column: 1 / -1; min-width: 0; }
+.execution-footer .run-result { padding-inline: 0; }
+.execution-footer .live-connection summary, .execution-footer .connection-body { padding-inline: 0; }
 .clip-outcome.pending { color: var(--muted); }
+@media (min-width: 701px) and (max-width: 1100px) {
+  .case-panel.has-call-trace { grid-template-columns: minmax(0,1.25fr) minmax(280px,1fr); }
+  .has-call-trace > .case-description { grid-column: 1 / -1; }
+  .has-call-trace .clip-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .has-call-trace .case-observation { margin-top: 12px; padding-top: 12px; }
+}
 @media (max-width: 700px) {
+  .case-panel.has-call-trace { grid-template-columns: 1fr; }
   .case-media .video-stage { border-radius: 11px; }
-  .execution-details > summary > span:last-child { display: block; margin: 4px 0 0 18px; }
-  .execution-layout { grid-template-columns: 1fr; }
-  .execution-context .demo-toolbar, .execution-details .inspector { padding-inline: 0; }
-  .execution-details .playback-controls, .execution-details .playback-note, .execution-details .task-brief, .execution-details .run-result, .execution-details .live-connection summary, .execution-details .connection-body { padding-inline: 0; }
+  .inline-execution { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .inline-execution .tool-detail pre { max-height: 120px; }
+  .execution-footer .run-result { padding-inline: 0; }
 }

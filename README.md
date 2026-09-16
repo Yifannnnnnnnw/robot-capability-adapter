@@ -10,8 +10,8 @@ explorer:
   Hand, Skydio X2, Unitree Go2, PiPER and SO-101. It distinguishes complete
   ReCAP tasks from Harness capability checks. Switching robots pauses the
   previous video. The Panda pick-and-place selection includes its synchronised
-  call inspector in an expandable panel below the shared video layout; drawer
-  and dial selections show their own recordings. Both
+  call inspector beside the video in the same card; drawer and dial selections
+  show their own recordings. Both
   `#cases` (including the QR destination) and `#demo` land at this same section.
 - **Live local simulation:** connect the page to `local_demo.py`, then run the
   same task with the real model, ReCAP, MCP, generated driver and MuJoCo. This
@@ -260,7 +260,7 @@ page is the verified route for live execution in this browser.
 ### Unified robot explorer checked on 16 September 2026
 
 The single demo section contains six robot tabs and fifteen video choices.
-Both existing anchors land at its top. Opening Panda’s driver-call details and selecting call 2 seeks to 4.318 s and
+Both existing anchors land at its top. Selecting Panda driver call 2 seeks to 4.318 s and
 shows its original failed driver response; drawer/dial selections hide that
 inspector, and returning to pick-and-place restores it. Switching robots pauses
 the previous recording. Go2 playback reports 1440 × 1080, and its capability
@@ -268,8 +268,13 @@ verdict remains distinct from a ReCAP task verdict. A 390-pixel browser frame
 showed all six tabs without horizontal overflow. Local assets, unique IDs and
 JavaScript/Python syntax were checked. This UI change did not start a model run.
 
-Panda now uses the same description, task-list, video and caption columns as
-the other robots. Its call inspector and local connection sit in an optional
-expandable panel below. Checked all three task selections and return to the
-recorded inspector, exact Panda/LEAP desktop media dimensions, and 390-pixel
-layout with details both closed and open. Public branding is **Auto Adapter**.
+Panda keeps the shared robot-card styling and places its pick-and-place video
+and synchronized call inspector alongside one another by default. At narrow
+phone widths the inspector follows the video within the same card. The local
+connection remains below the task result. Public branding is **Auto Adapter**.
+
+The inline execution view was checked at 1280, 900 and 390 pixels: video and
+inspector align side by side on wider screens, and the inspector follows the
+video on phones, with no horizontal overflow. Call 2 seeks to 4.318 s and
+retains its failure feedback; Next advances to call 3 at 5.12 s. Task switching,
+playback speed and pausing when switching robots were also verified.
