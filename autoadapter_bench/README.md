@@ -2,13 +2,14 @@
 
 AutoAdapter-Bench contains the existing robot catalog, task specifications, MuJoCo
 evaluators and baseline source. It evaluates a supplied robot driver. This
-source release includes no generated drivers, recorded results, videos,
-demonstration datasets or trained baseline checkpoints.
+source release bundles one [historical SO-101 reference example](../examples/legacy_so101/README.md)
+for the existing reach interface. It includes no newly generated drivers,
+recorded results, videos, demonstration datasets or trained baseline checkpoints.
 
 ## Scope
 
 `eval.py` uses the earlier `auto_adapter.agent.task_planner.TaskPlanner`
-ReAct controller, which calls the driver directly. The current AutoAdapter
+ReAct controller, which calls the driver directly. The current Auto Adapter
 mainline uses ReCAP through an exported MCP server. These are separate
 execution interfaces: a driver generated for a new Design capability interface
 is not automatically compatible with the earlier benchmark's tool methods.
@@ -19,7 +20,7 @@ cohort or protocol is defined by this release.
 
 | Source | Purpose |
 | --- | --- |
-| `spec/robot_zoo.yaml` | Robot scenes, morphology and available observation bindings; also consumed by AutoAdapter's catalog |
+| `spec/robot_zoo.yaml` | Robot scenes, morphology and available observation bindings; also consumed by Auto Adapter's catalog |
 | `spec/tasks_*.yaml` | Task prompts and success criteria grouped by morphology |
 | `eval.py` | Legacy ReAct task execution, live-world grading and evidence checks |
 | `eval_baseline.py` | Code-as-Policies or legacy ReAct execution, graded through a fresh-world tool-call replay |
@@ -31,6 +32,11 @@ cohort or protocol is defined by this release.
 Install the repository's base package as described in the root README. Run the
 following commands from the repository root. They call the selected model and
 write result files; model access and a working MuJoCo video renderer are required.
+
+For a concrete starting workspace, follow the
+[historical SO-101 reach example](../examples/legacy_so101/README.md). It copies
+the supplied reference driver and links the existing scene without invoking
+driver generation.
 
 Supply a writable workspace containing a compatible `driver.py` with either
 module-level `build()` or `Robot.build_from_mjcf(mjcf_path)`. The driver must
@@ -95,8 +101,9 @@ presets and aggregation conventions. The robot-specific `eval_piper_pick*.py`
 and `eval_franka_reach_n10.py`, `render_*.py`, and `vla/diag_openvla_harness.py`
 also retain historical workspace or result assumptions. They remain available
 as reference source and are not the public starting commands. Their historical
-drivers, datasets and result files are not distributed here; the old model IDs
-and output claims do not establish current reproducibility.
+datasets and result files are not distributed here. The single bundled SO-101
+example does not restore those historical workspaces; the old model IDs and
+output claims do not establish current reproducibility.
 
 ## Focused local check
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "auto-adapter"
 version = "0.1.0"
-description = "Robot capability generation, MuJoCo validation, MCP export and AA-Bench evaluation"
+description = "Robot capability generation, MuJoCo validation, MCP export and AutoAdapter-Bench evaluation"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
@@ -57,6 +57,6 @@ exclude = ["**/tests/**"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/auto_adapter", "/autoadapter_bench", "/assets", "/scripts/run/run_stage1.py",
-    "/docs", "/README.md", "/pyproject.toml", "/LICENSE", "/NOTICE",
+    "/docs", "/examples", "/README.md", "/pyproject.toml", "/LICENSE", "/NOTICE",
     "/UPSTREAM.md", "/CITATION.cff",
 ]
