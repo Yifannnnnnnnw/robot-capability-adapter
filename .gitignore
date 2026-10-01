@@ -1,69 +1,38 @@
-# Local-only thesis, rendering helpers and agent instructions.
-/thesis/
-/tools/
-AGENTS.md
-AGENT.md
-
-# Credentials and local overrides
+# Credentials and local configuration
 .env
 .env.*
 !.env.example
 **/.env
 **/.env.*
 !**/.env.example
+.aws/
+*.pem
+*.key
 
-# Isolated Python environments and generated metadata
-.venv/
-**/.venv/
+# Python environments, caches and build output
+.venv*/
 __pycache__/
-**/__pycache__/
 *.py[cod]
-.pytest_cache/
-**/.pytest_cache/
-.mypy_cache/
-**/.mypy_cache/
-.ruff_cache/
-**/.ruff_cache/
-.tox/
-**/.tox/
-.nox/
-**/.nox/
-.coverage
-**/.coverage
-coverage.xml
-**/coverage.xml
-htmlcov/
-**/htmlcov/
 *.egg-info/
-**/*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 build/
-**/build/
 dist/
-**/dist/
+.coverage
 
-# Local OS/editor state
-.DS_Store
-**/.DS_Store
-
-# Local MuJoCo runtime log and regenerable illustration previews.
-/MUJOCO_LOG.TXT
-/outputs/aa1-renders/
-
-# AA1 is tracked as a normal directory in this repository.
-
-# Raw experiment evidence stays local. Results documents retain run ids and
-# content hashes; large traces/videos and private run snapshots are not Git data.
-**/runs/*
-!**/runs/.gitkeep
-# Preserve local pre-migration drafts while the tracked mainline moves out of demo3/.
-demo3/research_candidates/
-general_demo/run_artifacts/
+# Generated experiment outputs and model checkpoints
+artifacts/
+runs/
+results/
+recordings/
+traces/
+trained/
 *.mp4
 *.mov
-*.avi
 *.webm
-*.mkv
+*.pt
+*.pth
+MUJOCO_LOG.TXT
 *.log
-*.tmp
-*.swp
-*~
+.DS_Store

@@ -1,0 +1,46 @@
+Auto-Adapter
+Copyright 2024-2026 The Auto-Adapter Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+------------------------------------------------------------------------
+Third-party components
+------------------------------------------------------------------------
+
+This product depends on third-party software, each under its own license
+(obtainable from the upstream projects), including:
+
+  - numpy             (BSD-3-Clause)
+  - pyyaml            (MIT)
+  - httpx             (BSD-3-Clause)
+  - anthropic         (MIT)
+  - boto3             (Apache-2.0)
+  - mujoco            (Apache-2.0)
+  - opencv-python     (Apache-2.0)     -- optional, replay/perception
+  - stable-baselines3 (MIT)            -- optional, RL baseline
+  - torch             (BSD-3-Clause)   -- optional, DP / VLA baselines
+
+------------------------------------------------------------------------
+Vendored ReCAP component
+------------------------------------------------------------------------
+
+The ReCAP task-tree controller under auto_adapter/agent/vendor/recap/ is
+derived from https://github.com/ReCAP-Stanford/ReCAP at revision
+2fb112ffad685c7c6f7de86d5487ecca6f566fcc and is distributed under the MIT
+License. Copyright (c) 2025 Zhenyu Zhang, Tianyi Chen, Weiran Xu,
+Alex Pentland, Jiaxin Pei. The complete upstream licence, source record and
+local patch are retained alongside the vendored file.
+
+------------------------------------------------------------------------
+Vendored robot assets
+------------------------------------------------------------------------
+
+Robot scenes and meshes under assets/mjcf/ are vendored from MuJoCo
+Menagerie (https://github.com/google-deepmind/mujoco_menagerie) and
+related upstream sources. Each model retains its original LICENSE file
+alongside it (Apache-2.0 / BSD-3-Clause / MIT, per model). SO-ARM101
+assets derive from the LeRobot project (Apache-2.0).
