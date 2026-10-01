@@ -1,4 +1,4 @@
-# AA1 generation stages and ReCAP tasks
+# AutoAdapter generation stages and ReCAP tasks
 
 Both `SelfAssemble` and `FromScratchOrchestrator` now use:
 
@@ -41,12 +41,12 @@ bridges, and task CLI. `task_execution.py` owns the SDK client and shared MuJoCo
 recorder/JSON helpers. `export_runtime.py` uses those helpers inside the server
 to record the controlled world. This path does not import `task_planner.py`.
 
-The task CLI uses the same runner:
+After installing the package from the repository root, the task CLI uses the same runner:
 
 ```sh
-PYTHONPATH=AA1 AA1/.venv/bin/python -m auto_adapter.agent.recap \
+python -m auto_adapter.agent.recap \
   --workspace /absolute/generated/piper --robot-id piper \
-  --model eu.anthropic.claude-sonnet-4-6
+  --provider bedrock --model us.anthropic.claude-sonnet-4-6 --region us-east-1
 ```
 
 Add `--from-scratch` for `driver_from_scratch.py`. The wrapper loads the saved
@@ -65,9 +65,9 @@ For a manually chosen independent task, write a JSON object containing the
 | `capability_design` | Current public design object |
 | `validation_suite`, `validation_report` | Corresponding case and result objects |
 | `task_description`, `parameters` | Natural-language task and public goal parameters |
-| `scene_path`, `initial_state` | Explicit scene and AA1 reset-state object |
+| `scene_path`, `initial_state` | Explicit scene and AutoAdapter reset-state object |
 | `required_capabilities` | Optional explicit exported-tool requirements for standalone callers; fixed DEMO configurations do not set these |
-| `model`, `provider`, `region`, `max_tokens` | Existing AA1 model transport configuration |
+| `model`, `provider`, `region`, `max_tokens` | Public model transport: `bedrock` (default) or `deepseek`; use a model ID accepted by the selected provider |
 | `output_dir` | New task directory |
 
 No task library or formal experiment runner is introduced here.
@@ -90,24 +90,24 @@ ordered list of string `subtasks`. Abstract strings become task-tree nodes.
 Primitive strings encode a capability name and native request as JSON. The
 upstream generator expands the first subtask, yields executable actions, returns
 to parent nodes and builds prompts containing the parent's previous summary and
-remaining tasks. AA1 validates and executes each yielded native request, then
+remaining tasks. AutoAdapter validates and executes each yielded native request, then
 sends back the actual operation status and public observations.
 
 The official downward singleton rule is retained: one subtask denotes a
 primitive action; an abstract decomposition needs at least two subtasks. After
 a leaf returns, the parent revises its remaining plan. An empty abstract-node
-plan returns to its parent. Root termination ends the controller only; AA1
+plan returns to its parent. Root termination ends the controller only; AutoAdapter
 rejects a diagnostic with no executed action or a final failed action.
 
 All nodes share 16 model calls, 12 capability calls and a maximum depth of 6
 (root depth is zero; primitive nodes count). Budget exhaustion and errors are
 explicit results. Model history uses the upstream message-window policy, with
-a default threshold of 32 messages. AA1 replaces the cooking few-shot setup and
+a default threshold of 32 messages. AutoAdapter replaces the cooking few-shot setup and
 wording with robot task/schema instructions, and avoids claiming an attempted
 action succeeded before its status is inspected. These adaptations do not
 replace the official tree traversal or parent-context construction.
 
-The task bridge reuses AA1's model client; it does not call `ReactLoop.run()`.
+The task bridge reuses AutoAdapter's model client; it does not call `ReactLoop.run()`.
 Generation and export retain their existing ReAct loops. Ordinary method errors
 return as observations for replanning; world corruption stops task execution.
 
@@ -116,79 +116,19 @@ The task directory contains `task_report.json`, `trace.jsonl`,
 `video.mp4` when recording is available. The official timestamped tree/history
 files are retained too. Tree JSON uses upstream's nested `task_name`, `children`,
 `info_list` and `obs_list` structure, including primitive nodes. The report names
-the official controller and its source revision. `ok` records completion of the
-diagnostic execution/recording chain; `physical_task_success` remains `null`
-because no independent task predicate is evaluated.
+the official controller and its source revision. `execution_ok` records completion
+of the execution and recording chain. With a `success_spec`, the independent
+physical evaluator sets `physical_task_success`, and `ok` also requires that result
+to be true. Without a success predicate, `physical_task_success` remains `null`.
 
-## Fixed demos and current limitations
+## Fixed demos and scope
 
-`demo_tasks.yaml` holds one public task, scene and initial state per robot.
-Relative scene paths resolve from the AA1 root. Its 10 robots with existing
-public profiles declare required method names. A differently named dynamic
-design needs a matching custom demo configuration. The other 5 robots still
-need an explicitly supplied, validated capability design; their configuration
-does not invent interfaces or admit reference drivers.
+`demo_tasks.yaml` supplies the fixed task, scene, initial state and physical
+success predicate. Scene paths resolve from the repository root. The selected
+generated driver still needs a matching, validated capability design; a fixed
+task configuration does not establish that the driver can complete it.
 
-Go2, A1 and ANYmal C request: stable stance for 1.2 s, forward 10 cm, stable
-stance for 1.2 s, shallow crouch, restore standing height, stable stance for
-1.2 s. Crouch/restore heights are respectively 0.26/0.32, 0.23/0.26 and
-0.34/0.374 m. Current generated-driver reports do not admit the full sequence:
-
-| Robot | Existing generated driver | Validation missing for the fixed demo |
-| --- | --- | --- |
-| Go2 | `stage1_full_opus48_20260910T142842Z/repair_3/go2` | Both stable-stance cases |
-| Unitree A1 | `stage1_full_opus48_20260910T142842Z/repair_2/unitree_a1` | Path, height and stable-stance boundary cases |
-| ANYmal C | `stage1_full_opus48_20260910T142842Z/repair_3/anymal_c` | Path, height and stable-stance cases |
-
-These historical paths were under
-`autoadapter_bench/diagnostics/capability_update_20260909`. That local directory
-has been removed; its tracked drivers and reports remain in parent-repository
-Git history at commit `0dddf580`.
-All three actual drivers loaded their configured scenes and initial states and
-exposed the requested methods. Task preflight returned `UNAVAILABLE` with zero
-model or capability calls. Their new crouch/restore behavior is therefore not
-claimed as physically verified. No reference driver, replacement model or
-generation repair was used.
-
-The extra arm terminal-hold requirement found in the first diagnostic was
-removed: the approved arm task is two checkpoints followed by gripper actions
-(or the KUKA offset/return), with no invented holding interface. A regression
-check failed before that configuration correction and passed afterward.
-
-## Official-source integration check, 2026-09-13
-
-The earlier `artifacts/recap_migration_20260913/` diagnostics exercised the
-previous custom AA1 controller. They are **not evidence of official ReCAP source
-integration**. Root `autoadapter/` and the retired root benchmark were
-subsequently removed by the approved repository cleanup.
-
-Focused checks now exercise the actual vendored generator, parent-summary
-reinjection, pending-sibling revision, invalid native requests, host budgets,
-empty-root rejection, and operation errors. A subprocess blocks imports of
-`autoadapter2` as well as the upstream standalone OpenAI/Together/token-counting
-SDKs. Standard and from-scratch task lifecycle checks use actual MuJoCo worlds
-and recordings with explicitly named fixture models/drivers.
-
-The real diagnostic used the generated Piper driver formerly at
-`autoadapter_bench/diagnostics/capability_update_20260909/repair3_opus48_20260910/repair_2/piper/driver.py`.
-That source path is retained in Git history at commit `0dddf580`; the task-local
-driver copy remains under `artifacts/recap_official_20260913/piper/`.
-It loaded Piper's fixed task and parameters directly from `demo_tasks.yaml`:
-the two listed checkpoints, then gripper opening 20% and 80%, in the configured
-scene and `home` keyframe. Its existing Framework report only filters available
-capabilities; private validation predicates are not supplied to the planner.
-There is no manually supplied action plan or extra task decomposition instruction.
-
-New real-run outputs are under `artifacts/recap_official_20260913/piper/`.
-`integration_check.json` records actual execution of the vendored generator
-while `autoadapter2` imports are blocked. This is a diagnostic integration run,
-not a formal experiment or independent physical task-success measurement.
-
-The official-source Piper run completed in 18.3 s with 7 model calls, 3 native
-capability calls, no invalid plans, and 204 decoded video frames. Simulation
-advanced from 0.500 s to 6.916 s. The tree contains the root and three action
-nodes; each returned to the root for replanning. Multi-level non-leaf returns
-were checked separately with a named fixture model, not claimed for this real
-run. The initial, middle and final video frames were visually inspected. All
-three native calls returned `EXECUTED`; `physical_task_success` remains `null`.
-The focused controller/bridge, task-lifecycle and stage checks passed: 69 tests.
+See [DEMO configuration](../docs/DEMO_CONFIGURATION.md) for the current scene
+mapping and [robot inputs](../docs/ROBOTS.md) for generation routes and public
+task-library bindings. Local diagnostic runs and their videos are generated
+outputs; they are not distributed with the source release.

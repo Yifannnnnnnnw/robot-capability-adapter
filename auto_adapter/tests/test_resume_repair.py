@@ -99,7 +99,7 @@ def test_from_scratch_repair_can_run_local_without_agentcore(tmp_path, monkeypat
         max_tokens_per_turn=8000,
         bedrock_model="test-model",
         aws_region="us-east-1",
-        model_provider="holistic",
+        model_provider="bedrock",
     )
     runner.workspace = tmp_path / "workspace"
     runner.workspace.mkdir()
@@ -238,7 +238,7 @@ def test_existing_candidate_does_not_make_failed_model_invocation_a_success(tmp_
     runner = SelfAssemble(SelfAssembleConfig("fixture", scene, tmp_path / "output"))
     (runner.workspace / "driver.py").write_text("# copied historical candidate\n")
     failed = SimpleNamespace(
-        ok=False, error="holistic invoke failed: DNS error", final_text="",
+        ok=False, error="bedrock invoke failed: DNS error", final_text="",
         total_tokens={"in": 0, "out": 0},
         trace=[SimpleNamespace(stop_reason="invoke_error")],
     )

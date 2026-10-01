@@ -1,3 +1,4 @@
+# Modified for AutoAdapter 2.0: task-grounded generation and Direct-MuJoCo execution.
 # SPDX-License-Identifier: Apache-2.0
 """From-scratch driver synthesis — no skeleton library at all.
 
@@ -104,7 +105,7 @@ class FromScratchConfig:
     mjcf_path: Path
     workspace_root: Path
     bedrock_model: str = "us.anthropic.claude-sonnet-4-6"
-    model_provider: str = "holistic"
+    model_provider: str = "bedrock"
     aws_region: str = "us-east-1"
 
     max_iters_study: int = 14

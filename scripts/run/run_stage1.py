@@ -20,7 +20,7 @@ AA1_ROOT = Path(__file__).resolve().parents[2]
 if str(AA1_ROOT) not in sys.path:
     sys.path.insert(0, str(AA1_ROOT))
 DEFAULT_BATCH_PARENT = AA1_ROOT / "artifacts"
-DEFAULT_MODEL = "eu.anthropic.claude-opus-4-8"
+DEFAULT_MODEL = "us.anthropic.claude-sonnet-4-6"
 
 
 def run_stage1(
@@ -32,6 +32,8 @@ def run_stage1(
     stop_after: str | None = None,
     enable_demo: bool = False,
     demo_config_path: Path | None = None,
+    provider: str = "bedrock",
+    region: str = "us-east-1",
 ) -> Any:
     """Resolve and call the pipeline entrypoint lazily.
 
@@ -49,6 +51,8 @@ def run_stage1(
         stop_after=stop_after,
         enable_demo=enable_demo,
         demo_config_path=demo_config_path,
+        provider=provider,
+        region=region,
     )
 
 
@@ -63,7 +67,9 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="one or more robot IDs from robot_zoo.yaml",
     )
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--provider", choices=("bedrock", "deepseek"), default="bedrock")
+    parser.add_argument("--model", help=f"model ID (Bedrock default: {DEFAULT_MODEL}; required for DeepSeek)")
+    parser.add_argument("--region", default="us-east-1", help="AWS Bedrock region")
     parser.add_argument("--stop-after", choices=("study", "design", "generate", "validate", "export", "demo"),
                         help="stop after this stage (default: export, plus demo when enabled)")
     parser.add_argument("--enable-demo", action="store_true", help="run the configured ReCAP demo after export")
@@ -175,6 +181,8 @@ def run_selected(
     stop_after: str | None = None,
     enable_demo: bool = False,
     demo_config_path: Path | None = None,
+    provider: str = "bedrock",
+    region: str = "us-east-1",
 ) -> tuple[int, dict[str, Any]]:
     """Run selected robots sequentially and write one invocation aggregate."""
     _validate_robot_selection(robots)
@@ -197,6 +205,8 @@ def run_selected(
         "finished_at_utc": None,
         "duration_sec": None,
         "model": model,
+        "provider": provider,
+        "region": region,
         "max_repairs": max_repairs,
         "stop_after": stop_after,
         "enable_demo": enable_demo,
@@ -226,6 +236,8 @@ def run_selected(
                 stop_after=stop_after,
                 enable_demo=enable_demo,
                 demo_config_path=demo_config_path,
+                provider=provider,
+                region=region,
             )
         except Exception as exc:  # noqa: BLE001
             pipeline_error = exc
@@ -292,11 +304,15 @@ def run_selected(
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.provider == "deepseek" and not args.model:
+        parser.error("--model is required with --provider deepseek")
     try:
         _validate_robot_selection(list(args.robots))
         code, _aggregate = run_selected(
             robots=list(args.robots),
-            model=args.model,
+            model=args.model or DEFAULT_MODEL,
+            provider=args.provider,
+            region=args.region,
             max_repairs=args.max_repairs,
             output_root=args.output_root,
             stop_after=args.stop_after,

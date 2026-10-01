@@ -1,3 +1,4 @@
+# Modified for AutoAdapter 2.0: task-grounded generation and Direct-MuJoCo execution.
 # SPDX-License-Identifier: Apache-2.0
 """auto_adapter.agent — ReAct loop + tools (framework-provided Layer 1)."""
 from .react_loop import ReactLoop, ReactResult, ToolSpec, TraceStep

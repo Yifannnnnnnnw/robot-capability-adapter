@@ -29,6 +29,8 @@ def test_stage1_public_run_keeps_requested_stages_and_validation_distinct(
         def __init__(self, cfg):
             assert cfg.mjcf_path == scene
             assert cfg.mode == "local"
+            assert cfg.model_provider == "deepseek"
+            assert cfg.aws_region == "fixture-region"
             budget = cfg.max_outer_gen_val_iters if route == "skeleton" else cfg.max_outer_retries + 1
             assert budget == 3
             assert cfg.enable_demo is True
@@ -65,6 +67,7 @@ def test_stage1_public_run_keeps_requested_stages_and_validation_distinct(
     result = module.run_stage1(
         robot_id="fixture", workspace_root=tmp_path, model="fixture", max_repairs=2,
         stop_after=stop, enable_demo=True, demo_config_path=demo_config,
+        provider="deepseek", region="fixture-region",
     )
     assert calls == [stop]
     assert result["ok"] is completed

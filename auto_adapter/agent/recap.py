@@ -726,7 +726,7 @@ def run_configured_demo(*, workspace, robot_id, capability_design, scene_cases_p
         return report
 
 
-def run_demo(*, workspace, robot_id, task_description=None, model, provider="holistic",
+def run_demo(*, workspace, robot_id, task_description=None, model, provider="bedrock",
              region="us-east-1", max_tokens=6000, from_scratch=False,
              demo_config_path=None, output_dir=None, export_server_path=None):
     """Compatibility wrapper; use run_task/--input-json for arbitrary explicit tasks and scenes."""
@@ -760,7 +760,7 @@ def main():
     parser.add_argument("--robot-id")
     parser.add_argument("--task", dest="task_description")
     parser.add_argument("--model")
-    parser.add_argument("--provider", default="holistic")
+    parser.add_argument("--provider", choices=("bedrock", "deepseek"), default="bedrock")
     parser.add_argument("--region", default="us-east-1")
     parser.add_argument("--max-tokens", type=int, default=6000)
     parser.add_argument("--from-scratch", action="store_true")

@@ -43,6 +43,8 @@ def test_launcher_forwards_api_arguments_and_accepts_pipeline_result_without_fil
         max_repairs=2,
         output_root=tmp_path / "shared-batch",
         pipeline_runner=fake_pipeline,
+        provider="deepseek",
+        region="fixture-region",
     )
 
     assert code == 0
@@ -54,8 +56,12 @@ def test_launcher_forwards_api_arguments_and_accepts_pipeline_result_without_fil
         "stop_after": None,
         "enable_demo": False,
         "demo_config_path": None,
+        "provider": "deepseek",
+        "region": "fixture-region",
     }]
     assert aggregate["selected_robots"] == ["franka"]
+    assert aggregate["provider"] == "deepseek"
+    assert aggregate["region"] == "fixture-region"
     assert aggregate["results"][0]["status"] == "ok"
     launch_path = Path(aggregate["launch_path"])
     assert launch_path.is_file()
@@ -124,7 +130,7 @@ def test_external_block_stops_calls_and_marks_remaining_robots(tmp_path):
         return {
             "stage1_ok": False,
             "external_blocked": True,
-            "error": "Holistic API unavailable",
+            "error": "Model API unavailable",
         }
 
     code, aggregate = launcher.run_selected(
@@ -142,7 +148,7 @@ def test_external_block_stops_calls_and_marks_remaining_robots(tmp_path):
         "not_run_external_blocked",
         "not_run_external_blocked",
     ]
-    assert all(row["error"] == "Holistic API unavailable" for row in aggregate["results"])
+    assert all(row["error"] == "Model API unavailable" for row in aggregate["results"])
 
 
 def test_launcher_exception_is_recorded_as_error(tmp_path):
@@ -204,3 +210,21 @@ def test_launcher_early_stop_and_demo_arguments_are_forwarded_without_validation
         "--robots", "piper", "--stop-after", "export", "--enable-demo", "--demo-config", str(demo),
     ])
     assert args.stop_after == "export" and args.enable_demo and args.demo_config == demo
+
+
+def test_cli_defaults_to_public_bedrock_and_forwards_provider_options(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(launcher, "run_selected", lambda **kwargs: (calls.append(kwargs) or (0, {})))
+    assert launcher.main(["--robots", "piper", "--output-root", str(tmp_path)]) == 0
+    assert calls[-1]["provider"] == "bedrock"
+    assert calls[-1]["model"] == launcher.DEFAULT_MODEL
+    assert calls[-1]["region"] == "us-east-1"
+    assert launcher.main([
+        "--robots", "piper", "--provider", "deepseek", "--model", "fixture-model",
+        "--region", "fixture-region", "--output-root", str(tmp_path),
+    ]) == 0
+    assert calls[-1]["provider"] == "deepseek"
+    assert calls[-1]["model"] == "fixture-model"
+    assert calls[-1]["region"] == "fixture-region"
+    with pytest.raises(SystemExit):
+        launcher.main(["--robots", "piper", "--provider", "deepseek"])

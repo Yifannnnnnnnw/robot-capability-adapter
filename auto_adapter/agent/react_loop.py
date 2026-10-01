@@ -1,3 +1,4 @@
+# Modified for AutoAdapter 2.0: task-grounded generation and Direct-MuJoCo execution.
 # SPDX-License-Identifier: Apache-2.0
 """Minimal traceable ReAct loop on top of AWS Bedrock tool_use.
 
@@ -117,12 +118,7 @@ class ReactLoop:
             ConverseClient, is_anthropic_model,
         )
         self.provider = provider
-        if provider == "holistic":
-            from auto_adapter.agent.holistic_client import HolisticClient
-            self.client = HolisticClient()
-            model = model.replace("us.anthropic.", "eu.anthropic.", 1)
-            self._is_anthropic = False
-        elif provider == "deepseek":
+        if provider == "deepseek":
             from auto_adapter.agent.deepseek_client import create_deepseek_client
             self.client = create_deepseek_client()
             self._is_anthropic = True
@@ -305,9 +301,6 @@ class ReactLoop:
                 "tools": self.tool_schemas, "max_tokens": self.max_tokens,
                 "messages": msgs,
             }
-            if self.provider == "holistic":
-                from .holistic_client import to_openai_messages
-                request_event["gateway_messages"] = to_openai_messages(msgs, self.system)
             self._dump_message_event(request_event)
             try:
                 resp = self._invoke_with_retry(msgs)

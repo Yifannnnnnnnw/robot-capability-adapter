@@ -272,7 +272,7 @@ def _read_runtime_report(destination: Path) -> dict[str, Any] | None:
 
 def run_task(*, driver_path, robot_id, capability_design, validation_suite,
              validation_report, task_description, scene_path, initial_state, parameters,
-             output_dir, model, provider="holistic", region="us-east-1", max_tokens=6000,
+             output_dir, model, provider="bedrock", region="us-east-1", max_tokens=6000,
              from_scratch=False, required_capabilities=(), model_client=None,
              export_server_path=None, success_spec=None, task_evaluator=None,
              recap_budgets=None):

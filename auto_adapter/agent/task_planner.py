@@ -897,7 +897,7 @@ class TaskPlanner:
         from_scratch: bool = False,
         expected_robot_class: Optional[str] = None,
         bedrock_model: str = "us.anthropic.claude-sonnet-4-6",
-        model_provider: str = "holistic",
+        model_provider: str = "bedrock",
         region: str = "us-east-1",
         run_tag: Optional[str] = None,
         max_iters: int = 25,

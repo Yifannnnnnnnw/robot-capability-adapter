@@ -479,7 +479,7 @@ def test_invoke_error_rejects_current_write_and_stale_output(
             task_library_dir=library,
             output_dir=output,
             model="fixture-model",
-            provider="holistic",
+            provider="bedrock",
             region="fixture-region",
         )
     metadata = json.loads((output / "capability_preparation.json").read_text())
@@ -515,7 +515,7 @@ def test_valid_write_writes_main_draft_and_criteria(
         task_library_dir=library,
         output_dir=output,
         model="fixture-model",
-        provider="holistic",
+        provider="bedrock",
         region="fixture-region",
         max_iters=requested_max_iters,
     )
@@ -560,7 +560,7 @@ def test_local_exec_probes_actual_mjcf_in_output_workspace(
         task_library_dir=library,
         output_dir=output,
         model="fixture-model",
-        provider="holistic",
+        provider="bedrock",
         region="fixture-region",
     )
 
@@ -589,7 +589,7 @@ def test_invalid_draft_gets_feedback_then_corrected_write(
         task_library_dir=library,
         output_dir=output,
         model="fixture-model",
-        provider="holistic",
+        provider="bedrock",
         region="fixture-region",
     )
     assert design["robot_configuration_id"] == "fixture-aa1"
@@ -623,7 +623,7 @@ def test_actual_study_path_is_read_without_duplicate_snapshot(
         task_library_dir=library,
         output_dir=output,
         model="fixture-model",
-        provider="holistic",
+        provider="bedrock",
         region="fixture-region",
     )
     assert not (output / "study.json").exists()
@@ -655,7 +655,7 @@ def test_design_mode_writes_two_current_drafts_and_real_probe_report(
         task_library_dir=library,
         output_dir=output,
         model="fixture-model",
-        provider="holistic",
+        provider="bedrock",
         region="fixture-region",
         prepare_scene_cases=True,
     )
@@ -712,7 +712,7 @@ def test_design_mode_exports_multiple_criteria_with_indexes(
         task_library_dir=library,
         output_dir=output,
         model="fixture-model",
-        provider="holistic",
+        provider="bedrock",
         region="fixture-region",
         prepare_scene_cases=True,
     )
@@ -759,7 +759,7 @@ def test_design_mode_ignores_old_artifacts_when_current_loop_writes_nothing(
             task_library_dir=library,
             output_dir=output,
             model="fixture-model",
-            provider="holistic",
+            provider="bedrock",
             region="fixture-region",
             prepare_scene_cases=True,
         )
@@ -810,7 +810,7 @@ def test_design_mode_rejects_current_failed_probe_over_old_success(
             task_library_dir=library,
             output_dir=output,
             model="fixture-model",
-            provider="holistic",
+            provider="bedrock",
             region="fixture-region",
             prepare_scene_cases=True,
         )

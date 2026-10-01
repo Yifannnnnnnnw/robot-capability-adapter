@@ -1,3 +1,4 @@
+# Modified for AutoAdapter 2.0: task-grounded generation and Direct-MuJoCo execution.
 # SPDX-License-Identifier: Apache-2.0
 """SelfAssemble: driver generation, validation, export, and optional ReCAP demo.
 
@@ -134,7 +135,7 @@ class SelfAssembleConfig:
     mode: str = "local"
     aws_region: str = "us-east-1"
     bedrock_model: str = "us.anthropic.claude-sonnet-4-6"
-    model_provider: str = "holistic"
+    model_provider: str = "bedrock"
 
     # Iteration caps for the model-driven stages; VALIDATE is deterministic.
     max_iters_study: int = 16
@@ -1392,7 +1393,8 @@ class SelfAssemble:
 
 def run_stage1(*, robot_id: str, workspace_root: Path | str, model: str,
                max_repairs: int = 3, stop_after: str | None = None,
-               enable_demo: bool = False, demo_config_path: Path | None = None) -> dict:
+               enable_demo: bool = False, demo_config_path: Path | None = None,
+               provider: str = "bedrock", region: str = "us-east-1") -> dict:
     """Run one zoo robot through the public DESIGN pipeline and requested stages."""
     if isinstance(max_repairs, bool) or not isinstance(max_repairs, int) or not 0 <= max_repairs <= 3:
         raise ValueError("max_repairs must be an integer from 0 to 3")
@@ -1402,7 +1404,8 @@ def run_stage1(*, robot_id: str, workspace_root: Path | str, model: str,
     route = definition.get("generation_route", "skeleton")
     options = dict(robot_id=robot_id, mjcf_path=REPO_ROOT / definition["mjcf"],
                    workspace_root=Path(workspace_root).expanduser().resolve(),
-                   bedrock_model=model, mode="local", enable_demo=enable_demo,
+                   bedrock_model=model, model_provider=provider, aws_region=region,
+                   mode="local", enable_demo=enable_demo,
                    demo_config_path=demo_config_path)
     if route == "skeleton":
         runner = SelfAssemble(SelfAssembleConfig(

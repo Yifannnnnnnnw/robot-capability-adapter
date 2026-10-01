@@ -1,3 +1,4 @@
+# Modified for AutoAdapter 2.0: task-grounded generation and Direct-MuJoCo execution.
 # SPDX-License-Identifier: Apache-2.0
 """ToolSpec factories for the auto_adapter agent.
 

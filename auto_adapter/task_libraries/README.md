@@ -1,16 +1,16 @@
 # Public task inputs for Auto-Adapter
 
 These are public task descriptions and source records used to design a robot's
-capability interface. `index.yaml` maps AA1 robot IDs to source package versions;
+capability interface. `index.yaml` maps robot IDs to source package versions;
 paths in the index are relative to this directory. Source JSON files retain their
 original robot IDs, versions, task IDs, scoring clauses and source references.
 
-The library contains 15 packages: 13 nonempty packages with 260 tasks, and empty
-Unitree A1 and ANYmal-C packages. Empty or unbound inputs cannot start automatic
-design. G1 and Barkour have public packages but no AA1 configuration binding.
-The SO-101 package binds to `menagerie_so101`, not the separate `so101` model.
+The current packages and robot bindings are listed in [index.yaml](index.yaml).
+Empty or unbound inputs cannot start automatic design. The SO-101 package binds
+to `menagerie_so101`, not the separate legacy `so101` model. See the
+[robot input table](../../docs/ROBOTS.md) for available generation routes.
 
-From the AA1 directory, use the ordinary local orchestrator:
+From the repository root, use the ordinary local orchestrator:
 
 ```python
 from pathlib import Path
@@ -19,7 +19,7 @@ from auto_adapter.orchestrator import SelfAssemble, SelfAssembleConfig
 config = SelfAssembleConfig(
     robot_id="piper",
     mjcf_path=Path("assets/mjcf/piper/scene.xml"),
-    workspace_root=Path("/tmp/my-aa1-design-run"),
+    workspace_root=Path("/tmp/my-autoadapter-design-run"),
     mode="local",
 )
 with SelfAssemble(config) as runner:

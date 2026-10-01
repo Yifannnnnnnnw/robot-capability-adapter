@@ -6,7 +6,7 @@
   "source_path": "deploy/pre_train/go2/go2_cts_150k.pt",
   "source_format": "TorchScript",
   "retained_format": "NumPy compressed state dictionary",
-  "retained_resource": "src/autoadapter2/trusted_skeletons/data/go2_velocity_policy.npz",
+  "retained_resource": "auto_adapter/skeletons/data/go2_velocity_policy.npz",
   "architecture": {
     "observation_size": 45,
     "history_frames": 5,
@@ -25,7 +25,7 @@
     "latent_normalization": "L2"
   },
   "license": "MIT with bundled upstream BSD-3-Clause notice",
-  "license_file": "reference/go2_velocity_policy_LICENSE.txt",
+  "license_file": "auto_adapter/skeletons/data/go2_velocity_policy_LICENSE.txt",
   "torch_runtime_required": false,
   "deployment_config_source": "https://github.com/wty-yy/go2_rl_gym/blob/30e74dc507bec7a642a8c98be26081f2c6f0822d/deploy/deploy_mujoco/configs/go2.yaml",
   "deployment_parameters": {
