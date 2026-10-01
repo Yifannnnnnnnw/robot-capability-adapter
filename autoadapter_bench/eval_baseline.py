@@ -10,11 +10,9 @@ Usage:
         --n-trials 3 \
         --output autoadapter_bench/results/cap_so101_sonnet45.json
 
-The output JSON has the SAME schema as eval.py so leaderboard.py picks it
-up. The only differences:
-  - meta.baseline      — set to baseline name (cap, rl, vla, random, ours)
-  - meta.framework      — describes the per-task engineering cost
-                          ("CaP: human pre-built API" vs "Ours: agent bootstrapped")
+The output uses eval.py's suite and aggregate structure and adds
+meta.baseline and meta.baseline_description. This legacy baseline evaluator
+scores a fresh-world replay; eval.py scores the live execution world.
 
 For CaP and ours (drop-in for direct comparison), the planner must expose
 .execute_task(prompt, task_id) returning an object with the standard fields.
@@ -51,7 +49,7 @@ def _build_baselines() -> dict:
     from auto_adapter.agent.task_planner import TaskPlanner  # noqa: PLC0415
     from autoadapter_bench.baselines.code_as_policies import CaPPlanner  # noqa: PLC0415
     return {
-        "ours": (TaskPlanner, "ours: agent bootstraps driver from MJCF"),
+        "ours": (TaskPlanner, "legacy ReAct tool use with a supplied driver"),
         "cap":  (CaPPlanner, "Code-as-Policies: LLM composes pre-built APIs"),
     }
 
@@ -86,9 +84,7 @@ def _timeout_trial_dict(trial_idx: int, secs: int) -> dict:
 
 
 def run_one_trial(planner, task: dict, trial_idx: int) -> dict:
-    """Execute one task trial + physics validation. Mirrors eval.run_task
-    semantics but for a single trial.
-    """
+    """Execute one legacy baseline trial and grade its fresh-world replay."""
     import numpy as np  # noqa: PLC0415
 
     skel = planner._load_driver()
@@ -163,6 +159,7 @@ def run_one_trial(planner, task: dict, trial_idx: int) -> dict:
     if not replay_clean:
         detail = f"REPLAY DIVERGED. {detail}"
         metrics["replay_diverged"] = True
+        physics_ok = False
 
     return {
         "trial": trial_idx,
@@ -304,6 +301,7 @@ def main() -> None:
         planner_kwargs = {
             "workspace": workspace,
             "bedrock_model": args.model,
+            "model_provider": "bedrock",
             "region": args.region,
             "max_iters": 30, "max_tokens_per_turn": 6000,
         }

@@ -52,8 +52,9 @@ Produces a single result.json with this schema:
       }
     }
 
-This is the canonical entry point — reviewers should be able to reproduce
-ANY scoreboard number by running this command.
+This entry point evaluates a supplied compatible driver with the legacy
+TaskPlanner tool surface. See README.md for its boundary from ReCAP and the
+inputs required by this source release.
 """
 from __future__ import annotations
 
@@ -1674,7 +1675,7 @@ def main() -> None:
                    help="Comma-separated suite names (simple,hard,contact_rich)")
     p.add_argument("--model", default="us.anthropic.claude-sonnet-4-6")
     p.add_argument("--region", default="us-east-1")
-    p.add_argument("--provider", choices=["holistic", "bedrock"], default="holistic")
+    p.add_argument("--provider", choices=["bedrock", "deepseek"], default="bedrock")
     p.add_argument("--n-trials", type=int, default=None,
                    help="Override task-level n_trials (default = use yaml value)")
     p.add_argument("--tasks", default=None,
