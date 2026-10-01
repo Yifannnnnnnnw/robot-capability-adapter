@@ -1,6 +1,10 @@
 Auto-Adapter
 Copyright 2024-2026 The Auto-Adapter Authors
 
+Original Auto-Adapter distribution attribution: Vector Robotics.
+Local modifications are maintained by the AutoAdapter 2.0 contributors at
+https://github.com/Yifannnnnnnnw/robot-capability-adapter.
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -41,6 +45,15 @@ Vendored robot assets
 
 Robot scenes and meshes under assets/mjcf/ are vendored from MuJoCo
 Menagerie (https://github.com/google-deepmind/mujoco_menagerie) and
-related upstream sources. Each model retains its original LICENSE file
-alongside it (Apache-2.0 / BSD-3-Clause / MIT, per model). SO-ARM101
-assets derive from the LeRobot project (Apache-2.0).
+related upstream sources. Robot model licenses are retained alongside the
+models, including
+Apache-2.0, BSD-2-Clause, BSD-3-Clause, Clear BSD and MIT terms. Composite
+arm/gripper packages retain both component licenses. See
+assets/THIRD_PARTY_LICENSES.md for the complete included-model table and
+source-record links. The original asset record attributes the SO-ARM101
+meshes under assets/urdf/meshes/ to LeRobot (Apache-2.0).
+
+The retained Go2 velocity policy under auto_adapter/skeletons/data/ derives
+from wty-yy/go2_rl_gym at revision
+30e74dc507bec7a642a8c98be26081f2c6f0822d. Its source record and MIT license
+with the bundled upstream BSD-3-Clause notice are retained alongside it.

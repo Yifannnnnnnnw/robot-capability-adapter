@@ -1,47 +1,41 @@
 # Upstream relationship
 
-This directory is our maintained research implementation. It derives from the
-open-source Auto-Adapter project:
+This repository maintains the AutoAdapter 2.0 implementation and AA-Bench under
+[robot-capability-adapter](https://github.com/Yifannnnnnnnw/robot-capability-adapter).
+It derives from the open-source Auto-Adapter project:
 
-- Repository: <https://github.com/981526092/auto-adapter>
-- Comparison baseline: `585eb1f1fde33f17f5f9a1e169a18dd41f97b586`
-- Upstream licence: Apache License 2.0
+- Repository: <https://github.com/981526092/auto-adapter>.
+- Comparison baseline: `585eb1f1fde33f17f5f9a1e169a18dd41f97b586`.
+- Original distribution author attribution: Vector Robotics.
+- Upstream license: Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-The comparison revision identifies the public upstream state against which the
-AutoAdapter 2.0 mainline is described. This repository is maintained and
-published under our own repository ownership. Changes here must never be
-pushed to the original upstream repository.
+The baseline identifies the imported project used for comparison. Local
+AutoAdapter 2.0 changes are maintained in this repository; they must never be
+pushed to the original imported repository. The original author attribution and
+third-party notices are retained separately from the local modifications.
 
-## Main changes
+## Maintained mainline
 
-The maintained mainline adds:
+The current mainline adds task-grounded capability design, physical validation
+in fresh MuJoCo processes, a design-derived driver interface and MCP export,
+a persistent export runtime, and an optional ReCAP Demo through MCP. Robot task
+libraries and fixed Demo configurations provide inputs to these stages.
 
-1. a task-grounded Design stage that produces capability request schemas,
-   physical criteria and prepared MuJoCo scene cases;
-2. validation in fresh simulation processes using measured trajectories and
-   declared physical criteria instead of trusting a driver's return value;
-3. a dynamic driver interface and MCP export derived from the validated
-   design;
-4. a persistent export runtime that shares the selected MuJoCo model and state;
-5. an optional downstream Demo using the official ReCAP task-tree controller
-   through the MCP client interface;
-6. task libraries and fixed Demo configurations for the supported robot
-   models.
+[`auto_adapter/`](auto_adapter/) contains the synthesis and execution code.
+[`autoadapter_bench/`](autoadapter_bench/) contains the retained benchmark source
+and shared robot catalog. The [README](README.md) describes the release entry
+points; the [asset guide](docs/ASSETS.md) records input paths and licenses.
+Historical benchmark results are not new evidence for the maintained mainline.
 
-The smallest publication boundary and the files that implement these changes
-are listed in [`docs/PUBLIC_RELEASE.md`](docs/PUBLIC_RELEASE.md).
+## Vendored components
 
-## Vendored ReCAP component
+The ReCAP task-tree controller derives from
+[ReCAP-Stanford/ReCAP](https://github.com/ReCAP-Stanford/ReCAP) at revision
+`2fb112ffad685c7c6f7de86d5487ecca6f566fcc`. Its MIT license, exact source record
+and local integration patch are retained under
+[`auto_adapter/agent/vendor/recap/`](auto_adapter/agent/vendor/recap/).
 
-The ReCAP controller is derived from
-<https://github.com/ReCAP-Stanford/ReCAP> at revision
-`2fb112ffad685c7c6f7de86d5487ecca6f566fcc`. Its MIT licence, exact source
-location and local integration patch are retained under
-`auto_adapter/agent/vendor/recap/`.
-
-## Release preparation
-
-Before creating a public release, modified files retained from the Apache-2.0
-upstream should carry a concise modification notice where required, and the
-release should retain `LICENSE`, `NOTICE`, this file, and all applicable robot
-asset and vendored-component licences.
+Robot models retain their own licenses and source records. See
+[the asset license table](assets/THIRD_PARTY_LICENSES.md). The retained Go2
+velocity policy also carries its original source and license in
+[`auto_adapter/skeletons/data/`](auto_adapter/skeletons/data/).
