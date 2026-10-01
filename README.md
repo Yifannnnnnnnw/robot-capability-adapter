@@ -1,10 +1,10 @@
-# Auto Adapter and AA-Bench
+# Auto Adapter and AutoAdapter-Bench
 
 **Auto Adapter** generates robot capabilities from a MuJoCo model and public task
 requirements, checks them in physics simulation, and exports a driver through
 MCP. An optional ReCAP controller uses that export to execute a task.
 
-**AA-Bench** provides robot/task definitions, physical outcome evaluation and
+**AutoAdapter-Bench** provides robot/task definitions, physical outcome evaluation and
 optional baseline implementations. Its existing benchmark executor uses the
 earlier direct-driver TaskPlanner; the current Auto Adapter demo uses ReCAP
 through MCP. These execution paths have separate result semantics.
@@ -47,10 +47,10 @@ are not stored in this repository. Simulation and generated-code execution run
 locally; AgentCore is not required.
 
 ```sh
-export AA_MODEL='your-enabled-bedrock-model-id'
+export AUTO_ADAPTER_MODEL='your-enabled-bedrock-model-id'
 python scripts/run/run_stage1.py \
   --robots piper --provider bedrock --region us-east-1 \
-  --model "$AA_MODEL" --output-root runs/piper-first
+  --model "$AUTO_ADAPTER_MODEL" --output-root runs/piper-first
 ```
 
 This runs through Export. Add `--enable-demo` for the configured ReCAP task, or
@@ -71,11 +71,11 @@ Useful entry points:
 - [Generation and task execution](auto_adapter/RECAP_TASKS.md)
 - [Fixed demo scenes and physical task scoring](docs/DEMO_CONFIGURATION.md)
 - [Public task libraries](auto_adapter/task_libraries/README.md)
-- [AA-Bench commands and compatibility limits](autoadapter_bench/README.md)
+- [AutoAdapter-Bench commands and compatibility limits](autoadapter_bench/README.md)
 
-## AA-Bench
+## AutoAdapter-Bench
 
-AA-Bench evaluates an explicitly supplied, compatible driver workspace using
+AutoAdapter-Bench evaluates an explicitly supplied, compatible driver workspace using
 its existing task suites. Generated workspaces are user inputs; the source
 release does not silently substitute a reference driver.
 

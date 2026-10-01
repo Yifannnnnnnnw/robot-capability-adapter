@@ -1,6 +1,6 @@
-# AA-Bench
+# AutoAdapter-Bench
 
-AA-Bench contains the existing robot catalog, task specifications, MuJoCo
+AutoAdapter-Bench contains the existing robot catalog, task specifications, MuJoCo
 evaluators and baseline source. It evaluates a supplied robot driver. This
 source release includes no generated drivers, recorded results, videos,
 demonstration datasets or trained baseline checkpoints.
