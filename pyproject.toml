@@ -1,28 +1,24 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "auto-adapter"
 version = "0.1.0"
-description = "LLM agent that synthesizes deployable robot drivers from MJCF/URDF specifications"
+description = "Robot capability generation, MuJoCo validation, MCP export and AA-Bench evaluation"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.10"
-authors = [{name = "Vector Robotics"}]
-keywords = ["robotics", "llm", "code-generation", "robot-driver", "tool-use", "agent"]
+authors = [{name = "Vector Robotics"}, {name = "Auto Adapter contributors"}]
+maintainers = [{name = "Yifannnnnnnnw"}]
+keywords = ["robotics", "mujoco", "llm", "mcp", "benchmark"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-
 dependencies = [
     "numpy>=1.24",
     "mujoco>=3.0",
@@ -30,26 +26,37 @@ dependencies = [
     "boto3>=1.34",
     "imageio>=2.30",
     "imageio-ffmpeg>=0.4",
+    "pillow>=10",
     "pyyaml>=6.0",
     "mcp>=1.28,<2",
+    "pydantic>=2.11,<3",
+    "typing-extensions>=4.9",
 ]
 
+[project.urls]
+Repository = "https://github.com/Yifannnnnnnnw/robot-capability-adapter"
+Documentation = "https://github.com/Yifannnnnnnnw/robot-capability-adapter#readme"
+Issues = "https://github.com/Yifannnnnnnnw/robot-capability-adapter/issues"
+
 [project.optional-dependencies]
-rl = [
-    "torch>=2.0",
-    "stable-baselines3>=2.0",
-    "gymnasium>=0.29",
-    "diffusers>=0.30",
-]
+test = ["pytest>=8"]
+rl = ["torch>=2.0", "stable-baselines3>=2.0", "gymnasium>=0.29", "diffusers>=0.30"]
 vla = [
-    "torch==2.4.1",
-    "torchvision==0.19.1",
-    "transformers==4.40.1",
-    "accelerate==0.32.1",
-    "timm==0.9.10",
-    "huggingface_hub",
-    "pillow",
+    "torch==2.4.1", "torchvision==0.19.1", "transformers==4.40.1",
+    "accelerate==0.32.1", "timm==0.9.10", "huggingface_hub",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["auto_adapter", "autoadapter_bench"]
+exclude = ["**/tests/**"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"assets" = "assets"
+"scripts/run/run_stage1.py" = "scripts/run/run_stage1.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/auto_adapter", "/autoadapter_bench", "/assets", "/scripts/run/run_stage1.py",
+    "/docs", "/README.md", "/pyproject.toml", "/LICENSE", "/NOTICE",
+    "/UPSTREAM.md", "/CITATION.cff",
+]

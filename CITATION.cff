@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "Please cite this software repository and the exact commit used in your work."
+type: software
+title: "Auto Adapter and AA-Bench"
+authors:
+  - name: "Auto Adapter contributors"
+repository-code: "https://github.com/Yifannnnnnnnw/robot-capability-adapter"
+url: "https://github.com/Yifannnnnnnnw/robot-capability-adapter"
+license: Apache-2.0
