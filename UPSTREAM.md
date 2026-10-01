@@ -32,20 +32,16 @@ Historical benchmark results are not new evidence for the maintained mainline.
 On 2026-10-01, upstream `main` still pointed to the comparison baseline above.
 There were no newer upstream commits to merge. The current source tree retains
 the baseline's `auto_adapter/` and `assets/` files, with local modifications.
-The useful additions from this review concern onboarding and one small example:
+The useful additions from this review concern onboarding:
 
 | Upstream material | Treatment in this repository |
 | --- | --- |
 | Overview diagram and onboarding guide | A new diagram in the [README](README.md) and a [first-run guide](docs/FIRST_RUN.md) explain the current Design, physical validation, MCP and ReCAP path |
-| Fixed SO-101 reference driver | An unchanged, attributed [reach compatibility example](examples/legacy_so101/README.md) for the existing benchmark interface |
-| Generated workspaces, historical results and paper materials | Remain outside the current public source tree; earlier Git revisions preserve the research history |
+| Historical driver workspaces, results and paper materials | Remain outside the current public source tree; earlier Git revisions preserve the research history |
 | Earlier AgentCore/DGX execution and fixed tool interface | Retained historical source is not the launch path documented for the maintained mainline |
 
 The overview and first-run instructions are written for the current code; the
-upstream five-stage diagram and its performance claims are not reused. The
-SO-101 example is a historical reference, not evidence that the maintained
-mainline generated or validated that driver. Its provenance and local check
-scope are stated beside the example.
+upstream five-stage diagram and its performance claims are not reused.
 
 This comparison does not introduce a new experiment protocol or a current
 experiment result. Changes are published to `robot-capability-adapter` only.

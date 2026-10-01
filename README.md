@@ -9,16 +9,10 @@ optional baseline implementations. Its existing benchmark executor uses the
 earlier direct-driver TaskPlanner; the current Auto Adapter demo uses ReCAP
 through MCP. These execution paths have separate result semantics.
 
-```mermaid
-flowchart TD
-    Robot[MuJoCo robot model] --> Study
-    Tasks[Public task requirements] --> Design
-    Study --> Design --> Generate --> Validate
-    Validate -->|Repair feedback| Generate
-    Validate -->|Pass| Export[MCP export]
-    Export --> Demo[Optional ReCAP task execution]
-    Demo --> Evaluation[Physical task evaluation]
-```
+[![Auto Adapter workflow: Study, Design, iterative Generate and Validate, MCP Export, and optional ReCAP Demo](docs/images/auto_adapter_framework.png)](docs/images/auto_adapter_framework.png)
+
+*ReCAP Demo is optional and uses the exported MCP server. Click the diagram to
+view it at full resolution.*
 
 This is an experiment-grade source release. Robot inventory, generated-driver
 validation and downstream task success describe different things. The repository
@@ -42,11 +36,9 @@ python scripts/run/run_stage1.py --help
 ```
 
 The repository includes the shared robot meshes and scenes, so the source tree
-is approximately 390 MiB. Trained baseline checkpoints and run videos are not
-bundled. One historical reference driver is included as an explicit
-[compatibility example](examples/legacy_so101/README.md). The retained Go2
-low-level controller data is a runtime input and includes its own source and
-licence information.
+is approximately 390 MiB. Trained baseline checkpoints, generated drivers and
+run videos are not bundled. The retained Go2 low-level controller data is a
+runtime input and includes its own source and licence information.
 
 Follow the [first-run guide](docs/FIRST_RUN.md) to check local MuJoCo without a
 model call, generate a Piper driver, and understand each result file.
@@ -100,10 +92,8 @@ python -m autoadapter_bench.eval_baseline --help
 The [Bench guide](autoadapter_bench/README.md) describes the legacy driver
 interface, physical verdicts and optional RL/DP/OpenVLA dependencies. Current
 dynamic ReCAP exports are not automatically interchangeable with that interface.
-The [historical SO-101 reach example](examples/legacy_so101/README.md) provides
-one explicit starting workspace for this older interface. Historical scores
-and baseline weights are excluded from the current source tree. A new run
-produces its own reports, traces and videos.
+Historical scores and baseline weights are excluded from the current source
+tree. A new run produces its own reports, traces and videos.
 
 ## Source layout
 
@@ -113,14 +103,12 @@ produces its own reports, traces and videos.
 | `autoadapter_bench/` | Robot/task catalog, existing evaluation and optional baselines |
 | `assets/` | Shared MuJoCo models, meshes and task scenes |
 | `scripts/run/run_stage1.py` | Public generation launcher |
-| `examples/` | Explicitly scoped source examples with origin and usage notes |
 | `auto_adapter/tests/`, `autoadapter_bench/tests/` | Focused checks beside their components |
 | `docs/` | Robot support, scoring, asset provenance and migration notes |
 
 The robot catalog remains shared at `autoadapter_bench/spec/robot_zoo.yaml`.
 Keep both packages and the assets together. Wheels include that catalog,
-task-library data, models and the launcher as well as Python code. The historical
-compatibility example is available in the Git checkout and source distribution.
+task-library data, models and the launcher as well as Python code.
 
 ## Scope and provenance
 

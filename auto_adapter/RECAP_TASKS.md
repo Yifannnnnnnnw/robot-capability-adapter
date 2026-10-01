@@ -1,4 +1,4 @@
-# AutoAdapter generation stages and ReCAP tasks
+# Auto Adapter generation stages and ReCAP tasks
 
 Both `SelfAssemble` and `FromScratchOrchestrator` now use:
 
@@ -18,6 +18,13 @@ Set `enable_demo=True` for automatic local task execution after export. An
 inclusive `stop_after` still stops the pipeline, including before a configured
 demo. Disabled or deliberately skipped stages do not fail the run. A demo
 failure does not change generation/validation results or trigger repair.
+
+## Task execution through MCP
+
+[![Auto Adapter control chain: task instructions, ReCAP planning, generated driver, and a simulated Piper robot](../docs/images/auto_adapter_control_chain.png)](../docs/images/auto_adapter_control_chain.png)
+
+*Capability calls and observations pass through the exported MCP server. Piper
+is shown as an example robot. Click the diagram to view it at full resolution.*
 
 ## One task entry point
 
